@@ -1,9 +1,15 @@
 ﻿using UnityEngine;
 using System.Collections;
 
+/*
+ * Track certain stats about a room for it to be properly position if being linked to a puzzle room
+ */
 public class AttachedRoom : MonoBehaviour {
-
-    /* The proper stats of the room's positioning so it can be properly placed */
-    //The corner of the exit point of the room
+    
+    /* The bottom center of the room's exit */
     public Transform exitPoint;
+
+    /* The width and height of the room's exitway */
+    public float exitWidth;
+    public float exitHeight;
 }
