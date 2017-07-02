@@ -39,6 +39,9 @@ public class PuzzleRoomEditor : MonoBehaviour {
     private float roomLength;
     private float roomHeight;
 
+    /* The material used on the walls */
+    public Material wallMaterial;
+
 
     void Update () {
         /*
@@ -65,12 +68,15 @@ public class PuzzleRoomEditor : MonoBehaviour {
                 exitUpperWall, exitLowerWall, exitSideWall1, exitSideWall2, sideWall1, sideWall2};
 
         
-        /* Each wall must be rendering a plane primitive along with the proper parent and name */
+        /* Each wall must be capable of rendering an object and have the proper parent, name and material used */
         for(int i = 0; i < walls.Length; i++) {
             if(walls[i] == null) {
                 walls[i] = GameObject.CreatePrimitive(PrimitiveType.Plane);
                 walls[i].transform.parent = puzzleRoomWalls;
                 walls[i].name = "Infinite Wall";
+
+                /* Assign a material to the wall */
+                walls[i].GetComponent<MeshRenderer>().material = wallMaterial;
             }
         }
 
@@ -132,40 +138,96 @@ public class PuzzleRoomEditor : MonoBehaviour {
          * do this we need the point that is in the center between the two connected rooms. */
         Vector3 centerPoint = (puzzleRoomEntrancePoint.position + puzzleRoomExitPoint.position)/2f;
         sideWall1.transform.position = centerPoint + new Vector3(roomWidth + Mathf.Min(attachedEntranceWidth, attachedExitWidth)/2f, 0, 0);
-        sideWall2.transform.position = centerPoint + new Vector3(-roomWidth - Mathf.Min(attachedEntranceWidth, attachedExitWidth)/2f, 0, 0);
-        sideWall1.transform.localScale = new Vector3(roomLength/10f, 1, roomHeight/10f);
-        sideWall2.transform.localScale = new Vector3(roomLength/10f, 1, roomHeight/10f);
+        CreateWallMesh(sideWall1, roomLength, roomHeight);
         sideWall1.transform.localEulerAngles = new Vector3(90, -90, 0);
+        sideWall2.transform.position = centerPoint + new Vector3(-roomWidth - Mathf.Min(attachedEntranceWidth, attachedExitWidth)/2f, 0, 0);
+        CreateWallMesh(sideWall2, roomLength, roomHeight);
         sideWall2.transform.localEulerAngles = new Vector3(90, 90, 0);
-
+        
 
         /* Place the walls that are situated above and bellow the puzzle room's entrance/exit */
         entrenceUpperWall.transform.position = puzzleRoomEntrancePoint.position + new Vector3(0, roomHeight/4f + attachedEntranceHeight, 0);
-        entrenceUpperWall.transform.localScale = new Vector3(attachedEntranceWidth/10f, 1, roomHeight/20f - attachedEntranceHeight/5f);
+        CreateWallMesh(entrenceUpperWall, attachedEntranceWidth, roomHeight/2 - attachedEntranceHeight*2);
         entrenceUpperWall.transform.localEulerAngles = new Vector3(90, 0, 0);
+
         entrenceLowerWall.transform.position = puzzleRoomEntrancePoint.position + new Vector3(0, -roomHeight/4f, 0);
-        entrenceLowerWall.transform.localScale = new Vector3(attachedEntranceWidth/10f, 1, roomHeight/20f);
+        CreateWallMesh(entrenceLowerWall, attachedEntranceWidth, roomHeight/2);
         entrenceLowerWall.transform.localEulerAngles = new Vector3(90, 0, 0);
+
         exitUpperWall.transform.position = puzzleRoomExitPoint.position + new Vector3(0, roomHeight/4f + attachedExitHeight, 0);
-        exitUpperWall.transform.localScale = new Vector3(attachedExitWidth/10f, 1, roomHeight/20f - attachedExitHeight/5f);
+        CreateWallMesh(exitUpperWall, attachedEntranceWidth, roomHeight/2 - attachedExitHeight*2f);
         exitUpperWall.transform.localEulerAngles = new Vector3(-90, 0, 0);
+
         exitLowerWall.transform.position = puzzleRoomExitPoint.position + new Vector3(0, -roomHeight/4f, 0);
-        exitLowerWall.transform.localScale = new Vector3(attachedExitWidth/10f, 1, roomHeight/20f);
+        CreateWallMesh(exitLowerWall, attachedEntranceWidth, roomHeight/2);
         exitLowerWall.transform.localEulerAngles = new Vector3(-90, 0, 0);
 
 
         /* Place the walls that are on the side of the entrance/exit */
         entrenceSideWall1.transform.position = puzzleRoomEntrancePoint.position + new Vector3(roomWidth/2f + attachedEntranceWidth/2f - widthDifference/4f, 0, 0);
-        entrenceSideWall1.transform.localScale = new Vector3(roomWidth/10f - widthDifference/20f, 1, roomHeight/10f);
+        CreateWallMesh(entrenceSideWall1, roomWidth - widthDifference/2f, roomHeight);
         entrenceSideWall1.transform.localEulerAngles = new Vector3(90, 0, 0);
+
         entrenceSideWall2.transform.position = puzzleRoomEntrancePoint.position + new Vector3(-roomWidth/2f - attachedEntranceWidth/2f - widthDifference/4f, 0, 0);
-        entrenceSideWall2.transform.localScale = new Vector3(roomWidth/10f + widthDifference/20f, 1, roomHeight/10f);
+        CreateWallMesh(entrenceSideWall2, roomWidth + widthDifference/2f, roomHeight);
         entrenceSideWall2.transform.localEulerAngles = new Vector3(90, 0, 0);
+
         exitSideWall1.transform.position = puzzleRoomExitPoint.position + new Vector3(-roomWidth/2f - attachedExitWidth/2f + widthDifference/4f, 0, 0);
-        exitSideWall1.transform.localScale = new Vector3(roomWidth/10f - widthDifference/20f, 1, roomHeight/10f);
+        CreateWallMesh(exitSideWall1, roomWidth - widthDifference/2f, roomHeight);
         exitSideWall1.transform.localEulerAngles = new Vector3(-90, 0, 0);
+
         exitSideWall2.transform.position = puzzleRoomExitPoint.position + new Vector3(+roomWidth/2f + attachedExitWidth/2f + widthDifference/4f, 0, 0);
-        exitSideWall2.transform.localScale = new Vector3(roomWidth/10f + widthDifference/20f, 1, roomHeight/10f);
+        CreateWallMesh(exitSideWall2, roomWidth + widthDifference/2f, roomHeight);
         exitSideWall2.transform.localEulerAngles = new Vector3(-90, 0, 0);
+    }
+
+
+
+
+    private void CreateWallMesh(GameObject wall, float xScale, float zScale) {
+        /*
+         * Use the given parameters to create the mesh that forms a wall.
+         * The mesh will be centered at (0, 0, 0).
+         * 
+         * The given gameObject will have it's mesh used in it's meshFilter component changed.
+         */
+        Mesh wallMesh = new Mesh();
+        Vector3[] vertices = new Vector3[4];
+        Vector2[] UV;
+        int[] triangles;
+
+
+        /* Set the vertices of the plane */
+        vertices[0] = new Vector3(0.5f*xScale, 0, 0.5f*zScale);
+        vertices[1] = new Vector3(-0.5f*xScale, 0, 0.5f*zScale);
+        vertices[2] = new Vector3(-0.5f*xScale, 0, -0.5f*zScale);
+        vertices[3] = new Vector3(0.5f*xScale, 0, -0.5f*zScale);
+
+
+        /* Set the two triangles that form the plane */
+        triangles = new int[]{
+            2, 1, 0,
+            3, 2, 0 
+        };
+
+        /* Set the UVs of the plane */
+        UV = new Vector2[] {
+            new Vector2(vertices[0].x, vertices[0].z),
+            new Vector2(vertices[1].x, vertices[1].z),
+            new Vector2(vertices[2].x, vertices[2].z),
+            new Vector2(vertices[3].x, vertices[3].z)
+        };
+
+
+        /* Assign the parameters to the mesh */
+        wallMesh.vertices = vertices;
+        wallMesh.triangles = triangles;
+        wallMesh.uv = UV;
+        wallMesh.RecalculateNormals();
+
+        /* Assign the mesh to the given wall */
+        wall.GetComponent<MeshFilter>().mesh = wallMesh;
+        wall.GetComponent<MeshCollider>().sharedMesh = wallMesh;
+
     }
 }
