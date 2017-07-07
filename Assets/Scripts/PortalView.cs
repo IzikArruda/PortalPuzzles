@@ -15,6 +15,7 @@ namespace BLINDED_AM_ME{
 	[ExecuteInEditMode]
 	public class PortalView : MonoBehaviour {
 
+
         public float left = -0.2F;
         public float right = 0.2F;
         public float top = 0.2F;
@@ -37,6 +38,7 @@ namespace BLINDED_AM_ME{
 
 		private static bool s_InsideRendering = false;
         
+
 
 		public void OnWillRenderObject()
 		{
@@ -61,6 +63,7 @@ namespace BLINDED_AM_ME{
 
             //Check if the portal is visible
             checkPortalVisibility(cam.transform);
+
 
             CreateNeededObjects();
 
@@ -189,5 +192,8 @@ namespace BLINDED_AM_ME{
                 GetComponent<MeshRenderer>().material = emptyMaterial;
             }
         }
+
+
+
     }
 }
