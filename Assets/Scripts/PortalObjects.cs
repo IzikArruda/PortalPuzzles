@@ -11,6 +11,7 @@ using System.Collections;
 public class PortalObjects : MonoBehaviour {
 
     public GameObject portalMesh;
+    public GameObject portalLeaveMesh;
     public GameObject teleporterEnterTrigger;
     public GameObject teleporterLeaveTrigger;
     //public GameObject portalDoor;
@@ -50,10 +51,10 @@ public class PortalObjects : MonoBehaviour {
         /* Set the vertices for the portal mesh */
         //NOTE: WHY DO I NEED TO REMOVE 0.25F to allign the meshes textures?
         vertices = new Vector3[] {
-                new Vector3(-portalWidth/2f, portalHeight, 0) + portalOffset,
-                new Vector3(portalWidth/2f, portalHeight, 0) + portalOffset,
-                new Vector3(portalWidth/2f, 0, 0) + portalOffset,
-                new Vector3(-portalWidth/2f, 0, 0) + portalOffset
+                new Vector3(-portalWidth, portalHeight, 0) + portalOffset,
+                new Vector3(0, portalHeight, 0) + portalOffset,
+                new Vector3(0, 0, 0) + portalOffset,
+                new Vector3(-portalWidth, 0, 0) + portalOffset
             };
 
         /* Set the two polygons that form the portal mesh */
@@ -94,6 +95,8 @@ public class PortalObjects : MonoBehaviour {
 
 
         /* Portal mesh should be pushed half it's distance so it's pivot point is in the bottom-left corner */
-        portalMesh.transform.localPosition = new Vector3(-portalWidth/2f, 0, 0) - portalOffset;
+        portalMesh.transform.localPosition = new Vector3(0, 0, 0);
+        portalLeaveMesh.transform.localPosition = new Vector3(-portalWidth, 0, 0);
+        portalLeaveMesh.transform.localEulerAngles = new Vector3(0, -180, 0);
     }
 }
