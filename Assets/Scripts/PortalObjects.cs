@@ -79,7 +79,7 @@ public class PortalObjects : MonoBehaviour {
 
 
 
-        float portalThickness = 0.25f;
+        float portalThickness = 0.01f;
         /*  Set the teleport triggers linked to the portal to be the same sizes of the portal mesh */
         teleporterEnterTrigger.transform.localEulerAngles = new Vector3(0, 90, 0);
         teleporterEnterTrigger.transform.localScale = transform.localScale;

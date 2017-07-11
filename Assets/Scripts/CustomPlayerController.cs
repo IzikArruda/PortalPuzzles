@@ -295,6 +295,20 @@ public class CustomPlayerController : MonoBehaviour {
 
     public void MovePlayer() {
         /*
+         * IDEA: move the player and then do a raytrace to detect if they will need to be teleported.
+         * Do the raytrace from their camera resting positon. To check for flooring, 
+         * do a raytrace from their camera resting position to the leg start and then
+         * start the leg raytracing.
+         * 
+         * To do this, we can follow these steps:
+         * Save the current positon.
+         * Move the given distance.
+         * Ray trace from original position to ray traced position. Hitting a teleporter will teleport player
+         * 
+         * 
+         * 
+         * 
+         * 
          * Move the player relative to what has occured this frame so far, such as any steps taken
          * or if the player should be falling. 
          * 
@@ -309,9 +323,13 @@ public class CustomPlayerController : MonoBehaviour {
         /* If the player is standing, position their body relative to their foot position and the length of their legs.
          * Any distance travelled up or down from a step will not be applied to the player's camera. */
         if(falling == false) {
-            transform.position = currentFootPosition + upDirection*(playerBodyLength/2f + currentLegLength);
+            /* Check if moving the player to their proper footing pushes them through a portal */
+            CheckTeleportTriggerAfterMove(currentFootPosition + upDirection*(playerBodyLength/2f + currentLegLength));
+            //transform.position = currentFootPosition + upDirection*(playerBodyLength/2f + currentLegLength);
             currentCameraTransform.transform.position -= upDirection*(currentLegLength - expectedLegLength);
+
         }
+
 
         /* If the player is falling, apply gravity to their yVelocity. Reset yVelocity if they are standing. */
         if(falling == true) {
@@ -329,8 +347,13 @@ public class CustomPlayerController : MonoBehaviour {
         /* Apply the movement of the players input */
         GetComponent<Rigidbody>().velocity = Vector3.zero;
         //GetComponent<Rigidbody>().MovePosition(transform.position + gravityVector + (inputVector)*Time.deltaTime*60);
-        transform.position = transform.position + gravityVector + (inputVector)*Time.deltaTime*60;
+        /* Check if the player has passed through a portal */
+        CheckTeleportTriggerAfterMove(transform.position + gravityVector + (inputVector)*Time.deltaTime*60);
+        //transform.position = transform.position + gravityVector + (inputVector)*Time.deltaTime*60;
+
+
     }
+
 
     void AdjustCameraPosition() {
         /*
@@ -396,5 +419,43 @@ public class CustomPlayerController : MonoBehaviour {
             falling = true;
             currentYVelocity = jumpSpeed;
         }
+    }
+
+
+    void CheckTeleportTriggerAfterMove(Vector3 nextPosition) {
+        /*
+         * Extract the distance and direction needed from the nextPosition of the player
+         * and ray trace along the path to catch any portal teleport triggers.
+         * 
+         * Check if the player has collided with a portal after moving from their previous position.
+         */
+        RaycastHit hitInfo = new RaycastHit();
+        LayerMask portalTriggers = 1 << LayerMask.NameToLayer("Portal Trigger");
+
+        /* Get how much distance needs to be travelled in what direction */
+        float travelDistance = (transform.position - nextPosition).magnitude;
+        Vector3 travelDirection = (transform.position - nextPosition).normalized;
+
+
+
+        /* Check if there were any portal teleport triggers between the previous and current player positions */
+        if(Physics.Linecast(transform.position, nextPosition, out hitInfo, portalTriggers, QueryTriggerInteraction.Collide)) {
+            Debug.Log("PASSED THROUGH A TRIGGER");
+            Debug.Log(travelDistance - hitInfo.distance + " remaining distance");
+
+            /* If the player passed by a portal trigger, teleport them to the other side */
+            if(hitInfo.collider.GetComponent<TeleporterTrigger>() != null) {
+                hitInfo.collider.GetComponent<TeleporterTrigger>().TeleportCollider(transform);
+            }
+            else {
+                Debug.Log("PLAYER HIT TELEPORT COLLIDER THAT DOES NOT CONTAIN A TELEPORTTRIGGER");
+            }
+        }
+        else {
+            /////FOR NOW, IF THE PLAYER DOES NOT COLLIDE JUST MOVE THEM
+            transform.position = nextPosition;
+        }
+
+        Debug.DrawLine(transform.position, nextPosition);
     }
 }
