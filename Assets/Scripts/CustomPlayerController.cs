@@ -120,6 +120,14 @@ public class CustomPlayerController : MonoBehaviour {
         /* Update the inputs of the player */
         inputs.UpdateInputs();
         PlayerInControl();
+
+
+        /* Fire a long ray to test the function */
+        Vector3 testPos = new Vector3(0, 1, 0);
+        Vector3 testDir = new Vector3(0, 0, 1);
+        Quaternion testRot = new Quaternion();
+        float testDist = 20f;
+        RayTrace(ref testPos, ref testDir, ref testRot, ref testDist, true, true);
     }
 
 
@@ -324,7 +332,7 @@ public class CustomPlayerController : MonoBehaviour {
          * Any distance travelled up or down from a step will not be applied to the player's camera. */
         if(falling == false) {
             /* Check if moving the player to their proper footing pushes them through a portal */
-            CheckTeleportTriggerAfterMove(currentFootPosition + upDirection*(playerBodyLength/2f + currentLegLength));
+            MovePlayer(-transform.position + currentFootPosition + upDirection*(playerBodyLength/2f + currentLegLength));
             //transform.position = currentFootPosition + upDirection*(playerBodyLength/2f + currentLegLength);
             currentCameraTransform.transform.position -= upDirection*(currentLegLength - expectedLegLength);
 
@@ -348,7 +356,7 @@ public class CustomPlayerController : MonoBehaviour {
         GetComponent<Rigidbody>().velocity = Vector3.zero;
         //GetComponent<Rigidbody>().MovePosition(transform.position + gravityVector + (inputVector)*Time.deltaTime*60);
         /* Check if the player has passed through a portal */
-        CheckTeleportTriggerAfterMove(transform.position + gravityVector + (inputVector)*Time.deltaTime*60);
+        MovePlayer(gravityVector + (inputVector)*Time.deltaTime*60);
         //transform.position = transform.position + gravityVector + (inputVector)*Time.deltaTime*60;
 
 
@@ -422,40 +430,86 @@ public class CustomPlayerController : MonoBehaviour {
     }
 
 
-    void CheckTeleportTriggerAfterMove(Vector3 nextPosition) {
+    void MovePlayer(Vector3 movementVector) {
         /*
-         * Extract the distance and direction needed from the nextPosition of the player
-         * and ray trace along the path to catch any portal teleport triggers.
+         * Use the given movementVector to move the player's body by the given amount.
+         */
+
+        /* Set values used to track the player's current transform state */
+        float remainingDistance = (movementVector).magnitude;
+        Vector3 currentPosition = transform.position;
+        Vector3 currentDirection = (movementVector).normalized;
+        Quaternion currentRotation = transform.rotation;
+
+        /* Fire a ray from the player model's transform using the given movement vector to find their next position */
+        RayTrace(ref currentPosition, ref currentDirection, ref currentRotation, ref remainingDistance, true, true);
+
+        /* Update the player's transform once the ray is done being fired */
+        transform.position = currentPosition;
+        transform.rotation = currentRotation;
+    }
+
+
+
+    /* ---- Helper function ---- */
+
+    void RayTrace(ref Vector3 position, ref Vector3 direction, ref Quaternion totalRotation, ref float distance, bool detectTeleportTriggers, bool detectOtherColliders) {
+        /*
+         * Fire a ray from the given position towards the given direction for the given length. The given
+         * parameters determines what kind of collisions will be detected.
          * 
-         * Check if the player has collided with a portal after moving from their previous position.
+         * If it collides with any teleport trigger, teleport it's position and properly
+         * rotate it's direction and totalRotation.
+         * 
+         * If it collides into a solid collider, have distance be set to the remaining distance not travelled.         
          */
         RaycastHit hitInfo = new RaycastHit();
-        LayerMask portalTriggers = 1 << LayerMask.NameToLayer("Portal Trigger");
+        bool hitSolidCollider = false;
 
-        /* Get how much distance needs to be travelled in what direction */
-        float travelDistance = (transform.position - nextPosition).magnitude;
-        Vector3 travelDirection = (transform.position - nextPosition).normalized;
+        /* Change what the ray will collide with using the given parameters. Default is no colliders */
+        LayerMask rayLayerMask = 0;
+        if(detectTeleportTriggers) {
+            /* Include teleport triggers into the layerMask */
+            rayLayerMask = rayLayerMask | (1 << LayerMask.NameToLayer("Portal Trigger"));
+        }
+        if(detectOtherColliders) {
+            /* Include all non-teleporter triggers colliders into the layerMask */
+            rayLayerMask = rayLayerMask | ~(1 << LayerMask.NameToLayer("Portal Trigger"));
+        }
 
 
+        /* Travel towards the direction for the remaining distance */
+        while(distance > 0 && hitSolidCollider == false) {
 
-        /* Check if there were any portal teleport triggers between the previous and current player positions */
-        if(Physics.Linecast(transform.position, nextPosition, out hitInfo, portalTriggers, QueryTriggerInteraction.Collide)) {
-            Debug.Log("PASSED THROUGH A TRIGGER");
-            Debug.Log(travelDistance - hitInfo.distance + " remaining distance");
+            /* Check for any collisions from the current position towards the current direction */
+            if(Physics.Raycast(position, direction, out hitInfo, distance, rayLayerMask)) {
 
-            /* If the player passed by a portal trigger, teleport them to the other side */
-            if(hitInfo.collider.GetComponent<TeleporterTrigger>() != null) {
-                hitInfo.collider.GetComponent<TeleporterTrigger>().TeleportCollider(transform);
+                /* When hitting a collider, move the position up to the collision point */
+                Debug.DrawLine(position, position + direction*hitInfo.distance);
+                position += direction*hitInfo.distance;
+                distance -= hitInfo.distance;
+                
+
+                /* Hitting a teleport trigger will teleport the current position, direction and update the rotation */
+                if(hitInfo.collider.GetComponent<TeleporterTrigger>() != null) {
+                    hitInfo.collider.GetComponent<TeleporterTrigger>().TeleportParameters(ref position, ref direction, ref totalRotation);
+                }
+                /* Hitting a solid collider will stop the ray where it currently is */
+                else if(!hitInfo.collider.isTrigger) {
+                    hitSolidCollider = true;
+                }
+                /* non-teleport triggers will be ignored */
+                else if(hitInfo.collider.isTrigger){
+
+                }
             }
             else {
-                Debug.Log("PLAYER HIT TELEPORT COLLIDER THAT DOES NOT CONTAIN A TELEPORTTRIGGER");
+
+                /* The raytrace hit nothing, so travel along the direction for the remaining distance */
+                Debug.DrawLine(position, position + direction*distance);
+                position += direction*distance;
+                distance = 0;
             }
         }
-        else {
-            /////FOR NOW, IF THE PLAYER DOES NOT COLLIDE JUST MOVE THEM
-            transform.position = nextPosition;
-        }
-
-        Debug.DrawLine(transform.position, nextPosition);
     }
 }

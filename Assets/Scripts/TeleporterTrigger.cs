@@ -46,14 +46,14 @@ public class TeleporterTrigger : MonoBehaviour {
          */
          
         /* Get the position difference between the player and the trigger's center */
-        Vector3 teleportOffset = collidingObject.position - transform.position;
+        Vector3 offsetFromCenter = collidingObject.position - transform.position;
 
         /* Get the rotation difference betweem the teleporters and apply it to the player */
         Quaternion newQuat = partner.transform.rotation* Quaternion.Inverse(transform.rotation);
         
         /* Move and rotate the player relative to the position and rotation differences */
         collidingObject.position = partner.transform.position;
-        collidingObject.position += newQuat*teleportOffset;
+        collidingObject.position += newQuat*offsetFromCenter;
         collidingObject.rotation *= newQuat;
 
 
@@ -62,5 +62,23 @@ public class TeleporterTrigger : MonoBehaviour {
         //if(teleportSignal != null) {
         //    teleportSignal.playerTeleported();
         //}
+    }
+
+
+    public void TeleportParameters(ref Vector3 position, ref Vector3 direction, ref Quaternion rotation) {
+        /*
+         * Change the given parameters as if they were teleported
+         */
+
+        /* Get the position difference between the given position and the trigger's center */
+        Vector3 offsetFromCenter = position - transform.position;
+
+        /* Get the rotation difference betweem the teleporters */
+        Quaternion portalRotationQuat = partner.transform.rotation* Quaternion.Inverse(transform.rotation);
+
+        /* Update the given position and rotation values */
+        position = partner.transform.position + portalRotationQuat*offsetFromCenter;
+        direction = portalRotationQuat*direction;
+        rotation *= portalRotationQuat;
     }
 }
