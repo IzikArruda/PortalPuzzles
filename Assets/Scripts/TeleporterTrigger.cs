@@ -40,45 +40,73 @@ public class TeleporterTrigger : MonoBehaviour {
         }
     }
 
-    public void TeleportCollider(Transform collidingObject) {
-        /* 
-         * Teleport the given transform to the teleporter's patner's location and signal the linked teleport handler
-         */
-         
-        /* Get the position difference between the player and the trigger's center */
-        Vector3 offsetFromCenter = collidingObject.position - transform.position;
-
-        /* Get the rotation difference betweem the teleporters and apply it to the player */
-        Quaternion newQuat = partner.transform.rotation* Quaternion.Inverse(transform.rotation);
-        
-        /* Move and rotate the player relative to the position and rotation differences */
-        collidingObject.position = partner.transform.position;
-        collidingObject.position += newQuat*offsetFromCenter;
-        collidingObject.rotation *= newQuat;
-
-
-
-        //alert the linked handler. Laster this should the the only thing left and move the rest of this into a seperate script
-        //if(teleportSignal != null) {
-        //    teleportSignal.playerTeleported();
-        //}
-    }
-
 
     public void TeleportParameters(ref Vector3 position, ref Vector3 direction, ref Quaternion rotation) {
         /*
          * Change the given parameters as if they were teleported
          */
+        float portalThickness = 0.01f;
+        ///////GOAL: GET THE PORTALS TO PROPERLY TELEPORT THE RAY. CURRENTLY ITS NOT CORRECTLY BEING TELEPORTED
+
+
+
+
+
+        /* Rotation difference between portals */
+        Quaternion roitationDiff = transform.rotation * partner.transform.rotation;
+
 
         /* Get the position difference between the given position and the trigger's center */
         Vector3 offsetFromCenter = position - transform.position;
 
         /* Get the rotation difference betweem the teleporters */
-        Quaternion portalRotationQuat = partner.transform.rotation* Quaternion.Inverse(transform.rotation);
+        Quaternion portalRotationQuat = partner.transform.rotation*transform.rotation;
 
         /* Update the given position and rotation values */
-        position = partner.transform.position + portalRotationQuat*offsetFromCenter;
-        direction = portalRotationQuat*direction;
-        rotation *= portalRotationQuat;
+        //position = partner.transform.position + offsetFromCenter;
+        //direction = portalRotationQuat*direction;
+        //rotation *= portalRotationQuat;
+
+
+
+
+
+
+
+
+
+        ////////////PROPERLY HANDLES ANY ROTATION PUT INTO THIS TRIGGER. IT WILL STILL NEED TO HANDLE ROTATION PUT
+        ////////////INTO THE PARTNER TRIGGER. CURRENTLY IT PROPERLY ROTATES AND MOVES THE PARAMETERS UPON TELEPORT
+        ////////////ASSUMING THE PARTNER PORTAL'S ROTATIONS ARE SET TO 0 WHEN POSSIBLE (EXCLUDING THE TRIGGER'S 90 IN Y)
+
+        /* Get the proper rotation angle of each portal */
+        Quaternion currentTriggerRot = transform.rotation;
+        Quaternion partnerTriggerRot = partner.transform.rotation;
+        //Quaternion finalRot = Quaternion.Inverse(partnerTriggerRot)*currentTriggerRot;
+        Quaternion finalRot = Quaternion.Euler(currentTriggerRot.eulerAngles.z - partnerTriggerRot.eulerAngles.z,
+                -currentTriggerRot.eulerAngles.y - partnerTriggerRot.eulerAngles.y,
+                currentTriggerRot.eulerAngles.x - partnerTriggerRot.eulerAngles.x);
+
+        /* Find the amount of distance the given position is from this trigger, ignoring the orientation of the trigger */
+        Vector3 positionOffset = Quaternion.Inverse(currentTriggerRot)*(transform.position - position);
+        /* Invert the Z position so the ray leaves the partner portal on the same side */
+        positionOffset = new Vector3(positionOffset.x, positionOffset.y, -positionOffset.z);
+
+
+
+        /* Apply the partner trigger's rotation to the offset to properly place the position once teleported */
+        positionOffset = partnerTriggerRot*positionOffset;
+
+
+
+        ///Every rotation applied will need to be added to the rotation parameter
+        //rotation *= Quaternion. currentTriggerRot*partnerTriggerRot;
+        
+
+
+        /* Update the parameters to have them teleport to this portal's partner */
+        position = partner.transform.position - positionOffset;
+        direction = finalRot*direction;
+        rotation = rotation;
     }
 }

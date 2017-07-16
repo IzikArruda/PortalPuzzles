@@ -28,7 +28,7 @@ public class UserInputs {
         playerMovementY = Input.GetAxis("Vertical");
         playerMovementXRaw = Input.GetAxisRaw("Horizontal");
         playerMovementYRaw = Input.GetAxisRaw("Vertical");
-        playerMovementYRaw = 1;
+        //playerMovementYRaw = 1;
         mouseX = Input.GetAxis("Mouse X");
         mouseY = Input.GetAxis("Mouse Y");
         leftMouseButtonPressed = Input.GetMouseButtonDown(0);
