@@ -74,23 +74,36 @@ public class TeleporterTrigger : MonoBehaviour {
 
 
 
-
+        //FIX TRIGGERS AND HOW THEY HAVE A ROTATION
         ////////////PROPERLY HANDLES ANY ROTATION PUT INTO THIS TRIGGER. IT WILL STILL NEED TO HANDLE ROTATION PUT
         ////////////INTO THE PARTNER TRIGGER. CURRENTLY IT PROPERLY ROTATES AND MOVES THE PARAMETERS UPON TELEPORT
         ////////////ASSUMING THE PARTNER PORTAL'S ROTATIONS ARE SET TO 0 WHEN POSSIBLE (EXCLUDING THE TRIGGER'S 90 IN Y)
+        //proper this handle:
+        /*
+         * Quaternion finalRot = Quaternion.Euler(currentTriggerRot.eulerAngles.z,
+                -currentTriggerRot.eulerAngles.y+180,
+                currentTriggerRot.eulerAngles.x);
+         */
 
         /* Get the proper rotation angle of each portal */
         Quaternion currentTriggerRot = transform.rotation;
         Quaternion partnerTriggerRot = partner.transform.rotation;
         //Quaternion finalRot = Quaternion.Inverse(partnerTriggerRot)*currentTriggerRot;
-        Quaternion finalRot = Quaternion.Euler(currentTriggerRot.eulerAngles.z - partnerTriggerRot.eulerAngles.z,
-                -currentTriggerRot.eulerAngles.y - partnerTriggerRot.eulerAngles.y,
-                currentTriggerRot.eulerAngles.x - partnerTriggerRot.eulerAngles.x);
+        //ONE OF THESE IS STILL WRONG
+        Quaternion finalRot = Quaternion.Euler(currentTriggerRot.eulerAngles.x + 0,
+                -currentTriggerRot.eulerAngles.y+180 + 0,
+                currentTriggerRot.eulerAngles.z + 0);
+        finalRot = Quaternion.Inverse(currentTriggerRot)*partnerTriggerRot;
+        finalRot.eulerAngles = new Vector3(finalRot.eulerAngles.x, finalRot.eulerAngles.y+180, finalRot.eulerAngles.z);
+        //Thinking amybe we need to rotate it arounfd the y axis by 180 degrees
+
+
+        Debug.Log(finalRot.eulerAngles.x + " _ " +  finalRot.eulerAngles.y + " _ " +  finalRot.eulerAngles.z);
 
         /* Find the amount of distance the given position is from this trigger, ignoring the orientation of the trigger */
         Vector3 positionOffset = Quaternion.Inverse(currentTriggerRot)*(transform.position - position);
         /* Invert the Z position so the ray leaves the partner portal on the same side */
-        positionOffset = new Vector3(positionOffset.x, positionOffset.y, -positionOffset.z);
+        positionOffset = new Vector3(-positionOffset.x, positionOffset.y, positionOffset.z);
 
 
 

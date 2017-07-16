@@ -81,17 +81,17 @@ public class PortalObjects : MonoBehaviour {
 
         float portalThickness = 0.01f;
         /*  Set the teleport triggers linked to the portal to be the same sizes of the portal mesh */
-        teleporterEnterTrigger.transform.localEulerAngles = new Vector3(0, 90, 0);
+        teleporterEnterTrigger.transform.localEulerAngles = new Vector3(0, 0, 0);
         teleporterEnterTrigger.transform.localScale = transform.localScale;
         teleporterEnterTrigger.transform.localPosition = new Vector3(-portalWidth/2f, portalHeight/2f, portalThickness/2f);
         teleporterEnterTrigger.GetComponent<BoxCollider>().center = new Vector3(0, 0, 0);
-        teleporterEnterTrigger.GetComponent<BoxCollider>().size = new Vector3(portalThickness, portalHeight, portalWidth);
+        teleporterEnterTrigger.GetComponent<BoxCollider>().size = new Vector3(portalWidth, portalHeight, portalThickness);
 
-        teleporterLeaveTrigger.transform.localEulerAngles = new Vector3(0, -90, 0);
+        teleporterLeaveTrigger.transform.localEulerAngles = new Vector3(0, 0, 0);
         teleporterLeaveTrigger.transform.localScale = transform.localScale;
         teleporterLeaveTrigger.transform.localPosition = new Vector3(-portalWidth/2f, portalHeight/2f, portalThickness/2f); ;
         teleporterLeaveTrigger.GetComponent<BoxCollider>().center = new Vector3(0, 0, 0);
-        teleporterLeaveTrigger.GetComponent<BoxCollider>().size = new Vector3(portalThickness, portalHeight, portalWidth);
+        teleporterLeaveTrigger.GetComponent<BoxCollider>().size = new Vector3(portalWidth, portalHeight, portalThickness);
 
 
         /* Portal mesh should be pushed half it's distance so it's pivot point is in the bottom-left corner */
