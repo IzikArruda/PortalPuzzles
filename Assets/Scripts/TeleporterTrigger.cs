@@ -45,122 +45,47 @@ public class TeleporterTrigger : MonoBehaviour {
 
     public void TeleportParameters(ref Vector3 position, ref Vector3 direction, ref Quaternion rotation) {
         /*
-         * Change the given parameters as if they were teleported
+         * Change the given parameters as if they were teleported from the teleporter 
+         * connected to this script to the teleporter assigned to the "partner" variable.
+         * 
+         * Position determines the point of collision with the ray and the trigger.
+         * Direction and up vectors are used to define the ray's orientation. 
+         * Update the rotation parameter with any rotation that is applied to the direction.
          */
+        //The testthiscubes will need to be removed
+        //this value must be implemented into the teleport parameter, or have direction and up combined into a quaternion
         Vector3 upVector = new Vector3(0, 1, 0);
 
-        /* Position the this cube at the starting position */
+        /* Position the testthiscube at the starting position */
         if(testCubeThis != null) {
             testCubeThis.transform.position = position + direction*0;
             testCubeThis.transform.rotation = Quaternion.LookRotation(direction, upVector);
         }
-
-        /* Get the proper rotation angle of each portal */
-        Quaternion currentTriggerRot = transform.rotation;
-        Quaternion partnerTriggerRot = partner.transform.rotation;
-
-        /* Find the amount of distance the given position is from this trigger, ignoring the orientation of the trigger */
-        Vector3 positionOffset = Quaternion.Inverse(currentTriggerRot)*(transform.position - position);
-        /* Invert the Z position so the ray leaves the partner portal on the same side */
-        positionOffset = new Vector3(positionOffset.x, positionOffset.y, positionOffset.z);
         
-        /* Apply the partner trigger's rotation to the offset to properly place the position once teleported */
-        positionOffset = partnerTriggerRot*positionOffset;
 
-        /* Update the parameters to have them teleport to this portal's partner */
+        /* Get a vector of the distance from the ray to the trigger's origin and rotate it's partner's rotation */
+        Vector3 positionOffset = Quaternion.Inverse(transform.rotation)*(transform.position - position);
+        positionOffset = partner.transform.rotation*positionOffset;
+
+        
+        /* Apply the rotationDifference to the partner portal's forward to get the ray's direction as if it was teleported */
+        testCubePartner.transform.rotation = Quaternion.LookRotation(partner.transform.forward, partner.transform.up);
+        testCubePartner.transform.rotation *= Quaternion.Inverse(transform.rotation)*Quaternion.LookRotation(direction, upVector);
+
+
+        /* Update the parameters now that proper rotations and offsets have been found */
         position = partner.transform.position - positionOffset;
-        direction = direction;
+        direction = testCubePartner.transform.forward;
+        upVector = testCubePartner.transform.up;
+
 
         /* Draw a line that represents the new directions */
         Debug.DrawLine(position, position + direction*2f, Color.blue);
         Debug.DrawLine(position, position + upVector*1f, Color.blue);
-
-        
         /* Position the test cube at the new position */
         if(testCubePartner != null) {
-
-            /* Set the position of the partner cube */
             testCubePartner.transform.position = position;
-
-            /* Set the rotation of the partner cube */
-            /*
-             * so far, any rotation on this portal that is not in the X rotation will fail to rotate properly.
-             * 
-             * Idea: take the up and forward vector of the portals and compare them?
-             * 
-             * 
-             * current idea to implement:
-             * draw the forward vector of each mesh and mess with predefined lines relative to them
-             */
-            /* Get the starting euler for the teleported object */
-            Quaternion newAngle = testCubeThis.transform.rotation;
-            float x = 0;
-            float y = 0;
-            float z = 0;
-
-            //step 0: i think find the roitation difference between the portals
-
-            //1
-            z = 0;
-
-            //2
-            x += -transform.transform.eulerAngles.x + partner.transform.eulerAngles.x;
-
-            //3
-            y += -transform.transform.eulerAngles.y + partner.transform.eulerAngles.y;
-
-
-            /* Set the rotation of the partner */
-            newAngle = Quaternion.Euler(x, y, z);
-            testCubePartner.transform.rotation = newAngle;
-
-
-
-
-            ////////////////////////
-
-
-            /* Draw the forward and up vector of each portal */
-            Debug.DrawLine(transform.position, transform.position + transform.forward, Color.red);
-            Debug.DrawLine(partner.transform.position, partner.transform.position + partner.transform.forward, Color.red);
-
-            /* Rotate the forward vectors slightly */
-            Debug.DrawLine(transform.position, transform.position + Quaternion.AngleAxis(25, transform.up)*transform.forward, Color.red);
-            Debug.DrawLine(partner.transform.position, partner.transform.position + Quaternion.AngleAxis(25, partner.transform.up)*partner.transform.forward, Color.red);
-
-
-
-            /* Get the difference between the ray's direction and the hit trigger's forward */
-            Quaternion rotationDifference = Quaternion.Inverse(transform.rotation)*Quaternion.LookRotation(direction, upVector);
-            Debug.Log(rotationDifference.eulerAngles);
-
-            /* Move the partner cube to be at the hit portal and inherit the portal's forward vector */
-            //testCubePartner.transform.position = testCubeThis.transform.position;
-            testCubePartner.transform.rotation = Quaternion.LookRotation(partner.transform.forward, partner.transform.up);
-            //apply the rotation difference gotten from the ray and the hit trigger
-            testCubePartner.transform.rotation *= rotationDifference;
-
-            ////////////////////////
-
-
-            //var rot : Vector3 = Quaternion.LookRotation(otherPortal.forward).eulerAngles;
-            //Vector3 eul = Quaternion.LookRotation(partner.forward).eulerAngles;
-
-            //rot += transform.localEulerAngles;
-            //eul -= transform.eulerAngles;
-
-            //myDuplicate.localEulerAngles = rot;
-            //testCubePartner.transform.rotation = Quaternion.Euler(eul);
-
-
-
-
-            //Get the rotation difference between the two portal;
-            //Quaternion partnerRott = partner.transform.rotation;
-            //Quaternion rotDiff = Quaternion.Inverse(transform.rotation)*partnerRott;
-            //testCubePartner.transform.rotation = rotDiff;
+            
         }
-
-
     }
 }
