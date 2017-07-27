@@ -79,23 +79,23 @@ public class PortalObjects : MonoBehaviour {
 
 
 
-        float portalThickness = 0.01f;
+        float portalThickness = 0.0001f;
         /*  Set the teleport triggers linked to the portal to be the same sizes of the portal mesh */
         teleporterEnterTrigger.transform.localEulerAngles = new Vector3(0, 0, 0);
         teleporterEnterTrigger.transform.localScale = transform.localScale;
-        teleporterEnterTrigger.transform.localPosition = new Vector3(-portalWidth/2f, portalHeight/2f, portalThickness/2f);
+        teleporterEnterTrigger.transform.localPosition = new Vector3(-portalWidth/2f, portalHeight/2f, 0);
         teleporterEnterTrigger.GetComponent<BoxCollider>().center = new Vector3(0, 0, 0);
         teleporterEnterTrigger.GetComponent<BoxCollider>().size = new Vector3(portalWidth, portalHeight, portalThickness);
 
         teleporterLeaveTrigger.transform.localEulerAngles = new Vector3(0, 0, 0);
         teleporterLeaveTrigger.transform.localScale = transform.localScale;
-        teleporterLeaveTrigger.transform.localPosition = new Vector3(-portalWidth/2f, portalHeight/2f, portalThickness/2f); ;
+        teleporterLeaveTrigger.transform.localPosition = new Vector3(-portalWidth/2f, portalHeight/2f, 0); ;
         teleporterLeaveTrigger.GetComponent<BoxCollider>().center = new Vector3(0, 0, 0);
         teleporterLeaveTrigger.GetComponent<BoxCollider>().size = new Vector3(portalWidth, portalHeight, portalThickness);
 
 
         /* Portal mesh should be pushed half it's distance so it's pivot point is in the bottom-left corner */
-        portalMesh.transform.localPosition = new Vector3(0, 0, 0);
+        //portalMesh.transform.localPosition = new Vector3(0, 0, 0);
         portalLeaveMesh.transform.localPosition = new Vector3(-portalWidth, 0, 0);
         portalLeaveMesh.transform.localEulerAngles = new Vector3(0, -180, 0);
     }

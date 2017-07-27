@@ -541,7 +541,7 @@ public class CustomPlayerController : MonoBehaviour {
             else {
 
                 /* The raytrace hit nothing, so travel along the direction for the remaining distance */
-                Debug.DrawLine(position, position + direction*distance);
+                Debug.DrawLine(position, position + direction*0.1f);
                 position += direction*distance;
                 distance = 0;
                 //Debug.Log("kept going");
