@@ -88,6 +88,12 @@ public class CustomPlayerController : MonoBehaviour {
     [Range(1, 0)]
     public float morphPercentage;
 
+	//Default (0, 1, 0)
+	public Vector3 givenPosition;
+	//Default (0, 0, 1)
+	public Vector3 givenDirection;
+	//Default (0, 1, 0)
+	public Vector3 givenUp;
 
     /* -------------- Built-in Unity Functions ---------------------------------------------------------- */
 
@@ -125,12 +131,17 @@ public class CustomPlayerController : MonoBehaviour {
         PlayerInControl();
 
         //Fire a long ray
-        Vector3 pos = new Vector3(0, 1, 0);
-        Vector3 dir = new Vector3(0, 0, 1);
-        float dis = 10f;
-        Quaternion rot = Quaternion.identity;
+        //Vector3 pos = new Vector3(0, 1, 0);
+        //Vector3 forw = new Vector3(0, 0, 1);
+        //Vector3 upV = new Vector3(0, 1, 0);
+        //Quaternion dir = Quaternion.LookRotation(forw, upV);
         //rot = new Quaternion();
-        RayTrace(ref pos, ref dir, ref rot, ref dis, true, true);
+        //RayTrace(ref pos, ref dir, ref dis, true, true);
+
+        Vector3 pos = givenPosition;
+        Quaternion givenRotation = Quaternion.LookRotation(givenDirection, givenUp);
+        float dis = 10f;
+        RayTrace(ref pos, ref givenRotation, ref dis, true, true);
 
     }
 
@@ -329,11 +340,11 @@ public class CustomPlayerController : MonoBehaviour {
          * 
          * Gravity is determined by tracking the upward/downward velocity of the player and whether they are falling.
          */
-        Vector3 upDirection = transform.rotation*Vector3.up;
+        Vector3 upDirection = transform.up;
         Vector3 gravityVector = Vector3.zero;
 
         /* If the player is standing, position their body relative to their foot position and the length of their legs.
-         * Any distance travelled up or down from a step will not be applied to the player's camera. */
+         * Any distance travelled up or down from a step will be undone to the player's camera. */
         if(falling == false) {
             /* Check if moving the player to their proper footing pushes them through a portal */
             MovePlayer(-transform.position + currentFootPosition + upDirection*(playerBodyLength/2f + currentLegLength));
@@ -369,25 +380,28 @@ public class CustomPlayerController : MonoBehaviour {
 
     void AdjustCameraPosition() {
         /*
-         * Move the currentCameraTransform towards restingCameraTransform.
+         * Move the currentCameraTransform towards restingCameraTransform. This must run after cameraRotation
+         * to preserver the camera's facing positon gotten from the user input.
          */
         float minimumPositionDifference = 0.01f;
         float maximumPositionDifference = playerBodyLength/3f;
 
-        /* Get the position of the camera and derive a ray to go from the player' transform to the camera */
+        /* Get the position of the camera and derive the parameters to fire a ray from the player's transform to the camera */
         Vector3 cameraPosition = restingCameraTransform.position + transform.up*cameraYOffset;
         Vector3 position = transform.position;
-        Vector3 direction = (cameraPosition - position).normalized;
-        Quaternion rotation = Quaternion.identity;
+        //The ray from the player origin to the cameraPosition does not care about up i believe
+        //This direction quat is used for the ray firing 
+        Quaternion direction = Quaternion.LookRotation((cameraPosition - position).normalized, transform.forward);
         float distance = (cameraPosition - position).magnitude;
 
         /* Fire a ray from the player's center to the camera's new position, respecting teleport triggers and colliders */
-        RayTrace(ref position, ref direction, ref rotation, ref distance, true, true);
+        RayTrace(ref position, ref direction, ref distance, true, true);
+        /* Get the difference in the rotation after the rayTrace */
+        Quaternion rotationDifference = Quaternion.LookRotation((cameraPosition - position).normalized, transform.forward) * Quaternion.Inverse(direction);
 
         /* Update the camera's position once the ray trace is done */
         currentCameraTransform.position = position;
-        currentCameraTransform.rotation = rotation;
-
+        //currentCameraTransform.rotation *= rotationDifference;
 
 
         /* Reduce the cameraYOffset so the camera slides towards it's resting position */
@@ -403,7 +417,7 @@ public class CustomPlayerController : MonoBehaviour {
         //Debug.Log(direction);
         /* Place the player camera using currentCameraTransform */
         playerCamera.transform.position = currentCameraTransform.position;
-        playerCamera.transform.rotation *= currentCameraTransform.rotation;
+        playerCamera.transform.rotation = currentCameraTransform.rotation;
     }
 
     
@@ -449,43 +463,36 @@ public class CustomPlayerController : MonoBehaviour {
          */
 
         /* Set values used to track the player's current transform state */
-        float remainingDistance = (movementVector).magnitude;
-        Vector3 currentPosition = transform.position;
-        Vector3 currentDirection = (movementVector).normalized;
-        Quaternion currentRotation = transform.rotation;
+        float remainingDistance = movementVector.magnitude;
+        Vector3 position = transform.position;
+        //The up vector doesnt mater i believe
+        Quaternion direction = Quaternion.LookRotation(movementVector.normalized, transform.up);
+       
 
         /* Fire a ray from the player model's transform using the given movement vector to find their next position */
-        RayTrace(ref currentPosition, ref currentDirection, ref currentRotation, ref remainingDistance, true, true);
+        RayTrace(ref position, ref direction, ref remainingDistance, true, true);
+        /* Get the difference in the rotation */
+        Quaternion rotationDifference = Quaternion.Inverse(Quaternion.LookRotation(movementVector.normalized, transform.up)) * direction;
 
-        /* Update the player's transform once the ray is done being fired */
-        transform.position = currentPosition;
-        transform.rotation = currentRotation;
+        /* Update the player's?]?? transform once the ray is done being fired */
+        transform.position = position;
+        transform.rotation *= rotationDifference;
     }
 
 
     
     /* ----------- Helper Functions ------------------------------------------------------------- */
 
-    void RayTrace(ref Vector3 position, ref Vector3 direction, ref Quaternion totalRotation, 
+    void RayTrace(ref Vector3 position, ref Quaternion rotation, 
             ref float distance, bool detectTeleportTriggers, bool detectOtherColliders) {
         /*
-         * Fire a ray from the given position towards the given direction for the given length. The given
-         * parameters determines what kind of collisions will be detected.
+         * Fire a ray from the given position with the given rotation for the given distance.
+         * The boolean parameters determines what kind of collisions will be detected.
          * 
-         * If it collides with any teleport trigger, teleport it's position and properly
-         * rotate it's direction and totalRotation.
+         * If it collides with any teleport trigger, teleport it's position and rotation.
          * 
-         * If it collides into a solid collider, have distance be set to the remaining distance not travelled. 
-         * 
-         * 
-         * 
-         * NOTE: ONCE A RAY TELEPORTS, WE NEED TO IGNORE THE COLLIDER THAT IT WAS TELEPORTED TO    .
-         * Actually, we cannot ignore the collider in the scenario that the ray stops the moment it teleports.
-         * What we should do instead is once it teleports, clamp it to be touching the partnerCollider, 
-         * so that it will be inside of it and cannot ray trace to hit it.
-         * 
-         * Hold on, when the ray gets teleported, it should always be on the outside of the mesh. the ray
-         * should be at the edge of the mesh it got teleported to   
+         * If it collides into a solid collider, stop at the point of collision 
+         * and leave the distance parameter at the remaining distance.
          */
         RaycastHit hitInfo = new RaycastHit();
         bool hitSolidCollider = false;
@@ -510,21 +517,20 @@ public class CustomPlayerController : MonoBehaviour {
             distance -= 0.001f;
 
             /* Check for any collisions from the current position towards the current direction */
-            if(Physics.Raycast(position, direction, out hitInfo, distance, rayLayerMask)) {
+            if(Physics.Raycast(position, rotation*Vector3.forward, out hitInfo, distance, rayLayerMask)) {
 
                 /* When hitting a collider, move the position up to the collision point */
-                Debug.DrawLine(position, position + direction*hitInfo.distance);
-                position += direction*hitInfo.distance;
+                Debug.DrawLine(position, position + rotation * Vector3.forward * hitInfo.distance);
+                position += rotation * Vector3.forward * hitInfo.distance;
                 distance -= hitInfo.distance;
 
 
-                //Debug.Log("hit...");
-                /* Hitting a teleport trigger will teleport the current position, direction and update the rotation */
+                /* Hitting a teleport trigger will teleport the current position and direction to it's partner trigger */
                 if(hitInfo.collider.GetComponent<TeleporterTrigger>() != null) {
 
                     //FOR NOW DO NOT TELEPORT AGAIN AFTER TELEPORTING ONCE
                     rayLayerMask = 0;
-                    hitInfo.collider.GetComponent<TeleporterTrigger>().TeleportParameters(ref position, ref direction, ref totalRotation);
+                    hitInfo.collider.GetComponent<TeleporterTrigger>().TeleportParameters(ref position, ref rotation);
                     
                     //Debug.Log("hit tele");
                 }
@@ -541,8 +547,8 @@ public class CustomPlayerController : MonoBehaviour {
             else {
 
                 /* The raytrace hit nothing, so travel along the direction for the remaining distance */
-                Debug.DrawLine(position, position + direction*0.1f);
-                position += direction*distance;
+                Debug.DrawLine(position, position + rotation * Vector3.forward * distance);
+                position += rotation * Vector3.forward * distance;
                 distance = 0;
                 //Debug.Log("kept going");
             }
