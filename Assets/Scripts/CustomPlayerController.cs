@@ -10,10 +10,8 @@ public class CustomPlayerController : MonoBehaviour {
     /* The UserInputs object linked to this player */
     private UserInputs inputs;
 
-    /* The expected position of the camera */
-    public Transform restingCameraTransform;
-
     /* The current position of the camera. Smoothly changes to restingCameraTransform each frame */
+    /* The default transform of the camera. */
     public Transform currentCameraTransform;
 
     /* The camera used for the player's view */
@@ -88,12 +86,17 @@ public class CustomPlayerController : MonoBehaviour {
     [Range(1, 0)]
     public float morphPercentage;
 
-	//Default (0, 1, 0)
-	public Vector3 givenPosition;
-	//Default (0, 0, 1)
-	public Vector3 givenDirection;
-	//Default (0, 1, 0)
-	public Vector3 givenUp;
+    //Default (0, 1, 0)
+    public Vector3 givenPosition;
+    //Default (0, 0, 1)
+    public Vector3 givenDirection;
+    //Default (0, 1, 0)
+    public Vector3 givenUp;
+
+    public float headHeight;
+
+    public float cameraXRotation;
+    public float cameraYRotation;
 
     /* -------------- Built-in Unity Functions ---------------------------------------------------------- */
 
@@ -102,8 +105,8 @@ public class CustomPlayerController : MonoBehaviour {
          * Set the values of the player model to be equal to the values set in the script
          */
 
-      /* Create the UserInputs object linked to this player */
-      inputs = new UserInputs();
+        /* Create the UserInputs object linked to this player */
+        inputs = new UserInputs();
 
         /* Initilize the leg lengths */
         extraLegLenths = new float[extraFeet + 1];
@@ -143,6 +146,8 @@ public class CustomPlayerController : MonoBehaviour {
         float dis = 10f;
         RayTrace(ref pos, ref givenRotation, ref dis, true, true);
 
+        //Draw a line in the camera's forward vector
+        Debug.DrawLine(playerCamera.transform.position, playerCamera.transform.position + playerCamera.transform.rotation*Vector3.forward*0.5f, Color.green);
     }
 
 
@@ -154,7 +159,7 @@ public class CustomPlayerController : MonoBehaviour {
          */
 
         /* Use mouse input values to rotate the camera */
-        RotateCamera();
+        //
 
         /* Update the player's jumping conditions */
         JumpingCondition();
@@ -171,30 +176,28 @@ public class CustomPlayerController : MonoBehaviour {
         /* Apply the movement to the player from taking steps, inputting directions and falling from gravity. */
         MovePlayer();
 
-        /* Adjust the camera's position now that the player has moved */
+        /* Adjust the camera's default transform (currentCameraTransform) now that the player has moved */
         AdjustCameraPosition();
     }
 
     void RotateCamera() {
         /*
-         * Use the user's mouse movement to rotate the player's camera
+         * Take in user inputs to properly rotate the player camera's facing direction.
          */
-
+         
         /* Ensure the X rotation does not overflow */
-        xRotation -= inputs.mouseX;
-        if(xRotation < 0) { xRotation += 360; }
-        else if(xRotation > 360) { xRotation -= 360; }
+        cameraXRotation -= inputs.mouseX;
+        if(cameraXRotation < 0) { cameraXRotation += 360; }
+        else if(cameraXRotation > 360) { cameraXRotation -= 360; }
 
         /* Prevent the Y rotation from rotating too high or low */
-        yRotation += inputs.mouseY;
-        yRotation = Mathf.Clamp(yRotation, -75, 75);
+        cameraYRotation += inputs.mouseY;
+        cameraYRotation = Mathf.Clamp(cameraYRotation, -75, 75);
 
-        /* Apply the rotation to the camera's currentCameraTransform */
-        currentCameraTransform.transform.localEulerAngles = new Vector3(-yRotation, -xRotation, 0);
-        restingCameraTransform.transform.localEulerAngles = new Vector3(0, -xRotation, 0);
-
-        /* Update the camera's position with the new currentCameraTransform */
-        playerCamera.transform.rotation = currentCameraTransform.transform.rotation;
+        /* Apply the rotations to the camera's default transform */
+        Vector3 u = currentCameraTransform.up;
+        Vector3 r = currentCameraTransform.right;
+        currentCameraTransform.rotation *= Quaternion.Euler(-cameraYRotation, -cameraXRotation, 0);
     }
 
     void JumpingCondition() {
@@ -256,7 +259,7 @@ public class CustomPlayerController : MonoBehaviour {
         }
 
         /* Rotate the input direction to match the player's view. Only use the view's rotation along the Y axis */
-        inputVector = restingCameraTransform.rotation*inputVector;
+        inputVector = Quaternion.AngleAxis(-cameraXRotation, transform.up)*inputVector;
     }
 
     public void StepPlayer() {
@@ -380,47 +383,41 @@ public class CustomPlayerController : MonoBehaviour {
 
     void AdjustCameraPosition() {
         /*
-         * Move the currentCameraTransform towards restingCameraTransform. This must run after cameraRotation
-         * to preserver the camera's facing positon gotten from the user input.
+         * Position and rotate the player camera according to their inputs.
+         * The camera is positionned headHeight above the player origin.
+         * 
+         * The camera's position and rotation is calculated by firing a RayTrace command from the player origin
+         * upwards (relative to the player) to the expected view position. The RayTrace will collide with walls
+         * and will teleport from triggers, letting the player's "head" pass through portals without their "body".
          */
-        float minimumPositionDifference = 0.01f;
-        float maximumPositionDifference = playerBodyLength/3f;
+        Quaternion toCamRotation;
+        Quaternion rotationDifference;
+        Vector3 playerOrigin;
+        float playerCameraHeight;
 
-        /* Get the position of the camera and derive the parameters to fire a ray from the player's transform to the camera */
-        Vector3 cameraPosition = restingCameraTransform.position + transform.up*cameraYOffset;
-        Vector3 position = transform.position;
-        //The ray from the player origin to the cameraPosition does not care about up i believe
-        //This direction quat is used for the ray firing 
-        Quaternion direction = Quaternion.LookRotation((cameraPosition - position).normalized, transform.forward);
-        float distance = (cameraPosition - position).magnitude;
+        /* Copy the player's transform to the camera as we take in user inputs to calculate it's facing direction */
+        currentCameraTransform.position = transform.position;
+        currentCameraTransform.rotation = transform.rotation;
+        RotateCamera();
 
-        /* Fire a ray from the player's center to the camera's new position, respecting teleport triggers and colliders */
-        RayTrace(ref position, ref direction, ref distance, true, true);
-        /* Get the difference in the rotation after the rayTrace */
-        Quaternion rotationDifference = Quaternion.LookRotation((cameraPosition - position).normalized, transform.forward) * Quaternion.Inverse(direction);
+        /* Apply a rayTrace from the player's origin to the camera's position that is effected by teleport triggers */
+        playerOrigin = transform.position;
+        toCamRotation = Quaternion.LookRotation(transform.up, transform.forward);
+        playerCameraHeight = headHeight;
+        rotationDifference = RayTrace(ref playerOrigin, ref toCamRotation, ref playerCameraHeight, true, true);
 
-        /* Update the camera's position once the ray trace is done */
-        currentCameraTransform.position = position;
-        //currentCameraTransform.rotation *= rotationDifference;
-
-
-        /* Reduce the cameraYOffset so the camera slides towards it's resting position */
-        if(Mathf.Abs(cameraYOffset) < minimumPositionDifference) {
-            cameraYOffset = 0;
-        }else if(Mathf.Abs(cameraYOffset) > maximumPositionDifference) {
-            cameraYOffset = Mathf.Sign(cameraYOffset)*maximumPositionDifference;
-        }else {
-            cameraYOffset *= morphPercentage;
-        }
-
-        //different idea: find the difference with the new direction and apply it instead
-        //Debug.Log(direction);
-        /* Place the player camera using currentCameraTransform */
+        /* Use the new position and rotation to find the camera's final position and rotation */
+        currentCameraTransform.position = playerOrigin;
+        currentCameraTransform.rotation = rotationDifference*currentCameraTransform.rotation;
         playerCamera.transform.position = currentCameraTransform.position;
         playerCamera.transform.rotation = currentCameraTransform.rotation;
+
+        //Draw lines that represent the camera's final rotation
+        //Debug.DrawRay(playerCamera.transform.position, currentCameraTransform.up, Color.cyan);
+        //Debug.DrawRay(playerCamera.transform.position, currentCameraTransform.forward, Color.cyan);
     }
 
-    
+
     /* ----------- Event Functions ------------------------------------------------------------- */
 
     void LegCollisionTest(Vector3 position, Vector3 direction, float length, int index) {
@@ -467,7 +464,7 @@ public class CustomPlayerController : MonoBehaviour {
         Vector3 position = transform.position;
         //The up vector doesnt mater i believe
         Quaternion direction = Quaternion.LookRotation(movementVector.normalized, transform.up);
-       
+
 
         /* Fire a ray from the player model's transform using the given movement vector to find their next position */
         RayTrace(ref position, ref direction, ref remainingDistance, true, true);
@@ -479,79 +476,76 @@ public class CustomPlayerController : MonoBehaviour {
         transform.rotation *= rotationDifference;
     }
 
-
     
     /* ----------- Helper Functions ------------------------------------------------------------- */
-
-    void RayTrace(ref Vector3 position, ref Quaternion rotation, 
-            ref float distance, bool detectTeleportTriggers, bool detectOtherColliders) {
+    
+    Quaternion RayTrace(ref Vector3 position, ref Quaternion rotation,
+        ref float distance, bool detectTeleportTriggers, bool detectOtherColliders) {
         /*
-         * Fire a ray from the given position with the given rotation for the given distance.
-         * The boolean parameters determines what kind of collisions will be detected.
+         * Fire a ray from the given position with the given rotation forwards for the given distance.
+         * The quaternion returned represents the amount of rotation that the given rotation underwent.
          * 
-         * If it collides with any teleport trigger, teleport it's position and rotation.
+         * detectTeleportTriggers as true will cause any collision with a teleportTrigger to teleport 
+         * the position and rotation to the hit trigger's partner using it's teleportParameters function.
+         * teleportTrigger Collisions with detectTeleportTriggers as false will be ignored.
          * 
-         * If it collides into a solid collider, stop at the point of collision 
-         * and leave the distance parameter at the remaining distance.
+         * detectOtherColliders as true will cause any collision with any other trigger to cause
+         * the position to stop at the point of collision and reduce the distance amount respectively.
+         * these type of collisions will be ignored if detectOtherColliders is false.
          */
+        Quaternion totalRotation = Quaternion.identity;
+        Quaternion rotationDifference;
         RaycastHit hitInfo = new RaycastHit();
-        bool hitSolidCollider = false;
-        GameObject partnerCollider = null;
-
-        /* Change what the ray will collide with using the given parameters. Default is no colliders */
+        bool stopRayTrace = false;
         LayerMask rayLayerMask = 0;
-        if(detectTeleportTriggers) {
-            /* Include teleport triggers into the layerMask */
-            rayLayerMask = rayLayerMask | (1 << LayerMask.NameToLayer("Portal Trigger"));
-        }
-        if(detectOtherColliders) {
-            /* Include all non-teleporter triggers colliders into the layerMask */
-            rayLayerMask = rayLayerMask | ~(1 << LayerMask.NameToLayer("Portal Trigger"));
-        }
 
-
-        //Debug.Log("start  " + distance);
-        /* Travel towards the direction for the remaining distance */
-        while(distance > 0 && hitSolidCollider == false) {
+        /* Include teleport triggers into the layerMask */
+        if(detectTeleportTriggers) {rayLayerMask = rayLayerMask | (1 << LayerMask.NameToLayer("Portal Trigger"));}
+        /* Include all non-teleporter triggers colliders into the layerMask */
+        if(detectOtherColliders) {rayLayerMask = rayLayerMask | ~(1 << LayerMask.NameToLayer("Portal Trigger"));}
+        
+        /* Travel towards the rotation's forward for the remaining distance */
+        while(distance > 0 && stopRayTrace == false) {
             //reduce the distance every loop to prevent infinite loops
             distance -= 0.001f;
 
             /* Check for any collisions from the current position towards the current direction */
             if(Physics.Raycast(position, rotation*Vector3.forward, out hitInfo, distance, rayLayerMask)) {
-
                 /* When hitting a collider, move the position up to the collision point */
-                Debug.DrawLine(position, position + rotation * Vector3.forward * hitInfo.distance);
+                Debug.DrawLine(position, rotation*Vector3.forward*hitInfo.distance, Color.white);
                 position += rotation * Vector3.forward * hitInfo.distance;
                 distance -= hitInfo.distance;
-
-
+                
                 /* Hitting a teleport trigger will teleport the current position and direction to it's partner trigger */
                 if(hitInfo.collider.GetComponent<TeleporterTrigger>() != null) {
-
-                    //FOR NOW DO NOT TELEPORT AGAIN AFTER TELEPORTING ONCE
+                    /* Teleport the parameters and apply the rotation that was underwent to the totalRotation quaternion */
+                    rotationDifference = hitInfo.collider.GetComponent<TeleporterTrigger>().TeleportParameters(ref position, ref rotation);
+                    totalRotation = rotationDifference*totalRotation;
+                    //Prevent the rayTrace from hitting another trigger after teleporting
                     rayLayerMask = 0;
-                    hitInfo.collider.GetComponent<TeleporterTrigger>().TeleportParameters(ref position, ref rotation);
-                    
-                    //Debug.Log("hit tele");
+                    Debug.Log("hit tele");
                 }
-                /* Hitting a solid collider will stop the ray where it currently is */
+
+                /* Hitting a solid collider will stop the rayTrace where it currently is */
                 else if(!hitInfo.collider.isTrigger) {
-                    hitSolidCollider = true;
-                    //Debug.Log("hit wall");
+                    stopRayTrace = true;
+                    Debug.Log("hit wall");
                 }
+
                 /* non-teleport triggers will be ignored */
                 else if(hitInfo.collider.isTrigger) {
-                    //Debug.Log("hit something?");
+                    Debug.Log("hit something?");
                 }
             }
-            else {
 
-                /* The raytrace hit nothing, so travel along the direction for the remaining distance */
-                Debug.DrawLine(position, position + rotation * Vector3.forward * distance);
-                position += rotation * Vector3.forward * distance;
+            /* The raytrace hit nothing, so travel along the direction for the remaining distance */
+            else {
+                Debug.DrawLine(position, position + rotation*Vector3.forward*distance);
+                position += rotation*Vector3.forward*distance;
                 distance = 0;
-                //Debug.Log("kept going");
             }
         }
+
+        return totalRotation;
     }
 }

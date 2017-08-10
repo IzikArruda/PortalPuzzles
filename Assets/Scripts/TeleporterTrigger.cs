@@ -9,11 +9,9 @@ using System.Collections;
  * 
  */
 public class TeleporterTrigger : MonoBehaviour {
-
-    public GameObject testCubePartner = null;
-    public GameObject testCubeThis = null;
+    
     public Transform partner;
-    //public TeleportHandler teleportSignal;
+
 
     void OnTriggerStay(Collider collider) {
         /*
@@ -43,98 +41,60 @@ public class TeleporterTrigger : MonoBehaviour {
              * positioned be half the collider box's X width in it's local X positive direction. */
         }
     }
-
-
-    public void TeleportParameters(ref Vector3 position, ref Quaternion rotation) {
+    
+    public Quaternion TeleportParameters(ref Vector3 position, ref Quaternion rotation) {
         /*
          * Change the given parameters as if they were teleported from the teleporter 
          * connected to this script to the teleporter assigned to the "partner" variable.
+         * When moving the point from one teleporter to another, the point must go from
+         * one side of the collision box to the other, as shown by this graphic bellow:
+         * 
+         * --> = direction, 0 = point of collision, || = both walls of the mesh.
+         *  pre-teleport:  -->0| |
+         *  post-teleport:     | |0-->
+         *  
+         * The goal is to have the distance between the collision mesh large enough that the camera's 
+         * clipping plane does not clip the portal mesh (trigger must be widder than clipping plane minimum * 2)
+         * but also have the trigger small enough that the extra distance teleported equal to the trigger's width
+         * is not large enough to have a noticable effect when the player or anything uses the teleporter.
          * 
          * Position determines the point of collision with the ray and the trigger.
-         * Rotation determines what direction the position is pointed towards
+         * Rotation determines what direction the position is pointed towards.
+         * 
+         * Returns the difference in the rotation before and after the teleportation,
+         * so it can be applied to other rotations to simulate a teleport.
          */
-        //Note: there might need to be a rotation parameters that will be passed through 
-        //to represent the difference in the rotation at the start and the rotation at the end
 
-        //Note: a problem might be when the direction is not a straight vector.
-        //test it by having a changable direction to see if it works
-        //set both portla to be cloe together to ensure aby rotatio works wjen both portlas are identical
-
-        /* Position the testthiscube at the starting position */
-        if(testCubeThis != null) {
-            testCubeThis.transform.position = position;
-            testCubeThis.transform.rotation = rotation;
-        }
-        
-
-        /* Get a vector of the distance from the collision point to the trigger's origin and rotate it by the partner trigger's rotation */
+        /* Get the distance from the collision point to the trigger's origin and rotate it by the partner trigger's rotation */
         Vector3 positionOffset = Quaternion.Inverse(transform.rotation)*(transform.position - position);
         positionOffset = partner.transform.rotation*positionOffset;
+        
+        /* Get a plane defined by the partner portal's mesh */
+        Plane meshPlane = new Plane(partner.transform.position, 
+                partner.transform.position + partner.transform.up, 
+                partner.transform.position + partner.transform.right);
+
+        /* Get the distance the given position is from the mesh */
+        float distanceFromMesh = meshPlane.GetDistanceToPoint(partner.transform.position - positionOffset);
+
+        /* Push the offset to be on the other side and not resting on the trigger */
+        positionOffset -= partner.transform.forward*distanceFromMesh*2.0001f;
+
+        
+        /* Get the rotation difference between the two portals */
+        Quaternion teleporterRotationDifference = partner.transform.rotation*Quaternion.Inverse(transform.rotation);
 
 
-        /* Apply the rotationDifference to the partner portal's forward to get the ray's direction as if it was teleported */
-        /* Apply the rotation difference between the ray and the hit trigger's rotation
-		 * to the partner trigger's rotation to find the teleported rotation */
-        //Maybe inverse the given rotation
-        //The problem is the "rotation" value right here
-        //maybe take the rotation and add them sepperatly after te portal rotation is done
-        //The ideal way should have t find the difference from the ray to the hit portals normal. Then the difference berween the two portals
-        Quaternion teleportedDirection = partner.transform.rotation*Quaternion.Inverse(transform.rotation);
-        //Quaternion teleportedForward = Quaternion.FromToRotation(transform.forward, partner.transform.forward);
-
-        //testCubePartner.transform.rotation = Quaternion.LookRotation(partner.transform.forward, partner.transform.up);
-        //testCubePartner.transform.rotation *= Quaternion.Inverse(transform.rotation)*Quaternion.LookRotation(direction, upVector);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        //CURRENTLY WORTKING????
-        /* Update the parameters now that proper rotations and offsets have been found */
+        /* Update the parameters to have the mproperly teleported */
         position = partner.transform.position - positionOffset;
-        Quaternion newRotation = teleportedDirection;
-        newRotation *= rotation;
-
-        rotation = newRotation;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        Vector3 currForward = rotation * Vector3.forward;
-        Vector3 currUp = rotation * Vector3.up;
+        rotation = teleporterRotationDifference*rotation;
 
         /* Draw a line that represents the new directions */
+        Vector3 currForward = rotation * Vector3.forward;
+        Vector3 currUp = rotation * Vector3.up;
         Debug.DrawLine(position, position + currForward*2f, Color.blue);
         Debug.DrawLine(position, position + currUp*1f, Color.blue);
-        
-        /* Position the test cube at the new position and direction */
-        if(testCubePartner != null) {
-            testCubePartner.transform.position = position;
-            testCubePartner.transform.rotation = rotation;
-        }
+
+        return teleporterRotationDifference;
     }
 }
