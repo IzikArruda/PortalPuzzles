@@ -170,7 +170,7 @@ public class CustomPlayerController : MonoBehaviour {
         /* Get an input vector that is relative to the player's rotation and takes into account the player's speed */
         UpdateInputVector();
 
-        /* Find the footPosition of the player and check if they are falling or standing */
+        /* Find the footPosition of the player and check if they are falling or standing. Place the player's body position. */
         StepPlayer();
 
         /* Apply the movement to the player from taking steps, inputting directions and falling from gravity. */
@@ -240,6 +240,9 @@ public class CustomPlayerController : MonoBehaviour {
     }
 
     public void UpdateInputVector() {
+        /*
+         * Take in user input to calculate a direction vector for the player to move towards.
+         */
 
         /* Use two input types for each axis to allow more control on player movement */
         inputVector = new Vector3((1-sliding)*inputs.playerMovementXRaw + sliding*inputs.playerMovementX,
@@ -259,7 +262,7 @@ public class CustomPlayerController : MonoBehaviour {
         }
 
         /* Rotate the input direction to match the player's view. Only use the view's rotation along the Y axis */
-        inputVector = Quaternion.AngleAxis(-cameraXRotation, transform.up)*inputVector;
+        inputVector = Quaternion.AngleAxis(-cameraXRotation, transform.up)*transform.rotation*inputVector;
     }
 
     public void StepPlayer() {
@@ -272,6 +275,8 @@ public class CustomPlayerController : MonoBehaviour {
          * 
          * If the currentLegLength rayTrace does not connect to the floor, the player will undergo the effects
          * of gravity instead of taking a step. When under the effects of graivty, the previous step is ignored.
+         * 
+         * In the end, place the position of the player's body.
          */
         Vector3 upDirection = transform.rotation*Vector3.up;
         Vector3 forwardVector = transform.rotation*Vector3.forward;
@@ -317,34 +322,7 @@ public class CustomPlayerController : MonoBehaviour {
             expectedLegLength /= standingCount;
             currentFootPosition = transform.position - upDirection*(playerBodyLength/2f + expectedLegLength);
         }
-    }
 
-    public void MovePlayer() {
-        /*
-         * IDEA: move the player and then do a raytrace to detect if they will need to be teleported.
-         * Do the raytrace from their camera resting positon. To check for flooring, 
-         * do a raytrace from their camera resting position to the leg start and then
-         * start the leg raytracing.
-         * 
-         * To do this, we can follow these steps:
-         * Save the current positon.
-         * Move the given distance.
-         * Ray trace from original position to ray traced position. Hitting a teleporter will teleport player
-         * 
-         * 
-         * 
-         * 
-         * 
-         * Move the player relative to what has occured this frame so far, such as any steps taken
-         * or if the player should be falling. 
-         * 
-         * Step movements are done by setting the  player's position 
-         * relative to their foot position and saved legLength for this frame.
-         * 
-         * Gravity is determined by tracking the upward/downward velocity of the player and whether they are falling.
-         */
-        Vector3 upDirection = transform.up;
-        Vector3 gravityVector = Vector3.zero;
 
         /* If the player is standing, position their body relative to their foot position and the length of their legs.
          * Any distance travelled up or down from a step will be undone to the player's camera. */
@@ -353,34 +331,42 @@ public class CustomPlayerController : MonoBehaviour {
             MovePlayer(-transform.position + currentFootPosition + upDirection*(playerBodyLength/2f + currentLegLength));
             //transform.position = currentFootPosition + upDirection*(playerBodyLength/2f + currentLegLength);
             currentCameraTransform.transform.position -= upDirection*(currentLegLength - expectedLegLength);
-
         }
+    }
 
-
-        /* If the player is falling, apply gravity to their yVelocity. Reset yVelocity if they are standing. */
+    public void MovePlayer() {
+        /*
+         * Move the player relative to what has occured this frame so far. This includes player input and gravity.
+         * The player is capable of using a teleportTrigger to teleport from one portal to another. 
+         * If the player's origin connects with a teleporterTrigger while doing a rayTrace to find it's new position,
+         * then the ray will use the hit portal's TeleportParameters function to teleport and acontinue the rayTrace.
+         * **might have to be moved to the other moveplayer functoi**
+         * 
+         * Player input will move the player along their relative X and Z axis. Gravity is activated if the player is 
+         * "falling", in which the player will travel in their relative negative Y axis.
+         */
+        Vector3 upDirection = transform.up;
+        Vector3 gravityVector = Vector3.zero;
+        
+        /* If the player is falling, apply gravity to their yVelocity */
         if(falling == true) {
             currentYVelocity -= gravity*Time.deltaTime*60;
-            /* Prevent the player from falling faster than terminal velocity */
-            if(currentYVelocity < -maxYVelocity) {
-                currentYVelocity = -maxYVelocity;
-            }
+            if(currentYVelocity < -maxYVelocity) {currentYVelocity = -maxYVelocity;}
             gravityVector = currentYVelocity*upDirection;
         }
+
+        /* Reset the player's yVelocity if they are grounded */
         else {
             currentYVelocity = 0;
         }
+        
+        /* Update the player's input vector to be handlede by the movePlayer function */
+        UpdateInputVector();
 
-        /* Apply the movement of the players input */
-        GetComponent<Rigidbody>().velocity = Vector3.zero;
-        //GetComponent<Rigidbody>().MovePosition(transform.position + gravityVector + (inputVector)*Time.deltaTime*60);
-        /* Check if the player has passed through a portal */
+        /* Send a move command to the player using the gravity and input vectors */
         MovePlayer(gravityVector + (inputVector)*Time.deltaTime*60);
-        //transform.position = transform.position + gravityVector + (inputVector)*Time.deltaTime*60;
-
-
     }
-
-
+    
     void AdjustCameraPosition() {
         /*
          * Position and rotate the player camera according to their inputs.
@@ -456,24 +442,24 @@ public class CustomPlayerController : MonoBehaviour {
 
     void MovePlayer(Vector3 movementVector) {
         /*
-         * Use the given movementVector to move the player's body by the given amount.
+         * Move the player by the given movementVector. To move the player, run a rayTrace command using the
+         * given movementVector as a direction and distance. The position used will be the player's origin,
+         * i.e. the transform this script is attached to. This means for the player to be teleported, their
+         * origin point must collide with a teleporterTrigger when using a rayTrace command.
          */
+        Quaternion rotationDifference;
 
-        /* Set values used to track the player's current transform state */
-        float remainingDistance = movementVector.magnitude;
+        /* Set values to be used with the rayTrace call */
         Vector3 position = transform.position;
-        //The up vector doesnt mater i believe
         Quaternion direction = Quaternion.LookRotation(movementVector.normalized, transform.up);
+        float remainingDistance = movementVector.magnitude;
 
+        /* Fire the rayTrace command and retrive the rotation difference */
+        rotationDifference = RayTrace(ref position, ref direction, ref remainingDistance, true, true);
 
-        /* Fire a ray from the player model's transform using the given movement vector to find their next position */
-        RayTrace(ref position, ref direction, ref remainingDistance, true, true);
-        /* Get the difference in the rotation */
-        Quaternion rotationDifference = Quaternion.Inverse(Quaternion.LookRotation(movementVector.normalized, transform.up)) * direction;
-
-        /* Update the player's?]?? transform once the ray is done being fired */
+        /* Update the player's transform with the updated parameters */
         transform.position = position;
-        transform.rotation *= rotationDifference;
+        transform.rotation = transform.rotation * rotationDifference;
     }
 
     
