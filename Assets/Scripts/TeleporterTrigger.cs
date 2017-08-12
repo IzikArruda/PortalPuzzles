@@ -35,7 +35,6 @@ public class TeleporterTrigger : MonoBehaviour {
             /* Check if the center of the colliding object is between the trigger's center and the portal's mesh */
             if(triggerPlane.GetSide(collider.transform.position)) {
                 //TeleportCollider(collider.transform);
-                Debug.Log("TELEPORTED PLAYER");
             }
             /* The portal mesh will always be facing in the local X negative direction and will 
              * positioned be half the collider box's X width in it's local X positive direction. */

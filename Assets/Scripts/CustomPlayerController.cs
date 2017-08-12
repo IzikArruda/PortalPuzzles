@@ -241,9 +241,9 @@ public class CustomPlayerController : MonoBehaviour {
 
     public void UpdateInputVector() {
         /*
-         * Take in user input to calculate a direction vector for the player to move towards.
+         * Take in user input to calculate a direction vector for the player to move towards. 
          */
-
+         
         /* Use two input types for each axis to allow more control on player movement */
         inputVector = new Vector3((1-sliding)*inputs.playerMovementXRaw + sliding*inputs.playerMovementX,
                 0, (1-sliding)*inputs.playerMovementYRaw + sliding*inputs.playerMovementY);
@@ -259,6 +259,12 @@ public class CustomPlayerController : MonoBehaviour {
         }
         else {
             inputVector *= movementSpeed;
+        }
+
+        
+        /* Keep the movement's magnitude from going bellow 0.01. This prevents passing through teleportweTriggers */
+        if(inputVector.magnitude < 0.01f) {
+            inputVector = Vector3.zero;
         }
 
         /* Rotate the input direction to match the player's view. Only use the view's rotation along the Y axis */
@@ -364,7 +370,9 @@ public class CustomPlayerController : MonoBehaviour {
         UpdateInputVector();
 
         /* Send a move command to the player using the gravity and input vectors */
-        MovePlayer(gravityVector + (inputVector)*Time.deltaTime*60);
+        //MovePlayer(gravityVector + (inputVector)*Time.deltaTime*60);
+        Debug.Log(inputVector.magnitude);
+        MovePlayer(gravityVector + (inputVector));
     }
     
     void AdjustCameraPosition() {
@@ -449,17 +457,19 @@ public class CustomPlayerController : MonoBehaviour {
          */
         Quaternion rotationDifference;
 
-        /* Set values to be used with the rayTrace call */
-        Vector3 position = transform.position;
-        Quaternion direction = Quaternion.LookRotation(movementVector.normalized, transform.up);
-        float remainingDistance = movementVector.magnitude;
+        if(movementVector.magnitude != 0) {
+            /* Set values to be used with the rayTrace call */
+            Vector3 position = transform.position;
+            Quaternion direction = Quaternion.LookRotation(movementVector.normalized, transform.up);
+            float remainingDistance = movementVector.magnitude;
 
-        /* Fire the rayTrace command and retrive the rotation difference */
-        rotationDifference = RayTrace(ref position, ref direction, ref remainingDistance, true, true);
+            /* Fire the rayTrace command and retrive the rotation difference */
+            rotationDifference = RayTrace(ref position, ref direction, ref remainingDistance, true, true);
 
-        /* Update the player's transform with the updated parameters */
-        transform.position = position;
-        transform.rotation = transform.rotation * rotationDifference;
+            /* Update the player's transform with the updated parameters */
+            transform.position = position;
+            transform.rotation = transform.rotation * rotationDifference;
+        }
     }
 
     
@@ -509,18 +519,18 @@ public class CustomPlayerController : MonoBehaviour {
                     totalRotation = rotationDifference*totalRotation;
                     //Prevent the rayTrace from hitting another trigger after teleporting
                     rayLayerMask = 0;
-                    Debug.Log("hit tele");
+                    //Debug.Log("hit tele");
                 }
 
                 /* Hitting a solid collider will stop the rayTrace where it currently is */
                 else if(!hitInfo.collider.isTrigger) {
                     stopRayTrace = true;
-                    Debug.Log("hit wall");
+                    //Debug.Log("hit wall");
                 }
 
                 /* non-teleport triggers will be ignored */
                 else if(hitInfo.collider.isTrigger) {
-                    Debug.Log("hit something?");
+                    //Debug.Log("hit something?");
                 }
             }
 

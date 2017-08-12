@@ -78,8 +78,8 @@ public class PortalObjects : MonoBehaviour {
 
 
 
-
-        float portalThickness = 0.0001f;
+        //The thickness of the portal should be a small amout larger than twice the camera's near clipping plane
+        float portalThickness = 0.31f*2;
         /*  Set the teleport triggers linked to the portal to be the same sizes of the portal mesh */
         teleporterEnterTrigger.transform.localEulerAngles = new Vector3(0, 0, 0);
         teleporterEnterTrigger.transform.localScale = transform.localScale;
