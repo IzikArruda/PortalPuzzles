@@ -12,7 +12,7 @@ public class PortalSet : MonoBehaviour {
     public PortalObjects EntrancePortal;
     public PortalObjects ExitPortal;
 
-    /* The object used as a border for the portal mesh. Leave it empty for a default border */
+    /* The object used as a border for the portal mesh */
     public GameObject portalBorder;
 
     /* The mesh of the portal. If this is null, then the defaultPortalSize will be used to create the mesh */
@@ -26,37 +26,53 @@ public class PortalSet : MonoBehaviour {
     /* Depth of the portal's trigger. The higher value, the more noticable of a jump will occur on teleport */
     public float portalThickness;
 
+    /* A temporary value for ease of access to update the borders of the portals */
+    public bool updateBorders;
+
 
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
 
     void Update() {
+
+        /* Adjust the positionning of the portals */
+        UpdatePortalPosition();
 
         /* Create and link the meshes of the portals */
         CreateMesh();
         
         /* Fix the transform of the portal's triggers */
         UpdateTriggers();
+        
+        /* Update the borders for the portals if needed */
+        UpdateTheBorders();
     }
-
-    void Start() {
-        /*
-         * Leave the border creation in the start function until we start to work on borders.
-         */
-
-        /* Create and link the borders around each linked portal */
-        CreateBorder();
-    }
+    
 
 
     /* -------- Update Functions ---------------------------------------------------- */
+
+    void UpdatePortalPosition() {
+        /*
+         * Depending on the sizes of the portals, change the local position of the portals.
+         * Since the two portals are "mirrors", one of them will need to be reversed.
+         */
+
+        /* Keep the entrance portal in it's neutral position */
+        EntrancePortal.meshContainer.localPosition = new Vector3(0, 0, 0);
+        EntrancePortal.meshContainer.localEulerAngles = new Vector3(0, 0, 0);
+
+        /* Reverse the exit portal by simply changing it's mesh's transform. (Yeuler = 180, X pos = -width) */
+        ExitPortal.meshContainer.localPosition = new Vector3(-defaultWidth, 0, 0);
+        ExitPortal.meshContainer.localEulerAngles = new Vector3(0, 180, 0);
+    }
 
     void UpdateTriggers() {
         /*
          * Adjust the position, rotation and scale of the triggers.
          */
 
-        EntrancePortal.SetTriggersSizes(defaultWidth, defaultHeight, portalThickness);
-        ExitPortal.SetTriggersSizes(defaultWidth, defaultHeight, portalThickness);
+        EntrancePortal.SetTriggersTransform(defaultWidth, defaultHeight, portalThickness);
+        ExitPortal.SetTriggersTransform(defaultWidth, defaultHeight, portalThickness);
     }
     
     void CreateMesh() {
@@ -81,20 +97,33 @@ public class PortalSet : MonoBehaviour {
     void CreateBorder() {
         /*
          * Create a border for each portal. They will have the same border to ensure consistensy between portals.
-         * The border used will be the portalBorder object. If it is null, a default border will be used.
+         * The border used will be the portalBorder object, which is expected to be a prefab.
          */
 
         if(portalBorder) {
+            /* Assign the new border to the two portals */
             EntrancePortal.SetBorder(portalBorder);
             ExitPortal.SetBorder(portalBorder);
         }
         else {
-            Debug.Log("CREATING A DEFAULT BORDER");
+            Debug.Log("NO BORDER GIVEN");
         }
     }
 
 
     /* -------- Event Functions ---------------------------------------------------- */
+
+    void UpdateTheBorders() {
+        /*
+         * Check if the borders need to be updated. This occurs when the "updateBorders" bolean is set to true
+         */
+
+
+        if(updateBorders == true) {
+            CreateBorder();
+            updateBorders = false;
+        }
+    }
 
     Mesh CreateDefaultMesh() {
         /*
@@ -123,4 +152,6 @@ public class PortalSet : MonoBehaviour {
 
         return defaultMesh;
     }
+
+    
 }

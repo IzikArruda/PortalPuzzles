@@ -20,7 +20,7 @@ public class PortalObjects : MonoBehaviour {
     public Transform borderContainer;
 
     /* A link to the border that surrounds the contour of the portal mesh. */
-    private GameObject border;
+    public GameObject border;
 
 
     /* -------- Setters ---------------------------------------------------- */
@@ -33,7 +33,7 @@ public class PortalObjects : MonoBehaviour {
         portalMesh.GetComponent<MeshFilter>().mesh = mesh;
     }
     
-    public void SetTriggersSizes(float width, float height, float depth) {
+    public void SetTriggersTransform(float width, float height, float depth) {
         /*
          * Set the position, rotation and scale of the portal's triggers using the given parameters.
          */
@@ -59,12 +59,15 @@ public class PortalObjects : MonoBehaviour {
          * set it's parent and transform to be this portal's proper border.
          */
 
-        /* Do not reset the border if one already exists */
-        if(border == null) {
-            border = Instantiate(borderObject);
-            border.transform.parent = borderContainer;
-            border.transform.localPosition = new Vector3(0, 0, 0);
-            border.transform.localEulerAngles = new Vector3(0, 0, 0);
+        /* Delete any border objects that already exist */
+        foreach(Transform child in borderContainer) {
+            DestroyImmediate(child.gameObject);
         }
+
+        /* Create the new border */
+        border = Instantiate(borderObject);
+        border.transform.parent = borderContainer;
+        border.transform.localPosition = new Vector3(0, 0, 0);
+        border.transform.localEulerAngles = new Vector3(0, 0, 0);
     }
 }

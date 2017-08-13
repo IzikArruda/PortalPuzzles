@@ -842,7 +842,7 @@ BoxCollider:
   m_IsTrigger: 1
   m_Enabled: 1
   serializedVersion: 2
-  m_Size: {x: 3, y: 4, z: 2}
+  m_Size: {x: 3, y: 4, z: 0.01}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!65 &65000012149849770
 BoxCollider:
@@ -854,7 +854,7 @@ BoxCollider:
   m_IsTrigger: 1
   m_Enabled: 0
   serializedVersion: 2
-  m_Size: {x: 3, y: 4, z: 2}
+  m_Size: {x: 3, y: 4, z: 0.01}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!65 &65000013235082894
 BoxCollider:
@@ -866,7 +866,7 @@ BoxCollider:
   m_IsTrigger: 1
   m_Enabled: 1
   serializedVersion: 2
-  m_Size: {x: 3, y: 4, z: 2}
+  m_Size: {x: 3, y: 4, z: 0.01}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!65 &65000013837083254
 BoxCollider:
@@ -878,7 +878,7 @@ BoxCollider:
   m_IsTrigger: 1
   m_Enabled: 0
   serializedVersion: 2
-  m_Size: {x: 3, y: 4, z: 2}
+  m_Size: {x: 3, y: 4, z: 0.01}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!81 &81000011294825112
 AudioListener:
@@ -922,14 +922,10 @@ MonoBehaviour:
   portalMesh: {fileID: 1000010343990526}
   teleporterEnterTrigger: {fileID: 1000014176232262}
   teleporterLeaveTrigger: {fileID: 1000013491675078}
-  portalWidth: 3
-  portalHeight: 4
-  portalOffset: {x: 0, y: 0, z: 0}
-  wierdMeshOffset: {x: 0, y: 0, z: 0}
-  border: {fileID: 0}
   meshContainer: {fileID: 4000014167106438}
   TriggerContainer: {fileID: 4000012507462744}
   borderContainer: {fileID: 4000014146494978}
+  border: {fileID: 0}
 --- !u!114 &114000010546714176
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -967,14 +963,10 @@ MonoBehaviour:
   portalMesh: {fileID: 1000010138351210}
   teleporterEnterTrigger: {fileID: 1000013554661802}
   teleporterLeaveTrigger: {fileID: 1000010577600364}
-  portalWidth: 3
-  portalHeight: 4
-  portalOffset: {x: 0, y: 0, z: 0}
-  wierdMeshOffset: {x: 0, y: 0, z: 0}
-  border: {fileID: 0}
   meshContainer: {fileID: 4000012894539068}
   TriggerContainer: {fileID: 4000011582758678}
   borderContainer: {fileID: 4000011907111424}
+  border: {fileID: 0}
 --- !u!114 &114000012609659764
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -1035,7 +1027,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   EntrancePortal: {fileID: 114000010420534638}
   ExitPortal: {fileID: 114000011467668318}
-  portalBorder: {fileID: 0}
+  portalBorder: {fileID: 1000012060183426, guid: 61b2f9c116b6c78469a1b5609a10ad9a,
+    type: 2}
+  portalMesh: {fileID: 0}
+  defaultWidth: 3
+  defaultHeight: 4
+  portalOffset: {x: 0, y: 0, z: 0}
+  portalThickness: 0.01
+  updateBorders: 0
 --- !u!124 &124000010072001490
 Behaviour:
   m_ObjectHideFlags: 1
