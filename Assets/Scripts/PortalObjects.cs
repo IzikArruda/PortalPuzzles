@@ -11,7 +11,6 @@ using System.Collections;
 public class PortalObjects : MonoBehaviour {
 
     public GameObject portalMesh;
-    public GameObject portalLeaveMesh;
     public GameObject teleporterEnterTrigger;
     public GameObject teleporterLeaveTrigger;
     //public GameObject portalDoor;
@@ -24,17 +23,19 @@ public class PortalObjects : MonoBehaviour {
 
     public Vector3 wierdMeshOffset;
 
-    void Update() {
+    /* A link to the border that surrounds the contour of the portal mesh. */
+    public GameObject border;
 
-        //Create the mesh of the portal
-        CreatePortalMesh();
-    }
 
+    /* A link to each child container of the portal */
+    public Transform meshContainer;
+    public Transform TriggerContainer;
+    public Transform borderContainer;
 
 
 
     /* Update the sizes of the mesh of the given portals using the saved sizes */
-    void CreatePortalMesh() {
+    public void CreatePortalMesh() {
         /*
          * Create the portal mesh that the player will be viewing using the portal's size parameters.
          * 
@@ -79,7 +80,8 @@ public class PortalObjects : MonoBehaviour {
 
 
         //The thickness of the portal should be a small amout larger than twice the camera's near clipping plane
-        float portalThickness = 0.31f*2;
+        //The Offset of the portal should be slightly larger than the camera's near clipping plane instead
+        float portalThickness = 0.01f;
         /*  Set the teleport triggers linked to the portal to be the same sizes of the portal mesh */
         teleporterEnterTrigger.transform.localEulerAngles = new Vector3(0, 0, 0);
         teleporterEnterTrigger.transform.localScale = transform.localScale;
@@ -93,10 +95,22 @@ public class PortalObjects : MonoBehaviour {
         teleporterLeaveTrigger.GetComponent<BoxCollider>().center = new Vector3(0, 0, 0);
         teleporterLeaveTrigger.GetComponent<BoxCollider>().size = new Vector3(portalWidth, portalHeight, portalThickness);
 
+        
+    }
 
-        /* Portal mesh should be pushed half it's distance so it's pivot point is in the bottom-left corner */
-        //portalMesh.transform.localPosition = new Vector3(0, 0, 0);
-        portalLeaveMesh.transform.localPosition = new Vector3(-portalWidth, 0, 0);
-        portalLeaveMesh.transform.localEulerAngles = new Vector3(0, -180, 0);
+
+    public void SetBorder(GameObject borderObject) {
+        /*
+         * Set the border of the portal to be the given gameObject. Duplicate the given object and 
+         * set it's parent and transform to be this portal's proper border.
+         */
+
+        /* Do not reset the border if one already exists */
+        if(border == null) {
+            border = Instantiate(borderObject);
+            border.transform.parent = borderContainer;
+            border.transform.localPosition = new Vector3(0, 0, 0);
+            border.transform.localEulerAngles = new Vector3(0, 0, 0);
+        }
     }
 }

@@ -371,7 +371,6 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Send a move command to the player using the gravity and input vectors */
         //MovePlayer(gravityVector + (inputVector)*Time.deltaTime*60);
-        Debug.Log(inputVector.magnitude);
         MovePlayer(gravityVector + (inputVector));
     }
     
