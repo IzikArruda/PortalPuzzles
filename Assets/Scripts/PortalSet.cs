@@ -35,7 +35,6 @@ public class PortalSet : MonoBehaviour {
     /* If the portal is centered on it's origin point. Else it protrudes from the origin. */
     public bool portalsCentered;
 
-
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
 
     void Update() {
@@ -70,11 +69,11 @@ public class PortalSet : MonoBehaviour {
         }
 
         /* Reposition the portal's and their containers */
-        EntrancePortal.meshContainer.localPosition = new Vector3(0, 0, 0) + centeredOffset;
-        EntrancePortal.TriggerContainer.localPosition = new Vector3(0, 0, 0) + centeredOffset;
+        EntrancePortal.meshContainer.localPosition = centeredOffset;
+        EntrancePortal.TriggerContainer.localPosition = centeredOffset;
         EntrancePortal.borderContainer.localPosition = new Vector3(-portalMeshWidth/2f, 0, 0) + centeredOffset;
-        ExitPortal.meshContainer.localPosition = new Vector3(-3, 0, 0) + centeredOffset;
-        ExitPortal.TriggerContainer.localPosition = new Vector3(0, 0, 0) + centeredOffset;
+        ExitPortal.meshContainer.localPosition = centeredOffset;
+        ExitPortal.TriggerContainer.localPosition = centeredOffset;
         ExitPortal.borderContainer.localPosition = new Vector3(-portalMeshWidth/2f, 0, 0) + centeredOffset;
 
         /* Ensure the rotation of the portalm meshes are correct */
@@ -154,11 +153,10 @@ public class PortalSet : MonoBehaviour {
         Vector3[] vertices;
         int[] triangles;
 
-        /* If it's the reflected mesh, apply another offset. The "-3" is because there is a 
-         * magic 3 hidden somewhere related to */
+        /* If it's the reflected mesh, apply another offset */
         Vector3 reflectionOffset = Vector3.zero;
         if(reflectMesh) {
-            reflectionOffset = new Vector3(portalMeshWidth-3, 0, 0);
+            reflectionOffset = new Vector3(portalMeshWidth, 0, 0);
         }
 
 
