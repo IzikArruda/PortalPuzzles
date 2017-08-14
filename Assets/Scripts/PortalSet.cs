@@ -15,10 +15,12 @@ public class PortalSet : MonoBehaviour {
     /* The object used as a border for the portal mesh */
     public GameObject portalBorder;
 
-    /* The mesh of the portal. If this is null, then the defaultPortalSize will be used to create the mesh */
+    /* The mesh of the portal. If this is null, then a rectangle mesh will be created */
     public Mesh portalMesh;
-    public float defaultWidth;
-    public float defaultHeight;
+
+    /* The sizes of the portal */
+    public float portalMeshWidth;
+    public float portalMeshHeight;
 
     /* positional offset of the portal */
     public Vector3 portalOffset;
@@ -28,6 +30,10 @@ public class PortalSet : MonoBehaviour {
 
     /* A temporary value for ease of access to update the borders of the portals */
     public bool updateBorders;
+
+
+    /* If the portal is centered on it's origin point. Else it protrudes from the origin. */
+    public bool portalsCentered;
 
 
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
@@ -57,16 +63,22 @@ public class PortalSet : MonoBehaviour {
          * Since the two portals are "mirrors", one of them will need to be reversed.
          */
 
+        /* Add an offset if the portals need to be centered onto their origin */
+        Vector3 centeredOffset = Vector3.zero;
+        if(portalsCentered) {
+            centeredOffset = new Vector3(portalMeshWidth/2f, 0, 0);
+        }
 
+        /* Reposition the portal's and their containers */
+        EntrancePortal.meshContainer.localPosition = new Vector3(0, 0, 0) + centeredOffset;
+        EntrancePortal.TriggerContainer.localPosition = new Vector3(0, 0, 0) + centeredOffset;
+        EntrancePortal.borderContainer.localPosition = new Vector3(-portalMeshWidth/2f, 0, 0) + centeredOffset;
+        ExitPortal.meshContainer.localPosition = new Vector3(-3, 0, 0) + centeredOffset;
+        ExitPortal.TriggerContainer.localPosition = new Vector3(0, 0, 0) + centeredOffset;
+        ExitPortal.borderContainer.localPosition = new Vector3(-portalMeshWidth/2f, 0, 0) + centeredOffset;
 
-
-        //IDEA TO FIX: ONE OF THEM GETS AN OFFSET IN THE X POSITION WHEN CREATING THE MESH
-        /* Keep the entrance portal in it's neutral position */
-        EntrancePortal.meshContainer.localPosition = new Vector3(0, 0, 0);
+        /* Ensure the rotation of the portalm meshes are correct */
         EntrancePortal.meshContainer.localEulerAngles = new Vector3(0, 0, 0);
-
-        /* Reverse the exit portal by simply changing it's mesh's transform. (Yeuler = 180, X pos = -width) */
-        ExitPortal.meshContainer.localPosition = new Vector3(-3, 0, 0);
         ExitPortal.meshContainer.localEulerAngles = new Vector3(0, 180, 0);
     }
 
@@ -75,8 +87,8 @@ public class PortalSet : MonoBehaviour {
          * Adjust the position, rotation and scale of the triggers.
          */
 
-        EntrancePortal.SetTriggersTransform(defaultWidth, defaultHeight, portalThickness);
-        ExitPortal.SetTriggersTransform(defaultWidth, defaultHeight, portalThickness);
+        EntrancePortal.SetTriggersTransform(portalMeshWidth, portalMeshHeight, portalThickness);
+        ExitPortal.SetTriggersTransform(portalMeshWidth, portalMeshHeight, portalThickness);
     }
     
     void CreateMesh() {
@@ -142,19 +154,20 @@ public class PortalSet : MonoBehaviour {
         Vector3[] vertices;
         int[] triangles;
 
-        /* If it's the reflected mesh, apply another offset */
+        /* If it's the reflected mesh, apply another offset. The "-3" is because there is a 
+         * magic 3 hidden somewhere related to */
         Vector3 reflectionOffset = Vector3.zero;
         if(reflectMesh) {
-            reflectionOffset = new Vector3(defaultWidth-3, 0, 0);
+            reflectionOffset = new Vector3(portalMeshWidth-3, 0, 0);
         }
 
 
         /* Set the vertices for the mesh */
         vertices = new Vector3[] {
-                new Vector3(-defaultWidth, defaultHeight, 0) + portalOffset + reflectionOffset,
-                new Vector3(0, defaultHeight, 0) + portalOffset + reflectionOffset,
+                new Vector3(-portalMeshWidth, portalMeshHeight, 0) + portalOffset + reflectionOffset,
+                new Vector3(0, portalMeshHeight, 0) + portalOffset + reflectionOffset,
                 new Vector3(0, 0, 0) + portalOffset + reflectionOffset,
-                new Vector3(-defaultWidth, 0, 0) + portalOffset + reflectionOffset
+                new Vector3(-portalMeshWidth, 0, 0) + portalOffset + reflectionOffset
             };
 
         /* Set the two polygons that form the mesh */

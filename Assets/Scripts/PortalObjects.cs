@@ -56,7 +56,7 @@ public class PortalObjects : MonoBehaviour {
     public void SetBorder(GameObject borderObject) {
         /*
          * Set the border of the portal to be the given gameObject. Duplicate the given object and 
-         * set it's parent and transform to be this portal's proper border.
+         * set it's parent and transform to be this portal's proper border. 
          */
 
         /* Delete any border objects that already exist */
