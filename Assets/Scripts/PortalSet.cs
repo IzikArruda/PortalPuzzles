@@ -2,7 +2,7 @@
 using System.Collections;
 
 /*
- * A set of portalObjects that will be linked together. This script calls their Setter functions to 
+ * A set of 2 portalObjects that will be linked together. This script calls their Setter functions to 
  * properly set the portal's parameters (mesh, triggers, borders) to be identical.
  */
 [ExecuteInEditMode]
@@ -57,12 +57,16 @@ public class PortalSet : MonoBehaviour {
          * Since the two portals are "mirrors", one of them will need to be reversed.
          */
 
+
+
+
+        //IDEA TO FIX: ONE OF THEM GETS AN OFFSET IN THE X POSITION WHEN CREATING THE MESH
         /* Keep the entrance portal in it's neutral position */
         EntrancePortal.meshContainer.localPosition = new Vector3(0, 0, 0);
         EntrancePortal.meshContainer.localEulerAngles = new Vector3(0, 0, 0);
 
         /* Reverse the exit portal by simply changing it's mesh's transform. (Yeuler = 180, X pos = -width) */
-        ExitPortal.meshContainer.localPosition = new Vector3(-defaultWidth, 0, 0);
+        ExitPortal.meshContainer.localPosition = new Vector3(-3, 0, 0);
         ExitPortal.meshContainer.localEulerAngles = new Vector3(0, 180, 0);
     }
 
@@ -80,18 +84,21 @@ public class PortalSet : MonoBehaviour {
          * Create the mesh for the linked portals using the given portalMesh. If there is no portalMesh,
          * use a generated mesh with the given defaultMeshSize values.
          */
-        Mesh mesh;
+        Mesh mesh1, mesh2;
 
         /* Get either the linked mesh for the portal or create the the default */
         if(portalMesh) {
-            mesh = portalMesh;
-        }else {
-            mesh = CreateDefaultMesh();
+            mesh1 = portalMesh;
+            mesh2 = portalMesh;
+        }
+        else {
+            mesh1 = CreateDefaultMesh(false);
+            mesh2 = CreateDefaultMesh(true);
         }
 
         /* Assign the mesh to each linked portalObject */
-        EntrancePortal.SetMesh(mesh);
-        ExitPortal.SetMesh(mesh);
+        EntrancePortal.SetMesh(mesh1);
+        ExitPortal.SetMesh(mesh2);
     }
     
     void CreateBorder() {
@@ -125,20 +132,29 @@ public class PortalSet : MonoBehaviour {
         }
     }
 
-    Mesh CreateDefaultMesh() {
+    Mesh CreateDefaultMesh(bool reflectMesh) {
         /*
-         * Create the default mesh for the portal using the default width and height. It does not need UVs
+         * Create the default mesh for the portal using the default width and height. It does not need UVs.
+         * 
+         * When handling the exit portal's mesh, add an offset to the mesh to properly "reflect" the portal.
          */
         Mesh defaultMesh = new Mesh();
         Vector3[] vertices;
         int[] triangles;
 
+        /* If it's the reflected mesh, apply another offset */
+        Vector3 reflectionOffset = Vector3.zero;
+        if(reflectMesh) {
+            reflectionOffset = new Vector3(defaultWidth-3, 0, 0);
+        }
+
+
         /* Set the vertices for the mesh */
         vertices = new Vector3[] {
-                new Vector3(-defaultWidth, defaultHeight, 0) + portalOffset,
-                new Vector3(0, defaultHeight, 0) + portalOffset,
-                new Vector3(0, 0, 0) + portalOffset,
-                new Vector3(-defaultWidth, 0, 0) + portalOffset
+                new Vector3(-defaultWidth, defaultHeight, 0) + portalOffset + reflectionOffset,
+                new Vector3(0, defaultHeight, 0) + portalOffset + reflectionOffset,
+                new Vector3(0, 0, 0) + portalOffset + reflectionOffset,
+                new Vector3(-defaultWidth, 0, 0) + portalOffset + reflectionOffset
             };
 
         /* Set the two polygons that form the mesh */
