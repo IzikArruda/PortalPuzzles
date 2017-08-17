@@ -33,7 +33,7 @@ public class PortalObjects : MonoBehaviour {
         portalMesh.GetComponent<MeshFilter>().mesh = mesh;
     }
     
-    public void SetTriggersTransform(float width, float height, float depth) {
+    public void SetTriggersTransform(float width, float height, float depth, Vector3 offSet) {
         /*
          * Set the position, rotation and scale of the portal's triggers using the given parameters.
          */
@@ -41,14 +41,14 @@ public class PortalObjects : MonoBehaviour {
         /* Set the properties of this script's portal's trigger */
         teleporterEnterTrigger.transform.localEulerAngles = new Vector3(0, 0, 0);
         teleporterEnterTrigger.transform.localScale = transform.localScale;
-        teleporterEnterTrigger.transform.localPosition = new Vector3(-width/2f, height/2f, 0);
+        teleporterEnterTrigger.transform.localPosition = new Vector3(-width/2f, height/2f, 0) + offSet;
         teleporterEnterTrigger.GetComponent<BoxCollider>().center = new Vector3(0, 0, 0);
         teleporterEnterTrigger.GetComponent<BoxCollider>().size = new Vector3(width, height, depth);
 
         /* Set the properties of the trigger at the partner portal */
         teleporterLeaveTrigger.transform.localEulerAngles = new Vector3(0, 0, 0);
         teleporterLeaveTrigger.transform.localScale = transform.localScale;
-        teleporterLeaveTrigger.transform.localPosition = new Vector3(-width/2f, height/2f, 0); ;
+        teleporterLeaveTrigger.transform.localPosition = new Vector3(-width/2f, height/2f, 0) + offSet;
         teleporterLeaveTrigger.GetComponent<BoxCollider>().center = new Vector3(0, 0, 0);
         teleporterLeaveTrigger.GetComponent<BoxCollider>().size = new Vector3(width, height, depth);
     }

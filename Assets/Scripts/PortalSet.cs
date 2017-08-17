@@ -35,6 +35,9 @@ public class PortalSet : MonoBehaviour {
     /* If the portal is centered on it's origin point. Else it protrudes from the origin. */
     public bool portalsCentered;
 
+    /* The offsets of the triggers for the portals */
+    public Vector3 triggerOffset;
+
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
 
     void Update() {
@@ -83,11 +86,13 @@ public class PortalSet : MonoBehaviour {
 
     void UpdateTriggers() {
         /*
-         * Adjust the position, rotation and scale of the triggers.
+         * Adjust the position, rotation and scale of the triggers along with their offset.
          */
 
-        EntrancePortal.SetTriggersTransform(portalMeshWidth, portalMeshHeight, portalThickness);
-        ExitPortal.SetTriggersTransform(portalMeshWidth, portalMeshHeight, portalThickness);
+        //NOTE: when the player is very close to the trigger for a portal, the rendering order of the portal mesh will 
+        //imrproperly render certain objects.
+        EntrancePortal.SetTriggersTransform(portalMeshWidth, portalMeshHeight, portalThickness, triggerOffset);
+        ExitPortal.SetTriggersTransform(portalMeshWidth, portalMeshHeight, portalThickness, triggerOffset);
     }
     
     void CreateMesh() {
@@ -179,6 +184,4 @@ public class PortalSet : MonoBehaviour {
 
         return defaultMesh;
     }
-
-    
 }
