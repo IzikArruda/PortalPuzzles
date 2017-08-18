@@ -39,6 +39,16 @@ public class PortalSet : MonoBehaviour {
     /* The offsets of the triggers for the portals */
     public Vector3 triggerOffset;
 
+
+    /* Depth of the default border */
+    public float defaultBorderDepth;
+
+    /* The Widths of the default border's sides. 0 or less means the side will not be created. */
+    public float defaultBorderLeft;
+    public float defaultBorderRight;
+    public float defaultBorderTop;
+    public float defaultBorderBottom;
+
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
 
     void Update() {
@@ -196,39 +206,45 @@ public class PortalSet : MonoBehaviour {
     GameObject CreateDefaultBorder() {
         /*
          * Use the script's variables to create a basic border around the portal's mesh.
+         * Any defaultBorder size value that is equal or less than 0 will not be created
          */
         GameObject borderPiece;
         GameObject newBorders = new GameObject();
         Vector3 centerPoint = new Vector3(0, 0, 0);
-        newBorders.name = "Border Parent";
-
-        float borderWidth = 0.2f;
-        float borderDepth = 1f;
+        newBorders.name = "Default Border Parent";
 
         
         /* Create the right side of the border piece */
-        centerPoint = new Vector3(portalMeshWidth/2f + borderWidth, portalMeshHeight/2f, 0);
-        borderPiece = CreateBox(centerPoint, borderWidth, portalMeshHeight/2f, borderDepth);
-        borderPiece.name = "Right side";
-        borderPiece.transform.parent = newBorders.transform;
+        if(defaultBorderRight > 0) {
+            centerPoint = new Vector3(portalMeshWidth/2f + defaultBorderRight, portalMeshHeight/2f, 0);
+            borderPiece = CreateBox(centerPoint, defaultBorderRight, portalMeshHeight/2f, defaultBorderDepth);
+            borderPiece.name = "Right side";
+            borderPiece.transform.parent = newBorders.transform;
+        }
 
         /* Create the left side of the border piece */
-        centerPoint = new Vector3(-portalMeshWidth/2f - borderWidth, portalMeshHeight/2f, 0);
-        borderPiece = CreateBox(centerPoint, borderWidth, portalMeshHeight/2f, borderDepth);
-        borderPiece.name = "Left side";
-        borderPiece.transform.parent = newBorders.transform;
+        if(defaultBorderLeft > 0) {
+            centerPoint = new Vector3(-portalMeshWidth/2f - defaultBorderLeft, portalMeshHeight/2f, 0);
+            borderPiece = CreateBox(centerPoint, defaultBorderLeft, portalMeshHeight/2f, defaultBorderDepth);
+            borderPiece.name = "Left side";
+            borderPiece.transform.parent = newBorders.transform;
+        }
 
         /* Create the top side of the border piece */
-        centerPoint = new Vector3(0, portalMeshHeight + borderWidth, 0);
-        borderPiece = CreateBox(centerPoint, portalMeshWidth/2f, borderWidth, borderDepth);
-        borderPiece.name = "Top side";
-        borderPiece.transform.parent = newBorders.transform;
+        if(defaultBorderTop > 0) {
+            centerPoint = new Vector3(0, portalMeshHeight + defaultBorderTop, 0);
+            borderPiece = CreateBox(centerPoint, portalMeshWidth/2f, defaultBorderTop, defaultBorderDepth);
+            borderPiece.name = "Top side";
+            borderPiece.transform.parent = newBorders.transform;
+        }
 
         /* Create the bottom side of the border piece */
-        centerPoint = new Vector3(0, -borderWidth, 0);
-        borderPiece = CreateBox(centerPoint, portalMeshWidth/2f, borderWidth, borderDepth);
-        borderPiece.name = "Bottom side";
-        borderPiece.transform.parent = newBorders.transform;
+        if(defaultBorderBottom > 0) {
+            centerPoint = new Vector3(0, -defaultBorderBottom, 0);
+            borderPiece = CreateBox(centerPoint, portalMeshWidth/2f, defaultBorderBottom, defaultBorderDepth);
+            borderPiece.name = "Bottom side";
+            borderPiece.transform.parent = newBorders.transform;
+        }
 
         return newBorders;
     }
@@ -270,7 +286,6 @@ public class PortalSet : MonoBehaviour {
         mesh.RecalculateNormals();
         mesh.RecalculateBounds();
         
-        cube.name = "First piece";
         cube.AddComponent<MeshFilter>().mesh = mesh;
         cube.AddComponent<MeshRenderer>();
 

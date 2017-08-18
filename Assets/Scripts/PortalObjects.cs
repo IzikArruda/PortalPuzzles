@@ -66,6 +66,7 @@ public class PortalObjects : MonoBehaviour {
 
         /* Create the new border */
         border = Instantiate(borderObject);
+        border.name = borderObject.name;
         border.transform.parent = borderContainer;
         border.transform.localPosition = new Vector3(0, 0, 0);
         border.transform.localEulerAngles = new Vector3(0, 0, 0);
