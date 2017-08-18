@@ -15,10 +15,10 @@ public class PortalSet : MonoBehaviour {
     /* The object used as a border for the portal mesh */
     public GameObject portalBorder;
 
-    /* The mesh of the portal. If this is null, then a rectangle mesh will be created */
+    /* The mesh of the portal. If this is null, a default rectangle mesh will be created and assigned. */
     public Mesh portalMesh;
 
-    /* The sizes of the portal */
+    /* The sizes of the default portal mesh and the triggers. */
     public float portalMeshWidth;
     public float portalMeshHeight;
 
@@ -30,6 +30,7 @@ public class PortalSet : MonoBehaviour {
 
     /* A temporary value for ease of access to update the borders of the portals */
     public bool updateBorders;
+
 
 
     /* If the portal is centered on it's origin point. Else it protrudes from the origin. */
@@ -89,7 +90,7 @@ public class PortalSet : MonoBehaviour {
          * Adjust the position, rotation and scale of the triggers along with their offset.
          */
 
-        //NOTE: when the player is very close to the trigger for a portal, the rendering order of the portal mesh will 
+        //NOTE: when the player is very close to the mesh for a portal, the rendering order of the portal mesh will 
         //imrproperly render certain objects.
         EntrancePortal.SetTriggersTransform(portalMeshWidth, portalMeshHeight, portalThickness, triggerOffset);
         ExitPortal.SetTriggersTransform(portalMeshWidth, portalMeshHeight, portalThickness, triggerOffset);
@@ -120,16 +121,23 @@ public class PortalSet : MonoBehaviour {
     void CreateBorder() {
         /*
          * Create a border for each portal. They will have the same border to ensure consistensy between portals.
-         * The border used will be the portalBorder object, which is expected to be a prefab.
+         * The border used will be the portalBorder object, which is expected to be a prefab. If this object
+         * is null, then use a generated default border defined by this script's defaultBorder values.
          */
 
+        /* Assign the new border to the two portals */
         if(portalBorder) {
-            /* Assign the new border to the two portals */
             EntrancePortal.SetBorder(portalBorder);
             ExitPortal.SetBorder(portalBorder);
         }
+
+        /* Create a default border and assign it to the portals */
         else {
-            Debug.Log("NO BORDER GIVEN");
+            GameObject newBorders = CreateDefaultBorder();
+            EntrancePortal.SetBorder(newBorders);
+            ExitPortal.SetBorder(newBorders);
+            //Delete the object once it has been set
+            DestroyImmediate(newBorders.gameObject);
         }
     }
 
@@ -183,5 +191,90 @@ public class PortalSet : MonoBehaviour {
         defaultMesh.triangles = triangles;
 
         return defaultMesh;
+    }
+
+    GameObject CreateDefaultBorder() {
+        /*
+         * Use the script's variables to create a basic border around the portal's mesh.
+         */
+        GameObject borderPiece;
+        GameObject newBorders = new GameObject();
+        Vector3 centerPoint = new Vector3(0, 0, 0);
+        newBorders.name = "Border Parent";
+
+        float borderWidth = 0.2f;
+        float borderDepth = 1f;
+
+        
+        /* Create the right side of the border piece */
+        centerPoint = new Vector3(portalMeshWidth/2f + borderWidth, portalMeshHeight/2f, 0);
+        borderPiece = CreateBox(centerPoint, borderWidth, portalMeshHeight/2f, borderDepth);
+        borderPiece.name = "Right side";
+        borderPiece.transform.parent = newBorders.transform;
+
+        /* Create the left side of the border piece */
+        centerPoint = new Vector3(-portalMeshWidth/2f - borderWidth, portalMeshHeight/2f, 0);
+        borderPiece = CreateBox(centerPoint, borderWidth, portalMeshHeight/2f, borderDepth);
+        borderPiece.name = "Left side";
+        borderPiece.transform.parent = newBorders.transform;
+
+        /* Create the top side of the border piece */
+        centerPoint = new Vector3(0, portalMeshHeight + borderWidth, 0);
+        borderPiece = CreateBox(centerPoint, portalMeshWidth/2f, borderWidth, borderDepth);
+        borderPiece.name = "Top side";
+        borderPiece.transform.parent = newBorders.transform;
+
+        /* Create the bottom side of the border piece */
+        centerPoint = new Vector3(0, -borderWidth, 0);
+        borderPiece = CreateBox(centerPoint, portalMeshWidth/2f, borderWidth, borderDepth);
+        borderPiece.name = "Bottom side";
+        borderPiece.transform.parent = newBorders.transform;
+
+        return newBorders;
+    }
+
+
+    /* -------- Helper Functions ---------------------------------------------------- */
+    
+    GameObject CreateBox(Vector3 center, float x, float y, float z) {
+        /*
+         * Create a box using the given parameters
+         */
+        GameObject cube = new GameObject();
+        Mesh mesh = new Mesh();
+        Vector3[] vertices;
+        int[] triangles;
+
+        vertices = new Vector3[] {
+            center + new Vector3(-x, -y, -z),
+            center + new Vector3(x, -y, -z),
+            center + new Vector3(-x, y, -z),
+            center + new Vector3(-x, -y, z),
+            center + new Vector3(x, -y, z),
+            center + new Vector3(x, y, -z),
+            center + new Vector3(-x, y, z),
+            center + new Vector3(x, y, z)
+        };
+
+        triangles = new int[] {
+            0, 2, 1,  1, 2, 5,
+            3, 0, 1,  1, 4, 3,
+            0, 3, 2,  2, 3, 6,
+            1, 5, 4,  5, 7, 4,
+            6, 3, 4,  6, 4, 7,
+            6, 5, 2,  7, 5, 6
+        };
+
+        mesh.vertices = vertices;
+        mesh.triangles = triangles;
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+        
+        cube.name = "First piece";
+        cube.AddComponent<MeshFilter>().mesh = mesh;
+        cube.AddComponent<MeshRenderer>();
+
+
+        return cube;
     }
 }
