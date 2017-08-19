@@ -18,7 +18,7 @@ public class PortalSet : MonoBehaviour {
     /* The mesh of the portal. If this is null, a default rectangle mesh will be created and assigned. */
     public Mesh portalMesh;
 
-    /* The sizes of the default portal mesh and the triggers. */
+    /* The sizes of the default portal mesh, the triggers, and the position of the backwards portalMesh */
     public float portalMeshWidth;
     public float portalMeshHeight;
 
@@ -90,9 +90,19 @@ public class PortalSet : MonoBehaviour {
         ExitPortal.TriggerContainer.localPosition = centeredOffset;
         ExitPortal.borderContainer.localPosition = new Vector3(-portalMeshWidth/2f, 0, 0) + centeredOffset;
 
-        /* Ensure the rotation of the portalm meshes are correct */
+        /* Ensure the rotation of the portal meshes are correct */
         EntrancePortal.meshContainer.localEulerAngles = new Vector3(0, 0, 0);
         ExitPortal.meshContainer.localEulerAngles = new Vector3(0, 180, 0);
+
+
+
+
+        /* The backwards portal has to be positionned properly so it is proeprly the normal portal mesh but backwards. */
+        /* This might need a better place in the script */
+        EntrancePortal.backwardsPortalMesh.transform.localPosition = new Vector3(-portalMeshWidth, 0, 0);
+        EntrancePortal.backwardsPortalMesh.transform.localEulerAngles = new Vector3(0, 180, 0);
+        ExitPortal.backwardsPortalMesh.transform.localPosition = new Vector3(portalMeshWidth, 0, 0);
+        ExitPortal.backwardsPortalMesh.transform.localEulerAngles = new Vector3(0, 180, 0);
     }
 
     void UpdateTriggers() {
@@ -245,6 +255,41 @@ public class PortalSet : MonoBehaviour {
             borderPiece.name = "Bottom side";
             borderPiece.transform.parent = newBorders.transform;
         }
+
+
+        /* Create the corners of the border pieces of the two sides that connect them are used */
+        if(defaultBorderRight > 0) {
+            if(defaultBorderTop > 0) {
+                centerPoint = new Vector3(portalMeshWidth/2f + defaultBorderRight, portalMeshHeight + defaultBorderTop, 0);
+                borderPiece = CreateBox(centerPoint, defaultBorderRight, defaultBorderTop, defaultBorderDepth);
+                borderPiece.name = "Right side";
+                borderPiece.transform.parent = newBorders.transform;
+            }
+
+            if(defaultBorderBottom > 0) {
+                centerPoint = new Vector3(portalMeshWidth/2f + defaultBorderRight, -defaultBorderBottom, 0);
+                borderPiece = CreateBox(centerPoint, defaultBorderRight, defaultBorderBottom, defaultBorderDepth);
+                borderPiece.name = "Right side";
+                borderPiece.transform.parent = newBorders.transform;
+            }
+        }
+
+        if(defaultBorderLeft > 0) {
+            if(defaultBorderTop > 0) {
+                centerPoint = new Vector3(-portalMeshWidth/2f - defaultBorderLeft, portalMeshHeight + defaultBorderTop, 0);
+                borderPiece = CreateBox(centerPoint, defaultBorderLeft, defaultBorderTop, defaultBorderDepth);
+                borderPiece.name = "Right side";
+                borderPiece.transform.parent = newBorders.transform;
+            }
+
+            if(defaultBorderBottom > 0) {
+                centerPoint = new Vector3(-portalMeshWidth/2f - defaultBorderLeft, -defaultBorderBottom, 0);
+                borderPiece = CreateBox(centerPoint, defaultBorderLeft, defaultBorderBottom, defaultBorderDepth);
+                borderPiece.name = "Right side";
+                borderPiece.transform.parent = newBorders.transform;
+            }
+        }
+
 
         return newBorders;
     }
