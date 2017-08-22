@@ -9,8 +9,11 @@ public class PortalObjects : MonoBehaviour {
 
     /* The gameObject that contains the portal's mesh and PortalView script */
     public GameObject portalMesh;
+    public GameObject portalMeshExitPoint;
+
     /* The partner portalMesh for the other side of the portal to make it double sided */
     public GameObject backwardsPortalMesh;
+    public GameObject backwardsPortalMeshExitPoint;
 
 
     /* The two triggers that the player will teleport between for this portal */
@@ -28,13 +31,13 @@ public class PortalObjects : MonoBehaviour {
 
     /* -------- Setters ---------------------------------------------------- */
 
-    public void SetMesh(Mesh mesh) {
+    public void SetMesh(Mesh mesh, Mesh backwardsMesh) {
         /*
          * Link the given mesh to the meshRenderer that is used to dispaly the portal.
          */
          
         portalMesh.GetComponent<MeshFilter>().mesh = mesh;
-        backwardsPortalMesh.GetComponent<MeshFilter>().mesh = mesh;
+        backwardsPortalMesh.GetComponent<MeshFilter>().mesh = backwardsMesh;
 
     }
     

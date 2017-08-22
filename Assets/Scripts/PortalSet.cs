@@ -94,15 +94,27 @@ public class PortalSet : MonoBehaviour {
         EntrancePortal.meshContainer.localEulerAngles = new Vector3(0, 0, 0);
         ExitPortal.meshContainer.localEulerAngles = new Vector3(0, 180, 0);
 
+        /* Ensure the exit transforms of the portals are correct */
+        EntrancePortal.portalMeshExitPoint.transform.localPosition = new Vector3(0, 0, 0);
+        EntrancePortal.portalMeshExitPoint.transform.localEulerAngles = new Vector3(0, 180, 0);
+        ExitPortal.portalMeshExitPoint.transform.localPosition = new Vector3(0, 0, 0);
+        ExitPortal.portalMeshExitPoint.transform.localEulerAngles = new Vector3(0, 180, 0);
 
 
 
-        /* The backwards portal has to be positionned properly so it is proeprly the normal portal mesh but backwards. */
-        /* This might need a better place in the script */
-        EntrancePortal.backwardsPortalMesh.transform.localPosition = new Vector3(-portalMeshWidth, 0, 0);
+
+        
+        /* Place the backward portal mesh's positions */
+        EntrancePortal.backwardsPortalMesh.transform.localPosition = new Vector3(0, 0, 0);
         EntrancePortal.backwardsPortalMesh.transform.localEulerAngles = new Vector3(0, 180, 0);
         ExitPortal.backwardsPortalMesh.transform.localPosition = new Vector3(portalMeshWidth, 0, 0);
         ExitPortal.backwardsPortalMesh.transform.localEulerAngles = new Vector3(0, 180, 0);
+
+        //Set the backwards portal mesh's exit points
+        EntrancePortal.backwardsPortalMeshExitPoint.transform.localPosition = new Vector3(-portalMeshWidth, 0, 0);
+        EntrancePortal.backwardsPortalMeshExitPoint.transform.localEulerAngles = new Vector3(0, 0, 0);
+        ExitPortal.backwardsPortalMeshExitPoint.transform.localPosition = new Vector3(0, 0, 0);
+        ExitPortal.backwardsPortalMeshExitPoint.transform.localEulerAngles = new Vector3(0, 0, 0);
     }
 
     void UpdateTriggers() {
@@ -134,8 +146,8 @@ public class PortalSet : MonoBehaviour {
         }
 
         /* Assign the mesh to each linked portalObject */
-        EntrancePortal.SetMesh(mesh1);
-        ExitPortal.SetMesh(mesh2);
+        EntrancePortal.SetMesh(mesh1, mesh2);
+        ExitPortal.SetMesh(mesh2, mesh2);
     }
     
     void CreateBorder() {
