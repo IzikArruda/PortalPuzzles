@@ -33,33 +33,35 @@ namespace BLINDED_AM_ME{
 		private int m_OldPortalTextureSize = 0;
 
         public bool beingDrawn = true;
+
+        /* Use this material as a reference to create a unique material for the portal */
         public Material portalMaterial;
         public Material emptyMaterial;
 
-		private static bool s_InsideRendering = false;
-        
-
+        private static bool s_InsideRendering = false;
 
 		public void OnWillRenderObject()
 		{
+            CheckMats();
 
-			if(!enabled || !scoutCamera || !pointB)
+            if(!enabled || !scoutCamera || !pointB)
 				return;
 
 			Camera cam = Camera.current;
 			if( !cam )
 				return;
+            
 
-
+            
             // Safeguard from recursive reflections.        
             if( s_InsideRendering )
 				return;
 			s_InsideRendering = true;
 
 
-			var rend = GetComponent<Renderer>();
-			if (!enabled || !rend || !rend.sharedMaterial || !rend.enabled)
-				return;
+            var rend = GetComponent<Renderer>();
+            if(!enabled || !rend || !rend.sharedMaterial || !rend.enabled)
+                return;
 
             //Check if the portal is visible
             checkPortalVisibility(cam.transform);
@@ -68,34 +70,36 @@ namespace BLINDED_AM_ME{
             CreateNeededObjects();
 
 
-			Vector3 pos = transform.position;
+            Vector3 pos = transform.position;
 			Vector3 normal = transform.TransformDirection(faceNormal);
 
-			// this will make it depend on the points' position, rotation, and scale
-			scoutCamera.transform.position = pointB.TransformPoint(transform.InverseTransformPoint(cam.transform.position));
+            // this will make it depend on the points' position, rotation, and scale
+            scoutCamera.transform.position = pointB.TransformPoint(transform.InverseTransformPoint(cam.transform.position));
 			scoutCamera.transform.rotation = Quaternion.LookRotation(
 				pointB.TransformDirection(transform.InverseTransformDirection(cam.transform.forward)),
 				pointB.TransformDirection(transform.InverseTransformDirection(cam.transform.up)));
-
-			// I don't know how this works it just does, I got lucky
-			Vector4 clipPlane = CameraSpacePlane( cam, pos, normal, -1.0f );
+            
+            // I don't know how this works it just does, I got lucky
+            Vector4 clipPlane = CameraSpacePlane( cam, pos, normal, -1.0f );
 			Matrix4x4 projection = cam.CalculateObliqueMatrix(clipPlane);
             scoutCamera.projectionMatrix = projection;
 
+            
             if(!scoutCamera.enabled){ // make it manual
 				scoutCamera.Render();
 			}else
 				scoutCamera.enabled = false;
+            
 
-
-			Material[] materials = rend.sharedMaterials;
+            Material[] materials = rend.sharedMaterials;
 			foreach( Material mat in materials ) {
-				if( mat.HasProperty("_PortalTex") )
-					mat.SetTexture( "_PortalTex", m_PortalTexture );
-			}
+				if( mat.HasProperty("_PortalTex")) {
+                    mat.SetTexture( "_PortalTex", m_PortalTexture );
+                }
+            }
 
-			s_InsideRendering = false;
-		}
+            s_InsideRendering = false;
+        }
 
 
 		// Aras Pranckevicius MirrorReflection4
@@ -177,6 +181,7 @@ namespace BLINDED_AM_ME{
 
             /* Create a new portal texture if the portal has not been assigned one yet */
             if(portalMaterial == null) {
+                //This needs to create a new material properly
                 portalMaterial = new Material(Shader.Find("Unlit/Portal"));
                 portalMaterial.name = "__PortalMaterial" + GetInstanceID();
             }
@@ -194,6 +199,17 @@ namespace BLINDED_AM_ME{
         }
 
 
+        public void CheckMats() {
+            /*
+             * Check the mats to make sure a proper material is set
+             */
 
+            if(portalMaterial == null) {
+                //This needs to create a new material properly
+                portalMaterial = new Material(Shader.Find("Unlit/Portal"));
+                portalMaterial.name = "__PortalMaterial" + GetInstanceID();
+                GetComponent<MeshRenderer>().material = portalMaterial;
+            }
+        }
     }
 }
