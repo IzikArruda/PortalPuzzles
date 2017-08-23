@@ -274,14 +274,14 @@ public class PortalSet : MonoBehaviour {
             if(defaultBorderTop > 0) {
                 centerPoint = new Vector3(portalMeshWidth/2f + defaultBorderRight, portalMeshHeight + defaultBorderTop, 0);
                 borderPiece = CreateBox(centerPoint, defaultBorderRight, defaultBorderTop, defaultBorderDepth);
-                borderPiece.name = "Right side";
+                borderPiece.name = "RT Corner";
                 borderPiece.transform.parent = newBorders.transform;
             }
 
             if(defaultBorderBottom > 0) {
                 centerPoint = new Vector3(portalMeshWidth/2f + defaultBorderRight, -defaultBorderBottom, 0);
                 borderPiece = CreateBox(centerPoint, defaultBorderRight, defaultBorderBottom, defaultBorderDepth);
-                borderPiece.name = "Right side";
+                borderPiece.name = "RB Corner";
                 borderPiece.transform.parent = newBorders.transform;
             }
         }
@@ -290,14 +290,14 @@ public class PortalSet : MonoBehaviour {
             if(defaultBorderTop > 0) {
                 centerPoint = new Vector3(-portalMeshWidth/2f - defaultBorderLeft, portalMeshHeight + defaultBorderTop, 0);
                 borderPiece = CreateBox(centerPoint, defaultBorderLeft, defaultBorderTop, defaultBorderDepth);
-                borderPiece.name = "Right side";
+                borderPiece.name = "LT Corner";
                 borderPiece.transform.parent = newBorders.transform;
             }
 
             if(defaultBorderBottom > 0) {
                 centerPoint = new Vector3(-portalMeshWidth/2f - defaultBorderLeft, -defaultBorderBottom, 0);
                 borderPiece = CreateBox(centerPoint, defaultBorderLeft, defaultBorderBottom, defaultBorderDepth);
-                borderPiece.name = "Right side";
+                borderPiece.name = "LB Corner";
                 borderPiece.transform.parent = newBorders.transform;
             }
         }

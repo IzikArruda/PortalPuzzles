@@ -16,9 +16,8 @@ public class PortalObjects : MonoBehaviour {
     public GameObject backwardsPortalMeshExitPoint;
 
 
-    /* The two triggers that the player will teleport between for this portal */
+    /* The trigger that the player will teleport between for this portal */
     public GameObject teleporterEnterTrigger;
-    public GameObject teleporterLeaveTrigger;
     
     /* A link to each child container of the portal */
     public Transform meshContainer;
@@ -54,11 +53,11 @@ public class PortalObjects : MonoBehaviour {
         teleporterEnterTrigger.GetComponent<BoxCollider>().size = new Vector3(width, height, depth);
 
         /* Set the properties of the trigger at the partner portal */
-        teleporterLeaveTrigger.transform.localEulerAngles = new Vector3(0, 0, 0);
-        teleporterLeaveTrigger.transform.localScale = transform.localScale;
-        teleporterLeaveTrigger.transform.localPosition = new Vector3(-width/2f, height/2f, 0) + offSet;
-        teleporterLeaveTrigger.GetComponent<BoxCollider>().center = new Vector3(0, 0, 0);
-        teleporterLeaveTrigger.GetComponent<BoxCollider>().size = new Vector3(width, height, depth);
+        //teleporterLeaveTrigger.transform.localEulerAngles = new Vector3(0, 0, 0);
+        //teleporterLeaveTrigger.transform.localScale = transform.localScale;
+        //teleporterLeaveTrigger.transform.localPosition = new Vector3(-width/2f, height/2f, 0) + offSet;
+        //teleporterLeaveTrigger.GetComponent<BoxCollider>().center = new Vector3(0, 0, 0);
+        //teleporterLeaveTrigger.GetComponent<BoxCollider>().size = new Vector3(width, height, depth);
     }
     
     public void SetBorder(GameObject borderObject) {
