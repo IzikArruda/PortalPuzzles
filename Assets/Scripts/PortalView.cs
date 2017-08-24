@@ -71,6 +71,7 @@ namespace BLINDED_AM_ME{
              * partner portal's location and the player's position then render the image of that camera.
              */
 
+
             /* Check if key gameObjects are active */
             if(!enabled || !scoutCamera || !pointB)
 				return;
@@ -80,16 +81,35 @@ namespace BLINDED_AM_ME{
 			if( !cam )
 				return;
 
+
             /* Check if the portal's linked renderer is properly initilized */
             var rend = GetComponent<Renderer>();
             if(!rend || !rend.sharedMaterial || !rend.enabled)
                 return;
 
+
+
+
+            //IDEA: PRIUNT DETAI;LS IF THIS IS THE CORRECT MESH. CHECK WHAT CAMERA IS BEING USED
+            if(name == "Here Mesh5 THIS ONE") {
+                Debug.Log(cam.name);
+            }
+
+            //WE WILL NEED TO ALLOW RECURSION IF A CERTAIN CONDITION IS MET, SUCH AS THE PORTLA BEING RENDERED IS NOT A
+            //PART OF THE PREVIOUS RENDER?
             /* Prevent recursive reflections by using the lock */
-            if( s_InsideRendering )
+            if( s_InsideRendering && cam.name != "Camera1" )
 				return;
 			s_InsideRendering = true;
-            
+
+
+
+
+
+
+
+
+
 
             /* Set the material of the portal whether it is visible or not */
             if(checkPortalVisibility(cam.transform)) {
