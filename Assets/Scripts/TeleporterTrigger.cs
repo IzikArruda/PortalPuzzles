@@ -3,48 +3,21 @@ using System.Collections;
 
 /*
  * Attach this to a trigger that is placed in front of the portal's mesh. The trigger must
- * have it's local positive X axis face towards the portal's mesh. When teleporting the player,
- * it can send a "teleported" signal to the linked TeleportHandler if needed.
- * 
- * 
+ * have it's local positive X axis face towards the portal's mesh. Handles the teleporting of
+ * a ray in the form of a position and rotation.
  */
 public class TeleporterTrigger : MonoBehaviour {
     
+    /* The trigger of the partner portal to be teleported to */
     public Transform partner;
 
 
-    void OnTriggerStay(Collider collider) {
-        /*
-         * Check if the player will need to be teleported
-         */
-        /*
-         * Check if the player will need to be teleported. The player will be teleported if they pass
-         * the plane defined by the portal mesh.
-         * 
-         * this has been changed. teleportation will occcur when a ray collides with the trigger at any point
-         */
+    /* -------- Event Functions ---------------------------------------------------- */
 
-        if(collider.tag == "Player") {
-            /* Get the plane of the portal's mesh using the teleport trigger */
-            Vector3 planeNormal = transform.rotation*new Vector3(1, 0, 0);
-
-            /* Create a plane of the form of the portal mesh */
-            Plane triggerPlane = new Plane(planeNormal, transform.position);
-
-
-            /* Check if the center of the colliding object is between the trigger's center and the portal's mesh */
-            if(triggerPlane.GetSide(collider.transform.position)) {
-                //TeleportCollider(collider.transform);
-            }
-            /* The portal mesh will always be facing in the local X negative direction and will 
-             * positioned be half the collider box's X width in it's local X positive direction. */
-        }
-    }
-    
     public Quaternion TeleportParameters(ref Vector3 position, ref Quaternion rotation) {
         /*
          * Change the given parameters as if they were teleported from the teleporter 
-         * connected to this script to the teleporter assigned to the "partner" variable.
+         * connected to this script to the teleporter assigned to the "partner" transform.
          * When moving the point from one teleporter to another, the point must go from
          * one side of the collision box to the other, as shown by this graphic bellow:
          * 

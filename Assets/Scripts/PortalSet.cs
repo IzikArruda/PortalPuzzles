@@ -3,7 +3,7 @@ using System.Collections;
 
 /*
  * A set of 2 portalObjects that will be linked together. This script calls their Setter functions to 
- * properly set the portal's parameters (mesh, triggers, borders) to be identical.
+ * properly set the portal's parameters (mesh, triggers, borders).
  */
 [ExecuteInEditMode]
 public class PortalSet : MonoBehaviour {
@@ -12,33 +12,29 @@ public class PortalSet : MonoBehaviour {
     public PortalObjects EntrancePortal;
     public PortalObjects ExitPortal;
 
-    /* The object used as a border for the portal mesh */
-    public GameObject portalBorder;
+    /* positional offset of the portal's mesh without changing the trigger position */
+    public Vector3 portalOffset;
 
     /* The mesh of the portal. If this is null, a default rectangle mesh will be created and assigned. */
     public Mesh portalMesh;
 
     /* The sizes of the default portal mesh, the triggers, and the position of the backwards portalMesh */
-    public float portalMeshWidth;
-    public float portalMeshHeight;
-
-    /* positional offset of the portal */
-    public Vector3 portalOffset;
-
-    /* Depth of the portal's trigger. The higher value, the more noticable of a jump will occur on teleport */
-    public float portalThickness;
-
-    /* A temporary value for ease of access to update the borders of the portals */
-    public bool updateBorders;
-
-
+    public float portalWidth;
+    public float portalHeight;
+    private float previousWidth;
+    private float previousHeight;
 
     /* If the portal is centered on it's origin point. Else it protrudes from the origin. */
     public bool portalsCentered;
 
-    /* The offsets of the triggers for the portals */
+    /* Positional offset of the triggers for the portals */
     public Vector3 triggerOffset;
 
+    /* Depth of the portal's trigger. The higher value, the more noticable of a jump will occur on teleport */
+    public float triggerThickness;
+    
+    /* The object to be used as a border for the portal mesh. If this is null, a default border will be created */
+    public GameObject portalBorder;
 
     /* Depth of the default border */
     public float defaultBorderDepth;
@@ -48,108 +44,97 @@ public class PortalSet : MonoBehaviour {
     public float defaultBorderRight;
     public float defaultBorderTop;
     public float defaultBorderBottom;
+    
+    /* When true, will update the given object portal's meshes, triggers and borders */
+    public bool updatePortal;
 
+    
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
 
     void Update() {
 
-        /* Adjust the positionning of the portals */
-        UpdatePortalPosition();
+        /* If there is a change in the portal's size, force it to update */
+        if(portalWidth != previousWidth || portalHeight != previousHeight) {
+            updatePortal = true;
+        }
 
-        /* Create and link the meshes of the portals */
-        CreateMesh();
-        
-        /* Fix the transform of the portal's triggers */
-        UpdateTriggers();
-        
-        /* Update the borders for the portals if needed */
-        UpdateTheBorders();
+        /* Reinitilize the portal's pieces */
+        if(updatePortal) {
+            CreateMesh();
+            CreateBorder();
+            UpdatePortalTransforms();
+            UpdateTriggers();
+
+            updatePortal = false;
+        }
     }
     
 
-
     /* -------- Update Functions ---------------------------------------------------- */
 
-    void UpdatePortalPosition() {
+    void UpdatePortalTransforms() {
         /*
-         * Depending on the sizes of the portals, change the local position of the portals.
-         * Since the two portals are "mirrors", one of them will need to be reversed.
+         * Depending on the sizes of the portals, change the local position and rotation of the portals.
+         * This includes the portal meshes, triggers, borders, and backwards portals.
+         * Since the two portals are "mirrors", the exitPortal will need to be reversed.
          */
 
         /* Add an offset if the portals need to be centered onto their origin */
         Vector3 centeredOffset = Vector3.zero;
         if(portalsCentered) {
-            centeredOffset = new Vector3(portalMeshWidth/2f, 0, 0);
+            centeredOffset = new Vector3(portalWidth/2f, 0, 0);
         }
 
-        /* Reposition the portal's and their containers */
-        EntrancePortal.meshContainer.localPosition = centeredOffset;
+        /* Set the mesh, trigger and border containers to their proper positions */
         EntrancePortal.TriggerContainer.localPosition = centeredOffset;
-        EntrancePortal.borderContainer.localPosition = new Vector3(-portalMeshWidth/2f, 0, 0) + centeredOffset;
-        ExitPortal.meshContainer.localPosition = centeredOffset;
+        EntrancePortal.borderContainer.localPosition = new Vector3(-portalWidth/2f, 0, 0) + centeredOffset;
         ExitPortal.TriggerContainer.localPosition = centeredOffset;
-        ExitPortal.borderContainer.localPosition = new Vector3(-portalMeshWidth/2f, 0, 0) + centeredOffset;
-
-        /* Ensure the rotation of the portal meshes are correct */
+        ExitPortal.borderContainer.localPosition = new Vector3(-portalWidth/2f, 0, 0) + centeredOffset;
+        EntrancePortal.meshContainer.localPosition = centeredOffset;
         EntrancePortal.meshContainer.localEulerAngles = new Vector3(0, 0, 0);
+        ExitPortal.meshContainer.localPosition = centeredOffset;
         ExitPortal.meshContainer.localEulerAngles = new Vector3(0, 180, 0);
 
-        /* Ensure the exit transforms of the portals are correct */
-        EntrancePortal.portalMeshExitPoint.transform.localPosition = new Vector3(0, 0, 0);
-        EntrancePortal.portalMeshExitPoint.transform.localEulerAngles = new Vector3(0, 180, 0);
-        ExitPortal.portalMeshExitPoint.transform.localPosition = new Vector3(0, 0, 0);
-        ExitPortal.portalMeshExitPoint.transform.localEulerAngles = new Vector3(0, 180, 0);
-
-
-
-
-        
-        /* Place the backward portal mesh's positions */
-        EntrancePortal.backwardsPortalMesh.transform.localPosition = new Vector3(0, 0, 0);
-        EntrancePortal.backwardsPortalMesh.transform.localEulerAngles = new Vector3(0, 180, 0);
-        ExitPortal.backwardsPortalMesh.transform.localPosition = new Vector3(portalMeshWidth, 0, 0);
-        ExitPortal.backwardsPortalMesh.transform.localEulerAngles = new Vector3(0, 180, 0);
-
-        //Set the backwards portal mesh's exit points
-        EntrancePortal.backwardsPortalMeshExitPoint.transform.localPosition = new Vector3(-portalMeshWidth, 0, 0);
-        EntrancePortal.backwardsPortalMeshExitPoint.transform.localEulerAngles = new Vector3(0, 0, 0);
-        ExitPortal.backwardsPortalMeshExitPoint.transform.localPosition = new Vector3(0, 0, 0);
-        ExitPortal.backwardsPortalMeshExitPoint.transform.localEulerAngles = new Vector3(0, 0, 0);
+        /* Properly set the portals and their exit points */
+        EntrancePortal.SetPortalTransforms();
+        ExitPortal.SetPortalTransforms();
     }
 
     void UpdateTriggers() {
         /*
-         * Adjust the position, rotation and scale of the triggers along with their offset.
+         * Set the position, rotation and scale of the triggers along with their offset.
          */
-
-        //NOTE: when the player is very close to the mesh for a portal, the rendering order of the portal mesh will 
-        //imrproperly render certain objects.
-        EntrancePortal.SetTriggersTransform(portalMeshWidth, portalMeshHeight, portalThickness, triggerOffset);
-        ExitPortal.SetTriggersTransform(portalMeshWidth, portalMeshHeight, portalThickness, triggerOffset);
+         
+        EntrancePortal.SetTriggersTransform(portalWidth, portalHeight, triggerThickness, triggerOffset);
+        ExitPortal.SetTriggersTransform(portalWidth, portalHeight, triggerThickness, triggerOffset);
     }
+
+
+    /* -------- Initilization Functions ---------------------------------------------------- */
     
     void CreateMesh() {
         /*
          * Create the mesh for the linked portals using the given portalMesh. If there is no portalMesh,
          * use a generated mesh with the given defaultMeshSize values.
          */
-        Mesh mesh1, mesh2;
+        Mesh normalMesh, offsetMesh;
 
-        /* Get either the linked mesh for the portal or create the the default */
+        /* Get either the linked mesh for the portal or create the default mesh */
         if(portalMesh) {
-            mesh1 = portalMesh;
-            mesh2 = portalMesh;
+            //Note: This has not yet been tested and will most likely need revision
+            normalMesh = portalMesh;
+            offsetMesh = portalMesh;
         }
         else {
-            mesh1 = CreateDefaultMesh(false);
-            mesh2 = CreateDefaultMesh(true);
+            normalMesh = CreateDefaultMesh(false);
+            offsetMesh = CreateDefaultMesh(true);
         }
 
         /* Assign the mesh to each linked portalObject */
-        EntrancePortal.SetMesh(mesh1, mesh2);
-        ExitPortal.SetMesh(mesh2, mesh2);
+        EntrancePortal.SetMesh(normalMesh, offsetMesh);
+        ExitPortal.SetMesh(offsetMesh, normalMesh);
     }
-    
+
     void CreateBorder() {
         /*
          * Create a border for each portal. They will have the same border to ensure consistensy between portals.
@@ -168,147 +153,13 @@ public class PortalSet : MonoBehaviour {
             GameObject newBorders = CreateDefaultBorder();
             EntrancePortal.SetBorder(newBorders);
             ExitPortal.SetBorder(newBorders);
-            //Delete the object once it has been set
-            DestroyImmediate(newBorders.gameObject);
+            DestroyImmediate(newBorders);
         }
-    }
-
-
-    /* -------- Event Functions ---------------------------------------------------- */
-
-    void UpdateTheBorders() {
-        /*
-         * Check if the borders need to be updated. This occurs when the "updateBorders" bolean is set to true
-         */
-
-
-        if(updateBorders == true) {
-            CreateBorder();
-            updateBorders = false;
-        }
-    }
-
-    Mesh CreateDefaultMesh(bool reflectMesh) {
-        /*
-         * Create the default mesh for the portal using the default width and height. It does not need UVs.
-         * 
-         * When handling the exit portal's mesh, add an offset to the mesh to properly "reflect" the portal.
-         */
-        Mesh defaultMesh = new Mesh();
-        Vector3[] vertices;
-        int[] triangles;
-
-        /* If it's the reflected mesh, apply another offset */
-        Vector3 reflectionOffset = Vector3.zero;
-        if(reflectMesh) {
-            reflectionOffset = new Vector3(portalMeshWidth, 0, 0);
-        }
-
-
-        /* Set the vertices for the mesh */
-        vertices = new Vector3[] {
-                new Vector3(-portalMeshWidth, portalMeshHeight, 0) + portalOffset + reflectionOffset,
-                new Vector3(0, portalMeshHeight, 0) + portalOffset + reflectionOffset,
-                new Vector3(0, 0, 0) + portalOffset + reflectionOffset,
-                new Vector3(-portalMeshWidth, 0, 0) + portalOffset + reflectionOffset
-            };
-
-        /* Set the two polygons that form the mesh */
-        triangles = new int[] {
-                3, 2, 1, 3, 1, 0
-        };
-
-        /* Assign the properties of the mesh */
-        defaultMesh.vertices = vertices;
-        defaultMesh.triangles = triangles;
-
-        return defaultMesh;
-    }
-
-    GameObject CreateDefaultBorder() {
-        /*
-         * Use the script's variables to create a basic border around the portal's mesh.
-         * Any defaultBorder size value that is equal or less than 0 will not be created
-         */
-        GameObject borderPiece;
-        GameObject newBorders = new GameObject();
-        Vector3 centerPoint = new Vector3(0, 0, 0);
-        newBorders.name = "Default Border Parent";
-
-        
-        /* Create the right side of the border piece */
-        if(defaultBorderRight > 0) {
-            centerPoint = new Vector3(portalMeshWidth/2f + defaultBorderRight, portalMeshHeight/2f, 0);
-            borderPiece = CreateBox(centerPoint, defaultBorderRight, portalMeshHeight/2f, defaultBorderDepth);
-            borderPiece.name = "Right side";
-            borderPiece.transform.parent = newBorders.transform;
-        }
-
-        /* Create the left side of the border piece */
-        if(defaultBorderLeft > 0) {
-            centerPoint = new Vector3(-portalMeshWidth/2f - defaultBorderLeft, portalMeshHeight/2f, 0);
-            borderPiece = CreateBox(centerPoint, defaultBorderLeft, portalMeshHeight/2f, defaultBorderDepth);
-            borderPiece.name = "Left side";
-            borderPiece.transform.parent = newBorders.transform;
-        }
-
-        /* Create the top side of the border piece */
-        if(defaultBorderTop > 0) {
-            centerPoint = new Vector3(0, portalMeshHeight + defaultBorderTop, 0);
-            borderPiece = CreateBox(centerPoint, portalMeshWidth/2f, defaultBorderTop, defaultBorderDepth);
-            borderPiece.name = "Top side";
-            borderPiece.transform.parent = newBorders.transform;
-        }
-
-        /* Create the bottom side of the border piece */
-        if(defaultBorderBottom > 0) {
-            centerPoint = new Vector3(0, -defaultBorderBottom, 0);
-            borderPiece = CreateBox(centerPoint, portalMeshWidth/2f, defaultBorderBottom, defaultBorderDepth);
-            borderPiece.name = "Bottom side";
-            borderPiece.transform.parent = newBorders.transform;
-        }
-
-
-        /* Create the corners of the border pieces of the two sides that connect them are used */
-        if(defaultBorderRight > 0) {
-            if(defaultBorderTop > 0) {
-                centerPoint = new Vector3(portalMeshWidth/2f + defaultBorderRight, portalMeshHeight + defaultBorderTop, 0);
-                borderPiece = CreateBox(centerPoint, defaultBorderRight, defaultBorderTop, defaultBorderDepth);
-                borderPiece.name = "RT Corner";
-                borderPiece.transform.parent = newBorders.transform;
-            }
-
-            if(defaultBorderBottom > 0) {
-                centerPoint = new Vector3(portalMeshWidth/2f + defaultBorderRight, -defaultBorderBottom, 0);
-                borderPiece = CreateBox(centerPoint, defaultBorderRight, defaultBorderBottom, defaultBorderDepth);
-                borderPiece.name = "RB Corner";
-                borderPiece.transform.parent = newBorders.transform;
-            }
-        }
-
-        if(defaultBorderLeft > 0) {
-            if(defaultBorderTop > 0) {
-                centerPoint = new Vector3(-portalMeshWidth/2f - defaultBorderLeft, portalMeshHeight + defaultBorderTop, 0);
-                borderPiece = CreateBox(centerPoint, defaultBorderLeft, defaultBorderTop, defaultBorderDepth);
-                borderPiece.name = "LT Corner";
-                borderPiece.transform.parent = newBorders.transform;
-            }
-
-            if(defaultBorderBottom > 0) {
-                centerPoint = new Vector3(-portalMeshWidth/2f - defaultBorderLeft, -defaultBorderBottom, 0);
-                borderPiece = CreateBox(centerPoint, defaultBorderLeft, defaultBorderBottom, defaultBorderDepth);
-                borderPiece.name = "LB Corner";
-                borderPiece.transform.parent = newBorders.transform;
-            }
-        }
-
-
-        return newBorders;
     }
 
 
     /* -------- Helper Functions ---------------------------------------------------- */
-    
+
     GameObject CreateBox(Vector3 center, float x, float y, float z) {
         /*
          * Create a box using the given parameters
@@ -342,11 +193,127 @@ public class PortalSet : MonoBehaviour {
         mesh.triangles = triangles;
         mesh.RecalculateNormals();
         mesh.RecalculateBounds();
-        
+
         cube.AddComponent<MeshFilter>().mesh = mesh;
         cube.AddComponent<MeshRenderer>();
-
-
+        
         return cube;
+    }
+
+    Mesh CreateDefaultMesh(bool reflectMesh) {
+        /*
+         * Create the default mesh for the portal using the default width and height.
+         * 
+         * When handling the exit portal's mesh, add an offset to the mesh to properly "reflect" the portal.
+         */
+        Mesh defaultMesh = new Mesh();
+        Vector3[] vertices;
+        int[] triangles;
+
+        /* If it's the reflected mesh, apply another offset */
+        Vector3 reflectionOffset = Vector3.zero;
+        if(reflectMesh) {
+            reflectionOffset = new Vector3(portalWidth, 0, 0);
+        }
+
+        /* Set the vertices for the mesh */
+        vertices = new Vector3[] {
+                new Vector3(-portalWidth, portalHeight, 0) + portalOffset + reflectionOffset,
+                new Vector3(0, portalHeight, 0) + portalOffset + reflectionOffset,
+                new Vector3(0, 0, 0) + portalOffset + reflectionOffset,
+                new Vector3(-portalWidth, 0, 0) + portalOffset + reflectionOffset
+            };
+
+        /* Set the two polygons that form the mesh */
+        triangles = new int[] {
+                3, 2, 1, 3, 1, 0
+        };
+
+        /* Assign the properties of the mesh */
+        defaultMesh.vertices = vertices;
+        defaultMesh.triangles = triangles;
+
+        return defaultMesh;
+    }
+
+    GameObject CreateDefaultBorder() {
+        /*
+         * Use the script's variables to create a basic border around the portal's mesh.
+         * Any defaultBorder size value that is equal or less than 0 will not be created
+         */
+        GameObject borderPiece;
+        GameObject newBorders = new GameObject();
+        Vector3 centerPoint = new Vector3(0, 0, 0);
+        newBorders.name = "Default Border Parent";
+
+        
+        /* Create the right side of the border piece */
+        if(defaultBorderRight > 0) {
+            centerPoint = new Vector3(portalWidth/2f + defaultBorderRight, portalHeight/2f, 0);
+            borderPiece = CreateBox(centerPoint, defaultBorderRight, portalHeight/2f, defaultBorderDepth);
+            borderPiece.name = "Right side";
+            borderPiece.transform.parent = newBorders.transform;
+        }
+
+        /* Create the left side of the border piece */
+        if(defaultBorderLeft > 0) {
+            centerPoint = new Vector3(-portalWidth/2f - defaultBorderLeft, portalHeight/2f, 0);
+            borderPiece = CreateBox(centerPoint, defaultBorderLeft, portalHeight/2f, defaultBorderDepth);
+            borderPiece.name = "Left side";
+            borderPiece.transform.parent = newBorders.transform;
+        }
+
+        /* Create the top side of the border piece */
+        if(defaultBorderTop > 0) {
+            centerPoint = new Vector3(0, portalHeight + defaultBorderTop, 0);
+            borderPiece = CreateBox(centerPoint, portalWidth/2f, defaultBorderTop, defaultBorderDepth);
+            borderPiece.name = "Top side";
+            borderPiece.transform.parent = newBorders.transform;
+        }
+
+        /* Create the bottom side of the border piece */
+        if(defaultBorderBottom > 0) {
+            centerPoint = new Vector3(0, -defaultBorderBottom, 0);
+            borderPiece = CreateBox(centerPoint, portalWidth/2f, defaultBorderBottom, defaultBorderDepth);
+            borderPiece.name = "Bottom side";
+            borderPiece.transform.parent = newBorders.transform;
+        }
+
+
+        /* Create the corners of the border pieces of the two sides that connect them are used */
+        if(defaultBorderRight > 0) {
+            if(defaultBorderTop > 0) {
+                centerPoint = new Vector3(portalWidth/2f + defaultBorderRight, portalHeight + defaultBorderTop, 0);
+                borderPiece = CreateBox(centerPoint, defaultBorderRight, defaultBorderTop, defaultBorderDepth);
+                borderPiece.name = "RT Corner";
+                borderPiece.transform.parent = newBorders.transform;
+            }
+
+            if(defaultBorderBottom > 0) {
+                centerPoint = new Vector3(portalWidth/2f + defaultBorderRight, -defaultBorderBottom, 0);
+                borderPiece = CreateBox(centerPoint, defaultBorderRight, defaultBorderBottom, defaultBorderDepth);
+                borderPiece.name = "RB Corner";
+                borderPiece.transform.parent = newBorders.transform;
+            }
+        }
+
+        if(defaultBorderLeft > 0) {
+            if(defaultBorderTop > 0) {
+                centerPoint = new Vector3(-portalWidth/2f - defaultBorderLeft, portalHeight + defaultBorderTop, 0);
+                borderPiece = CreateBox(centerPoint, defaultBorderLeft, defaultBorderTop, defaultBorderDepth);
+                borderPiece.name = "LT Corner";
+                borderPiece.transform.parent = newBorders.transform;
+            }
+
+            if(defaultBorderBottom > 0) {
+                centerPoint = new Vector3(-portalWidth/2f - defaultBorderLeft, -defaultBorderBottom, 0);
+                borderPiece = CreateBox(centerPoint, defaultBorderLeft, defaultBorderBottom, defaultBorderDepth);
+                borderPiece.name = "LB Corner";
+                borderPiece.transform.parent = newBorders.transform;
+            }
+        }
+
+
+        return newBorders;
     }
 }

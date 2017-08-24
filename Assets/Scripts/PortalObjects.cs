@@ -9,13 +9,16 @@ public class PortalObjects : MonoBehaviour {
 
     /* The gameObject that contains the portal's mesh and PortalView script */
     public GameObject portalMesh;
+
+    /* The exit point of the portalMesh */
     public GameObject portalMeshExitPoint;
 
     /* The partner portalMesh for the other side of the portal to make it double sided */
     public GameObject backwardsPortalMesh;
+
+    /* The exit point of the backwardsPortalMesh */
     public GameObject backwardsPortalMeshExitPoint;
-
-
+    
     /* The trigger that the player will teleport between for this portal */
     public GameObject teleporterEnterTrigger;
     
@@ -30,14 +33,28 @@ public class PortalObjects : MonoBehaviour {
 
     /* -------- Setters ---------------------------------------------------- */
 
+    public void SetPortalTransforms() {
+        /*
+         * Set the transforms of the portal's meshes and exit points.
+         */
+         
+        portalMesh.transform.localPosition = new Vector3(0, 0, 0);
+        portalMesh.transform.localEulerAngles = new Vector3(0, 0, 0);
+        backwardsPortalMesh.transform.localPosition = new Vector3(0, 0, 0);
+        backwardsPortalMesh.transform.localEulerAngles = new Vector3(0, 180, 0);
+        portalMeshExitPoint.transform.localPosition = new Vector3(0, 0, 0);
+        portalMeshExitPoint.transform.localEulerAngles = new Vector3(0, 180, 0);
+        backwardsPortalMeshExitPoint.transform.localPosition = new Vector3(0, 0, 0);
+        backwardsPortalMeshExitPoint.transform.localEulerAngles = new Vector3(0, 0, 0);
+    }
+
     public void SetMesh(Mesh mesh, Mesh backwardsMesh) {
         /*
-         * Link the given mesh to the meshRenderer that is used to dispaly the portal.
+         * Link the given mesh to the meshRenderer that is used to display the portal.
          */
          
         portalMesh.GetComponent<MeshFilter>().mesh = mesh;
         backwardsPortalMesh.GetComponent<MeshFilter>().mesh = backwardsMesh;
-
     }
     
     public void SetTriggersTransform(float width, float height, float depth, Vector3 offSet) {
@@ -51,13 +68,6 @@ public class PortalObjects : MonoBehaviour {
         teleporterEnterTrigger.transform.localPosition = new Vector3(-width/2f, height/2f, 0) + offSet;
         teleporterEnterTrigger.GetComponent<BoxCollider>().center = new Vector3(0, 0, 0);
         teleporterEnterTrigger.GetComponent<BoxCollider>().size = new Vector3(width, height, depth);
-
-        /* Set the properties of the trigger at the partner portal */
-        //teleporterLeaveTrigger.transform.localEulerAngles = new Vector3(0, 0, 0);
-        //teleporterLeaveTrigger.transform.localScale = transform.localScale;
-        //teleporterLeaveTrigger.transform.localPosition = new Vector3(-width/2f, height/2f, 0) + offSet;
-        //teleporterLeaveTrigger.GetComponent<BoxCollider>().center = new Vector3(0, 0, 0);
-        //teleporterLeaveTrigger.GetComponent<BoxCollider>().size = new Vector3(width, height, depth);
     }
     
     public void SetBorder(GameObject borderObject) {
