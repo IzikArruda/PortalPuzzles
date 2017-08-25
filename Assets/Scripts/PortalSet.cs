@@ -7,7 +7,10 @@ using System.Collections;
  */
 [ExecuteInEditMode]
 public class PortalSet : MonoBehaviour {
-    
+
+    /* The name of the portalSet */
+    public string objectName;
+
     /* The two portals that are linked together */
     public PortalObjects EntrancePortal;
     public PortalObjects ExitPortal;
@@ -21,8 +24,8 @@ public class PortalSet : MonoBehaviour {
     /* The sizes of the default portal mesh, the triggers, and the position of the backwards portalMesh */
     public float portalWidth;
     public float portalHeight;
-    private float previousWidth;
-    private float previousHeight;
+    private float previousWidth = 0;
+    private float previousHeight = 0;
 
     /* If the portal is centered on it's origin point. Else it protrudes from the origin. */
     public bool portalsCentered;
@@ -48,8 +51,91 @@ public class PortalSet : MonoBehaviour {
     /* When true, will update the given object portal's meshes, triggers and borders */
     public bool updatePortal;
 
-    
+
+    /* A static array that tracks all currently used protalMesh layers. True indicates the layer is active already */
+    private static bool[] availableLayers;
+
+    /* The range of layesr that the portal can occupy. do not change these at run-time. */
+    public static int minLayer = 9;
+    public static int maxLayer = 30;
+
+    /* The current layer this portalSet occupies */
+    private int currentLayer = -1;
+
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
+
+    void Start() {
+        /*
+         * Assign a unique rendering layers to each new portalSet 
+         * and properly name the children of this protalSet.
+         */
+
+        /* Create the availableLayers array if it is not yet initilized or it's sizes dont match */
+        if(availableLayers == null || availableLayers.Length != maxLayer - minLayer) {
+            availableLayers = new bool[maxLayer-minLayer];
+            for(int i = 0; i < availableLayers.Length; i++) {
+                availableLayers[i] = false;
+            }
+        }
+
+        /* Get the first available layer not currently used by another portalSet*/
+        if(currentLayer == -1) {
+            for(int i = 0; i < availableLayers.Length; i++) {
+                if(availableLayers[i] == false) {
+                    currentLayer = i;
+                    i = availableLayers.Length;
+                }
+            }
+        }else {
+            Debug.Log("PortalSet already assigned a layer");
+        }
+
+        /* Reserve the layer and assign it to the proper children of this portalSet */
+        if(currentLayer == -1) {
+            Debug.Log("WARNIGNG: CANNOT FIND RENDERING LAYER FOR THIS PORTALSET");
+        }
+        else if(availableLayers[currentLayer]) {
+            Debug.Log("WARNIGNG: TRYING TO USE AN OCCUPIED LAYER");
+        }
+        else {
+            availableLayers[currentLayer] = true;
+            AssignLayerToChildren(currentLayer+minLayer);
+            Debug.Log("NOW CONTROLLING LAYER " + (currentLayer+minLayer));
+        }
+
+       
+        /* Properly name this portalSet */
+        string ID = "" + GetInstanceID();
+        if(objectName != "") {
+            name = objectName + " (PortalID = " + ID + ")";
+        }else {
+            name = "PortalSet (PortalID = " + ID + ")";
+        }
+
+        /* Give this portalSet's ID to each portalMesh */
+        EntrancePortal.portalMesh.GetComponent<PortalView>().portalSetID = ID;
+        EntrancePortal.backwardsPortalMesh.GetComponent<PortalView>().portalSetID = ID;
+        ExitPortal.portalMesh.GetComponent<PortalView>().portalSetID = ID;
+        ExitPortal.backwardsPortalMesh.GetComponent<PortalView>().portalSetID = ID;
+
+        /* Have the portalID be sepperated from the cameraName by the "|" character */
+        EntrancePortal.portalMesh.GetComponent<PortalView>().scoutCamera.name = ID + "|PortalView Camera";
+        EntrancePortal.backwardsPortalMesh.GetComponent<PortalView>().scoutCamera.name = ID + "|PortalView Camera";
+        ExitPortal.portalMesh.GetComponent<PortalView>().scoutCamera.name = ID + "|PortalView Camera";
+        ExitPortal.backwardsPortalMesh.GetComponent<PortalView>().scoutCamera.name = ID + "|PortalView Camera";
+    }
+
+    void OnDisable() {
+        /*
+         * Remove the currentLayer from the active layer mlist
+         */
+
+        /* Relenquish control over it's current layer */
+        if(currentLayer != -1) {
+            availableLayers[currentLayer] = false;
+            currentLayer = -1;
+        }
+    }
 
     void Update() {
 
@@ -155,6 +241,28 @@ public class PortalSet : MonoBehaviour {
             ExitPortal.SetBorder(newBorders);
             DestroyImmediate(newBorders);
         }
+    }
+    
+
+    /* -------- Event Functions ---------------------------------------------------- */
+    
+    void AssignLayerToChildren(int renderLayer) {
+        /*
+         * Assign each portalMesh of this portalSet the given rendering layer and 
+         * for each camera in this portalSet, remove the given rendering layer from it's culling mask
+         */
+
+        /* Assign the portalMeshes to their proper layer */
+        EntrancePortal.portalMesh.layer = renderLayer;
+        EntrancePortal.backwardsPortalMesh.layer = renderLayer;
+        ExitPortal.portalMesh.layer = renderLayer;
+        ExitPortal.backwardsPortalMesh.layer = renderLayer;
+
+        /* have the children cameras render all but the given rendering layer */
+        EntrancePortal.portalMesh.GetComponent<PortalView>().scoutCamera.cullingMask = ~(1 << renderLayer);
+        EntrancePortal.backwardsPortalMesh.GetComponent<PortalView>().scoutCamera.cullingMask = ~(1 << renderLayer);
+        ExitPortal.portalMesh.GetComponent<PortalView>().scoutCamera.cullingMask = ~(1 << renderLayer);
+        ExitPortal.backwardsPortalMesh.GetComponent<PortalView>().scoutCamera.cullingMask = ~(1 << renderLayer);
     }
 
 

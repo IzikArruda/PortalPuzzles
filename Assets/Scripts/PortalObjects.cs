@@ -29,7 +29,7 @@ public class PortalObjects : MonoBehaviour {
 
     /* A link to the border that surrounds the contour of the portal mesh. */
     public GameObject border;
-
+    
 
     /* -------- Setters ---------------------------------------------------- */
 
