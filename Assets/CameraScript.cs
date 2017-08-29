@@ -1,19 +1,19 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-//[ExecuteInEditMode]
+[ExecuteInEditMode]
 public class CameraScript : MonoBehaviour {
 
-    private int currentLayer;
+    public int currentLayer;
 
-    private ArrayList gameObjects;
-    private ArrayList newTex;
-    private ArrayList oldTex;
+    public ArrayList gameObjects;
+    public ArrayList newTex;
+    public ArrayList oldTex;
 
 
-    void Start() {
+    public void Start() {
         currentLayer = 0;
-
+        
         gameObjects = new ArrayList();
         newTex = new ArrayList();
         oldTex = new ArrayList();
