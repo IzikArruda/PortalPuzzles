@@ -70,20 +70,20 @@ public class PortalView : MonoBehaviour {
 
 
     /* The max viewing depth for recursive portal calls */
-    private static int currentCameraDepth = 2;
+    private static int maxCameraDepth = 2;
 
     /* An array of cameras used for this portal's recursive portal rendering */
-    private GameObject[] portalRenderingCameras;
+    private GameObject[] recursiveCameras;
 
 
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
 
     void Start() {
         /*
-         * Ensure the portal has a proper material created
+         * Ensure the portal has all it's objects properly created.
          */
          
-        /* Ensure the material used on the portal is properly created */
+        /* Check if the portalMaterial used for the portal is created */
         if(!portalMaterial) {
             portalMaterial = new Material(Shader.Find("Unlit/Portal"));
             portalMaterial.name = "__PortalMaterial" + GetInstanceID();
@@ -91,185 +91,99 @@ public class PortalView : MonoBehaviour {
         }
 
         /* Create the recursive rendering cameras for this portal */
-        if(portalRenderingCameras == null || portalRenderingCameras.Length != currentCameraDepth) {
+        //For now, always recreate the array
+        if(true || recursiveCameras == null || recursiveCameras.Length != maxCameraDepth) {
 
             /* Empty the current camera array before re-creating it */
-            if(portalRenderingCameras != null) {
-                foreach(GameObject go in portalRenderingCameras) {
+            if(recursiveCameras != null) {
+                foreach(GameObject go in recursiveCameras) {
                     DestroyImmediate(go);
                 }
             }
 
             /* Create the camera array and populate it */
-            portalRenderingCameras = new GameObject[currentCameraDepth];
-            for(int i = 0; i < portalRenderingCameras.Length; i++) {
-                portalRenderingCameras[i] = CreateScoutCamera();
-                portalRenderingCameras[i].name = "ScoutCamera";
-                portalRenderingCameras[i].GetComponent<CameraScript>().cameraDepth = i+1;
-                portalRenderingCameras[i].GetComponent<CameraScript>().portalSetID = portalSetID;
-                portalRenderingCameras[i].GetComponent<CameraScript>().scout = true;
+            recursiveCameras = new GameObject[maxCameraDepth];
+            for(int i = 0; i < recursiveCameras.Length; i++) {
+                recursiveCameras[i] = CreateScoutCamera();
+                recursiveCameras[i].name = "ScoutCamera | Depth " + i;
+                recursiveCameras[i].transform.parent = transform;
+                recursiveCameras[i].GetComponent<CameraScript>().cameraDepth = i;
+                recursiveCameras[i].GetComponent<CameraScript>().portalSetID = portalSetID;
+                recursiveCameras[i].GetComponent<CameraScript>().scout = true;
+
+                /* Keep the cameras in the editor after creation */
+                recursiveCameras[i].hideFlags = HideFlags.DontSave;
 
                 /* Create a renderTexture for this camera */
-                portalRenderingCameras[i].GetComponent<CameraScript>().renderTexture = 
-                        CreateRenderTexture(portalRenderingCameras[i].GetComponent<Camera>());
-                
-                /* Keep the cameras in the editor after creation */
-                portalRenderingCameras[i].hideFlags = HideFlags.DontSave;
+                recursiveCameras[i].GetComponent<CameraScript>().renderTexture = 
+                        CreateRenderTexture(recursiveCameras[i].GetComponent<Camera>());
+
             }
-
         }
-
-
-
-
-        /* Properly create each depth camera */
-        //level1Camera = new GameObject("ScoutCamera1");
-        //CreateScoutCamera(level1Camera);
-        //RenderTexture level1RendTex = CreateRenderTexture(level1Camera.GetComponent<Camera>());
-
-        //level2Camera = new GameObject("ScoutCamera2");
-        //CreateScoutCamera(level2Camera);
-        //RenderTexture level2RendTex = CreateRenderTexture(level2Camera.GetComponent<Camera>());
     }
     
- 
-
-    
-
     public void OnWillRenderObject() {
         /*
-         * ITS ALL GONNA BE DONE HERE
+         * When this portal is scheduled to get rendered, use the camera that will render it to determine
+         * what texture the portal will have. It all depends on whether the camera is a scoutCamera
+         * and how deep the camera is into it's recursive rendering.
          */
         Texture cameraView = null;
-
-        /* Get the camera rendering this portal */
-        Camera cam = Camera.current;
-        CameraScript camScript = cam.GetComponent<CameraScript>();
+        Camera camera = Camera.current;
+        CameraScript cameraScript = camera.GetComponent<CameraScript>();
         
-
         /* Ensure the camera rendering this portal has the proper CameraScript */
-        if(camScript) {
+        if(cameraScript) {
 
-            /* If the camera used is not a scoutCamera, make this portal use a null texture */
-            if(!camScript.scout) {
+            /* Use the view of the first recursiveCamera to render the portal */
+            if(!cameraScript.scout) {
+                OnWillRenderObject123(camera, recursiveCameras[0].GetComponent<CameraScript>(), ref cameraView);
+                camera.GetComponent<CameraScript>().AssignMeshTo(gameObject, cameraView);
+            }else {
 
-                /* Use the first depth scoutCamera to render the portalView */
-                OnWillRenderObject123(cam, portalRenderingCameras[0].GetComponent<CameraScript>(), ref cameraView);
-                cam.GetComponent<CameraScript>().AssignMeshTo(gameObject, cameraView);
-            }
+                /* Use the next camera down the recursiveCameras list */
+                if(cameraScript.cameraDepth >= 0 && cameraScript.cameraDepth < maxCameraDepth-1) {
+                    OnWillRenderObject123(camera, recursiveCameras[cameraScript.cameraDepth + 1].GetComponent<CameraScript>(), ref cameraView);
+                    cameraScript.AssignMeshTo(gameObject, cameraView);
+                }
 
+                /* If it is using the last scoutCamera of the recursiveCamera list, apply a null texture */
+                else if(cameraScript.cameraDepth >= maxCameraDepth-1) {
+                    //Debug.Log("WARNING: CAMERA RENDER DEPTH REACHED");
+                    cameraScript.AssignMeshTo(gameObject, cameraView);
+                }
 
-            /* If the camera used is a scoutCamera with a viable depth, use the next depth camera */
-            if(camScript.scout && cam.GetComponent<CameraScript>().cameraDepth > -1 && cam.GetComponent<CameraScript>().cameraDepth < currentCameraDepth) {
-
-                /* Use the next depth scoutCamera to render the portalView */
-                OnWillRenderObject123(cam, portalRenderingCameras[cam.GetComponent<CameraScript>().cameraDepth].GetComponent<CameraScript>(), ref cameraView);
-                cam.GetComponent<CameraScript>().AssignMeshTo(gameObject, cameraView);
-            }
-
-
-            /* If the render depth is too far, make the portal use a null texture */
-            if(camScript.cameraDepth >= currentCameraDepth) {
-                //Debug.Log("WARNING: CAMERA RENDER DEPTH REACHED");
-                cam.GetComponent<CameraScript>().AssignMeshTo(gameObject, cameraView);
+                /* A scoutCamera has a depth outside the depth range */
+                else {
+                    Debug.Log("WARNING: A CAMERA HAS A CAMERADEPTH OUTSIDE THE POSSIBLE RANGE | " + cameraScript.cameraDepth);
+                }
             }
         }
 
-
-
-
-
-
-
-
-        /*
-         * Update the playerCamera with the new texture for this portal
-         */
-        //if(cam.name == "CameraTest") {
-         //   if(checkPortalVisibility(cam.transform)) {
-                //Debug.Log(name + " about to be drawn");
-
-                /* Create a camera and it's renderTexture to be used for the view */
-                /* Use the level1 camera for this render */
-        //        Texture cameraView = null;
-
-                /* Render the camera's view and get the proper texture from it and send it to the cameraScript */
-        //        OnWillRenderObject123(cam, level1Camera.GetComponent<Camera>(), ref cameraView);
-        //        cam.GetComponent<CameraScript>().AssignMeshTo(gameObject, cameraView);
-        //    }
-        //}
-
-
-        /*
-         * If this mesh is going to be rendered by a scoutCamera, change it's material 
-         * If there is a portalMesh that will be rendered by a scoutCamera, 
-         * tell the scoutCamera to change it's material to be null
-         */
-        //if(cam.name == "ScoutCamera1" && cam.GetComponent<CameraScript>()) {
-        //    if(checkPortalVisibility(cam.transform)) {
-         //       Texture cameraView = null;
-
-        //        OnWillRenderObject123RETURNINSTEAD(cam, level2Camera.GetComponent<Camera>(), ref cameraView);
-        //        cam.GetComponent<CameraScript>().AssignMeshTo(gameObject, cameraView);
-        //    }
-        //}
-
-
-        //if(cam.name == "ScoutCamera2") {
-            //Debug.Log(cam.transform.parent.name + " an InternalCamera is drawing " + name);
-            //Apply the internalCamera's rendTex to the thing
-            //Debug.Log("Tripple Depth getting rendered");
-
-            /* To prevent infinite recursion, do not render portals beyond the third depth */
-        //    Texture cameraView = null;
-        //    cam.GetComponent<CameraScript>().AssignMeshTo(gameObject, cameraView);
-        //}
-
-
-        /*
-         * 1: Send request to render scene
-         * 2: This request will send a OnWillRenderObject() call to each mesh that will be rendered
-         * 3: For now, Each rendered mesh will update their mesh by rendering their scoutCamera.
-         *      This will however call the OnWillRenderObject() once more
-         */
+        /* Catch any cameras trying to render a portal without using a cameraScript */
+        else if(camera.name != "SceneCamera" && camera.name != "Preview Camera") {
+            Debug.Log("WARNING: CAMERA " + camera.name + " RENDERING A PORTAL WITHOUT A CAMERASCRIPT");
+        }
     }
-
-
-
-
-
-
-
-
-
-
+    
     public void OnWillRenderObject123(Camera viewingCamera, CameraScript cameraScript, ref Texture extractedView) {
         /*
          * Have a bunch of prerequisites check for any unset values before doing any rendering.
          * 
          * When this portalMesh is about to be rendered, position the scout camera relative to the 
-         * partner portal's location and the player's position then render the image of that camera.
+         * partner portal's location and the viewingCamera's position then render the image onto the extractedView.
          */
-        count++;
-
-        /* Extract the scouting camera from the cameraScript */
-        Camera scoutingCamera = cameraScript.GetComponent<Camera>();
 
         /* Check if key gameObjects are active */
-        if(!enabled || !scoutingCamera || !pointB)
+        if(!enabled || !pointB || !viewingCamera || !cameraScript) {
             return;
-
-        /* Ensure the viewingCamera used exists */
-        if(!viewingCamera)
-            return;
+        }
 
         /* Check if the portal's linked renderer is properly initilized */
         var rend = GetComponent<Renderer>();
         if(!rend || !rend.sharedMaterial || !rend.enabled)
             return;
-
-
-        /* Set the material of the portal whether it is visible or not */
+        
         /* Ensure the portal can be seen from the viewingCamera */
         if(checkPortalVisibility(viewingCamera.transform)) {
             SetMaterial(true);
@@ -278,12 +192,19 @@ public class PortalView : MonoBehaviour {
             SetMaterial(false);
             return;
         }
-        
+
+        /* Extract the scouting camera from the cameraScript */
+        Camera scoutingCamera = cameraScript.GetComponent<Camera>();
+
+        /* Check if the scouting camera exists along with it's renderTexture */
+        if(!scoutingCamera || !cameraScript.renderTexture) {
+            return;
+        }
+
         /* Ensure the renderTexture for the scoutCamera is properly created */
-
         UpdateRenderTexture(ref cameraScript.renderTexture, scoutingCamera);
-
         
+
         /* Set up values to properly render the camera */
         Vector3 pos = transform.position;
         Vector3 normal = transform.TransformDirection(faceNormal);
@@ -301,140 +222,17 @@ public class PortalView : MonoBehaviour {
 
         /* Render the scoutCamera */
         scoutingCamera.Render();
-        /* Apply the render texture to any rendered material using the proper portal material/shader */
+        
+        /* Extract the scoutingCamera's view after rendering as a static texture */
         Material[] materials = rend.sharedMaterials;
         foreach(Material mat in materials) {
             if(mat.HasProperty("_PortalTex")) {
                 mat.SetTexture("_PortalTex", cameraScript.renderTexture);
-                //Extract the texture and use it as the view
                 extractedView = mat.GetTexture("_PortalTex");
             }
         }
-
-
-
-
-
-
-
-
-        /* Release the lock */
-        s_InsideRendering = false;
     }
-
-
-
-    public void OnWillRenderObject123RETURNINSTEAD(Camera viewingCam, Camera scoutingCam, ref Texture thefinalTexture) {
-        /*
-         * Have a bunch of prerequisites check for any unset values before doing any rendering.
-         * 
-         * When this portalMesh is about to be rendered, position the scout camera relative to the 
-         * partner portal's location and the player's position then render the image of that camera.
-         */
-        count++;
-
-        /* Check if key gameObjects are active */
-        if(!enabled || !scoutCamera || !pointB)
-            return;
-
-        /* Get the camera rendering this portal */
-        //Camera cam = Camera.current;
-        if(!viewingCam)
-            return;
-
-        /* Check if the portal's linked renderer is properly initilized */
-        var rend = GetComponent<Renderer>();
-        if(!rend || !rend.sharedMaterial || !rend.enabled)
-            return;
-        
-
-        /* Set the material of the portal whether it is visible or not */
-        if(checkPortalVisibility(viewingCam.transform)) {
-            SetMaterial(true);
-        }
-        else {
-            SetMaterial(false);
-            return;
-        }
-
-        /* Prevent recursive rendering */
-        if(s_InsideRendering) {
-            //return;
-        }
-        s_InsideRendering = true;
-
-
-
-
-
-
-
-
-
-        /* Create the render texture and the portal material if they have not yet been created */
-        //CreateNeededObjects();
-        //Ensure the internalCamera has a properly initilized renderTexture
-        UpdateRenderTexture(ref m_PortalTexture2, scoutingCam);
-
-
-        /* Set up values to properly render the camera */
-        Vector3 pos = transform.position;
-        Vector3 normal = transform.TransformDirection(faceNormal);
-
-        // this will make it depend on the points' position, rotation, and scale
-        scoutingCam.transform.position = pointB.TransformPoint(transform.InverseTransformPoint(viewingCam.transform.position));
-        scoutingCam.transform.rotation = Quaternion.LookRotation(
-                pointB.TransformDirection(transform.InverseTransformDirection(viewingCam.transform.forward)),
-                pointB.TransformDirection(transform.InverseTransformDirection(viewingCam.transform.up)));
-
-        // I don't know how this works it just does, I got lucky
-        Vector4 clipPlane = CameraSpacePlane(viewingCam, pos, normal, -1.0f);
-        Matrix4x4 projection = viewingCam.CalculateObliqueMatrix(clipPlane);
-        scoutingCam.projectionMatrix = projection;
-
-        /* Apply the render texture to any rendered material using the proper portal material/shader */
-        Material[] materials = rend.sharedMaterials;
-        foreach(Material mat in materials) {
-            if(mat.HasProperty("_PortalTex")) {
-                //mat.SetTexture("_PortalTex", m_PortalTexture);
-                thefinalTexture = mat.GetTexture("_PortalTex");
-                thefinalTexture = null;
-            }
-        }
-
-
-
-        //Debug.Log("Send Req for scout Render");
-        //Debug.Log("Send RENDER REQ");
-        thefinalTexture = m_PortalTexture2;
-        scoutingCam.Render();
-        //Debug.Log("done RENDER REQ");
-        //Debug.Log("Done scount Render");
-
-
-
-
-        /* Release the lock */
-        s_InsideRendering = false;
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    
     // Aras Pranckevicius MirrorReflection4
     // http://wiki.unity3d.com/index.php/MirrorReflection4 
     // Cleanup all the objects we possibly have created
@@ -452,12 +250,8 @@ public class PortalView : MonoBehaviour {
             DestroyImmediate(m_PortalTexture2);
             m_PortalTexture2 = null;
         }
-
-
     }
-
     
-
 
     /* -------- Event Functions ---------------------------------------------------- */
 

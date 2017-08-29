@@ -1,10 +1,14 @@
 ﻿using UnityEngine;
 using System.Collections;
 
+/*
+ * A script to be placed on all gameObjects that have a Camera component attached. It allows
+ * the camera to properly render portalMeshes by placing an order of textures that get 
+ * rendered to a list of given portals each frame.
+ */
 [ExecuteInEditMode]
 public class CameraScript : MonoBehaviour {
-
-    public int currentLayer;
+    
 
     /* The type of camera this is, default non-scout (scout being used with portals to recursivly render) */
     public bool scout = false;
@@ -20,7 +24,6 @@ public class CameraScript : MonoBehaviour {
 
 
     public void Start() {
-        currentLayer = 0;
         
         gameObjects = new ArrayList();
         newTex = new ArrayList();
@@ -37,8 +40,6 @@ public class CameraScript : MonoBehaviour {
 
 
     void OnPreRender() {
-        currentLayer++;
-        //Debug.Log(currentLayer + " Camera pre-render | " + transform.parent.name);
 
         /* Give the given gameObjects a new material for only this camera to render */
         GameObject go;
@@ -54,8 +55,6 @@ public class CameraScript : MonoBehaviour {
 
     }
     void OnPostRender() {
-        //Debug.Log(currentLayer + " Camera post-render" + transform.parent.name);
-        currentLayer--;
 
         /* Give the gameObjects their original material back after they are finished rendering */
         GameObject go;
