@@ -6,9 +6,17 @@ public class CameraScript : MonoBehaviour {
 
     public int currentLayer;
 
+    /* The type of camera this is, default non-scout (scout being used with portals to recursivly render) */
+    public bool scout = false;
+
+    public int cameraDepth;
+    public string portalSetID;
+
     public ArrayList gameObjects;
     public ArrayList newTex;
     public ArrayList oldTex;
+
+    public RenderTexture renderTexture;
 
 
     public void Start() {
@@ -18,6 +26,15 @@ public class CameraScript : MonoBehaviour {
         newTex = new ArrayList();
         oldTex = new ArrayList();
     }
+
+    public void OnDestroy() {
+        /*
+         * When this camera is destroyed, destroy the camera's renderTexture
+         */
+
+        DestroyImmediate(renderTexture);
+    }
+
 
     void OnPreRender() {
         currentLayer++;
