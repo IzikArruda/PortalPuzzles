@@ -14,66 +14,41 @@
 using UnityEngine;
 using System.Collections;
 
-[ExecuteInEditMode]
 public class PortalView : MonoBehaviour {
 
     /* A point positioned at the partner portal's location */
     public Transform pointB;
 
-    /* The child camera of this portal */
-    public Camera scoutCamera;
-    public Camera InternalCamera;
-
     /* The forward vector of the portal */
     public Vector3 faceNormal = Vector3.forward; 
 
     /* Quality of the texture rendered and applied to the portal mesh. 2048 is recommended. */
-	public int m_TextureSize;
-    private int m_OldPortalTextureSize = 0;
+	public static int m_TextureSize = 2048;
 
     /* Offset to the camera's clipping plane when rendering. 0 is recommended */
     public float m_ClipPlaneOffset;
-
-    /* The renderTexture produced by the camera */
-    private RenderTexture m_PortalTexture = null;
-    private RenderTexture m_PortalTexture2 = null;
 
     /* Whether the portal is currently visible and being drawn to a camera */
     public bool beingDrawn = true;
         
     /* Materials used on the portalMesh */
     private Material portalMaterial;
-    public Material invisibleMaterial;
-
-    /* Static value used to track recursive portal rendering calls */
-    private static bool s_InsideRendering = false;
 
     /* The ID of the portalSet that this portalMesh is a child of */
     public string portalSetID;
-    private int count = 0;
-
-
-    public Material newMat;
-    public Material testMat;
-
-    //private static ArrayList meshesToBeRendered;
-    public Material MatFromSceneCam;
-    public Material MatFromScoutCam;
-
-
-
-    private GameObject level1Camera;
-    private RenderTexture level1RendTex;
-    private GameObject level2Camera;
-    private RenderTexture level2RendTex;
-
-
 
     /* The max viewing depth for recursive portal calls */
     private static int maxCameraDepth = 2;
 
     /* An array of cameras used for this portal's recursive portal rendering */
     private GameObject[] recursiveCameras;
+
+
+
+
+
+
+    public Rect defaultRect = new Rect(0, 0, 1, 1);
 
 
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
@@ -91,8 +66,7 @@ public class PortalView : MonoBehaviour {
         }
 
         /* Create the recursive rendering cameras for this portal */
-        //For now, always recreate the array
-        if(true || recursiveCameras == null || recursiveCameras.Length != maxCameraDepth) {
+        if(recursiveCameras == null || recursiveCameras.Length != maxCameraDepth) {
 
             /* Empty the current camera array before re-creating it */
             if(recursiveCameras != null) {
@@ -106,18 +80,14 @@ public class PortalView : MonoBehaviour {
             for(int i = 0; i < recursiveCameras.Length; i++) {
                 recursiveCameras[i] = CreateScoutCamera();
                 recursiveCameras[i].name = "ScoutCamera | Depth " + i;
-                recursiveCameras[i].transform.parent = transform;
                 recursiveCameras[i].GetComponent<CameraScript>().cameraDepth = i;
-                recursiveCameras[i].GetComponent<CameraScript>().portalSetID = portalSetID;
-                recursiveCameras[i].GetComponent<CameraScript>().scout = true;
 
                 /* Keep the cameras in the editor after creation */
                 recursiveCameras[i].hideFlags = HideFlags.DontSave;
 
-                /* Create a renderTexture for this camera */
-                recursiveCameras[i].GetComponent<CameraScript>().renderTexture = 
-                        CreateRenderTexture(recursiveCameras[i].GetComponent<Camera>());
-
+                /* Update the renderTexture for this camera */
+                UpdateRenderTexture(ref recursiveCameras[i].GetComponent<CameraScript>().renderTexture, 
+                        recursiveCameras[i].GetComponent<Camera>());
             }
         }
     }
@@ -131,19 +101,68 @@ public class PortalView : MonoBehaviour {
         Texture cameraView = null;
         Camera camera = Camera.current;
         CameraScript cameraScript = camera.GetComponent<CameraScript>();
+
+
+
+        /* Print out some stuff for debuigging */
+        if(camera.name != "SceneCamera" && camera.name != "Preview Camera" && cameraScript.scout != true) {
+            Debug.Log(name + " rendered");
+
+            /* Calculate the bounding edges this mesh has on the camera */
+            //SetScissorRect(camera, defaultRect);
+            //SetRectDefault(camera);
+            //Rect boundingEdges = CalculateViewingRect(camera);
+
+            /* Apply this rect to the camera's view */
+            //SetScissorRect(camera, boundingEdges);
+
         
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+        
+
+
         /* Ensure the camera rendering this portal has the proper CameraScript */
         if(cameraScript) {
 
             /* Use the view of the first recursiveCamera to render the portal */
             if(!cameraScript.scout) {
-                OnWillRenderObject123(camera, recursiveCameras[0].GetComponent<CameraScript>(), ref cameraView);
+                //Debug.Log(name + " getting rendered");
+                RenderCameraView(camera, recursiveCameras[0].GetComponent<CameraScript>(), ref cameraView);
                 camera.GetComponent<CameraScript>().AssignMeshTo(gameObject, cameraView);
-            }else {
+
+            }
+            /* If the camera is trying to render it' own parent portal, dont do it */
+            else if(camera.transform.parent.GetInstanceID() == transform.GetInstanceID()) {
+                //Debug.Log("CAMERA TRYING TO RENDER ITS OWN PORTAL DONT");
+            }            
+            /* Do not have a camera render a portal from it's own portalSetID */
+            else if(camera.transform.parent.GetComponent<PortalView>().portalSetID == portalSetID) {
+                //Debug.Log("Own portal set getting rendered");
+            }
+            /* If the camera is trying to render a portal behind the exit point, dont do it */
+            else if(!camera.transform.parent.GetComponent<PortalView>().checkPortalVisibility(camera.transform)) {
+                //Debug.Log("Camera is trying to render a portal that it cannot see");
+            }
+            /* Use the scoutCamera to render it's view */
+            else {
+
+                Debug.Log(camera.transform.parent.name + " RENDERING " + name);
 
                 /* Use the next camera down the recursiveCameras list */
                 if(cameraScript.cameraDepth >= 0 && cameraScript.cameraDepth < maxCameraDepth-1) {
-                    OnWillRenderObject123(camera, recursiveCameras[cameraScript.cameraDepth + 1].GetComponent<CameraScript>(), ref cameraView);
+                    RenderCameraView(camera, recursiveCameras[cameraScript.cameraDepth + 1].GetComponent<CameraScript>(), ref cameraView);
                     cameraScript.AssignMeshTo(gameObject, cameraView);
                 }
 
@@ -166,12 +185,15 @@ public class PortalView : MonoBehaviour {
         }
     }
     
-    public void OnWillRenderObject123(Camera viewingCamera, CameraScript cameraScript, ref Texture extractedView) {
+
+    /* -------- Camera Rendering Functions ---------------------------------------------------- */
+
+    public void RenderCameraView(Camera viewingCamera, CameraScript cameraScript, ref Texture extractedView) {
         /*
-         * Have a bunch of prerequisites check for any unset values before doing any rendering.
-         * 
          * When this portalMesh is about to be rendered, position the scout camera relative to the 
          * partner portal's location and the viewingCamera's position then render the image onto the extractedView.
+         * 
+         * Have a bunch of prerequisites check for any unset values before doing any rendering.
          */
 
         /* Check if key gameObjects are active */
@@ -183,46 +205,54 @@ public class PortalView : MonoBehaviour {
         var rend = GetComponent<Renderer>();
         if(!rend || !rend.sharedMaterial || !rend.enabled)
             return;
-        
+
         /* Ensure the portal can be seen from the viewingCamera */
-        if(checkPortalVisibility(viewingCamera.transform)) {
-            SetMaterial(true);
-        }
-        else {
-            SetMaterial(false);
+        if(!checkPortalVisibility(viewingCamera.transform)) {
             return;
         }
 
         /* Extract the scouting camera from the cameraScript */
         Camera scoutingCamera = cameraScript.GetComponent<Camera>();
 
+        /* Ensure the renderTexture for the scoutCamera is properly created */
+        UpdateRenderTexture(ref cameraScript.renderTexture, scoutingCamera);
+
         /* Check if the scouting camera exists along with it's renderTexture */
         if(!scoutingCamera || !cameraScript.renderTexture) {
             return;
         }
 
-        /* Ensure the renderTexture for the scoutCamera is properly created */
-        UpdateRenderTexture(ref cameraScript.renderTexture, scoutingCamera);
-        
-
         /* Set up values to properly render the camera */
         Vector3 pos = transform.position;
         Vector3 normal = transform.TransformDirection(faceNormal);
 
+        
         // this will make it depend on the points' position, rotation, and scale
         scoutingCamera.transform.position = pointB.TransformPoint(transform.InverseTransformPoint(viewingCamera.transform.position));
         scoutingCamera.transform.rotation = Quaternion.LookRotation(
                 pointB.TransformDirection(transform.InverseTransformDirection(viewingCamera.transform.forward)),
                 pointB.TransformDirection(transform.InverseTransformDirection(viewingCamera.transform.up)));
 
+        /* Reset the projection matrix of this camera. Maybe inherit the rect of the previous camera?????? SOUNDS LIEK IT MIGHT WORK */
+        SetRectDefault(scoutingCamera);
+
         // I don't know how this works it just does, I got lucky
         Vector4 clipPlane = CameraSpacePlane(viewingCamera, pos, normal, -1.0f);
         Matrix4x4 projection = viewingCamera.CalculateObliqueMatrix(clipPlane);
         scoutingCamera.projectionMatrix = projection;
 
+
+        /*
+         * Apply a new projection that limits the cameras view
+         */
+        Rect boundingEdges = CalculateViewingRect(viewingCamera);
+        SetScissorRect(scoutingCamera, boundingEdges);
+        //SetRectDefault(camera);
+        //Rect boundingEdges = CalculateViewingRect(camera);
+
         /* Render the scoutCamera */
         scoutingCamera.Render();
-        
+
         /* Extract the scoutingCamera's view after rendering as a static texture */
         Material[] materials = rend.sharedMaterials;
         foreach(Material mat in materials) {
@@ -232,65 +262,44 @@ public class PortalView : MonoBehaviour {
             }
         }
     }
-    
+
     // Aras Pranckevicius MirrorReflection4
     // http://wiki.unity3d.com/index.php/MirrorReflection4 
-    // Cleanup all the objects we possibly have created
-    void OnDisable() {
-        /*
-         * Cleanup any dynamicly created objects such as cameras and renderTextures
-         */
-
-        if(m_PortalTexture) {
-            DestroyImmediate(m_PortalTexture);
-            m_PortalTexture = null;
-        }
-
-        if(m_PortalTexture2) {
-            DestroyImmediate(m_PortalTexture2);
-            m_PortalTexture2 = null;
-        }
+    // Given position/normal of the plane, calculates plane in camera space.
+    private Vector4 CameraSpacePlane(Camera cam, Vector3 pos, Vector3 normal, float sideSign) {
+        Vector3 offsetPos = pos + normal * -m_ClipPlaneOffset;
+        Matrix4x4 m = cam.worldToCameraMatrix;
+        Vector3 cpos = m.MultiplyPoint(offsetPos);
+        Vector3 cnormal = m.MultiplyVector(normal).normalized * sideSign;
+        return new Vector4(cnormal.x, cnormal.y, cnormal.z, -Vector3.Dot(cpos, cnormal));
     }
-    
+
 
     /* -------- Event Functions ---------------------------------------------------- */
 
-    private void AssignTextureToCamera(Camera givenCamera, RenderTexture givenRendTex) {
-        /*
-         * Assign the given renderTexture texture to the given camera's targetTexture. 
-         */
-
-        /* Assign the texture */
-        givenCamera.targetTexture = givenRendTex;
-    }
-
     private GameObject CreateScoutCamera() {
         /*
-         * Create a gameObject with a camera component with a cameraScript
-         * to be used as a scoutCamera for this portal.
+         * Create a gameObject with a camera component with a cameraScript to be used as a scoutCamera for this portal.
          */
         GameObject cameraParent = new GameObject();
         Camera camera = cameraParent.AddComponent<Camera>();
-        
+
+        /* Make it the child of this portalMesh */
+        cameraParent.transform.parent = transform;
+
         /* Disable the camera since we will call it using .Render() */
         camera.enabled = false;
 
         /* Add a cameraScript to the camera to handle recursive portal rendering */
         cameraParent.AddComponent<CameraScript>().Start();
 
+        /* Set the values of the CameraScript  */
+        cameraParent.GetComponent<CameraScript>().portalSetID = portalSetID;
+        cameraParent.GetComponent<CameraScript>().scout = true;
+
         return cameraParent;
     }
-
-    private RenderTexture CreateRenderTexture(Camera camera) {
-        /*
-         * Create a renderTexture to be assigned to the given camera
-         */
-        RenderTexture renderTexture = null;
-        UpdateRenderTexture(ref renderTexture, camera);
-
-        return renderTexture;
-    }
-
+    
     private void UpdateRenderTexture(ref RenderTexture renderTexture, Camera camera) {
         /*
          * Ensure the given renderTexture is properly updated. It will link itself to the given
@@ -317,54 +326,7 @@ public class PortalView : MonoBehaviour {
             camera.targetTexture = renderTexture;
         }
     }
-
-
-
-    // Aras Pranckevicius MirrorReflection4
-    // http://wiki.unity3d.com/index.php/MirrorReflection4 
-    // On-demand create any objects we need
-    private void CreateNeededObjects() {
-
-        // Reflection render texture
-        if(!m_PortalTexture || m_OldPortalTextureSize != m_TextureSize) {
-            if(m_PortalTexture)
-                DestroyImmediate(m_PortalTexture);
-
-            m_PortalTexture = new RenderTexture(m_TextureSize, m_TextureSize, 16);
-            m_PortalTexture.name = "__PortalRenderTexture" + GetInstanceID();
-            m_PortalTexture.isPowerOfTwo = true;
-            m_PortalTexture.hideFlags = HideFlags.DontSave;
-            m_OldPortalTextureSize = m_TextureSize;
-
-            scoutCamera.targetTexture = m_PortalTexture;
-        }
-
-        // Reflection render texture
-        if(!m_PortalTexture2 || m_OldPortalTextureSize != m_TextureSize) {
-            if(m_PortalTexture2)
-                DestroyImmediate(m_PortalTexture2);
-
-            m_PortalTexture2 = new RenderTexture(m_TextureSize, m_TextureSize, 16);
-            m_PortalTexture2.name = "__PortalRenderTexture" + GetInstanceID();
-            m_PortalTexture2.isPowerOfTwo = true;
-            m_PortalTexture2.hideFlags = HideFlags.DontSave;
-            m_OldPortalTextureSize = m_TextureSize;
-
-            InternalCamera.targetTexture = m_PortalTexture2;
-        }
-    }
-
-	// Aras Pranckevicius MirrorReflection4
-	// http://wiki.unity3d.com/index.php/MirrorReflection4 
-	// Given position/normal of the plane, calculates plane in camera space.
-	private Vector4 CameraSpacePlane (Camera cam, Vector3 pos, Vector3 normal, float sideSign) {
-		Vector3 offsetPos = pos + normal * -m_ClipPlaneOffset;
-		Matrix4x4 m = cam.worldToCameraMatrix;
-		Vector3 cpos = m.MultiplyPoint( offsetPos );
-		Vector3 cnormal = m.MultiplyVector( normal ).normalized * sideSign;
-		return new Vector4( cnormal.x, cnormal.y, cnormal.z, -Vector3.Dot(cpos,cnormal) );
-	}
-        
+    
     private bool checkPortalVisibility(Transform cam) {
         /*
          * Check if the given camera is on the right side of the portalMesh. Returns true if the camera
@@ -384,33 +346,140 @@ public class PortalView : MonoBehaviour {
         return state;
     }
 
-    private void SetMaterial(bool visibility) {
-        /*
-         * Change the material of the portal depending on whether it is visible (true)
-         * or not visible (false) from the camera's position. 
-         */
 
-        if(visibility) {
-            GetComponent<MeshRenderer>().material = portalMaterial;
-        }else {
-            GetComponent<MeshRenderer>().material = invisibleMaterial;
+
+
+    public Rect CalculateViewingRect(Camera camera) {
+        /*
+         * Given a camera and this mesh, calculate the bounding rect that this mesh has for this camera.
+         * 
+         * The edges are ranged from 0-1 with (0, 0) being bottom-left. increasing X goes right, increasing Y goes up.
+         */
+        Rect boundingEdges = new Rect();
+        Vector3 vert;
+
+        /* Get all the points used to define this portal mesh being drawn */
+        Vector3[] vertices = GetComponent<MeshFilter>().mesh.vertices;
+        Debug.Log(vertices.Length);
+
+        /* Take each vertex that forms this mesh and find it's pixel position on the camera's screen */
+        for(int i = 0; i < vertices.Length; i++) {
+            //Convert the vert to world space
+            vertices[i] = transform.TransformPoint(vertices[i]);
+            //Convert it to a position on the camera's view
+            vertices[i] = camera.WorldToViewportPoint(vertices[i]);
         }
+
+        /* Get the bounding edges of the mesh on the camera's view  */
+        float mostBottom = vertices[0].y;
+        float mostTop = vertices[0].y;
+        float mostLeft = vertices[0].x;
+        float mostRight = vertices[0].x;
+        for(int i = 0; i < vertices.Length; i++) {
+            vert = vertices[i];
+
+            /* These points are infront of the camera, find their bounding edges */
+            if(vert.z > 0) {
+                if(mostBottom > vert.y) {
+                    mostBottom = vert.y;
+                }
+                if(mostTop < vert.y) {
+                    mostTop = vert.y;
+                }
+                if(mostLeft > vert.x) {
+                    mostLeft = vert.x;
+                }
+                if(mostRight < vert.x) {
+                    mostRight = vert.x;
+                }
+            }
+            //If the point is behind the camera, mark it and don't use it
+            //What we have to do it take note of the point, and track all triangles 
+            //of the mesh that feature this point to run a function across each line
+            //this point is a part of until we get a spot where it is visible
+            else {
+                Debug.Log("Dont use this point");
+            }
+        }
+
+        /* Prevent the edges from going outside the screen's bouderies (dont let this run yet) */
+        if(mostBottom < 0) {
+            //mostBottom = 0;
+        }
+        if(mostTop > camera.pixelHeight) {
+            //mostTop = camera.pixelHeight;
+        }
+        if(mostLeft < 0) {
+            //mostLeft = 0;
+        }
+        if(mostRight > camera.pixelWidth) {
+            //mostRight = camera.pixelWidth;
+        }
+
+        /* Set the bounding edges to the rect to return */
+        boundingEdges.xMin = mostLeft;
+        boundingEdges.xMax = mostRight;
+        boundingEdges.yMin = mostBottom;
+        boundingEdges.yMax = mostTop;
+
+        return boundingEdges;
     }
 
 
-    public string ExtractPortalSetID(string cam) {
+    public void SetScissorRect(Camera cam, Rect r) {
         /*
-         * Extract the portalSetID from the given camera name. Returns the name of the ID set it belongs to
-         * or returns null if it is not a scout camera.
+         * Apply an additive projection matrix to the given camera
+         * 
+         * https://forum.unity3d.com/threads/scissor-rectangle.37612/
          */
-
-        int idEndIndex = cam.IndexOf("|");
-        string camPortalSetID = null;
-        if(idEndIndex >= 0) {
-            camPortalSetID = cam.Substring(0, idEndIndex);
+        if(r.x < 0) {
+            r.width += r.x;
+            r.x = 0;
         }
 
-        return camPortalSetID;
+        if(r.y < 0) {
+            r.height += r.y;
+            r.y = 0;
+        }
+
+        r.width = Mathf.Min(1 - r.x, r.width);
+        r.height = Mathf.Min(1 - r.y, r.height);
+        //		print( r );
+
+        //cam.rect = new Rect(0, 0, 1, 1);
+        //cam.ResetProjectionMatrix();
+        Matrix4x4 m = cam.projectionMatrix;
+        //		print( cam.projectionMatrix );
+        //		print( Mathf.Rad2Deg * Mathf.Atan( 1 / cam.projectionMatrix[ 0 ] ) * 2 );
+        cam.rect = r;
+        //		cam.projectionMatrix = m;
+        //		print( cam.projectionMatrix );		
+        //		print( Mathf.Rad2Deg * Mathf.Atan( 1 / cam.projectionMatrix[ 0 ] ) * 2 );
+        //		print( cam.fieldOfView );
+        //		print( Mathf.Tan( cam.projectionMatrix[ 1, 1 ] ) * 2 );
+        //		cam.pixelRect = new Rect( 0, 0, Screen.width / 2, Screen.height );
+        Matrix4x4 m1 = Matrix4x4.TRS(new Vector3(r.x, r.y, 0), Quaternion.identity, new Vector3(r.width, r.height, 1));
+        //		Matrix4x4 m1 = Matrix4x4.TRS( Vector3.zero, Quaternion.identity, new Vector3( r.width, r.height, 1 ) );
+        //		Matrix4x4 m2 = m1.inverse;
+        //		print( m2 );
+        Matrix4x4 m2 = Matrix4x4.TRS(new Vector3((1/r.width - 1), (1/r.height - 1), 0), Quaternion.identity, new Vector3(1/r.width, 1/r.height, 1));
+        Matrix4x4 m3 = Matrix4x4.TRS(new Vector3(-r.x  * 2 / r.width, -r.y * 2 / r.height, 0), Quaternion.identity, Vector3.one);
+        //		m2[ 0, 3 ] = r.x;
+        //		m2[ 1, 3 ] = r.y;
+        //		print( m3 );
+        //		print( cam.projectionMatrix );
+        cam.projectionMatrix = m3 * m2 * m;
+        //		print( cam.projectionMatrix );		
+    }
+
+
+    public void SetRectDefault(Camera cam) {
+        /*
+         * Set the rect of the given camera to be back to the default so SetScissorRect can be recalled
+         */
+
+        cam.rect = new Rect(0, 0, 1, 1);
+        cam.ResetProjectionMatrix();
     }
 
 }

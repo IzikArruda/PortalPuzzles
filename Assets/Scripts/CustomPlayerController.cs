@@ -129,6 +129,8 @@ public class CustomPlayerController : MonoBehaviour {
          * send the input signals to the current overriddenScript.
          */
 
+        Debug.Log("UPDATE");
+
         /* Update the inputs of the player */
         inputs.UpdateInputs();
         PlayerInControl();

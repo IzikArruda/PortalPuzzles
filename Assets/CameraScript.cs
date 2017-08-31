@@ -6,23 +6,28 @@ using System.Collections;
  * the camera to properly render portalMeshes by placing an order of textures that get 
  * rendered to a list of given portals each frame.
  */
-[ExecuteInEditMode]
 public class CameraScript : MonoBehaviour {
     
-
     /* The type of camera this is, default non-scout (scout being used with portals to recursivly render) */
     public bool scout = false;
 
+    /* The recursive depth that this camera is used for (only applicable when used as a scout) */
     public int cameraDepth;
+
+    /* The ID of the portalSet this camera is a child of */
     public string portalSetID;
 
+    /* The array of portalMeshes and their textures used to be rendered for this camera */
     public ArrayList gameObjects;
     public ArrayList newTex;
     public ArrayList oldTex;
 
+    /* The targetTexture of this script's camera */
     public RenderTexture renderTexture;
 
 
+    /* -------- Built-In Unity Functions ---------------------------------------------------- */
+    
     public void Start() {
         
         gameObjects = new ArrayList();
@@ -37,8 +42,7 @@ public class CameraScript : MonoBehaviour {
 
         DestroyImmediate(renderTexture);
     }
-
-
+    
     void OnPreRender() {
 
         /* Give the given gameObjects a new material for only this camera to render */
@@ -50,10 +54,11 @@ public class CameraScript : MonoBehaviour {
             if(go.GetComponent<MeshRenderer>().sharedMaterial.HasProperty("_PortalTex")) {
                 go.GetComponent<MeshRenderer>().sharedMaterial.SetTexture("_PortalTex", (Texture) newTex[i]);
             }
+
             //go.GetComponent<MeshRenderer>().material = (Material) newTex[i];
         }
-
     }
+
     void OnPostRender() {
 
         /* Give the gameObjects their original material back after they are finished rendering */
@@ -75,6 +80,7 @@ public class CameraScript : MonoBehaviour {
     }
 
 
+    /* -------- Event Functions ---------------------------------------------------- */
 
     public void AssignMeshTo(GameObject objectToChange, Texture textureToBeUsed) {
         /*
