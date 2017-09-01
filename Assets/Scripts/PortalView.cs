@@ -365,11 +365,20 @@ public class PortalView : MonoBehaviour {
          * Given a camera and this mesh, calculate the bounding rect that this mesh has for this camera.
          * 
          * The edges are ranged from 0-1 with (0, 0) being bottom-left. increasing X goes right, increasing Y goes up.
+         * 
+         * WARNING: THIS WILL ONLY WORK IF THE PORTAL MESH WAS CREATED USING CreateDefaultMesh()
+         * 
+         * NOTE, PROBLEM TO FIX: when multiple verts are off-screen and say, only a single edge
+         * goes from the center of the screen, it will use an improper rect. 
          */
         Rect boundingEdges = new Rect();
         Vector3 vert;
         ArrayList verticesBehindCamera = new ArrayList();
         ArrayList cameraBoundsVerts = new ArrayList();
+        float mostBottom = 1;
+        float mostTop = 0;
+        float mostLeft = 1;
+        float mostRight = 0;
 
         /* Get all the points used to define this portal mesh being drawn */
         Vector3[] vertices = GetComponent<MeshFilter>().mesh.vertices;
@@ -382,14 +391,106 @@ public class PortalView : MonoBehaviour {
             vertices[i] = camera.WorldToViewportPoint(vertices[i]);
         }
 
+
+        ////
+        /* Check the corners of the camera's viewport. If they are within the mesh's bounderies, set the mostBoudneries */
+        //GREAT IDEA: CREATE A PLANE OF THE MESH IN 3D SPACE AND FIRE A RAY FROM EACH CORNER OF THE CAMERA'S VIEW
+        /* Check if the bottom-left point is within the mesh */
+        if(WithinRectangle(0, 0, vertices[0].x, vertices[0].y, vertices[1].x, vertices[1].y,
+                vertices[2].x, vertices[2].y, vertices[3].x, vertices[3].y)) {
+            Debug.Log("bottom-left point is within the portal");
+            mostBottom = 0;
+            mostLeft = 0;
+        }
+        /* Check if the bottom-right point is within the mesh */
+        if(WithinRectangle(1, 0, vertices[0].x, vertices[0].y, vertices[1].x, vertices[1].y,
+                vertices[2].x, vertices[2].y, vertices[3].x, vertices[3].y)) {
+            Debug.Log("bottom-right point is within the portal");
+            mostBottom = 0;
+            mostRight = 1;
+        }
+        /* Check if the top-left point is within the mesh */
+        if(WithinRectangle(0, 1, vertices[0].x, vertices[0].y, vertices[1].x, vertices[1].y,
+                vertices[2].x, vertices[2].y, vertices[3].x, vertices[3].y)) {
+            Debug.Log("top-left point is within the portal");
+            mostTop = 1;
+            mostLeft = 0;
+        }
+        /* Check if the top-right point is within the mesh */
+        if(WithinRectangle(1, 1, vertices[0].x, vertices[0].y, vertices[1].x, vertices[1].y,
+                vertices[2].x, vertices[2].y, vertices[3].x, vertices[3].y)) {
+            Debug.Log("top-right point is within the portal");
+            mostTop = 1;
+            mostRight = 1;
+        }
+
+
+        ////
+
+
+
         /* Get the bounding edges of the mesh on the camera's view  */
-        float mostBottom = 1;
-        float mostTop = 0;
-        float mostLeft = 1;
-        float mostRight = 0;
         ArrayList verticesOutsideView = new ArrayList();
         for(int i = 0; i < vertices.Length; i++) {
             vert = vertices[i];
+            if(vert.z < 0) {
+                Debug.Log("VERT IS BEHIND CAMERA, THINGS MAY NOT WORK");
+            }
+
+
+            /*
+             * TO FIX THE CURRENT BUG
+             * 
+             * look for the scenatio where an edge between two of the portal's original verts
+             * DOES NOT enter view, IE the line at no point enters the (0, 0), (1, 1) range.
+             * 
+             * Check each edge (there will always be 4) and see if it's LINE does not intersect the RECT of (0, 0) (1, 1)
+             * Note: this may cause problems if a Z value thing comes up
+             */
+            //Get the 0-1 line
+            //Get the 1-2 line
+            //Get the 2-3 line
+            //Get the 3-0 line
+
+
+
+            /*
+             * better idea:
+             * Check each 4 corners to see if they are within the vertex's rect.
+             * 
+             * If both top points are within the rect, then we know 100% that the very top of the viewport is the max
+             */
+
+            //Check the top-left point (1, 0)
+            //if(WithinRectangle(1, 0, )) {
+
+            //}
+
+
+
+
+
+
+            //So, track where each vert ends up
+            if(vert.x < 0) {
+                Debug.Log("off left");
+            }
+            if(vert.x > 1) {
+                Debug.Log("off right");
+            }
+            if(vert.y < 0) {
+                Debug.Log("off bottom");
+            }
+            if(vert.y > 1) {
+                Debug.Log("off top");
+            }
+
+
+
+
+
+
+
 
             /* Track the index of each vert that is not within the camera's view */
             if(vert.z < 0 || vert.x < 0 || vert.x > 1 || vert.y < 0 || vert.y > 1) {
@@ -895,4 +996,53 @@ public class PortalView : MonoBehaviour {
         cam.ResetProjectionMatrix();
     }
 
+
+
+
+    public bool WithinRectangle(float x, float y, float xA, float yA, 
+            float xB, float yB, float xC, float yC, float xD, float yD) {
+        /*
+         * Given the point defined by px and py, check if said point is within the triangle defined by
+         * A(x1, y1), B(x2, y2), C(x3, y3), D(x4, y4).
+         * 
+         * https://math.stackexchange.com/questions/190111/how-to-check-if-a-point-is-inside-a-rectangle
+         */
+        bool isWithin = true;
+        Vector2 M = new Vector2(x, y);
+        Vector2 A = new Vector2(xA, yA);
+        Vector2 B = new Vector2(xB, yB);
+        Vector2 D = new Vector2(xD, yD);
+
+
+        /* For point p to be within the rectangle, the determinant must be positive for each triangle
+         * ABp, BCp, CDp and DAp. */
+
+        /* triangle ABp */
+        if(GetDeterminant(xA, yA, xB, yB, x, y) < 0) {
+            isWithin = false;
+        }
+        /* triangle BCp */
+        else if(GetDeterminant(xB, yB, xC, yC, x, y) < 0) {
+            isWithin = false;
+        }
+        /* triangle CDp */
+        else if(GetDeterminant(xC, yC, xD, yD, x, y) < 0) {
+            isWithin = false;
+        }
+        /* triangle DAp */
+        else if(GetDeterminant(xD, yD, xA, yA, x, y) < 0) {
+            isWithin = false;
+        }
+
+        return isWithin;
+    }
+
+
+    public float GetDeterminant(float x0, float y0, float x1, float y1, float x2, float y2) {
+        /*
+         * Calculate the determinant using the given values
+         */
+
+        return (0.5f)*(x1*y2 - y1*x2 -x0*y2 + y0*x2 + x0*y1 - y0*x1);
+    }
 }
