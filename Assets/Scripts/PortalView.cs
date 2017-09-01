@@ -57,7 +57,19 @@ public class PortalView : MonoBehaviour {
         /*
          * Ensure the portal has all it's objects properly created.
          */
-         
+
+        /* Make sure each portalView contains the proper components */
+        if(GetComponent<MeshFilter>() == null) {
+            gameObject.AddComponent<MeshFilter>();
+        }
+        if(GetComponent<MeshRenderer>() == null) {
+            gameObject.AddComponent<MeshRenderer>();
+        }
+        if(GetComponent<MeshCollider>() == null) {
+            gameObject.AddComponent<MeshCollider>();
+            GetComponent<MeshCollider>().enabled = false;
+        }
+
         /* Check if the portalMaterial used for the portal is created */
         if(!portalMaterial) {
             portalMaterial = new Material(Shader.Find("Unlit/Portal"));
@@ -392,39 +404,43 @@ public class PortalView : MonoBehaviour {
         }
 
 
-        ////
+        ////////
         /* Check the corners of the camera's viewport. If they are within the mesh's bounderies, set the mostBoudneries */
-        //GREAT IDEA: CREATE A PLANE OF THE MESH IN 3D SPACE AND FIRE A RAY FROM EACH CORNER OF THE CAMERA'S VIEW
-        /* Check if the bottom-left point is within the mesh */
-        if(WithinRectangle(0, 0, vertices[0].x, vertices[0].y, vertices[1].x, vertices[1].y,
-                vertices[2].x, vertices[2].y, vertices[3].x, vertices[3].y)) {
-            Debug.Log("bottom-left point is within the portal");
-            mostBottom = 0;
+        GetComponent<MeshCollider>().enabled = true;
+        Ray camToMesh;
+        RaycastHit hitInfo;
+
+        /* Fire a ray from the camera's top left corner to see if it hits this mesh */
+        camToMesh = camera.ViewportPointToRay(new Vector3(0, 1, 1));
+        if(GetComponent<MeshCollider>().Raycast(camToMesh, out hitInfo, float.MaxValue)) {
+            Debug.Log("-- TOP LEFT --");
+            mostTop = 1;
             mostLeft = 0;
         }
-        /* Check if the bottom-right point is within the mesh */
-        if(WithinRectangle(1, 0, vertices[0].x, vertices[0].y, vertices[1].x, vertices[1].y,
-                vertices[2].x, vertices[2].y, vertices[3].x, vertices[3].y)) {
-            Debug.Log("bottom-right point is within the portal");
-            mostBottom = 0;
+        /* Fire a ray from the camera's top right corner to see if it hits this mesh */
+        camToMesh = camera.ViewportPointToRay(new Vector3(1, 1, 1));
+        if(GetComponent<MeshCollider>().Raycast(camToMesh, out hitInfo, float.MaxValue)) {
+            Debug.Log("-- TOP RIGHT --");
+            mostTop = 1;
             mostRight = 1;
         }
-        /* Check if the top-left point is within the mesh */
-        if(WithinRectangle(0, 1, vertices[0].x, vertices[0].y, vertices[1].x, vertices[1].y,
-                vertices[2].x, vertices[2].y, vertices[3].x, vertices[3].y)) {
-            Debug.Log("top-left point is within the portal");
-            mostTop = 1;
+        /* Fire a ray from the camera's bottom left corner to see if it hits this mesh */
+        camToMesh = camera.ViewportPointToRay(new Vector3(0, 0, 1));
+        if(GetComponent<MeshCollider>().Raycast(camToMesh, out hitInfo, float.MaxValue)) {
+            Debug.Log("-- BOTTOM LEFT --");
+            mostBottom = 0;
             mostLeft = 0;
         }
-        /* Check if the top-right point is within the mesh */
-        if(WithinRectangle(1, 1, vertices[0].x, vertices[0].y, vertices[1].x, vertices[1].y,
-                vertices[2].x, vertices[2].y, vertices[3].x, vertices[3].y)) {
-            Debug.Log("top-right point is within the portal");
-            mostTop = 1;
+        /* Fire a ray from the camera's bottom right corner to see if it hits this mesh */
+        camToMesh = camera.ViewportPointToRay(new Vector3(1, 0, 1));
+        if(GetComponent<MeshCollider>().Raycast(camToMesh, out hitInfo, float.MaxValue)) {
+            Debug.Log("-- BOTTOM RIGHT --");
+            mostBottom = 0;
             mostRight = 1;
         }
 
 
+        GetComponent<MeshCollider>().enabled = false;
         ////
 
 
@@ -436,6 +452,8 @@ public class PortalView : MonoBehaviour {
             if(vert.z < 0) {
                 Debug.Log("VERT IS BEHIND CAMERA, THINGS MAY NOT WORK");
             }
+
+            
 
 
             /*
@@ -467,23 +485,7 @@ public class PortalView : MonoBehaviour {
             //}
 
 
-
-
-
-
-            //So, track where each vert ends up
-            if(vert.x < 0) {
-                Debug.Log("off left");
-            }
-            if(vert.x > 1) {
-                Debug.Log("off right");
-            }
-            if(vert.y < 0) {
-                Debug.Log("off bottom");
-            }
-            if(vert.y > 1) {
-                Debug.Log("off top");
-            }
+            
 
 
 
@@ -692,7 +694,7 @@ public class PortalView : MonoBehaviour {
         /* Draw all the verts that will be used */
         for(int i = 0; i < cameraBoundsVerts.Count; i++) {
             vert = camera.ViewportToWorldPoint((Vector3) cameraBoundsVerts[i]);
-            Debug.DrawLine(camera.transform.position, vert, Color.blue, 1f);
+            //Debug.DrawLine(camera.transform.position, vert, Color.blue, 1f);
         }
 
         /* Using all the verts pertinent to the camera's bounds, calculate the minimum bounds to feature all the verts */
