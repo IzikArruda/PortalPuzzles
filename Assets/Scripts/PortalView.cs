@@ -38,7 +38,7 @@ public class PortalView : MonoBehaviour {
     public string portalSetID;
 
     /* The max viewing depth for recursive portal calls */
-    private static int maxCameraDepth = 2;
+    private static int maxCameraDepth = 6;
 
     /* An array of cameras used for this portal's recursive portal rendering */
     private GameObject[] recursiveCameras;
@@ -106,17 +106,28 @@ public class PortalView : MonoBehaviour {
 
         /* Print out some stuff for debuigging */
         if(camera.name != "SceneCamera" && camera.name != "Preview Camera" && cameraScript.scout != true) {
-            Debug.Log(name + " rendered");
+            //Debug.Log(name + " rendered using scout camera");
 
             /* Calculate the bounding edges this mesh has on the camera */
-            //SetScissorRect(camera, defaultRect);
-            //SetRectDefault(camera);
-            //Rect boundingEdges = CalculateViewingRect(camera);
+            SetRectDefault(camera);
+            Rect boundingEdges = CalculateViewingRect(camera);
+            SetScissorRect(camera, boundingEdges);
+            
 
-            /* Apply this rect to the camera's view */
-            //SetScissorRect(camera, boundingEdges);
 
-        
+            /*
+             * 
+             * ALRIGHT SO CURRENTLY IT WORKS THROUGH PORTALS: IE THE RECT STAYS FROM PROTAL TO PORTAL.
+             * ITS WORTH TESTING WITH MULTIPLE PORTALS NOW.
+             * 
+             * 
+             * WHAT NEEDS TO BE FIXED:
+             * 1.HANDLE WHEN A POINT OF THE MESH IS BEHIND THE CAMERA WHEN USING CalculateViewingRect
+             * 
+             * 
+             */
+
+
         }
 
 
@@ -130,7 +141,7 @@ public class PortalView : MonoBehaviour {
 
 
 
-        
+
 
 
         /* Ensure the camera rendering this portal has the proper CameraScript */
@@ -158,7 +169,7 @@ public class PortalView : MonoBehaviour {
             /* Use the scoutCamera to render it's view */
             else {
 
-                Debug.Log(camera.transform.parent.name + " RENDERING " + name);
+                //Debug.Log(camera.transform.parent.name + " RENDERING " + name);
 
                 /* Use the next camera down the recursiveCameras list */
                 if(cameraScript.cameraDepth >= 0 && cameraScript.cameraDepth < maxCameraDepth-1) {
@@ -233,7 +244,7 @@ public class PortalView : MonoBehaviour {
                 pointB.TransformDirection(transform.InverseTransformDirection(viewingCamera.transform.forward)),
                 pointB.TransformDirection(transform.InverseTransformDirection(viewingCamera.transform.up)));
 
-        /* Reset the projection matrix of this camera. Maybe inherit the rect of the previous camera?????? SOUNDS LIEK IT MIGHT WORK */
+        /* Reset the projection matrix of this camera */
         SetRectDefault(scoutingCamera);
 
         // I don't know how this works it just does, I got lucky
@@ -357,10 +368,11 @@ public class PortalView : MonoBehaviour {
          */
         Rect boundingEdges = new Rect();
         Vector3 vert;
+        ArrayList verticesBehindCamera = new ArrayList();
+        ArrayList cameraBoundsVerts = new ArrayList();
 
         /* Get all the points used to define this portal mesh being drawn */
         Vector3[] vertices = GetComponent<MeshFilter>().mesh.vertices;
-        Debug.Log(vertices.Length);
 
         /* Take each vertex that forms this mesh and find it's pixel position on the camera's screen */
         for(int i = 0; i < vertices.Length; i++) {
@@ -371,36 +383,430 @@ public class PortalView : MonoBehaviour {
         }
 
         /* Get the bounding edges of the mesh on the camera's view  */
-        float mostBottom = vertices[0].y;
-        float mostTop = vertices[0].y;
-        float mostLeft = vertices[0].x;
-        float mostRight = vertices[0].x;
+        float mostBottom = 1;
+        float mostTop = 0;
+        float mostLeft = 1;
+        float mostRight = 0;
+        ArrayList verticesOutsideView = new ArrayList();
         for(int i = 0; i < vertices.Length; i++) {
             vert = vertices[i];
 
-            /* These points are infront of the camera, find their bounding edges */
-            if(vert.z > 0) {
-                if(mostBottom > vert.y) {
-                    mostBottom = vert.y;
-                }
-                if(mostTop < vert.y) {
-                    mostTop = vert.y;
-                }
-                if(mostLeft > vert.x) {
-                    mostLeft = vert.x;
-                }
-                if(mostRight < vert.x) {
-                    mostRight = vert.x;
-                }
+            /* Track the index of each vert that is not within the camera's view */
+            if(vert.z < 0 || vert.x < 0 || vert.x > 1 || vert.y < 0 || vert.y > 1) {
+                verticesOutsideView.Add(i);
             }
-            //If the point is behind the camera, mark it and don't use it
-            //What we have to do it take note of the point, and track all triangles 
-            //of the mesh that feature this point to run a function across each line
-            //this point is a part of until we get a spot where it is visible
+
+            /* If this vert is fully in the camera's view, add it to the boundsVert list immediatly */
             else {
-                Debug.Log("Dont use this point");
+                cameraBoundsVerts.Add(vert);
             }
         }
+
+        /* If there exists any vertices outside the camera's view, find new vertices to calculate the camera's bounds */
+        if(verticesOutsideView.Count > 0) {
+
+
+            /* Get an array of rays that are the edges of each vertice outside the screen bounderies */
+            ArrayList edgeRays = new ArrayList();
+            ArrayList edgeRayMaxDistance = new ArrayList();
+            
+
+            /* Get 4 planes that define the camera's viewport edges in world coordinates */
+            Plane camTopPlane = new Plane(camera.transform.position,
+                    camera.ViewportToWorldPoint(new Vector3(1, 1, 1)),
+                    camera.ViewportToWorldPoint(new Vector3(0, 1, 1)));
+            Plane camBottomPlane = new Plane(camera.transform.position,
+                    camera.ViewportToWorldPoint(new Vector3(0, 0, 1)),
+                    camera.ViewportToWorldPoint(new Vector3(1, 0, 1)));
+            Plane camLeftPlane = new Plane(camera.transform.position,
+                    camera.ViewportToWorldPoint(new Vector3(0, 1, 1)),
+                    camera.ViewportToWorldPoint(new Vector3(0, 0, 1)));
+            Plane camRightPlane = new Plane(camera.transform.position,
+                    camera.ViewportToWorldPoint(new Vector3(1, 0, 1)),
+                    camera.ViewportToWorldPoint(new Vector3(1, 1, 1)));
+            
+
+            /* Create an array for the vertices in world coordinates */
+            Vector3[] worldVertices = GetComponent<MeshFilter>().mesh.vertices;
+            for(int i = 0; i < worldVertices.Length; i++) {
+                worldVertices[i] = transform.TransformPoint(worldVertices[i]);
+            }
+
+
+            /* For each vertex outside the camera's view, find where on it's connecting edges meets the camera's view  */
+            Ray edge1 = new Ray();
+            Ray edge2 = new Ray();
+            float distance1 = 0;
+            float distance2 = 0;
+            for(int i = 0; i < verticesOutsideView.Count; i++) {
+
+                /* If the vertex at index 0 is offscreen, use the two edges between 1 and 3 */
+                if((int) verticesOutsideView[i] == 0) {
+                    /* Get two rays that define both the 0-1 and 0-3 edges */
+                    edge1 = new Ray(worldVertices[1], worldVertices[0] - worldVertices[1]);
+                    edge2 = new Ray(worldVertices[3], worldVertices[0] - worldVertices[3]);
+                    /* Get the distance between each vertex for both edges/rays */
+                    distance1 = (worldVertices[0] - worldVertices[1]).magnitude;
+                    distance2 = (worldVertices[0] - worldVertices[3]).magnitude;
+                }
+
+                /* If the vertex at index 1 is offscreen, use the two edges between 0 and 2 */
+                else if((int) verticesOutsideView[i] == 1) {
+                    Debug.Log("INDEX 1 OFF");
+                    //Debug.DrawRay(worldVertices[0], worldVertices[1] - worldVertices[0], Color.blue, 0.5f);
+                    //Debug.DrawRay(worldVertices[2], worldVertices[1] - worldVertices[2], Color.blue, 0.5f);
+                    /* Get two rays that define both the 1-0 and 1-2 edges */
+                    edge1 = new Ray(worldVertices[0], worldVertices[1] - worldVertices[0]);
+                    edge2 = new Ray(worldVertices[2], worldVertices[1] - worldVertices[2]);
+                    /* Get the distance between each vertex for both edges/rays */
+                    distance1 = (worldVertices[1] - worldVertices[0]).magnitude;
+                    distance2 = (worldVertices[1] - worldVertices[2]).magnitude;
+
+                }
+
+                /* If the vertex at index 2 is offscreen, use the two edges between 1 and 3 */
+                else if((int) verticesOutsideView[i] == 2) {
+                    Debug.Log("INDEX 2 OFF");
+                    //Debug.DrawRay(worldVertices[1], worldVertices[2] - worldVertices[1], Color.blue, 0.5f);
+                    //Debug.DrawRay(worldVertices[3], worldVertices[2] - worldVertices[3], Color.blue, 0.5f);
+                    /* Get two rays that define both the 2-1 and 2-3 edges */
+                    edge1 = new Ray(worldVertices[1], worldVertices[2] - worldVertices[1]);
+                    edge2 = new Ray(worldVertices[3], worldVertices[2] - worldVertices[3]);
+                    /* Get the distance between each vertex for both edges/rays */
+                    distance1 = (worldVertices[2] - worldVertices[1]).magnitude;
+                    distance2 = (worldVertices[2] - worldVertices[3]).magnitude;
+                }
+
+                /* If the vertex at index 3 is offscreen, use the two edges between 0 and 2 */
+                else if((int) verticesOutsideView[i] == 3) {
+                    Debug.Log("INDEX 3 OFF");
+                    //Debug.DrawRay(worldVertices[0], worldVertices[3] - worldVertices[0], Color.blue, 0.5f);
+                    //Debug.DrawRay(worldVertices[2], worldVertices[3] - worldVertices[2], Color.blue, 0.5f);
+                    /* Get two rays that define both the 3-0 and 3-2 edges */
+                    edge1 = new Ray(worldVertices[0], worldVertices[3] - worldVertices[0]);
+                    edge2 = new Ray(worldVertices[2], worldVertices[3] - worldVertices[2]);
+                    /* Get the distance between each vertex for both edges/rays */
+                    distance1 = (worldVertices[3] - worldVertices[0]).magnitude;
+                    distance2 = (worldVertices[3] - worldVertices[2]).magnitude;
+                }
+                else {
+                    Debug.Log("WANING: I THINK THE MESH USED HAS MORE THAN 4 VERTS?");
+                }
+                
+                /* Add this data into the ray arrays to track them */
+                edgeRays.Add(edge1);
+                edgeRays.Add(edge2);
+                edgeRayMaxDistance.Add(distance1);
+                edgeRayMaxDistance.Add(distance2);
+            }
+
+
+            /*
+             * Now that the ray arrayList is populated with all edges that potentially reach past the camera's bounderies,
+             * Fire them all and save their collision points if they hit any of the camera plane's edges.
+             * 
+             * For each succesfull collision that occurs, take that collision point and save it as a worldVert
+             */
+            ArrayList newWorldVerts = new ArrayList();
+            Vector3 newVert;
+            Ray edgeRay;
+            float edgeDistance;
+            float rayDistance;
+            for(int i = 0; i < edgeRays.Count; i++) {
+                edgeRay = (Ray) edgeRays[i];
+                edgeDistance = (float) edgeRayMaxDistance[i];
+                
+                /* Raycast for the top plane */
+                if(camTopPlane.Raycast(edgeRay, out rayDistance)) {
+                    if(rayDistance >= 0 && rayDistance <= edgeDistance) {
+                        /* The ray collided with this plane within the proper distance/edge length */
+                        //Debug.Log("edge hit top " + rayDistance);
+                        newVert = edgeRay.origin + edgeRay.direction*rayDistance;
+                        newWorldVerts.Add(newVert);
+                    }
+                }
+                /* Raycast for the bottom plane */
+                if(camRightPlane.Raycast(edgeRay, out rayDistance)) {
+                    if(rayDistance >= 0 && rayDistance <= edgeDistance) {
+                        /* The ray collided with this plane within the proper distance/edge length */
+                        //Debug.Log("edge hit right " + rayDistance);
+                        newVert = edgeRay.origin + edgeRay.direction*rayDistance;
+                        newWorldVerts.Add(newVert);
+                    }
+                }
+                /* Raycast for the left plane */
+                if(camLeftPlane.Raycast(edgeRay, out rayDistance)) {
+                    if(rayDistance >= 0 && rayDistance <= edgeDistance) {
+                        /* The ray collided with this plane within the proper distance/edge length */
+                        //Debug.Log("edge hit left " + rayDistance);
+                        newVert = edgeRay.origin + edgeRay.direction*rayDistance;
+                        newWorldVerts.Add(newVert);
+                    }
+                }
+                /* Raycast for the right plane */
+                if(camBottomPlane.Raycast(edgeRay, out rayDistance)) {
+                    if(rayDistance >= 0 && rayDistance <= edgeDistance) {
+                        /* The ray collided with this plane within the proper distance/edge length */
+                        //Debug.Log("edge hit bottom " + rayDistance);
+                        newVert = edgeRay.origin + edgeRay.direction*rayDistance;
+                        newWorldVerts.Add(newVert);
+                    }
+                }
+            }
+
+
+            /*
+             * Now we have a list of all possible collision points for the camera, but in world positions.
+             * 
+             * First, transform them into vert positions on the camera
+             * 
+             * Then, remove any that are outside the camera's bounderies
+             * 
+             */
+
+            /* Convert all the new verts from world position to the camera's viewport position */
+            for(int i = 0; i < newWorldVerts.Count; i++) {
+                newVert = (Vector3) newWorldVerts[i];
+                newVert = camera.WorldToViewportPoint(newVert);
+                newWorldVerts[i] = newVert;
+            }
+
+            /* Remove any viewport verts that are too far outside the viewable range */
+            for(int i = 0; i < newWorldVerts.Count; i++) {
+                newVert = (Vector3) newWorldVerts[i];
+                if(newVert.x < -0.01f || newVert.x > 1.01f || newVert.y < -0.01f || newVert.y > 1.01f || newVert.z < 0) {
+                    //Debug.Log("REMOVED with: " + newVert.x + " | " + newVert.y + " | " + newVert.z);
+                    newWorldVerts.RemoveAt(i);
+                    i--;
+                }
+            }
+
+            /* Add the remaining verts into the cameraBoundsVerts array to be used to calcualte the camera's bounds */
+            for(int i = 0; i < newWorldVerts.Count; i++) {
+                newVert = (Vector3) newWorldVerts[i];
+                cameraBoundsVerts.Add(newVert);
+            }
+        }
+        
+        /* Draw all the verts that will be used */
+        for(int i = 0; i < cameraBoundsVerts.Count; i++) {
+            vert = camera.ViewportToWorldPoint((Vector3) cameraBoundsVerts[i]);
+            Debug.DrawLine(camera.transform.position, vert, Color.blue, 1f);
+        }
+
+        /* Using all the verts pertinent to the camera's bounds, calculate the minimum bounds to feature all the verts */
+        for(int i = 0; i < cameraBoundsVerts.Count; i++) {
+            vert = (Vector3) cameraBoundsVerts[i];
+
+            if(mostBottom > vert.y) {
+                mostBottom = vert.y;
+            }
+            if(mostTop < vert.y) {
+                mostTop = vert.y;
+            }
+            if(mostLeft > vert.x) {
+                mostLeft = vert.x;
+            }
+            if(mostRight < vert.x) {
+                mostRight = vert.x;
+            }
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+        /* Print out the index of each vertex that is behind the camera */
+        for(int i = 0; i < verticesBehindCamera.Count; i++) {
+            Debug.Log("POINT INDEX OF " + verticesBehindCamera[i] + " IS BEHIND CAMERA");
+        }
+
+
+
+
+        /*  If there exists a vertex behind the camera, go through extra calcualtions to get it's bounderies */
+        if(verticesBehindCamera.Count > 0) {
+
+            /* Create a temp array to hold the remaining vertices that have not found a connection */
+            ArrayList remainingVertices = (ArrayList) verticesBehindCamera.Clone();
+
+            /* Search the mesh's triangles for all connections between a vertex behind the camera and a vertex infront of the camera */
+            int[] triangles = GetComponent<MeshFilter>().mesh.triangles;
+            ArrayList connectionInfront = new ArrayList();
+            ArrayList connectionBehind = new ArrayList();
+            int backCount;
+            for(int i = 0; i < triangles.Length; i += 3) {
+                Debug.Log("triangle " + triangles[i] + triangles[i+1] + triangles[i+2]);
+                backCount = 0;
+
+                /* Check if this triangle set uses any of the remainingVertices  */
+                if(remainingVertices.Contains(triangles[i]) || remainingVertices.Contains(triangles[i+1]) || remainingVertices.Contains(triangles[i+2])) {
+                    
+                    /* Check if this triangle set is a contender for a connection (1infront/2behind OR 2infront/1behind) */
+                    if(verticesBehindCamera.Contains(triangles[i])) {
+                        backCount++;
+                    }
+                    if(verticesBehindCamera.Contains(triangles[i+1])) {
+                        backCount++;
+                    }
+                    if(verticesBehindCamera.Contains(triangles[i+2])) {
+                        backCount++;
+                    }
+
+                    /* This triangle set has a viable connection */
+                    if(backCount == 1 || backCount == 2) {
+
+                        /* Find the connections for each remaining vertex */
+                        for(int ii = 0; ii < remainingVertices.Count; ii++) {
+                            int currVer = (int) remainingVertices[ii];
+                            int verToAdd = -1;
+
+
+                            /*
+                             * Track each point that is not within view. Each point not visible will 
+                             * do it's own collisions checks between it's neighbor points, which will 
+                             * always be the same ones due to a RESTRICTION PUT ONTO PORTAL MESHES - THEY
+                             * MUST ALWAYS BE MADE BY THE SCRIPT AS RECTANGLES.
+                             * 
+                             * Anyway each vertex checks for collisons between them and their partner if they collide
+                             * with the camera's plane edges/borders. A collision means that collision point
+                             * is the edge of the screen, so we use that as a vert when calculating the bounds of the rect.
+                             */
+
+
+                            if(triangles[i] == currVer) {
+                                if(!verticesBehindCamera.Contains(triangles[i+1])) {
+                                    //0-1 connection is viable
+                                    verToAdd = i+1;
+                                    connectionBehind.Add(currVer);
+                                    connectionInfront.Add(triangles[verToAdd]);
+                                }
+                                if(!verticesBehindCamera.Contains(triangles[i+2])) {
+                                    //0-2 connection is viable
+                                    verToAdd = i+2;
+                                    connectionBehind.Add(currVer);
+                                    connectionInfront.Add(triangles[verToAdd]);
+                                }
+                            }
+                            else if(triangles[i+1] == currVer) {
+                                if(!verticesBehindCamera.Contains(triangles[i])) {
+                                    //1-0 connection is viable
+                                    verToAdd = i;
+                                    connectionBehind.Add(currVer);
+                                    connectionInfront.Add(triangles[verToAdd]);
+                                }
+                                if(!verticesBehindCamera.Contains(triangles[i+2])) {
+                                    //1-2 connection is viable
+                                    verToAdd = i+2;
+                                    connectionBehind.Add(currVer);
+                                    connectionInfront.Add(triangles[verToAdd]);
+                                }
+                            }
+                            else if(triangles[i+2] == currVer) {
+                                if(!verticesBehindCamera.Contains(triangles[i])) {
+                                    //2-0 connection is viable
+                                    verToAdd = i;
+                                    connectionBehind.Add(currVer);
+                                    connectionInfront.Add(triangles[verToAdd]);
+                                }
+                                if(!verticesBehindCamera.Contains(triangles[i+1])) {
+                                    //2-1 connection is viable
+                                    verToAdd = i+1;
+                                    connectionBehind.Add(currVer);
+                                    connectionInfront.Add(triangles[verToAdd]);
+                                }
+                            }
+
+                            /* If a connection was found, verToAdd would be equal to the frontVertex */
+                            if(verToAdd != -1) {
+                                connectionBehind.Add(currVer);
+                                connectionInfront.Add(triangles[verToAdd]);
+                            }
+                        }
+                    }
+                }
+            }
+
+            /* Remove any duplicate connections */
+            for(int i = 0; i < connectionBehind.Count; i++) {
+                for(int ii = i+1; ii < connectionBehind.Count; ii++) {
+
+                    /* If two entries have the same front and behind indexes, remove it */
+                    if((int) connectionBehind[ii] == (int) connectionBehind[i]) {
+                        if((int) connectionInfront[ii] == (int) connectionInfront[i]) {
+                            connectionBehind.RemoveAt(ii);
+                            connectionInfront.RemoveAt(ii);
+                            ii--;
+                        }
+                    }
+                }
+            }
+
+            /* For each connection, get both vertices' viewport positions */
+            Debug.Log(connectionBehind.Count + " Connections");
+            Vector3 behindVert, infrontVert;
+            /* Get the planes that define the camera's viewing edges */
+            Plane camTopPlane = new Plane(camera.transform.position,
+                    camera.transform.position + camera.ViewportToScreenPoint(new Vector3(1, 1, 1)),
+                    camera.transform.position + camera.ViewportToScreenPoint(new Vector3(0, 1, 1)));
+            Plane camBottomPlane = new Plane(camera.transform.position,
+                    camera.transform.position + camera.ViewportToScreenPoint(new Vector3(0, 0, 1)),
+                    camera.transform.position + camera.ViewportToScreenPoint(new Vector3(1, 0, 1)));
+            Plane camLeftPlane = new Plane(camera.transform.position,
+                    camera.transform.position + camera.ViewportToScreenPoint(new Vector3(0, 1, 1)),
+                    camera.transform.position + camera.ViewportToScreenPoint(new Vector3(0, 0, 1)));
+            Plane camRightPlane = new Plane(camera.transform.position,
+                    camera.transform.position + camera.ViewportToScreenPoint(new Vector3(1, 0, 1)),
+                    camera.transform.position + camera.ViewportToScreenPoint(new Vector3(1, 1, 1)));
+
+            for(int i = 0; i < connectionBehind.Count; i++) {
+                behindVert = camera.ViewportToWorldPoint(vertices[(int) connectionBehind[i]]);
+                infrontVert = camera.ViewportToWorldPoint(vertices[(int) connectionInfront[i]]);
+                //behindVert = vertices[(int) connectionBehind[i]];
+                //infrontVert = vertices[(int) connectionInfront[i]];
+
+                /* Idea: make a plane that is the top fultrum of the camera's view, then check for the 
+                 * point of collision with the line formed by the connection.
+                 * 
+                 * The plane can be made using the cams pos, it's topleft and topright points using viewpoint to world */
+                 /*
+                  * TO EXPAND ON TYHIS: TRACK ANY VERT THAT GOES OFFSCREEN. THIS WILL REQUIRE CHANGING A LOT THO
+                  */
+
+                /* Draw the line that defines this connection */
+                Debug.DrawLine(infrontVert, behindVert, Color.blue, 1f);
+
+                /* Get the point of collision where the connection hits the top plane */
+                Ray connectionRay = new Ray(infrontVert, behindVert);
+                float distance;
+                if(camTopPlane.Raycast(connectionRay, out distance)) {
+                    Debug.Log("hit plane, " + distance);
+                }
+
+                //Assume the connection goes off the top
+                Debug.Log(infrontVert.y + " | " + behindVert.y);
+            }
+
+        }
+
+
+
+
+
+
+
+
+
+
+
 
         /* Prevent the edges from going outside the screen's bouderies (dont let this run yet) */
         if(mostBottom < 0) {
@@ -423,6 +829,13 @@ public class PortalView : MonoBehaviour {
         boundingEdges.yMax = mostTop;
 
         return boundingEdges;
+    }
+    
+
+    public static Vector2 WorldToGUIPoint(Vector3 world) {
+        Vector2 screenPoint = Camera.main.WorldToScreenPoint(world);
+        screenPoint.y = (float) Screen.height - screenPoint.y;
+        return screenPoint;
     }
 
 
