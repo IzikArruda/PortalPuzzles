@@ -18,9 +18,6 @@ public class PortalSet : MonoBehaviour {
     /* positional offset of the portal's mesh without changing the trigger position */
     public Vector3 portalOffset;
 
-    /* The mesh of the portal. If this is null, a default rectangle mesh will be created and assigned. */
-    public Mesh portalMesh;
-
     /* The sizes of the default portal mesh, the triggers, and the position of the backwards portalMesh */
     public float portalWidth;
     public float portalHeight;
@@ -53,6 +50,16 @@ public class PortalSet : MonoBehaviour {
     
 
     /* ---------- LAYERS DO NOT SEEM TO BE NEEDED ANYMORE, SO COMMENT THEM OUT UNTIL FURTHER TESTING --------- */
+    /*
+     * 
+     * DUEL SIDED PORTALS STILL NEED LAYERS
+     *              OR?
+     * PORTALS NEED TO IMPLEMENT INVISIBILITY MESH AGAIN
+     * 
+     * EITHERWAY, THE BACKWARDS PORTALS FOR EACH SET WILL STILL NEED TO BE PROPERLY POSITION DUE TO THE 
+     * PORTALMESHES USING THE BACKWARDS PORTAL AS THEIR POINTB
+     * 
+     */
 
     /* A static array that tracks all currently used protalMesh layers. True indicates the layer is active already */
     //private static bool[] availableLayers;
@@ -184,8 +191,10 @@ public class PortalSet : MonoBehaviour {
         ExitPortal.meshContainer.localEulerAngles = new Vector3(0, 180, 0);
 
         /* Properly set the portals and their exit points */
-        EntrancePortal.SetPortalTransforms();
-        ExitPortal.SetPortalTransforms();
+        EntrancePortal.SetPortalPositionsEntrance(portalWidth);
+        ExitPortal.SetPortalPositionsExit(portalWidth);
+        EntrancePortal.SetPortalRotation();
+        ExitPortal.SetPortalRotation();
     }
 
     void UpdateTriggers() {
@@ -202,25 +211,13 @@ public class PortalSet : MonoBehaviour {
     
     void CreateMesh() {
         /*
-         * Create the mesh for the linked portals using the given portalMesh. If there is no portalMesh,
-         * use a generated mesh with the given defaultMeshSize values.
+         * Create a generated portal mesh and assign it to the linked portals of this portalSet.
          */
-        Mesh normalMesh, offsetMesh;
-
-        /* Get either the linked mesh for the portal or create the default mesh */
-        if(portalMesh) {
-            //Note: This has not yet been tested and will most likely need revision
-            normalMesh = portalMesh;
-            offsetMesh = portalMesh;
-        }
-        else {
-            normalMesh = CreateDefaultMesh(false);
-            offsetMesh = CreateDefaultMesh(true);
-        }
+        Mesh normalMesh = CreateDefaultMesh();
 
         /* Assign the mesh to each linked portalObject */
-        EntrancePortal.SetMesh(normalMesh, offsetMesh);
-        ExitPortal.SetMesh(offsetMesh, normalMesh);
+        EntrancePortal.SetMesh(normalMesh);
+        ExitPortal.SetMesh(normalMesh);
     }
 
     void CreateBorder() {
@@ -310,28 +307,20 @@ public class PortalSet : MonoBehaviour {
         return cube;
     }
 
-    Mesh CreateDefaultMesh(bool reflectMesh) {
+    Mesh CreateDefaultMesh() {
         /*
          * Create the default mesh for the portal using the default width and height.
-         * 
-         * When handling the exit portal's mesh, add an offset to the mesh to properly "reflect" the portal.
          */
         Mesh defaultMesh = new Mesh();
         Vector3[] vertices;
         int[] triangles;
 
-        /* If it's the reflected mesh, apply another offset */
-        Vector3 reflectionOffset = Vector3.zero;
-        if(reflectMesh) {
-            reflectionOffset = new Vector3(portalWidth, 0, 0);
-        }
-
         /* Set the vertices for the mesh */
         vertices = new Vector3[] {
-                new Vector3(-portalWidth, portalHeight, 0) + portalOffset + reflectionOffset,
-                new Vector3(0, portalHeight, 0) + portalOffset + reflectionOffset,
-                new Vector3(0, 0, 0) + portalOffset + reflectionOffset,
-                new Vector3(-portalWidth, 0, 0) + portalOffset + reflectionOffset
+                new Vector3(-portalWidth, portalHeight, 0) + portalOffset,
+                new Vector3(0, portalHeight, 0) + portalOffset,
+                new Vector3(0, 0, 0) + portalOffset,
+                new Vector3(-portalWidth, 0, 0) + portalOffset
             };
 
         /* Set the two polygons that form the mesh */

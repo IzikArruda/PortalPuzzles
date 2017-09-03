@@ -9,16 +9,9 @@ public class PortalObjects : MonoBehaviour {
 
     /* The gameObject that contains the portal's mesh and PortalView script */
     public GameObject portalMesh;
-
-    /* The exit point of the portalMesh */
-    //exit points are just their corresponding mesh + 180y euler
-    public GameObject portalMeshExitPoint;
-
+    
     /* The partner portalMesh for the other side of the portal to make it double sided */
     public GameObject backwardsPortalMesh;
-
-    /* The exit point of the backwardsPortalMesh */
-    public GameObject backwardsPortalMeshExitPoint;
     
     /* The trigger that the player will teleport between for this portal */
     public GameObject teleporterEnterTrigger;
@@ -30,32 +23,45 @@ public class PortalObjects : MonoBehaviour {
 
     /* A link to the border that surrounds the contour of the portal mesh. */
     public GameObject border;
-    
+
 
     /* -------- Setters ---------------------------------------------------- */
 
-    public void SetPortalTransforms() {
+    public void SetPortalPositionsEntrance(float width) {
         /*
-         * Set the transforms of the portal's meshes and exit points.
+         * Set the transforms of the portal's meshes
          */
-         
+
         portalMesh.transform.localPosition = new Vector3(0, 0, 0);
-        portalMesh.transform.localEulerAngles = new Vector3(0, 0, 0);
-        backwardsPortalMesh.transform.localPosition = new Vector3(0, 0, 0);
-        backwardsPortalMesh.transform.localEulerAngles = new Vector3(0, 180, 0);
-        portalMeshExitPoint.transform.localPosition = new Vector3(0, 0, 0);
-        portalMeshExitPoint.transform.localEulerAngles = new Vector3(0, 180, 0);
-        backwardsPortalMeshExitPoint.transform.localPosition = new Vector3(0, 0, 0);
-        backwardsPortalMeshExitPoint.transform.localEulerAngles = new Vector3(0, 0, 0);
+        backwardsPortalMesh.transform.localPosition = new Vector3(-width, 0, 0);
     }
 
-    public void SetMesh(Mesh mesh, Mesh backwardsMesh) {
+    public void SetPortalPositionsExit(float width) {
+        /*
+         * Set the transforms of the portal's meshes
+         */
+
+        portalMesh.transform.localPosition = new Vector3(width, 0, 0);
+        backwardsPortalMesh.transform.localPosition = new Vector3(0, 0, 0);
+    }
+
+    public void SetPortalRotation() {
+        /*
+         * Set the localEuler angles of the portalS
+         */
+
+        portalMesh.transform.localEulerAngles = new Vector3(0, 0, 0);
+        backwardsPortalMesh.transform.localEulerAngles = new Vector3(0, 180, 0);
+    }
+
+
+    public void SetMesh(Mesh mesh) {
         /*
          * Link the given mesh to the meshRenderer that is used to display the portal.
          */
          
         portalMesh.GetComponent<MeshFilter>().mesh = mesh;
-        backwardsPortalMesh.GetComponent<MeshFilter>().mesh = backwardsMesh;
+        backwardsPortalMesh.GetComponent<MeshFilter>().mesh = mesh;
     }
     
     public void SetTriggersTransform(float width, float height, float depth, Vector3 offSet) {
