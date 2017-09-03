@@ -11,6 +11,7 @@ public class PortalObjects : MonoBehaviour {
     public GameObject portalMesh;
 
     /* The exit point of the portalMesh */
+    //exit points are just their corresponding mesh + 180y euler
     public GameObject portalMeshExitPoint;
 
     /* The partner portalMesh for the other side of the portal to make it double sided */

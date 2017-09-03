@@ -18,6 +18,8 @@ public class PortalView : MonoBehaviour {
 
     /* A point positioned at the partner portal's location */
     public Transform pointB;
+    /* The portalScript/mesh of the portal that the pointB is trying to point to */
+    public PortalView properPointB;
 
     /* The forward vector of the portal */
     public Vector3 faceNormal = Vector3.forward; 
@@ -38,27 +40,20 @@ public class PortalView : MonoBehaviour {
     public string portalSetID;
 
     /* The max viewing depth for recursive portal calls */
-    private static int maxCameraDepth = 6;
+    private static int maxCameraDepth = 4;
 
     /* An array of cameras used for this portal's recursive portal rendering */
     private GameObject[] recursiveCameras;
-
-
-
-
-
-
-    public Rect defaultRect = new Rect(0, 0, 1, 1);
 
 
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
 
     void Start() {
         /*
-         * Ensure the portal has all it's objects properly created.
+         * Ensure the portal has all the required objects created and variables initialized.
          */
-
-        /* Make sure each portalView contains the proper components */
+         
+        /* Create the portal's components if they are not yet created */
         if(GetComponent<MeshFilter>() == null) {
             gameObject.AddComponent<MeshFilter>();
         }
@@ -67,16 +62,19 @@ public class PortalView : MonoBehaviour {
         }
         if(GetComponent<MeshCollider>() == null) {
             gameObject.AddComponent<MeshCollider>();
+            //Keep the component disabled, due to it only behind used in scripts
             GetComponent<MeshCollider>().enabled = false;
         }
 
-        /* Check if the portalMaterial used for the portal is created */
+        /* Check if the portalMaterial used for the portal is created and assigned to the portal */
         if(!portalMaterial) {
             portalMaterial = new Material(Shader.Find("Unlit/Portal"));
             portalMaterial.name = "__PortalMaterial" + GetInstanceID();
             GetComponent<MeshRenderer>().material = portalMaterial;
+        } else if(GetComponent<MeshRenderer>().material.GetInstanceID() != portalMaterial.GetInstanceID()) {
+            GetComponent<MeshRenderer>().material = portalMaterial;
         }
-
+        
         /* Create the recursive rendering cameras for this portal */
         if(recursiveCameras == null || recursiveCameras.Length != maxCameraDepth) {
 
@@ -94,7 +92,7 @@ public class PortalView : MonoBehaviour {
                 recursiveCameras[i].name = "ScoutCamera | Depth " + i;
                 recursiveCameras[i].GetComponent<CameraScript>().cameraDepth = i;
 
-                /* Keep the cameras in the editor after creation */
+                /* Remove the camera once the scene unloads */
                 recursiveCameras[i].hideFlags = HideFlags.DontSave;
 
                 /* Update the renderTexture for this camera */
@@ -103,7 +101,8 @@ public class PortalView : MonoBehaviour {
             }
         }
     }
-    
+
+
     public void OnWillRenderObject() {
         /*
          * When this portal is scheduled to get rendered, use the camera that will render it to determine
@@ -113,89 +112,52 @@ public class PortalView : MonoBehaviour {
         Texture cameraView = null;
         Camera camera = Camera.current;
         CameraScript cameraScript = camera.GetComponent<CameraScript>();
+        
 
-
-
-        /* Print out some stuff for debuigging */
-        if(camera.name != "SceneCamera" && camera.name != "Preview Camera" && cameraScript.scout != true) {
-            //Debug.Log(name + " rendered using scout camera");
-
-            /* Calculate the bounding edges this mesh has on the camera */
-            SetRectDefault(camera);
-            Rect boundingEdges = CalculateViewingRect(camera);
-            SetScissorRect(camera, boundingEdges);
-            
-
-
-            /*
-             * 
-             * ALRIGHT SO CURRENTLY IT WORKS THROUGH PORTALS: IE THE RECT STAYS FROM PROTAL TO PORTAL.
-             * ITS WORTH TESTING WITH MULTIPLE PORTALS NOW.
-             * 
-             * 
-             * WHAT NEEDS TO BE FIXED:
-             * 1.HANDLE WHEN A POINT OF THE MESH IS BEHIND THE CAMERA WHEN USING CalculateViewingRect
-             * 
-             * 
-             */
-
-
-        }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        /* Ensure the camera rendering this portal has the proper CameraScript */
+        /* Ensure the camera rendering this portal has the proper CameraScript to handle portals */
         if(cameraScript) {
-
-            /* Use the view of the first recursiveCamera to render the portal */
+            
+            /* If the rendering camera is not a scout camera, render the portal's view with it's first recursiveCamera */
             if(!cameraScript.scout) {
                 //Debug.Log(name + " getting rendered");
-                RenderCameraView(camera, recursiveCameras[0].GetComponent<CameraScript>(), ref cameraView);
+                RenderCameraView(camera, recursiveCameras[0].GetComponent<Camera>(), ref cameraView);
                 camera.GetComponent<CameraScript>().AssignMeshTo(gameObject, cameraView);
 
             }
-            /* If the camera is trying to render it' own parent portal, dont do it */
-            else if(camera.transform.parent.GetInstanceID() == transform.GetInstanceID()) {
-                //Debug.Log("CAMERA TRYING TO RENDER ITS OWN PORTAL DONT");
-            }            
-            /* Do not have a camera render a portal from it's own portalSetID */
-            else if(camera.transform.parent.GetComponent<PortalView>().portalSetID == portalSetID) {
-                //Debug.Log("Own portal set getting rendered");
+
+            /* Dont let a camera render a mesh if it is behind the portal it is rendering out of */
+            else if(MeshBehindMesh(GetComponent<MeshFilter>(), 
+                    camera.transform.parent.GetComponent<PortalView>().properPointB.GetComponent<MeshFilter>())) {
+                //Debug.Log("mesh behind mesh");
             }
-            /* If the camera is trying to render a portal behind the exit point, dont do it */
+            
+            /* Dont let the scoutCamera render a portal from it's own portalSet */
+            //else if(camera.transform.parent.GetComponent<PortalView>().portalSetID == portalSetID) {
+            //    Debug.Log("Own portal set getting rendered");
+            //}
+            
+            /* If the camera is trying to render a portal facing away from the camera, dont do it */
             else if(!camera.transform.parent.GetComponent<PortalView>().checkPortalVisibility(camera.transform)) {
+                //This has not yet occured, but leave it here until further testing
                 //Debug.Log("Camera is trying to render a portal that it cannot see");
             }
-            /* Use the scoutCamera to render it's view */
+            
+            /* Render the portal's texture for this camera */
             else {
-
-                //Debug.Log(camera.transform.parent.name + " RENDERING " + name);
-
+                
                 /* Use the next camera down the recursiveCameras list */
                 if(cameraScript.cameraDepth >= 0 && cameraScript.cameraDepth < maxCameraDepth-1) {
-                    RenderCameraView(camera, recursiveCameras[cameraScript.cameraDepth + 1].GetComponent<CameraScript>(), ref cameraView);
+                    RenderCameraView(camera, recursiveCameras[cameraScript.cameraDepth + 1].GetComponent<Camera>(), ref cameraView);
                     cameraScript.AssignMeshTo(gameObject, cameraView);
                 }
 
                 /* If it is using the last scoutCamera of the recursiveCamera list, apply a null texture */
                 else if(cameraScript.cameraDepth >= maxCameraDepth-1) {
-                    //Debug.Log("WARNING: CAMERA RENDER DEPTH REACHED");
+                    Debug.Log("WARNING: CAMERA RENDER DEPTH REACHED");
                     cameraScript.AssignMeshTo(gameObject, cameraView);
                 }
 
-                /* A scoutCamera has a depth outside the depth range */
+                /* The scoutCamera has a depth outside the depth range */
                 else {
                     Debug.Log("WARNING: A CAMERA HAS A CAMERADEPTH OUTSIDE THE POSSIBLE RANGE | " + cameraScript.cameraDepth);
                 }
@@ -211,7 +173,7 @@ public class PortalView : MonoBehaviour {
 
     /* -------- Camera Rendering Functions ---------------------------------------------------- */
 
-    public void RenderCameraView(Camera viewingCamera, CameraScript cameraScript, ref Texture extractedView) {
+    public void RenderCameraView(Camera viewingCamera, Camera scoutCamera, ref Texture extractedView) {
         /*
          * When this portalMesh is about to be rendered, position the scout camera relative to the 
          * partner portal's location and the viewingCamera's position then render the image onto the extractedView.
@@ -220,7 +182,7 @@ public class PortalView : MonoBehaviour {
          */
 
         /* Check if key gameObjects are active */
-        if(!enabled || !pointB || !viewingCamera || !cameraScript) {
+        if(!enabled || !pointB || !viewingCamera || !scoutCamera) {
             return;
         }
 
@@ -233,48 +195,42 @@ public class PortalView : MonoBehaviour {
         if(!checkPortalVisibility(viewingCamera.transform)) {
             return;
         }
-
-        /* Extract the scouting camera from the cameraScript */
-        Camera scoutingCamera = cameraScript.GetComponent<Camera>();
+        
+        /* Extract the cameraScript from the scouting camera */
+        CameraScript cameraScript = scoutCamera.GetComponent<CameraScript>();
 
         /* Ensure the renderTexture for the scoutCamera is properly created */
-        UpdateRenderTexture(ref cameraScript.renderTexture, scoutingCamera);
+        UpdateRenderTexture(ref cameraScript.renderTexture, scoutCamera);
 
         /* Check if the scouting camera exists along with it's renderTexture */
-        if(!scoutingCamera || !cameraScript.renderTexture) {
+        if(!scoutCamera || !cameraScript || !cameraScript.renderTexture) {
             return;
         }
 
-        /* Set up values to properly render the camera */
+        /* Set up values to properly position the camera */
         Vector3 pos = transform.position;
         Vector3 normal = transform.TransformDirection(faceNormal);
-
         
-        // this will make it depend on the points' position, rotation, and scale
-        scoutingCamera.transform.position = pointB.TransformPoint(transform.InverseTransformPoint(viewingCamera.transform.position));
-        scoutingCamera.transform.rotation = Quaternion.LookRotation(
+        /* Place the scoutCamera in a position relative to it's target portal as the viewing camera is to it's portal */
+        scoutCamera.transform.position = pointB.TransformPoint(transform.InverseTransformPoint(viewingCamera.transform.position));
+        scoutCamera.transform.rotation = Quaternion.LookRotation(
                 pointB.TransformDirection(transform.InverseTransformDirection(viewingCamera.transform.forward)),
                 pointB.TransformDirection(transform.InverseTransformDirection(viewingCamera.transform.up)));
 
         /* Reset the projection matrix of this camera */
-        SetRectDefault(scoutingCamera);
-
-        // I don't know how this works it just does, I got lucky
+        SetRectDefault(scoutCamera);
+        
+        /* Set a new clip plane and set the projection matrix for the portal's scoutCamera */
         Vector4 clipPlane = CameraSpacePlane(viewingCamera, pos, normal, -1.0f);
         Matrix4x4 projection = viewingCamera.CalculateObliqueMatrix(clipPlane);
-        scoutingCamera.projectionMatrix = projection;
-
-
-        /*
-         * Apply a new projection that limits the cameras view
-         */
+        scoutCamera.projectionMatrix = projection;
+        
+        /* Cut out the scoutCamera's edges so it does not render anything outside the portal's view */
         Rect boundingEdges = CalculateViewingRect(viewingCamera);
-        SetScissorRect(scoutingCamera, boundingEdges);
-        //SetRectDefault(camera);
-        //Rect boundingEdges = CalculateViewingRect(camera);
+        SetScissorRect(scoutCamera, boundingEdges);
 
-        /* Render the scoutCamera */
-        scoutingCamera.Render();
+        /* Render the scoutCamera's view with it's new projection matrix */
+        scoutCamera.Render();
 
         /* Extract the scoutingCamera's view after rendering as a static texture */
         Material[] materials = rend.sharedMaterials;
@@ -285,24 +241,83 @@ public class PortalView : MonoBehaviour {
             }
         }
     }
-
-    // Aras Pranckevicius MirrorReflection4
-    // http://wiki.unity3d.com/index.php/MirrorReflection4 
-    // Given position/normal of the plane, calculates plane in camera space.
+    
     private Vector4 CameraSpacePlane(Camera cam, Vector3 pos, Vector3 normal, float sideSign) {
+        /*
+         *  Aras Pranckevicius MirrorReflection4
+         *  http://wiki.unity3d.com/index.php/MirrorReflection4 
+         *  Given position/normal of the plane, calculates plane in camera space.
+         */
         Vector3 offsetPos = pos + normal * -m_ClipPlaneOffset;
         Matrix4x4 m = cam.worldToCameraMatrix;
         Vector3 cpos = m.MultiplyPoint(offsetPos);
         Vector3 cnormal = m.MultiplyVector(normal).normalized * sideSign;
         return new Vector4(cnormal.x, cnormal.y, cnormal.z, -Vector3.Dot(cpos, cnormal));
     }
+    
+    public void SetScissorRect(Camera cam, Rect r) {
+        /*
+         * Apply an additive projection matrix to the given camera
+         * 
+         * https://forum.unity3d.com/threads/scissor-rectangle.37612/
+         */
+         
+        /* Prevent the camera's rect from going past the default boundaries */
+        if(r.x < 0) {
+            r.width += r.x;
+            r.x = 0;
+        }
+        if(r.y < 0) {
+            r.height += r.y;
+            r.y = 0;
+        }
+        r.width = Mathf.Min(1 - r.x, r.width);
+        r.height = Mathf.Min(1 - r.y, r.height);
 
 
-    /* -------- Event Functions ---------------------------------------------------- */
+        //cam.rect = new Rect(0, 0, 1, 1);
+        //cam.ResetProjectionMatrix();
+        Matrix4x4 m = cam.projectionMatrix;
+        //		print( cam.projectionMatrix );
+        //		print( Mathf.Rad2Deg * Mathf.Atan( 1 / cam.projectionMatrix[ 0 ] ) * 2 );
+        cam.rect = r;
+        //		cam.projectionMatrix = m;
+        //		print( cam.projectionMatrix );		
+        //		print( Mathf.Rad2Deg * Mathf.Atan( 1 / cam.projectionMatrix[ 0 ] ) * 2 );
+        //		print( cam.fieldOfView );
+        //		print( Mathf.Tan( cam.projectionMatrix[ 1, 1 ] ) * 2 );
+        //		cam.pixelRect = new Rect( 0, 0, Screen.width / 2, Screen.height );
+        Matrix4x4 m1 = Matrix4x4.TRS(new Vector3(r.x, r.y, 0), Quaternion.identity, new Vector3(r.width, r.height, 1));
+        //		Matrix4x4 m1 = Matrix4x4.TRS( Vector3.zero, Quaternion.identity, new Vector3( r.width, r.height, 1 ) );
+        //		Matrix4x4 m2 = m1.inverse;
+        //		print( m2 );
+        Matrix4x4 m2 = Matrix4x4.TRS(new Vector3((1/r.width - 1), (1/r.height - 1), 0), Quaternion.identity, new Vector3(1/r.width, 1/r.height, 1));
+        Matrix4x4 m3 = Matrix4x4.TRS(new Vector3(-r.x  * 2 / r.width, -r.y * 2 / r.height, 0), Quaternion.identity, Vector3.one);
+        //		m2[ 0, 3 ] = r.x;
+        //		m2[ 1, 3 ] = r.y;
+        //		print( m3 );
+        //		print( cam.projectionMatrix );
+        cam.projectionMatrix = m3 * m2 * m;
+        //		print( cam.projectionMatrix );		
+    }
+    
+    public void SetRectDefault(Camera cam) {
+        /*
+         * Set the rect of the given camera to be back to the default.
+         * 
+         * Used in conjunction with SetScissorRect.
+         */
+
+        cam.rect = new Rect(0, 0, 1, 1);
+        cam.ResetProjectionMatrix();
+    }
+    
+
+    /* -------- Initialization/Update Functions ---------------------------------------------------- */
 
     private GameObject CreateScoutCamera() {
         /*
-         * Create a gameObject with a camera component with a cameraScript to be used as a scoutCamera for this portal.
+         * Create a gameObject with a camera component and a cameraScript to be used as a scoutCamera for this portal.
          */
         GameObject cameraParent = new GameObject();
         Camera camera = cameraParent.AddComponent<Camera>();
@@ -322,7 +337,7 @@ public class PortalView : MonoBehaviour {
 
         return cameraParent;
     }
-    
+
     private void UpdateRenderTexture(ref RenderTexture renderTexture, Camera camera) {
         /*
          * Ensure the given renderTexture is properly updated. It will link itself to the given
@@ -336,7 +351,7 @@ public class PortalView : MonoBehaviour {
             if(renderTexture) {
                 DestroyImmediate(renderTexture);
             }
-            
+
             /* Create the new renderTexture, naming it using the portalMesh's ID */
             renderTexture = new RenderTexture(m_TextureSize, m_TextureSize, 16);
             renderTexture.name = "__PortalRendTex " + GetInstanceID();
@@ -349,7 +364,10 @@ public class PortalView : MonoBehaviour {
             camera.targetTexture = renderTexture;
         }
     }
-    
+
+
+    /* -------- Event Functions ---------------------------------------------------- */
+
     private bool checkPortalVisibility(Transform cam) {
         /*
          * Check if the given camera is on the right side of the portalMesh. Returns true if the camera
@@ -368,10 +386,7 @@ public class PortalView : MonoBehaviour {
 
         return state;
     }
-
-
-
-
+    
     public Rect CalculateViewingRect(Camera camera) {
         /*
          * Given a camera and this mesh, calculate the bounding rect that this mesh has for this camera.
@@ -379,23 +394,21 @@ public class PortalView : MonoBehaviour {
          * The edges are ranged from 0-1 with (0, 0) being bottom-left. increasing X goes right, increasing Y goes up.
          * 
          * WARNING: THIS WILL ONLY WORK IF THE PORTAL MESH WAS CREATED USING CreateDefaultMesh()
-         * 
-         * NOTE, PROBLEM TO FIX: when multiple verts are off-screen and say, only a single edge
-         * goes from the center of the screen, it will use an improper rect. 
          */
-        Rect boundingEdges = new Rect();
-        Vector3 vert;
-        ArrayList verticesBehindCamera = new ArrayList();
         ArrayList cameraBoundsVerts = new ArrayList();
-        float mostBottom = 1;
-        float mostTop = 0;
-        float mostLeft = 1;
-        float mostRight = 0;
+        Rect boundingEdges = new Rect();
+        RaycastHit hitInfo;
+        Ray camToMesh;
+        Vector3 vert;
+        float bottomBound = 1;
+        float topBound = 0;
+        float leftBound = 1;
+        float rightBound = 0;
 
         /* Get all the points used to define this portal mesh being drawn */
         Vector3[] vertices = GetComponent<MeshFilter>().mesh.vertices;
 
-        /* Take each vertex that forms this mesh and find it's pixel position on the camera's screen */
+        /* Take each vertex that forms this mesh and find it's viewport position on the camera's screen */
         for(int i = 0; i < vertices.Length; i++) {
             //Convert the vert to world space
             vertices[i] = transform.TransformPoint(vertices[i]);
@@ -404,96 +417,46 @@ public class PortalView : MonoBehaviour {
         }
 
 
-        ////////
-        /* Check the corners of the camera's viewport. If they are within the mesh's bounderies, set the mostBoudneries */
+        /* Check the corners of the camera's viewport. If they are within the mesh's boundaries, set the boundary values */
         GetComponent<MeshCollider>().enabled = true;
-        Ray camToMesh;
-        RaycastHit hitInfo;
 
         /* Fire a ray from the camera's top left corner to see if it hits this mesh */
         camToMesh = camera.ViewportPointToRay(new Vector3(0, 1, 1));
         if(GetComponent<MeshCollider>().Raycast(camToMesh, out hitInfo, float.MaxValue)) {
-            Debug.Log("-- TOP LEFT --");
-            mostTop = 1;
-            mostLeft = 0;
+            //Debug.Log("-- TOP LEFT --");
+            topBound = 1;
+            leftBound = 0;
         }
         /* Fire a ray from the camera's top right corner to see if it hits this mesh */
         camToMesh = camera.ViewportPointToRay(new Vector3(1, 1, 1));
         if(GetComponent<MeshCollider>().Raycast(camToMesh, out hitInfo, float.MaxValue)) {
-            Debug.Log("-- TOP RIGHT --");
-            mostTop = 1;
-            mostRight = 1;
+            //Debug.Log("-- TOP RIGHT --");
+            topBound = 1;
+            rightBound = 1;
         }
         /* Fire a ray from the camera's bottom left corner to see if it hits this mesh */
         camToMesh = camera.ViewportPointToRay(new Vector3(0, 0, 1));
         if(GetComponent<MeshCollider>().Raycast(camToMesh, out hitInfo, float.MaxValue)) {
-            Debug.Log("-- BOTTOM LEFT --");
-            mostBottom = 0;
-            mostLeft = 0;
+            //Debug.Log("-- BOTTOM LEFT --");
+            bottomBound = 0;
+            leftBound = 0;
         }
         /* Fire a ray from the camera's bottom right corner to see if it hits this mesh */
         camToMesh = camera.ViewportPointToRay(new Vector3(1, 0, 1));
         if(GetComponent<MeshCollider>().Raycast(camToMesh, out hitInfo, float.MaxValue)) {
-            Debug.Log("-- BOTTOM RIGHT --");
-            mostBottom = 0;
-            mostRight = 1;
+            //Debug.Log("-- BOTTOM RIGHT --");
+            bottomBound = 0;
+            rightBound = 1;
         }
-
-
         GetComponent<MeshCollider>().enabled = false;
-        ////
-
-
+        
 
         /* Get the bounding edges of the mesh on the camera's view  */
+        /* Go through each vertex forming this portal's mesh and sort them into their proper array */
         ArrayList verticesOutsideView = new ArrayList();
         for(int i = 0; i < vertices.Length; i++) {
             vert = vertices[i];
-            if(vert.z < 0) {
-                Debug.Log("VERT IS BEHIND CAMERA, THINGS MAY NOT WORK");
-            }
-
             
-
-
-            /*
-             * TO FIX THE CURRENT BUG
-             * 
-             * look for the scenatio where an edge between two of the portal's original verts
-             * DOES NOT enter view, IE the line at no point enters the (0, 0), (1, 1) range.
-             * 
-             * Check each edge (there will always be 4) and see if it's LINE does not intersect the RECT of (0, 0) (1, 1)
-             * Note: this may cause problems if a Z value thing comes up
-             */
-            //Get the 0-1 line
-            //Get the 1-2 line
-            //Get the 2-3 line
-            //Get the 3-0 line
-
-
-
-            /*
-             * better idea:
-             * Check each 4 corners to see if they are within the vertex's rect.
-             * 
-             * If both top points are within the rect, then we know 100% that the very top of the viewport is the max
-             */
-
-            //Check the top-left point (1, 0)
-            //if(WithinRectangle(1, 0, )) {
-
-            //}
-
-
-            
-
-
-
-
-
-
-
-
             /* Track the index of each vert that is not within the camera's view */
             if(vert.z < 0 || vert.x < 0 || vert.x > 1 || vert.y < 0 || vert.y > 1) {
                 verticesOutsideView.Add(i);
@@ -507,13 +470,11 @@ public class PortalView : MonoBehaviour {
 
         /* If there exists any vertices outside the camera's view, find new vertices to calculate the camera's bounds */
         if(verticesOutsideView.Count > 0) {
-
-
+            
             /* Get an array of rays that are the edges of each vertice outside the screen bounderies */
             ArrayList edgeRays = new ArrayList();
             ArrayList edgeRayMaxDistance = new ArrayList();
             
-
             /* Get 4 planes that define the camera's viewport edges in world coordinates */
             Plane camTopPlane = new Plane(camera.transform.position,
                     camera.ViewportToWorldPoint(new Vector3(1, 1, 1)),
@@ -528,14 +489,12 @@ public class PortalView : MonoBehaviour {
                     camera.ViewportToWorldPoint(new Vector3(1, 0, 1)),
                     camera.ViewportToWorldPoint(new Vector3(1, 1, 1)));
             
-
             /* Create an array for the vertices in world coordinates */
             Vector3[] worldVertices = GetComponent<MeshFilter>().mesh.vertices;
             for(int i = 0; i < worldVertices.Length; i++) {
                 worldVertices[i] = transform.TransformPoint(worldVertices[i]);
             }
-
-
+            
             /* For each vertex outside the camera's view, find where on it's connecting edges meets the camera's view  */
             Ray edge1 = new Ray();
             Ray edge2 = new Ray();
@@ -545,6 +504,7 @@ public class PortalView : MonoBehaviour {
 
                 /* If the vertex at index 0 is offscreen, use the two edges between 1 and 3 */
                 if((int) verticesOutsideView[i] == 0) {
+                    //Debug.Log("0");
                     /* Get two rays that define both the 0-1 and 0-3 edges */
                     edge1 = new Ray(worldVertices[1], worldVertices[0] - worldVertices[1]);
                     edge2 = new Ray(worldVertices[3], worldVertices[0] - worldVertices[3]);
@@ -555,9 +515,7 @@ public class PortalView : MonoBehaviour {
 
                 /* If the vertex at index 1 is offscreen, use the two edges between 0 and 2 */
                 else if((int) verticesOutsideView[i] == 1) {
-                    Debug.Log("INDEX 1 OFF");
-                    //Debug.DrawRay(worldVertices[0], worldVertices[1] - worldVertices[0], Color.blue, 0.5f);
-                    //Debug.DrawRay(worldVertices[2], worldVertices[1] - worldVertices[2], Color.blue, 0.5f);
+                    //Debug.Log("1");
                     /* Get two rays that define both the 1-0 and 1-2 edges */
                     edge1 = new Ray(worldVertices[0], worldVertices[1] - worldVertices[0]);
                     edge2 = new Ray(worldVertices[2], worldVertices[1] - worldVertices[2]);
@@ -569,9 +527,7 @@ public class PortalView : MonoBehaviour {
 
                 /* If the vertex at index 2 is offscreen, use the two edges between 1 and 3 */
                 else if((int) verticesOutsideView[i] == 2) {
-                    Debug.Log("INDEX 2 OFF");
-                    //Debug.DrawRay(worldVertices[1], worldVertices[2] - worldVertices[1], Color.blue, 0.5f);
-                    //Debug.DrawRay(worldVertices[3], worldVertices[2] - worldVertices[3], Color.blue, 0.5f);
+                    //Debug.Log("2");
                     /* Get two rays that define both the 2-1 and 2-3 edges */
                     edge1 = new Ray(worldVertices[1], worldVertices[2] - worldVertices[1]);
                     edge2 = new Ray(worldVertices[3], worldVertices[2] - worldVertices[3]);
@@ -582,9 +538,7 @@ public class PortalView : MonoBehaviour {
 
                 /* If the vertex at index 3 is offscreen, use the two edges between 0 and 2 */
                 else if((int) verticesOutsideView[i] == 3) {
-                    Debug.Log("INDEX 3 OFF");
-                    //Debug.DrawRay(worldVertices[0], worldVertices[3] - worldVertices[0], Color.blue, 0.5f);
-                    //Debug.DrawRay(worldVertices[2], worldVertices[3] - worldVertices[2], Color.blue, 0.5f);
+                    //Debug.Log("3");
                     /* Get two rays that define both the 3-0 and 3-2 edges */
                     edge1 = new Ray(worldVertices[0], worldVertices[3] - worldVertices[0]);
                     edge2 = new Ray(worldVertices[2], worldVertices[3] - worldVertices[2]);
@@ -593,7 +547,7 @@ public class PortalView : MonoBehaviour {
                     distance2 = (worldVertices[3] - worldVertices[2]).magnitude;
                 }
                 else {
-                    Debug.Log("WANING: I THINK THE MESH USED HAS MORE THAN 4 VERTS?");
+                    Debug.Log("WANING: MESH HAS MORE THAN 4 VERTICES");
                 }
                 
                 /* Add this data into the ray arrays to track them */
@@ -622,8 +576,6 @@ public class PortalView : MonoBehaviour {
                 /* Raycast for the top plane */
                 if(camTopPlane.Raycast(edgeRay, out rayDistance)) {
                     if(rayDistance >= 0 && rayDistance <= edgeDistance) {
-                        /* The ray collided with this plane within the proper distance/edge length */
-                        //Debug.Log("edge hit top " + rayDistance);
                         newVert = edgeRay.origin + edgeRay.direction*rayDistance;
                         newWorldVerts.Add(newVert);
                     }
@@ -631,8 +583,6 @@ public class PortalView : MonoBehaviour {
                 /* Raycast for the bottom plane */
                 if(camRightPlane.Raycast(edgeRay, out rayDistance)) {
                     if(rayDistance >= 0 && rayDistance <= edgeDistance) {
-                        /* The ray collided with this plane within the proper distance/edge length */
-                        //Debug.Log("edge hit right " + rayDistance);
                         newVert = edgeRay.origin + edgeRay.direction*rayDistance;
                         newWorldVerts.Add(newVert);
                     }
@@ -640,8 +590,6 @@ public class PortalView : MonoBehaviour {
                 /* Raycast for the left plane */
                 if(camLeftPlane.Raycast(edgeRay, out rayDistance)) {
                     if(rayDistance >= 0 && rayDistance <= edgeDistance) {
-                        /* The ray collided with this plane within the proper distance/edge length */
-                        //Debug.Log("edge hit left " + rayDistance);
                         newVert = edgeRay.origin + edgeRay.direction*rayDistance;
                         newWorldVerts.Add(newVert);
                     }
@@ -649,24 +597,12 @@ public class PortalView : MonoBehaviour {
                 /* Raycast for the right plane */
                 if(camBottomPlane.Raycast(edgeRay, out rayDistance)) {
                     if(rayDistance >= 0 && rayDistance <= edgeDistance) {
-                        /* The ray collided with this plane within the proper distance/edge length */
-                        //Debug.Log("edge hit bottom " + rayDistance);
                         newVert = edgeRay.origin + edgeRay.direction*rayDistance;
                         newWorldVerts.Add(newVert);
                     }
                 }
             }
-
-
-            /*
-             * Now we have a list of all possible collision points for the camera, but in world positions.
-             * 
-             * First, transform them into vert positions on the camera
-             * 
-             * Then, remove any that are outside the camera's bounderies
-             * 
-             */
-
+            
             /* Convert all the new verts from world position to the camera's viewport position */
             for(int i = 0; i < newWorldVerts.Count; i++) {
                 newVert = (Vector3) newWorldVerts[i];
@@ -691,360 +627,73 @@ public class PortalView : MonoBehaviour {
             }
         }
         
-        /* Draw all the verts that will be used */
-        for(int i = 0; i < cameraBoundsVerts.Count; i++) {
-            vert = camera.ViewportToWorldPoint((Vector3) cameraBoundsVerts[i]);
-            //Debug.DrawLine(camera.transform.position, vert, Color.blue, 1f);
-        }
 
         /* Using all the verts pertinent to the camera's bounds, calculate the minimum bounds to feature all the verts */
         for(int i = 0; i < cameraBoundsVerts.Count; i++) {
             vert = (Vector3) cameraBoundsVerts[i];
 
-            if(mostBottom > vert.y) {
-                mostBottom = vert.y;
+            if(bottomBound > vert.y) {
+                bottomBound = vert.y;
             }
-            if(mostTop < vert.y) {
-                mostTop = vert.y;
+            if(topBound < vert.y) {
+                topBound = vert.y;
             }
-            if(mostLeft > vert.x) {
-                mostLeft = vert.x;
+            if(leftBound > vert.x) {
+                leftBound = vert.x;
             }
-            if(mostRight < vert.x) {
-                mostRight = vert.x;
+            if(rightBound < vert.x) {
+                rightBound = vert.x;
             }
         }
-
-
-
-
-
-
-
-
-
-
-
-
-
-        /* Print out the index of each vertex that is behind the camera */
-        for(int i = 0; i < verticesBehindCamera.Count; i++) {
-            Debug.Log("POINT INDEX OF " + verticesBehindCamera[i] + " IS BEHIND CAMERA");
-        }
-
-
-
-
-        /*  If there exists a vertex behind the camera, go through extra calcualtions to get it's bounderies */
-        if(verticesBehindCamera.Count > 0) {
-
-            /* Create a temp array to hold the remaining vertices that have not found a connection */
-            ArrayList remainingVertices = (ArrayList) verticesBehindCamera.Clone();
-
-            /* Search the mesh's triangles for all connections between a vertex behind the camera and a vertex infront of the camera */
-            int[] triangles = GetComponent<MeshFilter>().mesh.triangles;
-            ArrayList connectionInfront = new ArrayList();
-            ArrayList connectionBehind = new ArrayList();
-            int backCount;
-            for(int i = 0; i < triangles.Length; i += 3) {
-                Debug.Log("triangle " + triangles[i] + triangles[i+1] + triangles[i+2]);
-                backCount = 0;
-
-                /* Check if this triangle set uses any of the remainingVertices  */
-                if(remainingVertices.Contains(triangles[i]) || remainingVertices.Contains(triangles[i+1]) || remainingVertices.Contains(triangles[i+2])) {
-                    
-                    /* Check if this triangle set is a contender for a connection (1infront/2behind OR 2infront/1behind) */
-                    if(verticesBehindCamera.Contains(triangles[i])) {
-                        backCount++;
-                    }
-                    if(verticesBehindCamera.Contains(triangles[i+1])) {
-                        backCount++;
-                    }
-                    if(verticesBehindCamera.Contains(triangles[i+2])) {
-                        backCount++;
-                    }
-
-                    /* This triangle set has a viable connection */
-                    if(backCount == 1 || backCount == 2) {
-
-                        /* Find the connections for each remaining vertex */
-                        for(int ii = 0; ii < remainingVertices.Count; ii++) {
-                            int currVer = (int) remainingVertices[ii];
-                            int verToAdd = -1;
-
-
-                            /*
-                             * Track each point that is not within view. Each point not visible will 
-                             * do it's own collisions checks between it's neighbor points, which will 
-                             * always be the same ones due to a RESTRICTION PUT ONTO PORTAL MESHES - THEY
-                             * MUST ALWAYS BE MADE BY THE SCRIPT AS RECTANGLES.
-                             * 
-                             * Anyway each vertex checks for collisons between them and their partner if they collide
-                             * with the camera's plane edges/borders. A collision means that collision point
-                             * is the edge of the screen, so we use that as a vert when calculating the bounds of the rect.
-                             */
-
-
-                            if(triangles[i] == currVer) {
-                                if(!verticesBehindCamera.Contains(triangles[i+1])) {
-                                    //0-1 connection is viable
-                                    verToAdd = i+1;
-                                    connectionBehind.Add(currVer);
-                                    connectionInfront.Add(triangles[verToAdd]);
-                                }
-                                if(!verticesBehindCamera.Contains(triangles[i+2])) {
-                                    //0-2 connection is viable
-                                    verToAdd = i+2;
-                                    connectionBehind.Add(currVer);
-                                    connectionInfront.Add(triangles[verToAdd]);
-                                }
-                            }
-                            else if(triangles[i+1] == currVer) {
-                                if(!verticesBehindCamera.Contains(triangles[i])) {
-                                    //1-0 connection is viable
-                                    verToAdd = i;
-                                    connectionBehind.Add(currVer);
-                                    connectionInfront.Add(triangles[verToAdd]);
-                                }
-                                if(!verticesBehindCamera.Contains(triangles[i+2])) {
-                                    //1-2 connection is viable
-                                    verToAdd = i+2;
-                                    connectionBehind.Add(currVer);
-                                    connectionInfront.Add(triangles[verToAdd]);
-                                }
-                            }
-                            else if(triangles[i+2] == currVer) {
-                                if(!verticesBehindCamera.Contains(triangles[i])) {
-                                    //2-0 connection is viable
-                                    verToAdd = i;
-                                    connectionBehind.Add(currVer);
-                                    connectionInfront.Add(triangles[verToAdd]);
-                                }
-                                if(!verticesBehindCamera.Contains(triangles[i+1])) {
-                                    //2-1 connection is viable
-                                    verToAdd = i+1;
-                                    connectionBehind.Add(currVer);
-                                    connectionInfront.Add(triangles[verToAdd]);
-                                }
-                            }
-
-                            /* If a connection was found, verToAdd would be equal to the frontVertex */
-                            if(verToAdd != -1) {
-                                connectionBehind.Add(currVer);
-                                connectionInfront.Add(triangles[verToAdd]);
-                            }
-                        }
-                    }
-                }
-            }
-
-            /* Remove any duplicate connections */
-            for(int i = 0; i < connectionBehind.Count; i++) {
-                for(int ii = i+1; ii < connectionBehind.Count; ii++) {
-
-                    /* If two entries have the same front and behind indexes, remove it */
-                    if((int) connectionBehind[ii] == (int) connectionBehind[i]) {
-                        if((int) connectionInfront[ii] == (int) connectionInfront[i]) {
-                            connectionBehind.RemoveAt(ii);
-                            connectionInfront.RemoveAt(ii);
-                            ii--;
-                        }
-                    }
-                }
-            }
-
-            /* For each connection, get both vertices' viewport positions */
-            Debug.Log(connectionBehind.Count + " Connections");
-            Vector3 behindVert, infrontVert;
-            /* Get the planes that define the camera's viewing edges */
-            Plane camTopPlane = new Plane(camera.transform.position,
-                    camera.transform.position + camera.ViewportToScreenPoint(new Vector3(1, 1, 1)),
-                    camera.transform.position + camera.ViewportToScreenPoint(new Vector3(0, 1, 1)));
-            Plane camBottomPlane = new Plane(camera.transform.position,
-                    camera.transform.position + camera.ViewportToScreenPoint(new Vector3(0, 0, 1)),
-                    camera.transform.position + camera.ViewportToScreenPoint(new Vector3(1, 0, 1)));
-            Plane camLeftPlane = new Plane(camera.transform.position,
-                    camera.transform.position + camera.ViewportToScreenPoint(new Vector3(0, 1, 1)),
-                    camera.transform.position + camera.ViewportToScreenPoint(new Vector3(0, 0, 1)));
-            Plane camRightPlane = new Plane(camera.transform.position,
-                    camera.transform.position + camera.ViewportToScreenPoint(new Vector3(1, 0, 1)),
-                    camera.transform.position + camera.ViewportToScreenPoint(new Vector3(1, 1, 1)));
-
-            for(int i = 0; i < connectionBehind.Count; i++) {
-                behindVert = camera.ViewportToWorldPoint(vertices[(int) connectionBehind[i]]);
-                infrontVert = camera.ViewportToWorldPoint(vertices[(int) connectionInfront[i]]);
-                //behindVert = vertices[(int) connectionBehind[i]];
-                //infrontVert = vertices[(int) connectionInfront[i]];
-
-                /* Idea: make a plane that is the top fultrum of the camera's view, then check for the 
-                 * point of collision with the line formed by the connection.
-                 * 
-                 * The plane can be made using the cams pos, it's topleft and topright points using viewpoint to world */
-                 /*
-                  * TO EXPAND ON TYHIS: TRACK ANY VERT THAT GOES OFFSCREEN. THIS WILL REQUIRE CHANGING A LOT THO
-                  */
-
-                /* Draw the line that defines this connection */
-                Debug.DrawLine(infrontVert, behindVert, Color.blue, 1f);
-
-                /* Get the point of collision where the connection hits the top plane */
-                Ray connectionRay = new Ray(infrontVert, behindVert);
-                float distance;
-                if(camTopPlane.Raycast(connectionRay, out distance)) {
-                    Debug.Log("hit plane, " + distance);
-                }
-
-                //Assume the connection goes off the top
-                Debug.Log(infrontVert.y + " | " + behindVert.y);
-            }
-
-        }
-
-
-
-
-
-
-
-
-
-
-
 
         /* Prevent the edges from going outside the screen's bouderies (dont let this run yet) */
-        if(mostBottom < 0) {
-            //mostBottom = 0;
+        if(bottomBound < 0) {
+            bottomBound = 0;
         }
-        if(mostTop > camera.pixelHeight) {
-            //mostTop = camera.pixelHeight;
+        if(topBound > 1) {
+            topBound = 1;
         }
-        if(mostLeft < 0) {
-            //mostLeft = 0;
+        if(leftBound < 0) {
+            leftBound = 0;
         }
-        if(mostRight > camera.pixelWidth) {
-            //mostRight = camera.pixelWidth;
+        if(rightBound > 1) {
+            rightBound = 1;
         }
 
         /* Set the bounding edges to the rect to return */
-        boundingEdges.xMin = mostLeft;
-        boundingEdges.xMax = mostRight;
-        boundingEdges.yMin = mostBottom;
-        boundingEdges.yMax = mostTop;
+        boundingEdges.xMin = leftBound;
+        boundingEdges.xMax = rightBound;
+        boundingEdges.yMin = bottomBound;
+        boundingEdges.yMax = topBound;
 
         return boundingEdges;
     }
     
-
-    public static Vector2 WorldToGUIPoint(Vector3 world) {
-        Vector2 screenPoint = Camera.main.WorldToScreenPoint(world);
-        screenPoint.y = (float) Screen.height - screenPoint.y;
-        return screenPoint;
-    }
-
-
-    public void SetScissorRect(Camera cam, Rect r) {
+    public bool MeshBehindMesh(MeshFilter meshFilter1, MeshFilter meshFilter2) {
         /*
-         * Apply an additive projection matrix to the given camera
+         * Given the two mesh filters, return true if mesh1 is fully behind mesh2. This is used
+         * in the case where a camera that is focusing on mesh2 ends up drawing mesh1, 
+         * despite mesh1 getting culled/removed from the camera's view.
          * 
-         * https://forum.unity3d.com/threads/scissor-rectangle.37612/
+         * The meshes in question are expected to be rectangles used to draw portals.
          */
-        if(r.x < 0) {
-            r.width += r.x;
-            r.x = 0;
+        bool behind = true;
+        Mesh mesh1 = meshFilter1.mesh;
+        Mesh mesh2 = meshFilter2.mesh;
+        
+        /* Create a plane using the first triangle of the second mesh */
+        Plane meshPlane = new Plane(
+                meshFilter2.transform.TransformPoint(mesh2.vertices[mesh2.triangles[0]]),
+                meshFilter2.transform.TransformPoint(mesh2.vertices[mesh2.triangles[1]]),
+                meshFilter2.transform.TransformPoint(mesh2.vertices[mesh2.triangles[2]]));
+
+        /* Check if any vertex of mesh1 is in front of the meshPlane */
+        for(int i = 0; i < mesh1.vertexCount && behind; i++) {
+            if(meshPlane.GetSide(meshFilter1.transform.TransformPoint(mesh1.vertices[i]))) {
+                behind = false;
+            }
         }
 
-        if(r.y < 0) {
-            r.height += r.y;
-            r.y = 0;
-        }
-
-        r.width = Mathf.Min(1 - r.x, r.width);
-        r.height = Mathf.Min(1 - r.y, r.height);
-        //		print( r );
-
-        //cam.rect = new Rect(0, 0, 1, 1);
-        //cam.ResetProjectionMatrix();
-        Matrix4x4 m = cam.projectionMatrix;
-        //		print( cam.projectionMatrix );
-        //		print( Mathf.Rad2Deg * Mathf.Atan( 1 / cam.projectionMatrix[ 0 ] ) * 2 );
-        cam.rect = r;
-        //		cam.projectionMatrix = m;
-        //		print( cam.projectionMatrix );		
-        //		print( Mathf.Rad2Deg * Mathf.Atan( 1 / cam.projectionMatrix[ 0 ] ) * 2 );
-        //		print( cam.fieldOfView );
-        //		print( Mathf.Tan( cam.projectionMatrix[ 1, 1 ] ) * 2 );
-        //		cam.pixelRect = new Rect( 0, 0, Screen.width / 2, Screen.height );
-        Matrix4x4 m1 = Matrix4x4.TRS(new Vector3(r.x, r.y, 0), Quaternion.identity, new Vector3(r.width, r.height, 1));
-        //		Matrix4x4 m1 = Matrix4x4.TRS( Vector3.zero, Quaternion.identity, new Vector3( r.width, r.height, 1 ) );
-        //		Matrix4x4 m2 = m1.inverse;
-        //		print( m2 );
-        Matrix4x4 m2 = Matrix4x4.TRS(new Vector3((1/r.width - 1), (1/r.height - 1), 0), Quaternion.identity, new Vector3(1/r.width, 1/r.height, 1));
-        Matrix4x4 m3 = Matrix4x4.TRS(new Vector3(-r.x  * 2 / r.width, -r.y * 2 / r.height, 0), Quaternion.identity, Vector3.one);
-        //		m2[ 0, 3 ] = r.x;
-        //		m2[ 1, 3 ] = r.y;
-        //		print( m3 );
-        //		print( cam.projectionMatrix );
-        cam.projectionMatrix = m3 * m2 * m;
-        //		print( cam.projectionMatrix );		
-    }
-
-
-    public void SetRectDefault(Camera cam) {
-        /*
-         * Set the rect of the given camera to be back to the default so SetScissorRect can be recalled
-         */
-
-        cam.rect = new Rect(0, 0, 1, 1);
-        cam.ResetProjectionMatrix();
-    }
-
-
-
-
-    public bool WithinRectangle(float x, float y, float xA, float yA, 
-            float xB, float yB, float xC, float yC, float xD, float yD) {
-        /*
-         * Given the point defined by px and py, check if said point is within the triangle defined by
-         * A(x1, y1), B(x2, y2), C(x3, y3), D(x4, y4).
-         * 
-         * https://math.stackexchange.com/questions/190111/how-to-check-if-a-point-is-inside-a-rectangle
-         */
-        bool isWithin = true;
-        Vector2 M = new Vector2(x, y);
-        Vector2 A = new Vector2(xA, yA);
-        Vector2 B = new Vector2(xB, yB);
-        Vector2 D = new Vector2(xD, yD);
-
-
-        /* For point p to be within the rectangle, the determinant must be positive for each triangle
-         * ABp, BCp, CDp and DAp. */
-
-        /* triangle ABp */
-        if(GetDeterminant(xA, yA, xB, yB, x, y) < 0) {
-            isWithin = false;
-        }
-        /* triangle BCp */
-        else if(GetDeterminant(xB, yB, xC, yC, x, y) < 0) {
-            isWithin = false;
-        }
-        /* triangle CDp */
-        else if(GetDeterminant(xC, yC, xD, yD, x, y) < 0) {
-            isWithin = false;
-        }
-        /* triangle DAp */
-        else if(GetDeterminant(xD, yD, xA, yA, x, y) < 0) {
-            isWithin = false;
-        }
-
-        return isWithin;
-    }
-
-
-    public float GetDeterminant(float x0, float y0, float x1, float y1, float x2, float y2) {
-        /*
-         * Calculate the determinant using the given values
-         */
-
-        return (0.5f)*(x1*y2 - y1*x2 -x0*y2 + y0*x2 + x0*y1 - y0*x1);
+        return behind;
     }
 }
