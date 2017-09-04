@@ -54,13 +54,16 @@ public class CameraScript : MonoBehaviour {
             if(go.GetComponent<MeshRenderer>().sharedMaterial.HasProperty("_PortalTex")) {
                 go.GetComponent<MeshRenderer>().sharedMaterial.SetTexture("_PortalTex", (Texture) newTex[i]);
             }
-
-            //go.GetComponent<MeshRenderer>().material = (Material) newTex[i];
+            
+            /* If we tried to apply a null texture to the portal, render the portal invisible for the camera */
+            if((Texture)newTex[i] == null) {
+                go.GetComponent<PortalView>().ChangeMaterial(false);
+            }
         }
     }
 
     void OnPostRender() {
-
+        
         /* Give the gameObjects their original material back after they are finished rendering */
         GameObject go;
         for(int i = 0; i < gameObjects.Count; i++) {
@@ -70,7 +73,11 @@ public class CameraScript : MonoBehaviour {
             if(go.GetComponent<MeshRenderer>().sharedMaterial.HasProperty("_PortalTex")) {
                 go.GetComponent<MeshRenderer>().sharedMaterial.SetTexture("_PortalTex", (Texture) oldTex[i]);
             }
-            //go.GetComponent<MeshRenderer>().material = (Material) oldTex[i];
+
+            /* If we rendered the portal invisible, make it visible again */
+            if((Texture) newTex[i] == null) {
+                go.GetComponent<PortalView>().ChangeMaterial(true);
+            }
         }
 
         /* Once the objects have had their mesh changed back to their original material, remove them */

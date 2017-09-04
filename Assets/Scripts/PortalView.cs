@@ -49,7 +49,6 @@ public class PortalView : MonoBehaviour {
     /* The rendering layer that the camera's will ignore */
     private int cameraIgnoreLayer = -1;
 
-
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
 
     void Start() {
@@ -119,6 +118,9 @@ public class PortalView : MonoBehaviour {
         Camera camera = Camera.current;
         CameraScript cameraScript = camera.GetComponent<CameraScript>();
         
+        
+
+
         /* Ensure the camera rendering this portal has the proper CameraScript to handle portals */
         if(cameraScript) {
             
@@ -409,7 +411,7 @@ public class PortalView : MonoBehaviour {
         }
     }
 
-    private bool checkPortalVisibility(Transform cam) {
+    public bool checkPortalVisibility(Transform cam) {
         /*
          * Check if the given camera is on the right side of the portalMesh. Returns true if the camera
          * is on the rendered side of the mesh.
