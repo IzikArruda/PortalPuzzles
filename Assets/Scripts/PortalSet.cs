@@ -45,74 +45,47 @@ public class PortalSet : MonoBehaviour {
     public float defaultBorderTop;
     public float defaultBorderBottom;
     
-    /* When true, will update the given object portal's meshes, triggers and borders */
-    public bool updatePortal;
+    /* Whether or not both sides of this portal will be active. Determines if rendering layers will be used */
+    public bool doubleSided;
+    //If the portal isint doubleSided, then which side will be active
+    public bool exteriorSide;
     
-
-    /* ---------- LAYERS DO NOT SEEM TO BE NEEDED ANYMORE, SO COMMENT THEM OUT UNTIL FURTHER TESTING --------- */
-    /*
-     * 
-     * DUEL SIDED PORTALS STILL NEED LAYERS
-     *              OR?
-     * PORTALS NEED TO IMPLEMENT INVISIBILITY MESH AGAIN
-     * 
-     * EITHERWAY, THE BACKWARDS PORTALS FOR EACH SET WILL STILL NEED TO BE PROPERLY POSITION DUE TO THE 
-     * PORTALMESHES USING THE BACKWARDS PORTAL AS THEIR POINTB
-     * 
-     */
-
     /* A static array that tracks all currently used protalMesh layers. True indicates the layer is active already */
-    //private static bool[] availableLayers;
+    private static bool[] availableLayers;
 
     /* The range of layesr that the portal can occupy. do not change these at run-time. */
-    //public static int minLayer = 9;
-    //public static int maxLayer = 30;
+    public static int minLayer = 9;
+    public static int maxLayer = 18;
+    
+    /* The two current layers this portalSet occupies */
+    private int occupiedLayer1 = -1;
+    private int occupiedLayer2 = -1;
 
-    /* The current layer this portalSet occupies */
-    //private int currentLayer = -1;
+    /* When true, will update the given object portal's meshes, triggers and borders */
+    public bool updatePortal;
+
 
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
 
     void Start() {
         /*
-         * Assign a unique rendering layers to each new portalSet 
-         * and properly name the children of this protalSet.
+         * Properly name the children of this portalSet
          */
 
-        /* Create the availableLayers array if it is not yet initilized or it's sizes dont match */
-        /*if(availableLayers == null || availableLayers.Length != maxLayer - minLayer) {
-            availableLayers = new bool[maxLayer-minLayer];
-            for(int i = 0; i < availableLayers.Length; i++) {
-                availableLayers[i] = false;
-            }
-        }*/
-
-        /* Get the first available layer not currently used by another portalSet*/
-        /*if(currentLayer == -1) {
-            for(int i = 0; i < availableLayers.Length; i++) {
-                if(availableLayers[i] == false) {
-                    currentLayer = i;
-                    i = availableLayers.Length;
-                }
-            }
-        }else {
-            Debug.Log("PortalSet already assigned a layer");
-        }*/
-
-        /* Reserve the layer and assign it to the proper children of this portalSet */
-        /*if(currentLayer == -1) {
-            Debug.Log("WARNIGNG: CANNOT FIND RENDERING LAYER FOR THIS PORTALSET");
-        }
-        else if(availableLayers[currentLayer]) {
-            Debug.Log("WARNIGNG: TRYING TO USE AN OCCUPIED LAYER");
+        /* Properly enable the correct portals depending on this portal's selected sides */
+        if(doubleSided) {
+            EntrancePortal.portalMesh.gameObject.SetActive(true);
+            EntrancePortal.backwardsPortalMesh.gameObject.SetActive(true);
+            ExitPortal.portalMesh.gameObject.SetActive(true);
+            ExitPortal.backwardsPortalMesh.gameObject.SetActive(true);
         }
         else {
-            availableLayers[currentLayer] = true;
-            AssignLayerToChildren(currentLayer+minLayer);
-            Debug.Log("NOW CONTROLLING LAYER " + (currentLayer+minLayer));
-        }*/
+            EntrancePortal.portalMesh.gameObject.SetActive(exteriorSide);
+            EntrancePortal.backwardsPortalMesh.gameObject.SetActive(!exteriorSide);
+            ExitPortal.portalMesh.gameObject.SetActive(exteriorSide);
+            ExitPortal.backwardsPortalMesh.gameObject.SetActive(!exteriorSide);
+        }
 
-       
         /* Properly name this portalSet */
         string ID = "" + GetInstanceID();
         if(objectName != "") {
@@ -134,16 +107,45 @@ public class PortalSet : MonoBehaviour {
         ExitPortal.backwardsPortalMesh.GetComponent<PortalView>().portalSetID = ID;
     }
 
+    void OnEnable() {
+        /*
+         * Assign a unique rendering layer to each new portalSet once they are active.
+         * This only occurs if this portalSet is double sided.
+         */
+         
+        if(doubleSided) {
+
+            /* Ensure the layersArray is properly created */
+            UpdateLayersArray();
+
+            /* Find any free rendering layers not yet used by double sided portals */
+            GetAvailableLayers();
+
+            /* Assign the renderingLayer to the portals and their cameras */
+            AssignRenderingLayers();
+        }
+    }
+
     void OnDisable() {
         /*
-         * Remove the currentLayer from the active layer list
+         * Remove the currentLayer from the active layer list and reset the assigned layers
          */
 
-        /* Relenquish control over it's current layer */
-        /*if(currentLayer != -1) {
-            availableLayers[currentLayer] = false;
-            currentLayer = -1;
-        }*/
+        if(doubleSided) {    
+                
+            /* Relenquish control over it's current layers */
+            if(occupiedLayer1 != -1) {
+                availableLayers[occupiedLayer1] = false;
+                occupiedLayer1 = -1;
+            }
+            if(occupiedLayer2 != -1) {
+                availableLayers[occupiedLayer2] = false;
+                occupiedLayer2 = -1;
+            }
+
+            /* Remove the layering of this portalSet's portals and cameras */
+            RemoveRenderingLayers();
+        }
     }
 
     void Update() {
@@ -241,27 +243,83 @@ public class PortalSet : MonoBehaviour {
             DestroyImmediate(newBorders);
         }
     }
-    
+
+    public void UpdateLayersArray() {
+        /*
+         * Create the availibleLayers array if it is not yet initilized
+         * or recreate it if it's sizes have been updated.
+         */
+
+        /* Create the availableLayers array if it is not yet initilized or it's sizes dont match */
+        if(availableLayers == null || availableLayers.Length != maxLayer - minLayer) {
+            availableLayers = new bool[maxLayer-minLayer];
+            for(int i = 0; i < availableLayers.Length; i++) {
+                availableLayers[i] = false;
+            }
+        }
+    }
+
 
     /* -------- Event Functions ---------------------------------------------------- */
-    
-    void AssignLayerToChildren(int renderLayer) {
+
+    void AssignRenderingLayers() {
         /*
-         * Assign each portalMesh of this portalSet the given rendering layer and 
-         * for each camera in this portalSet, remove the given rendering layer from it's culling mask
+         * Assign the occupiedLayers to this portalSets portals and cameras. 
+         * Each PortalObjects that are a part of a double sided portalSet
+         * will use a sepperate rendering layer.
          */
 
         /* Assign the portalMeshes to their proper layer */
-        /*EntrancePortal.portalMesh.layer = renderLayer;
-        EntrancePortal.backwardsPortalMesh.layer = renderLayer;
-        ExitPortal.portalMesh.layer = renderLayer;
-        ExitPortal.backwardsPortalMesh.layer = renderLayer;*/
+        EntrancePortal.portalMesh.layer = minLayer + occupiedLayer1;
+        EntrancePortal.backwardsPortalMesh.layer = minLayer + occupiedLayer2;
+        ExitPortal.portalMesh.layer = minLayer + occupiedLayer2;
+        ExitPortal.backwardsPortalMesh.layer = minLayer + occupiedLayer1;
 
-        /* have the children cameras render all but the given rendering layer */
-        /*EntrancePortal.portalMesh.GetComponent<PortalView>().scoutCamera.cullingMask = ~(1 << renderLayer);
-        EntrancePortal.backwardsPortalMesh.GetComponent<PortalView>().scoutCamera.cullingMask = ~(1 << renderLayer);
-        ExitPortal.portalMesh.GetComponent<PortalView>().scoutCamera.cullingMask = ~(1 << renderLayer);
-        ExitPortal.backwardsPortalMesh.GetComponent<PortalView>().scoutCamera.cullingMask = ~(1 << renderLayer);*/
+        /* Assign the cameras their proper layer to ignore */
+        EntrancePortal.portalMesh.GetComponent<PortalView>().AssignCameraLayer(minLayer + occupiedLayer1);
+        EntrancePortal.backwardsPortalMesh.GetComponent<PortalView>().AssignCameraLayer(minLayer + occupiedLayer2);
+        ExitPortal.portalMesh.GetComponent<PortalView>().AssignCameraLayer(minLayer + occupiedLayer2);
+        ExitPortal.backwardsPortalMesh.GetComponent<PortalView>().AssignCameraLayer(minLayer + occupiedLayer1);
+    }
+
+    void RemoveRenderingLayers() {
+        /*
+         * Remove the rendering layer on this portalSet's portals and cameras
+         */
+
+        EntrancePortal.portalMesh.layer = 0;
+        EntrancePortal.backwardsPortalMesh.layer = 0;
+        ExitPortal.portalMesh.layer = 0;
+        ExitPortal.backwardsPortalMesh.layer = 0;
+        EntrancePortal.portalMesh.GetComponent<PortalView>().AssignCameraLayer(-1);
+        EntrancePortal.backwardsPortalMesh.GetComponent<PortalView>().AssignCameraLayer(-1);
+        ExitPortal.portalMesh.GetComponent<PortalView>().AssignCameraLayer(-1);
+        ExitPortal.backwardsPortalMesh.GetComponent<PortalView>().AssignCameraLayer(-1);
+    }
+
+    public void GetAvailableLayers() {
+        /*
+         * Search the availableLayers array to find free rendering layers to be used
+         * on this portalSet's portals.
+         */
+
+        for(int i = 0; i < availableLayers.Length && (occupiedLayer1 == -1 || occupiedLayer2 == -1); i++) {
+            if(availableLayers[i] == false) {
+                if(occupiedLayer1 == -1) {
+                    occupiedLayer1 = i;
+                    availableLayers[occupiedLayer1] = true;
+                    Debug.Log("NOW USING LAYER " + (occupiedLayer1+minLayer));
+                }
+                else if(occupiedLayer2 == -1) {
+                    occupiedLayer2 = i;
+                    availableLayers[occupiedLayer2] = true;
+                    Debug.Log("NOW USING LAYER " + (occupiedLayer2+minLayer));
+                }
+                else {
+                    Debug.Log("WARNING: THIS SHOULD NOT BE RUN");
+                }
+            }
+        }
     }
 
 

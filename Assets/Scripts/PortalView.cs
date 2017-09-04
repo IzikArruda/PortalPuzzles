@@ -35,6 +35,7 @@ public class PortalView : MonoBehaviour {
         
     /* Materials used on the portalMesh */
     private Material portalMaterial;
+    public Material invisibleMaterial;
 
     /* The ID of the portalSet that this portalMesh is a child of */
     public string portalSetID;
@@ -44,6 +45,9 @@ public class PortalView : MonoBehaviour {
 
     /* An array of cameras used for this portal's recursive portal rendering */
     private GameObject[] recursiveCameras;
+
+    /* The rendering layer that the camera's will ignore */
+    private int cameraIgnoreLayer = -1;
 
 
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
@@ -99,10 +103,12 @@ public class PortalView : MonoBehaviour {
                 UpdateRenderTexture(ref recursiveCameras[i].GetComponent<CameraScript>().renderTexture, 
                         recursiveCameras[i].GetComponent<Camera>());
             }
+
+            /* Assign the proper renderingLayer to the cameras */
+            AssignCameraLayer(cameraIgnoreLayer);
         }
     }
-
-
+    
     public void OnWillRenderObject() {
         /*
          * When this portal is scheduled to get rendered, use the camera that will render it to determine
@@ -113,7 +119,6 @@ public class PortalView : MonoBehaviour {
         Camera camera = Camera.current;
         CameraScript cameraScript = camera.GetComponent<CameraScript>();
         
-
         /* Ensure the camera rendering this portal has the proper CameraScript to handle portals */
         if(cameraScript) {
             
@@ -210,7 +215,7 @@ public class PortalView : MonoBehaviour {
         /* Set up values to properly position the camera */
         Vector3 pos = transform.position;
         Vector3 normal = transform.TransformDirection(faceNormal);
-        
+
         /* Place the scoutCamera in a position relative to it's target portal as the viewing camera is to it's portal */
         scoutCamera.transform.position = pointB.TransformPoint(transform.InverseTransformPoint(viewingCamera.transform.position));
         scoutCamera.transform.rotation = Quaternion.LookRotation(
@@ -367,6 +372,42 @@ public class PortalView : MonoBehaviour {
 
 
     /* -------- Event Functions ---------------------------------------------------- */
+
+    public void AssignCameraLayer(int layer) {
+        /*
+         * Assign the given layer to be ignored by all the scout camera's linked to this portal and 
+         * any new cameras created. If the layer is -1, do not remove any layers from being rendered
+         */
+        cameraIgnoreLayer = layer;
+        
+        if(recursiveCameras != null) {
+            /* If the given layer is -1, then do not remove any renderingLayers for the cameras */
+            if(layer == -1) {
+                for(int i = 0; i < recursiveCameras.Length; i++) {
+                    recursiveCameras[i].GetComponent<Camera>().cullingMask = cameraIgnoreLayer;
+                }
+            }
+            /* have the children cameras render all but the given rendering layer */
+            else {
+                for(int i = 0; i < recursiveCameras.Length; i++) {
+                    recursiveCameras[i].GetComponent<Camera>().cullingMask = ~(1 << cameraIgnoreLayer);
+                }
+            }
+        }
+    }
+
+    public void ChangeMaterial(bool isVisible) {
+        /*
+         * Change the material of this mesh. If true, set it to visible (portalMaterial).
+         * If false, set it to not be visible (invisibileMaterial)
+         */
+
+        if(isVisible) {
+            GetComponent<MeshRenderer>().material = portalMaterial;
+        }else {
+            GetComponent<MeshRenderer>().material = invisibleMaterial;
+        }
+    }
 
     private bool checkPortalVisibility(Transform cam) {
         /*
