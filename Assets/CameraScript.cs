@@ -8,14 +8,11 @@ using System.Collections;
  */
 public class CameraScript : MonoBehaviour {
     
-    /* The type of camera this is, default non-scout (scout being used with portals to recursivly render) */
+    /* The type of camera this is, default being non-scout */
     public bool scout = false;
 
     /* The recursive depth that this camera is used for (only applicable when used as a scout) */
     public int cameraDepth;
-
-    /* The ID of the portalSet this camera is a child of */
-    public string portalSetID;
 
     /* The array of portalMeshes and their textures used to be rendered for this camera */
     public ArrayList gameObjects;
@@ -29,20 +26,15 @@ public class CameraScript : MonoBehaviour {
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
     
     public void Start() {
-        
+        /*
+         * Initialize the arrayLists used for this camera
+         */
+
         gameObjects = new ArrayList();
         newTex = new ArrayList();
         oldTex = new ArrayList();
     }
 
-    public void OnDestroy() {
-        /*
-         * When this camera is destroyed, destroy the camera's renderTexture
-         */
-
-        DestroyImmediate(renderTexture);
-    }
-    
     void OnPreRender() {
 
         /* Give the given gameObjects a new material for only this camera to render */
@@ -86,6 +78,14 @@ public class CameraScript : MonoBehaviour {
         oldTex.Clear();
     }
 
+    public void OnDestroy() {
+        /*
+         * When this camera is destroyed, destroy the camera's renderTexture
+         */
+
+        DestroyImmediate(renderTexture);
+    }
+
 
     /* -------- Event Functions ---------------------------------------------------- */
 
@@ -105,6 +105,5 @@ public class CameraScript : MonoBehaviour {
         gameObjects.Add(objectToChange);
         newTex.Add(textureToBeUsed);
         oldTex.Add(extractedTexture);
-
     }
 }

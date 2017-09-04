@@ -10,15 +10,15 @@ public class PortalSet : MonoBehaviour {
 
     /* The name of the portalSet */
     public string objectName;
-
+    
     /* The two portals that are linked together */
     public PortalObjects EntrancePortal;
     public PortalObjects ExitPortal;
 
-    /* positional offset of the portal's mesh without changing the trigger position */
+    /* positional offset of the portal's mesh without changing any other positions */
     public Vector3 portalOffset;
-
-    /* The sizes of the default portal mesh, the triggers, and the position of the backwards portalMesh */
+    
+    /* The sizes of the portalMesh and the triggers */
     public float portalWidth;
     public float portalHeight;
     private float previousWidth = 0;
@@ -30,16 +30,15 @@ public class PortalSet : MonoBehaviour {
     /* Positional offset of the triggers for the portals */
     public Vector3 triggerOffset;
 
-    /* Depth of the portal's trigger. The higher value, the more noticable of a jump will occur on teleport */
+    /* Depth of the portal's trigger. The higher value, the more noticable of a jump will occur on teleport. Recommend 0.01. */
     public float triggerThickness;
     
     /* The object to be used as a border for the portal mesh. If this is null, a default border will be created */
     public GameObject portalBorder;
 
-    /* Depth of the default border */
-    public float defaultBorderDepth;
 
-    /* The Widths of the default border's sides. 0 or less means the side will not be created. */
+    /* The sizes of the default border. 0 or less means the side will not be created. */
+    public float defaultBorderDepth;
     public float defaultBorderLeft;
     public float defaultBorderRight;
     public float defaultBorderTop;
@@ -47,13 +46,14 @@ public class PortalSet : MonoBehaviour {
     
     /* Whether or not both sides of this portal will be active. Determines if rendering layers will be used */
     public bool doubleSided;
-    //If the portal isint doubleSided, then which side will be active
+
+    /* If the portal is not doubleSided, then which side will be the active portals */
     public bool exteriorSide;
     
-    /* A static array that tracks all currently used protalMesh layers. True indicates the layer is active already */
+    /* A static array that tracks all currently used protalMesh layers. True indicates the layer is active */
     private static bool[] availableLayers;
 
-    /* The range of layesr that the portal can occupy. do not change these at run-time. */
+    /* The range of layers that the portal can occupy. do not change these at run-time. */
     public static int minLayer = 9;
     public static int maxLayer = 18;
     
@@ -69,7 +69,7 @@ public class PortalSet : MonoBehaviour {
 
     void Start() {
         /*
-         * Properly name the children of this portalSet
+         * Enture the proper portals are enabled and name the children of this portalSet.
          */
 
         /* Properly enable the correct portals depending on this portal's selected sides */
@@ -86,7 +86,7 @@ public class PortalSet : MonoBehaviour {
             ExitPortal.backwardsPortalMesh.gameObject.SetActive(!exteriorSide);
         }
 
-        /* Properly name this portalSet */
+        /* Name this portalSet */
         string ID = "" + GetInstanceID();
         if(objectName != "") {
             name = objectName + " (PortalID = " + ID + ")";
@@ -94,15 +94,14 @@ public class PortalSet : MonoBehaviour {
             name = "PortalSet (PortalID = " + ID + ")";
         }
 
-        /* Name the portalSet's portalMeshes using this portal's ID */
+        /* For each portalMesh, properly name them and give their portalView script this portalSetID */
         EntrancePortal.portalMesh.name = GetInstanceID() + "|Entrance Mesh";
         EntrancePortal.backwardsPortalMesh.name = GetInstanceID() + "|Entrance Backwards Mesh";
         ExitPortal.portalMesh.name = GetInstanceID() + "|Exit Mesh";
         ExitPortal.backwardsPortalMesh.name = GetInstanceID() + "|Exit Backwards Mesh";
 
-        /* Give this portalSet's ID to each portalMesh */
-        EntrancePortal.portalMesh.GetComponent<PortalView>().portalSetID = ID;
         EntrancePortal.backwardsPortalMesh.GetComponent<PortalView>().portalSetID = ID;
+        EntrancePortal.portalMesh.GetComponent<PortalView>().portalSetID = ID;
         ExitPortal.portalMesh.GetComponent<PortalView>().portalSetID = ID;
         ExitPortal.backwardsPortalMesh.GetComponent<PortalView>().portalSetID = ID;
     }
@@ -128,7 +127,8 @@ public class PortalSet : MonoBehaviour {
 
     void OnDisable() {
         /*
-         * Remove the currentLayer from the active layer list and reset the assigned layers
+         * Remove the currentLayer from the active layer list and reset the assigned layers.
+         * This only occurs if this portalSet is double sided.
          */
 
         if(doubleSided) {    
@@ -149,6 +149,9 @@ public class PortalSet : MonoBehaviour {
     }
 
     void Update() {
+        /*
+         * Ensure the portal is up-to date with any changes made in the editor
+         */
 
         /* If there is a change in the portal's size, force it to update */
         if(portalWidth != previousWidth || portalHeight != previousHeight) {
@@ -159,8 +162,7 @@ public class PortalSet : MonoBehaviour {
         if(updatePortal) {
             CreateMesh();
             CreateBorder();
-            UpdatePortalTransforms();
-            UpdateTriggers();
+            UpdatePortalObjectsTransforms();
 
             updatePortal = false;
         }
@@ -169,11 +171,9 @@ public class PortalSet : MonoBehaviour {
 
     /* -------- Update Functions ---------------------------------------------------- */
 
-    void UpdatePortalTransforms() {
+    void UpdatePortalObjectsTransforms() {
         /*
-         * Depending on the sizes of the portals, change the local position and rotation of the portals.
-         * This includes the portal meshes, triggers, borders, and backwards portals.
-         * Since the two portals are "mirrors", the exitPortal will need to be reversed.
+         * Update the transforms of the two portal's meshes, triggers and borders.
          */
 
         /* Add an offset if the portals need to be centered onto their origin */
@@ -183,29 +183,16 @@ public class PortalSet : MonoBehaviour {
         }
 
         /* Set the mesh, trigger and border containers to their proper positions */
-        EntrancePortal.TriggerContainer.localPosition = centeredOffset;
-        EntrancePortal.borderContainer.localPosition = new Vector3(-portalWidth/2f, 0, 0) + centeredOffset;
-        ExitPortal.TriggerContainer.localPosition = centeredOffset;
-        ExitPortal.borderContainer.localPosition = new Vector3(-portalWidth/2f, 0, 0) + centeredOffset;
-        EntrancePortal.meshContainer.localPosition = centeredOffset;
-        EntrancePortal.meshContainer.localEulerAngles = new Vector3(0, 0, 0);
-        ExitPortal.meshContainer.localPosition = centeredOffset;
-        ExitPortal.meshContainer.localEulerAngles = new Vector3(0, 180, 0);
+        EntrancePortal.SetContainersTransforms(centeredOffset, portalWidth);
+        ExitPortal.SetContainersTransforms(centeredOffset, portalWidth);
 
-        /* Properly set the portals and their exit points */
-        EntrancePortal.SetPortalPositionsEntrance(portalWidth);
-        ExitPortal.SetPortalPositionsExit(portalWidth);
-        EntrancePortal.SetPortalRotation();
-        ExitPortal.SetPortalRotation();
-    }
+        /* Set the portalMeshes of both the portalObjects, indicating their entrance/exit status */
+        EntrancePortal.SetPortalTransforms(portalWidth, true);
+        ExitPortal.SetPortalTransforms(portalWidth, false);
 
-    void UpdateTriggers() {
-        /*
-         * Set the position, rotation and scale of the triggers along with their offset.
-         */
-         
-        EntrancePortal.SetTriggersTransform(portalWidth, portalHeight, triggerThickness, triggerOffset);
-        ExitPortal.SetTriggersTransform(portalWidth, portalHeight, triggerThickness, triggerOffset);
+        /* Set the sizes of the triggers for each portal */
+        EntrancePortal.SetTriggers(portalWidth, portalHeight, triggerThickness, triggerOffset);
+        ExitPortal.SetTriggers(portalWidth, portalHeight, triggerThickness, triggerOffset);
     }
 
 

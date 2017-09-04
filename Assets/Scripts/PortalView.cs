@@ -2,24 +2,20 @@
  * Thanks to Aras Pranckevicius' MirrorReflection4
  * http://wiki.unity3d.com/index.php/MirrorReflection4 
  * 
- * To prevent portal overlap when handling duel sided portals (and recursive calls), Set all portal
- * mesh objects to be on the "Portal Mesh" layer and have all portalMesh scount camera's 
- * avoid rendering anything in the "Portal Mesh" layer. 
- * 
- * Ideally, we would only refuse to render the portal that is currently occupying the same space.
- * It will remain this way until I find a way for a camera to not render specific objects instead
- * of an entire layer to allow other portals to render other portalMeshes.
+ * Using an array of "scout cameras", Render a view from this portal to it's scout point. Use the camera that
+ * is rendering it to rotate and position the view so that this mesh is a seamless window into the scoutPoint.
  */
 
 using UnityEngine;
 using System.Collections;
 
 public class PortalView : MonoBehaviour {
-
-    /* A point positioned at the partner portal's location */
-    public Transform pointB;
-    /* The portalScript/mesh of the portal that the pointB is trying to point to */
-    public PortalView properPointB;
+    
+    /* The position that this portal is scouting to when rendering a view */
+    public Transform scoutPoint;
+    
+    /* The portal that is backwards relative to the scoutPoint */
+    public PortalView scoutPointReversedPortal;
 
     /* The forward vector of the portal */
     public Vector3 faceNormal = Vector3.forward; 
@@ -29,9 +25,6 @@ public class PortalView : MonoBehaviour {
 
     /* Offset to the camera's clipping plane when rendering. 0 is recommended */
     public float m_ClipPlaneOffset;
-
-    /* Whether the portal is currently visible and being drawn to a camera */
-    public bool beingDrawn = true;
         
     /* Materials used on the portalMesh */
     private Material portalMaterial;
@@ -40,14 +33,15 @@ public class PortalView : MonoBehaviour {
     /* The ID of the portalSet that this portalMesh is a child of */
     public string portalSetID;
 
-    /* The max viewing depth for recursive portal calls */
-    private static int maxCameraDepth = 4;
-
     /* An array of cameras used for this portal's recursive portal rendering */
     private GameObject[] recursiveCameras;
 
+    /* The max viewing depth for recursive portal calls */
+    private static int maxCameraDepth = 5;
+    
     /* The rendering layer that the camera's will ignore */
     private int cameraIgnoreLayer = -1;
+
 
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
 
@@ -118,8 +112,6 @@ public class PortalView : MonoBehaviour {
         Camera camera = Camera.current;
         CameraScript cameraScript = camera.GetComponent<CameraScript>();
         
-        
-
 
         /* Ensure the camera rendering this portal has the proper CameraScript to handle portals */
         if(cameraScript) {
@@ -132,9 +124,9 @@ public class PortalView : MonoBehaviour {
 
             }
 
-            /* Dont let a scoutCamera render a mesh if it is behind the portal it is rendering out of */
+            /* Dont let a scoutCamera render a mesh if it is behind the scout point */
             else if(MeshBehindMesh(GetComponent<MeshFilter>(), 
-                    camera.transform.parent.GetComponent<PortalView>().properPointB.GetComponent<MeshFilter>())) {
+                    camera.transform.parent.GetComponent<PortalView>().scoutPointReversedPortal.GetComponent<MeshFilter>())) {
                 //Debug.Log(camera.name + " is trying to render " + name + " | Skip due to portal being behind camera's focus portal");
             }
             
@@ -188,7 +180,7 @@ public class PortalView : MonoBehaviour {
          */
 
         /* Check if key gameObjects are active */
-        if(!enabled || !pointB || !viewingCamera || !scoutCamera) {
+        if(!enabled || !scoutPoint || !viewingCamera || !scoutCamera) {
             return;
         }
 
@@ -218,10 +210,10 @@ public class PortalView : MonoBehaviour {
         Vector3 normal = transform.TransformDirection(faceNormal);
 
         /* Place the scoutCamera in a position relative to it's target portal as the viewing camera is to it's portal */
-        scoutCamera.transform.position = pointB.TransformPoint(transform.InverseTransformPoint(viewingCamera.transform.position));
+        scoutCamera.transform.position = scoutPoint.TransformPoint(transform.InverseTransformPoint(viewingCamera.transform.position));
         scoutCamera.transform.rotation = Quaternion.LookRotation(
-                pointB.TransformDirection(transform.InverseTransformDirection(viewingCamera.transform.forward)),
-                pointB.TransformDirection(transform.InverseTransformDirection(viewingCamera.transform.up)));
+                scoutPoint.TransformDirection(transform.InverseTransformDirection(viewingCamera.transform.forward)),
+                scoutPoint.TransformDirection(transform.InverseTransformDirection(viewingCamera.transform.up)));
 
         /* Reset the projection matrix of this camera */
         SetRectDefault(scoutCamera);
@@ -254,6 +246,7 @@ public class PortalView : MonoBehaviour {
          *  http://wiki.unity3d.com/index.php/MirrorReflection4 
          *  Given position/normal of the plane, calculates plane in camera space.
          */
+
         Vector3 offsetPos = pos + normal * -m_ClipPlaneOffset;
         Matrix4x4 m = cam.worldToCameraMatrix;
         Vector3 cpos = m.MultiplyPoint(offsetPos);
@@ -338,7 +331,6 @@ public class PortalView : MonoBehaviour {
         cameraParent.AddComponent<CameraScript>().Start();
 
         /* Set the values of the CameraScript  */
-        cameraParent.GetComponent<CameraScript>().portalSetID = portalSetID;
         cameraParent.GetComponent<CameraScript>().scout = true;
 
         return cameraParent;

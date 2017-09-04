@@ -6,7 +6,7 @@ using System.Collections;
  * It is often called by it's parent, an empty transform with a PortalSet script.
  */
 public class PortalObjects : MonoBehaviour {
-
+    
     /* The gameObject that contains the portal's mesh and PortalView script */
     public GameObject portalMesh;
     
@@ -27,49 +27,52 @@ public class PortalObjects : MonoBehaviour {
 
     /* -------- Setters ---------------------------------------------------- */
 
-    public void SetPortalPositionsEntrance(float width) {
+    public void SetContainersTransforms(Vector3 centeredOffset, float width) {
         /*
-         * Set the transforms of the portal's meshes
+         * Set the transforms of the containers and this portalObject's portalMeshes.
          */
 
-        portalMesh.transform.localPosition = new Vector3(0, 0, 0);
-        backwardsPortalMesh.transform.localPosition = new Vector3(-width, 0, 0);
-    }
-
-    public void SetPortalPositionsExit(float width) {
-        /*
-         * Set the transforms of the portal's meshes
-         */
-
-        portalMesh.transform.localPosition = new Vector3(width, 0, 0);
-        backwardsPortalMesh.transform.localPosition = new Vector3(0, 0, 0);
-    }
-
-    public void SetPortalRotation() {
-        /*
-         * Set the localEuler angles of the portalS
-         */
-
+        /* Set the positions and rotations that are not entrance/exit dependent */
+        meshContainer.localPosition = centeredOffset;
+        TriggerContainer.localPosition = centeredOffset;
+        TriggerContainer.localEulerAngles = new Vector3(0, 0, 0);
+        borderContainer.localPosition = new Vector3(-width/2f, 0, 0) + centeredOffset;
+        borderContainer.localEulerAngles = new Vector3(0, 0, 0);
         portalMesh.transform.localEulerAngles = new Vector3(0, 0, 0);
         backwardsPortalMesh.transform.localEulerAngles = new Vector3(0, 180, 0);
     }
 
+    public void SetPortalTransforms(float width, bool isEntrance) {
+        /*
+         * place the portalMeshes. Depending on the value of isEntrance, their positions will change.
+         */
+         
+        if(isEntrance) {
+            portalMesh.transform.localPosition = new Vector3(0, 0, 0);
+            backwardsPortalMesh.transform.localPosition = new Vector3(-width, 0, 0);
+            meshContainer.localEulerAngles = new Vector3(0, 0, 0);
+        }
+        else {
+            portalMesh.transform.localPosition = new Vector3(width, 0, 0);
+            backwardsPortalMesh.transform.localPosition = new Vector3(0, 0, 0);
+            meshContainer.localEulerAngles = new Vector3(0, 180, 0);
+        }
+    }
 
     public void SetMesh(Mesh mesh) {
         /*
-         * Link the given mesh to the meshRenderer that is used to display the portal.
+         * Link the given mesh to the MeshFilter that is used to display the portal.
          */
-         
+
         portalMesh.GetComponent<MeshFilter>().mesh = mesh;
         backwardsPortalMesh.GetComponent<MeshFilter>().mesh = mesh;
     }
-    
-    public void SetTriggersTransform(float width, float height, float depth, Vector3 offSet) {
+
+    public void SetTriggers(float width, float height, float depth, Vector3 offSet) {
         /*
          * Set the position, rotation and scale of the portal's triggers using the given parameters.
          */
 
-        /* Set the properties of this script's portal's trigger */
         teleporterEnterTrigger.transform.localEulerAngles = new Vector3(0, 0, 0);
         teleporterEnterTrigger.transform.localScale = transform.localScale;
         teleporterEnterTrigger.transform.localPosition = new Vector3(-width/2f, height/2f, 0) + offSet;
