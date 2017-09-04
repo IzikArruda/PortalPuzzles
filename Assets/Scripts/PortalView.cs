@@ -135,18 +135,17 @@ public class PortalView : MonoBehaviour {
             /* Dont let a scoutCamera render a mesh if it is behind the portal it is rendering out of */
             else if(MeshBehindMesh(GetComponent<MeshFilter>(), 
                     camera.transform.parent.GetComponent<PortalView>().properPointB.GetComponent<MeshFilter>())) {
-                //Debug.Log("mesh behind mesh");
+                //Debug.Log(camera.name + " is trying to render " + name + " | Skip due to portal being behind camera's focus portal");
             }
             
             /* Dont let the scoutCamera render a portal from it's own portalSet */
             else if(camera.transform.parent.GetComponent<PortalView>().portalSetID == portalSetID) {
-                Debug.Log("Own portal set getting rendered");
+                //Debug.Log(camera.name + " is trying to render " + name + " | Skip due to it being form the same portalSet");
             }
             
             /* If the camera is trying to render a portal facing away from the camera, dont do it */
-            else if(!camera.transform.parent.GetComponent<PortalView>().checkPortalVisibility(camera.transform)) {
-                //This has not yet occured, but leave it here until further testing
-                //Debug.Log("Camera is trying to render a portal that it cannot see");
+            else if(!checkPortalVisibility(camera.transform)) {
+                //Debug.Log(camera.name + " is trying to render " + name + " | Skip due to camera facing portal's backface");
             }
             
             /* Render the portal's texture for this camera */
