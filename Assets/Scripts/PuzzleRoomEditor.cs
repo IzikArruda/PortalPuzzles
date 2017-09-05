@@ -1,11 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-/// <summary>
-/// //////////////NOTE: UPON STARTING A GAME, THE PUZZLE ROOM WILL RECREATE ALL IT'S WALLS
-/// </summary>
-
-/*
+/* 
  * A script that builds the walls around the puzzle room. 
  * 
  * Requires a link to the exits and entrances that connect to the room.
@@ -13,11 +9,11 @@ using System.Collections;
 [ExecuteInEditMode]
 public class PuzzleRoomEditor : MonoBehaviour {
 
-    /* The rooms that connect to the exit and entrance holes */
+    /* The attached rooms that connect to the exit and entrance holes */
     public AttachedRoom entrance;
     public AttachedRoom exit;
 
-    /* The position that the entrance and the exit rooms will be */
+    /* The position that the entrance and the exit attached rooms will be in */
     public Transform puzzleRoomEntrancePoint;
     public Transform puzzleRoomExitPoint;
 
@@ -53,7 +49,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
     public GameObject[] upperClouds;
     [HideInInspector]
     public GameObject[] lowerClouds;
-    
+
     /* The sizes/ideal sizes of the room */
     public float givenRoomWidth;
     public float givenRoomHeight;
@@ -65,26 +61,60 @@ public class PuzzleRoomEditor : MonoBehaviour {
     /* The material used on the walls */
     public Material wallMaterial;
 
+    /* Set this value to true to update the walls */
+    public bool updateWalls;
+
+    /* A box collider placed around the whole room to determine if the player is inside the puzzle room */
+    public BoxCollider playerDetector;
 
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
 
-    void Update () {
+    void Start() {
         /*
-         * Update the walls that form the puzzle room when the scene updates
-         */
-         
-        /* Position the attached rooms into their given positions */
-        RepositionAttachedRooms();
-        
-        /* Ensure the linked wall objects are all created and properly positioned */
-        CreateWalls();
-        UpdateWalls();
-        
-        /* Create and place the clouds that block the players vision from seeing to far above or bellow */
-        CreateClouds();
-        UpdateClouds();
+		 * force the walls to update on startup
+		 */
+
+        updateWalls = true;
+        Update();
     }
 
+    void Update() {
+        /*
+         * Update the walls that form the puzzle room
+         */
+
+        if(updateWalls) {
+
+            /* Position the attached rooms into their given positions */
+            RepositionAttachedRooms();
+
+            /* Ensure the linked wall objects are all created and properly positioned */
+            CreateWalls();
+            RepositionWalls();
+
+            /* Create and place the clouds that block the players vision from seeing to far above or bellow */
+            CreateClouds();
+            RepositionClouds();
+
+            /* Create and place the playerDetector collider */
+            CreatePlayerDetector();
+
+            Debug.Log("Updated walls");
+
+            updateWalls = false;
+        }
+
+        //adjust the cloud heights due to player position
+
+        //adjyst the UVs of the clouds with a quick simple increment to have them move
+    }
+
+    void OnTriggerStay(Collider collider) {
+
+        if(collider.tag == "Player") {
+            Debug.Log("IN TRIGGER");
+        }
+    }
 
     /* -------- Update Functions ---------------------------------------------------- */
 
@@ -105,21 +135,20 @@ public class PuzzleRoomEditor : MonoBehaviour {
         exit.transform.position -= positionDifference;
     }
 
-    private void UpdateWalls() {
+    private void RepositionWalls() {
         /*
-         * Update the position, rotation and scale of the walls that form the puzzle room to adjust 
+         * Update the position and rotation of the walls that form the puzzle room to adjust 
          * to the sizes of the room given and the position of the attached rooms.
+         * 
+         * Also assign each wall it's custom sized mesh.
          */
-
-
-        /* Get the sizes of the attached rooms's exits */
         float attachedEntranceWidth = entrance.exitWidth;
         float attachedEntranceHeight = entrance.exitHeight;
         float attachedExitWidth = exit.exitWidth;
         float attachedExitHeight = exit.exitHeight;
 
 
-        /* Calcualte the sizes of the puzzle room using the distance between the two connected rooms */
+        /* Calculate the sizes of the puzzle room using the distance between the two connected rooms */
         Vector3 positionDifference = entrance.exitPoint.position - exit.exitPoint.position;
         roomLength = Mathf.Abs(positionDifference.z);
         roomWidth = givenRoomWidth + Mathf.Abs(positionDifference.x);
@@ -176,61 +205,62 @@ public class PuzzleRoomEditor : MonoBehaviour {
         exitSideWall2.transform.localEulerAngles = new Vector3(-90, 0, 0);
     }
 
-    private void UpdateClouds() {
+    private void RepositionClouds() {
         /*
-         * Update the position of the cloud's meshes
+         * Update the position of the cloud's meshes and assign each one their mesh
          */
         Vector3 centerPoint = (puzzleRoomEntrancePoint.position + puzzleRoomExitPoint.position)/2f;
 
 
         /* Position the upper clouds */
         for(int i = 0; i < upperClouds.Length; i++) {
+            CreateWallMesh(upperClouds[i], roomWidth + attachedRoomMaxWidth*2 + attachedRoomMaxWidth, roomLength);
             upperClouds[i].transform.position = centerPoint + new Vector3(0, roomHeight/2f - (roomHeight/2.5f)*((float) i/upperClouds.Length), 0);
             upperClouds[i].transform.localEulerAngles = new Vector3(180, 0, 0);
-            CreateWallMesh(upperClouds[i], roomWidth + attachedRoomMaxWidth*2 + attachedRoomMaxWidth, roomLength);
         }
 
         /* Position the lower clouds */
         for(int i = 0; i < lowerClouds.Length; i++) {
-            lowerClouds[i].transform.position = centerPoint + new Vector3(0, -roomHeight/2f + (roomHeight/2.5f)*((float) i/upperClouds.Length), 0);
             CreateWallMesh(lowerClouds[i], roomWidth + attachedRoomMaxWidth*2 + attachedRoomMaxWidth, roomLength);
+            lowerClouds[i].transform.position = centerPoint + new Vector3(0, -roomHeight/2f + (roomHeight/2.5f)*((float) i/upperClouds.Length), 0);
         }
     }
 
-    
+
     /* -------- Initilizing Functions ---------------------------------------------------- */
 
     private void CreateWalls() {
         /*
-         * Check if each wall used to form the puzzle room is properly initiated with the proper components
+         * Re-create the walls that form the puzzle room.
          */
 
         /* Use an array to hold all the walls that will be used to form the puzzle room */
         GameObject[] walls = { entrenceUpperWall, entrenceLowerWall, entrenceSideWall1, entrenceSideWall2,
                 exitUpperWall, exitLowerWall, exitSideWall1, exitSideWall2, sideWall1, sideWall2};
 
-
-        /* Check if the container that holds the walls exists */
-        if(puzzleRoomWalls == null) {
-            puzzleRoomWalls = new GameObject();
-            puzzleRoomWalls.name = "Room Walls";
-            puzzleRoomWalls.transform.parent = transform;
-        }
-        
         /* Each wall must be capable of rendering an object and have the proper parent, name and material used */
         for(int i = 0; i < walls.Length; i++) {
-            if(walls[i] == null) {
-                walls[i] = GameObject.CreatePrimitive(PrimitiveType.Plane);
-                walls[i].transform.parent = puzzleRoomWalls.transform;
-                walls[i].name = "Infinite Wall";
-
-                /* Assign a material to the wall */
-                walls[i].GetComponent<MeshRenderer>().material = wallMaterial;
+            if(walls[i] != null) {
+                DestroyImmediate(walls[i]);
             }
+
+            //walls[i] = GameObject.CreatePrimitive(PrimitiveType.Plane);
+            //Is it faster to create a primitive than its components
+            walls[i] = new GameObject();
+            walls[i].AddComponent<MeshRenderer>();
+
+
+
+            walls[i].transform.parent = puzzleRoomWalls.transform;
+            walls[i].name = "Infinite Wall";
+
+            /* Assign a material to the wall */
+            walls[i].GetComponent<MeshRenderer>().material = wallMaterial;
         }
 
 
         /* Reassign each wall to the changed values in the array */
+        //If this needs to run, imdoing something wrong
         entrenceUpperWall = walls[0];
         entrenceLowerWall = walls[1];
         entrenceSideWall1 = walls[2];
@@ -242,49 +272,73 @@ public class PuzzleRoomEditor : MonoBehaviour {
         sideWall1 = walls[8];
         sideWall2 = walls[9];
     }
-  
+
     private void CreateClouds() {
         /*
          * Initlize flat meshes at the upper and lower limits of the puzzle room if they do not already exist
          */
 
-        
-        /* If the cloud density has changed, recreate the clouds */
-        if(upperClouds == null || lowerClouds == null || upperClouds.Length != cloudDensity || lowerClouds.Length != cloudDensity) {
-            upperClouds = new GameObject[cloudDensity];
-            lowerClouds = new GameObject[cloudDensity];
+        /* Empty the clouds array of old clouds before recreating them */
+        if(upperClouds != null) {
+            for(int i = 0; i < upperClouds.Length; i++) {
+                if(upperClouds[i] != null) {
+                    DestroyImmediate(upperClouds[i]);
+                }
+            }
+        }
+        if(lowerClouds != null) {
+            for(int i = 0; i < lowerClouds.Length; i++) {
+                if(lowerClouds[i] != null) {
+                    DestroyImmediate(lowerClouds[i]);
+                }
+            }
         }
 
-        /* Change the clouds texture to reflect it's new density */
-        //cloudMaterial.color = new Color(0, 0, 0, (1f/cloudDensity)/2f);
+        /* Resize the arrays that hold the clouds */
+        upperClouds = new GameObject[cloudDensity];
+        lowerClouds = new GameObject[cloudDensity];
+
+        /* Change the clouds texture to reflect the cloudDensity */
+        cloudMaterial.color = new Color(0, 0, 0, (1f/cloudDensity)/2f);
 
 
-        if(puzzleRoomClouds == null) {
-            puzzleRoomClouds = new GameObject();
-            puzzleRoomClouds.name = "Room Clouds";
-            puzzleRoomClouds.transform.parent = transform;
-        }
-
-        /* The clouds  */
+        /* The clouds */
         for(int i = 0; i < upperClouds.Length; i++) {
-            if(upperClouds[i] == null) {
-                upperClouds[i] = GameObject.CreatePrimitive(PrimitiveType.Plane);
-                upperClouds[i].transform.parent = puzzleRoomClouds.transform;
-                upperClouds[i].name = "Upper Clouds";
-                upperClouds[i].GetComponent<MeshRenderer>().material = cloudMaterial;
-            }
+            //upperClouds[i] = GameObject.CreatePrimitive(PrimitiveType.Plane);
+            upperClouds[i] = new GameObject();
+            upperClouds[i].AddComponent<MeshRenderer>();
+
+
+            upperClouds[i].transform.parent = puzzleRoomClouds.transform;
+            upperClouds[i].name = "Upper Clouds";
+            upperClouds[i].GetComponent<MeshRenderer>().material = cloudMaterial;
+
         }
-        
+
         for(int i = 0; i < lowerClouds.Length; i++) {
-            if(lowerClouds[i] == null) {
-                lowerClouds[i] = GameObject.CreatePrimitive(PrimitiveType.Plane);
-                lowerClouds[i].transform.parent = puzzleRoomClouds.transform;
-                lowerClouds[i].name = "Lower Clouds";
-                lowerClouds[i].GetComponent<MeshRenderer>().material = cloudMaterial;
-            }
+            //lowerClouds[i] = GameObject.CreatePrimitive(PrimitiveType.Plane);
+            lowerClouds[i] = new GameObject();
+            lowerClouds[i].AddComponent<MeshRenderer>();
+
+
+            lowerClouds[i].transform.parent = puzzleRoomClouds.transform;
+            lowerClouds[i].name = "Lower Clouds";
+            lowerClouds[i].GetComponent<MeshRenderer>().material = cloudMaterial;
+
         }
     }
 
+    private void CreatePlayerDetector() {
+        //ADD A CLOUD OFFSET VALUE ALONG WITH A MAX HEIGHT/MIN HEIGHT
+
+        if(playerDetector != null) {
+            DestroyImmediate(playerDetector);
+        }
+
+        /* Attach the playerDetector to this object to have access to it */
+        playerDetector = gameObject.AddComponent<BoxCollider>();
+        playerDetector.isTrigger = true;
+    }
 
     /* -------- Helper Functions ---------------------------------------------------- */
 
@@ -293,7 +347,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
          * Use the given parameters to create the mesh that forms a wall.
          * The mesh will be centered at (0, 0, 0).
          * 
-         * The given gameObject will have it's mesh used in it's meshFilter component changed.
+         * The given gameObject will have the mesh used in it's meshFilter component changed.
          */
         Mesh wallMesh = new Mesh();
         Vector3[] vertices = new Vector3[4];
@@ -311,7 +365,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
         /* Set the two triangles that form the plane */
         triangles = new int[]{
             2, 1, 0,
-            3, 2, 0 
+            3, 2, 0
         };
 
         /* Set the UVs of the plane */
@@ -328,6 +382,10 @@ public class PuzzleRoomEditor : MonoBehaviour {
         wallMesh.triangles = triangles;
         wallMesh.uv = UV;
         wallMesh.RecalculateNormals();
+
+        /* Add a meshFilter and a meshCollider that will use the newly created mesh */
+        wall.AddComponent<MeshFilter>();
+        wall.AddComponent<MeshCollider>();
 
         /* Assign the mesh to the given wall */
         wall.GetComponent<MeshFilter>().mesh = wallMesh;
