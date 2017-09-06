@@ -43,16 +43,25 @@ public class PuzzleRoomEditor : MonoBehaviour {
     public GameObject sideWall2;
 
     /* The upper and lower "clouds" which make the puzzle room seem infinite */
-    public int cloudDensity;
     public Material cloudMaterial;
     [HideInInspector]
     public GameObject[] upperClouds;
     [HideInInspector]
     public GameObject[] lowerClouds;
+    /* How many cloud meshes are used in each set */
+    public int cloudAmount;
+    /* The amout of distance that each cloud mesh set covers */
+    public float cloudDensity;
+    /* How much an offset from the center the cloud sets are */
+    public float cloudOffset = 0;
+    /* How much distance the clouds are from the room's center */
+    public float cloudHeight;
 
-    /* The sizes/ideal sizes of the room */
+
+    /* The given sizes of the room */
     public float givenRoomWidth;
     public float givenRoomHeight;
+    /* The actual sizes of the room */
     private float roomWidth;
     private float attachedRoomMaxWidth;
     private float roomLength;
@@ -66,6 +75,13 @@ public class PuzzleRoomEditor : MonoBehaviour {
 
     /* A box collider placed around the whole room to determine if the player is inside the puzzle room */
     public BoxCollider playerDetector;
+
+    /* The minimum distance the player needs to be from the center before the clouds move in confunction with them.
+     * Any portals should be within this range to prevent sudden cloud position changes when teleporting */
+    public float minYClouds;
+
+    /* the maximum distance the player can fall from the levels center before getting teleported to the other side. */
+    public float minYTeleport;
 
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
 
@@ -86,39 +102,65 @@ public class PuzzleRoomEditor : MonoBehaviour {
         if(updateWalls) {
 
             /* Position the attached rooms into their given positions */
-            RepositionAttachedRooms();
+            UpdateAttachedRooms();
 
             /* Ensure the linked wall objects are all created and properly positioned */
             CreateWalls();
-            RepositionWalls();
+            AssignMeshToWalls();
 
-            /* Create and place the clouds that block the players vision from seeing to far above or bellow */
+            /* Create the clouds that block the players vision from seeing to far above or bellow */
             CreateClouds();
-            RepositionClouds();
+            AssignMeshToClouds();
 
             /* Create and place the playerDetector collider */
             CreatePlayerDetector();
 
             Debug.Log("Updated walls");
-
             updateWalls = false;
         }
 
-        //adjust the cloud heights due to player position
-
-        //adjyst the UVs of the clouds with a quick simple increment to have them move
+        /* Update the position of the clouds using cloudOffset */
+        UpdateClouds();
     }
 
     void OnTriggerStay(Collider collider) {
-
+        /*
+         * If the player is within the puzzle room, check their relative height from the center.
+         * If the distance is more than minYClouds, have the clouds follow the player.
+         * If the distance is more than minYTeleport, teleport the player from top to bottom or vice versa.
+         */
         if(collider.tag == "Player") {
-            Debug.Log("IN TRIGGER");
+            Vector3 centerPoint = (puzzleRoomEntrancePoint.position + puzzleRoomExitPoint.position)/2f;
+            float playerFromCenter = collider.transform.position.y - centerPoint.y;
+
+            /* Teleport the player to the other top/bottom boundary */
+            if(playerFromCenter > minYTeleport || playerFromCenter < -minYTeleport) {
+                /* Teleport the player to the other side */
+                float newHeight = playerFromCenter - minYTeleport*2;
+                collider.transform.position -= new Vector3(0, Mathf.Sign(playerFromCenter)*minYTeleport*2, 0);
+
+                /* If the player teleported, update the playerFromCenter value */
+                playerFromCenter = collider.transform.position.y - centerPoint.y;
+            }
+
+            /* Have the clouds follow the player, with it being more centered the further the player */
+            if(playerFromCenter > minYClouds || playerFromCenter < -minYClouds) {
+                cloudOffset = playerFromCenter;
+                cloudOffset -= (minYClouds*Mathf.Sign(playerFromCenter))
+                        *(1 - ((Mathf.Abs(playerFromCenter) - minYClouds)/minYTeleport));
+            }
+
+            /* Player is within the room's minimum size, do not offset the clouds */
+            else {
+                cloudOffset = 0;
+            }
+
         }
     }
 
     /* -------- Update Functions ---------------------------------------------------- */
 
-    private void RepositionAttachedRooms() {
+    private void UpdateAttachedRooms() {
         /*
          * Move the linked attached rooms to the givenpoints defined by the two puzzleRoomPoint transforms.
          * The attached rooms will be moved so their exit point shares the same transform as
@@ -135,12 +177,11 @@ public class PuzzleRoomEditor : MonoBehaviour {
         exit.transform.position -= positionDifference;
     }
 
-    private void RepositionWalls() {
+    private void AssignMeshToWalls() {
         /*
-         * Update the position and rotation of the walls that form the puzzle room to adjust 
-         * to the sizes of the room given and the position of the attached rooms.
+         * Assign a custom mesh to each wall that forms the puzzle room.
          * 
-         * Also assign each wall it's custom sized mesh.
+         * Also properly position and rotate the walls in this function for convenience.
          */
         float attachedEntranceWidth = entrance.exitWidth;
         float attachedEntranceHeight = entrance.exitHeight;
@@ -205,27 +246,34 @@ public class PuzzleRoomEditor : MonoBehaviour {
         exitSideWall2.transform.localEulerAngles = new Vector3(-90, 0, 0);
     }
 
-    private void RepositionClouds() {
+    private void AssignMeshToClouds() {
         /*
-         * Update the position of the cloud's meshes and assign each one their mesh
+         * Assign a mesh to each cloud object and position them on the top and bottom edges of the room
          */
         Vector3 centerPoint = (puzzleRoomEntrancePoint.position + puzzleRoomExitPoint.position)/2f;
 
 
         /* Position the upper clouds */
         for(int i = 0; i < upperClouds.Length; i++) {
-            CreateWallMesh(upperClouds[i], roomWidth + attachedRoomMaxWidth*2 + attachedRoomMaxWidth, roomLength);
-            upperClouds[i].transform.position = centerPoint + new Vector3(0, roomHeight/2f - (roomHeight/2.5f)*((float) i/upperClouds.Length), 0);
+            upperClouds[i].transform.position = centerPoint + new Vector3(0, cloudHeight - cloudDensity*((float) i/upperClouds.Length), 0);
             upperClouds[i].transform.localEulerAngles = new Vector3(180, 0, 0);
+            CreateWallMesh(upperClouds[i], roomWidth + attachedRoomMaxWidth*2 + attachedRoomMaxWidth, roomLength);
         }
 
         /* Position the lower clouds */
         for(int i = 0; i < lowerClouds.Length; i++) {
+            lowerClouds[i].transform.position = centerPoint + new Vector3(0, -cloudHeight + cloudDensity*((float) i/upperClouds.Length), 0);
             CreateWallMesh(lowerClouds[i], roomWidth + attachedRoomMaxWidth*2 + attachedRoomMaxWidth, roomLength);
-            lowerClouds[i].transform.position = centerPoint + new Vector3(0, -roomHeight/2f + (roomHeight/2.5f)*((float) i/upperClouds.Length), 0);
         }
     }
 
+    public void UpdateClouds() {
+        /*
+		 * Set the position of the cloud's container to move them all relative to the player's position
+		 */
+
+        puzzleRoomClouds.transform.position = new Vector3(0, cloudOffset, 0);
+    }
 
     /* -------- Initilizing Functions ---------------------------------------------------- */
 
@@ -244,13 +292,8 @@ public class PuzzleRoomEditor : MonoBehaviour {
                 DestroyImmediate(walls[i]);
             }
 
-            //walls[i] = GameObject.CreatePrimitive(PrimitiveType.Plane);
-            //Is it faster to create a primitive than its components
             walls[i] = new GameObject();
             walls[i].AddComponent<MeshRenderer>();
-
-
-
             walls[i].transform.parent = puzzleRoomWalls.transform;
             walls[i].name = "Infinite Wall";
 
@@ -295,11 +338,11 @@ public class PuzzleRoomEditor : MonoBehaviour {
         }
 
         /* Resize the arrays that hold the clouds */
-        upperClouds = new GameObject[cloudDensity];
-        lowerClouds = new GameObject[cloudDensity];
+        upperClouds = new GameObject[cloudAmount];
+        lowerClouds = new GameObject[cloudAmount];
 
         /* Change the clouds texture to reflect the cloudDensity */
-        cloudMaterial.color = new Color(0, 0, 0, (1f/cloudDensity)/2f);
+        cloudMaterial.color = new Color(0, 0, 0, (1f/cloudAmount)/2f);
 
 
         /* The clouds */
@@ -307,8 +350,6 @@ public class PuzzleRoomEditor : MonoBehaviour {
             //upperClouds[i] = GameObject.CreatePrimitive(PrimitiveType.Plane);
             upperClouds[i] = new GameObject();
             upperClouds[i].AddComponent<MeshRenderer>();
-
-
             upperClouds[i].transform.parent = puzzleRoomClouds.transform;
             upperClouds[i].name = "Upper Clouds";
             upperClouds[i].GetComponent<MeshRenderer>().material = cloudMaterial;
@@ -319,8 +360,6 @@ public class PuzzleRoomEditor : MonoBehaviour {
             //lowerClouds[i] = GameObject.CreatePrimitive(PrimitiveType.Plane);
             lowerClouds[i] = new GameObject();
             lowerClouds[i].AddComponent<MeshRenderer>();
-
-
             lowerClouds[i].transform.parent = puzzleRoomClouds.transform;
             lowerClouds[i].name = "Lower Clouds";
             lowerClouds[i].GetComponent<MeshRenderer>().material = cloudMaterial;
@@ -338,6 +377,12 @@ public class PuzzleRoomEditor : MonoBehaviour {
         /* Attach the playerDetector to this object to have access to it */
         playerDetector = gameObject.AddComponent<BoxCollider>();
         playerDetector.isTrigger = true;
+
+        /* Set the sizes of the collider to be equal to the whole room */
+        playerDetector.center = new Vector3(0, 0, roomLength/2f);
+        playerDetector.size = new Vector3(roomWidth+attachedRoomMaxWidth*3, roomHeight, roomLength);
+
+
     }
 
     /* -------- Helper Functions ---------------------------------------------------- */
