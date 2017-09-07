@@ -35,10 +35,12 @@ public class PuzzleRoomEditor : MonoBehaviour {
     [HideInInspector]
     public GameObject lowerClouds;
     /* How many cloud meshes are used in each set */
+    /* How many "clouds" (i.e. a flat square mesh) are in a set */
     public int cloudAmount;
     /* The amout of distance that each cloud mesh set covers */
     public float cloudDensity;
-    /* How much an offset from the center the cloud sets are */
+    
+    /* How much an offset from the center the cloud sets are. Used when tracking player position. */
     public float cloudOffset = 0;
     /* How much distance the clouds are from the room's center */
     public float cloudHeight;
@@ -100,6 +102,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
 
         /* Update the position of the clouds using cloudOffset */
         UpdateClouds();
+        
     }
 
     void OnTriggerStay(Collider collider) {
@@ -180,6 +183,57 @@ public class PuzzleRoomEditor : MonoBehaviour {
 		 */
 
         puzzleRoomClouds.transform.position = new Vector3(0, cloudOffset, 0);
+      
+      
+		/* Checkif the clouds have UVs, and increment them if so */
+        if(upperClouds != null && upperClouds.GetComponent<MeshFilter>() != null 
+                && upperClouds.GetComponent<MeshFilter>().sharedMesh != null 
+                && upperClouds.GetComponent<MeshFilter>().sharedMesh.uv != null){
+        	UpdateCloudsUVs(upperClouds);
+        }
+        
+        if(lowerClouds != null && lowerClouds.GetComponent<MeshFilter>() != null 
+                && lowerClouds.GetComponent<MeshFilter>().sharedMesh != null 
+                && lowerClouds.GetComponent<MeshFilter>().sharedMesh.uv != null){
+        	UpdateCloudsUVs(lowerClouds);
+        }
+    }
+    
+    public void UpdateCloudsUVs(GameObject clouds){
+        /*
+    	 * Increment the UVs of the clouds to simulate them animating.
+    	 */
+        Vector2 uvIncrement;
+
+        Vector2[] cloudUVs = clouds.GetComponent<MeshFilter>().sharedMesh.uv;
+
+        /* Each layer in a cloud set is represented by 4 UV values */
+        for(int i = 0; i < cloudAmount; i++){
+
+            //Do not always increment the UVs in the same way
+            uvIncrement = new Vector2( (1+(i % 4))*0.0002f, (1+((i+2) % 4))*0.0002f);
+
+            cloudUVs[i*4 + 0] += uvIncrement;
+    		cloudUVs[i*4 + 1] += uvIncrement;
+            cloudUVs[i*4 + 2] += uvIncrement;
+            cloudUVs[i*4 + 3] += uvIncrement;
+
+            /* Keep the UVs by looping through the same textures bounds */
+            if(cloudUVs[i*4].x > 1) {
+                cloudUVs[i*4 + 0].x -= 1;
+                cloudUVs[i*4 + 1].x -= 1;
+                cloudUVs[i*4 + 2].x -= 1;
+                cloudUVs[i*4 + 3].x -= 1;
+            }
+            if(cloudUVs[i*4].y > 1) {
+                cloudUVs[i*4 + 0].y -= 1;
+                cloudUVs[i*4 + 1].y -= 1;
+                cloudUVs[i*4 + 2].y -= 1;
+                cloudUVs[i*4 + 3].y -= 1;
+            }
+        }
+
+        clouds.GetComponent<MeshFilter>().sharedMesh.uv = cloudUVs;
     }
 
 
@@ -304,9 +358,6 @@ public class PuzzleRoomEditor : MonoBehaviour {
         if(lowerClouds != null) {
             DestroyImmediate(lowerClouds);
         }
-
-        /* Change the clouds texture to reflect the cloudDensity */
-        cloudMaterial.color = new Color(0, 0, 0, (1f/cloudAmount)/2f);
         
         /* Create and position new upperClouds */
         upperClouds = new GameObject();
@@ -351,21 +402,12 @@ public class PuzzleRoomEditor : MonoBehaviour {
          * Use the given parameters to create the mesh that forms a wall.
          */
         Mesh wallMesh = new Mesh();
-        Vector3[] vertices = new Vector3[4];
+        Vector3[] vertices = null;
         Vector2[] UV;
-        int[] triangles;
+        int[] triangles = null;
         
-        /* Set the vertices of the plane */
-        vertices[0] = new Vector3(0.5f*xScale, 0, 0.5f*zScale);
-        vertices[1] = new Vector3(-0.5f*xScale, 0, 0.5f*zScale);
-        vertices[2] = new Vector3(-0.5f*xScale, 0, -0.5f*zScale);
-        vertices[3] = new Vector3(0.5f*xScale, 0, -0.5f*zScale);
-        
-        /* Set the two triangles that form the plane */
-        triangles = new int[]{
-            2, 1, 0,
-            3, 2, 0
-        };
+        /* Use the meshCreator function to create the basics of the wall */
+        CreateMesh(xScale, zScale, ref vertices, ref triangles);
 
         /* Set the UVs of the plane */
         UV = new Vector2[] {
@@ -398,33 +440,43 @@ public class PuzzleRoomEditor : MonoBehaviour {
     	 */
     	Mesh cloudMesh = new Mesh();
         Vector3[] vertices = new Vector3[4*cloudCount];
+        Vector3[] initialVertices = null;
         Vector2[] UV = new Vector2[4*cloudCount];
         int[] triangles = new int[6*cloudCount];
+        int[] initialTriangles = null;
         float currentHeight;
+        float uvOffset;
+        
+        /* Use the meshCreator function to create the first layer of the clouds, then reuse its values on the rest */
+        CreateMesh(xScale, zScale, ref initialVertices, ref initialTriangles);
         
         /* Create the cloud mesh one layer at a time */
         for(int i = 0; i < cloudCount; i++){
         	
         	/* Create and assign the vertices for this layer */
         	currentHeight = -cloudDepth * ((float)i / (float)(cloudCount-1));
-        	vertices[4*i + 0] = new Vector3(+0.5f*xScale, currentHeight, +0.5f*zScale);
-        	vertices[4*i + 1] = new Vector3(-0.5f*xScale, currentHeight, +0.5f*zScale);
-        	vertices[4*i + 2] = new Vector3(-0.5f*xScale, currentHeight, -0.5f*zScale);
-        	vertices[4*i + 3] = new Vector3(+0.5f*xScale, currentHeight, -0.5f*zScale);
+            vertices[4*i + 0] = initialVertices[0] + new Vector3(0, currentHeight, 0);
+            vertices[4*i + 1] = initialVertices[1] + new Vector3(0, currentHeight, 0);
+            vertices[4*i + 2] = initialVertices[2] + new Vector3(0, currentHeight, 0);
+            vertices[4*i + 3] = initialVertices[3] + new Vector3(0, currentHeight, 0);
         
         	/* Create and assign the triangles using the previously set vertices */
-        	triangles[6*i + 0] = 4*i + 2;
-        	triangles[6*i + 1] = 4*i + 1;
-        	triangles[6*i + 2] = 4*i + 0;
-        	triangles[6*i + 3] = 4*i + 3;
-        	triangles[6*i + 4] = 4*i + 2;
-        	triangles[6*i + 5] = 4*i + 0;
+        	triangles[6*i + 0] = 4*i + initialTriangles[0];
+        	triangles[6*i + 1] = 4*i + initialTriangles[1];
+        	triangles[6*i + 2] = 4*i + initialTriangles[2];
+        	triangles[6*i + 3] = 4*i + initialTriangles[3];
+        	triangles[6*i + 4] = 4*i + initialTriangles[4];
+        	triangles[6*i + 5] = 4*i + initialTriangles[5];
 
             /* Set the UVs if this truangle set */
+            uvOffset = Random.Range(0.1f, 0.5f);
+            if(i % 2 == 1) {
+                uvOffset *= -1;
+            }
             UV[4*i + 0] = new Vector2(0, 0);
-            UV[4*i + 1] = new Vector2(1, 0);
-            UV[4*i + 2] = new Vector2(1, 1);
-            UV[4*i + 3] = new Vector2(0, 1);
+            UV[4*i + 1] = new Vector2(uvOffset, 0);
+            UV[4*i + 2] = new Vector2(uvOffset, uvOffset);
+            UV[4*i + 3] = new Vector2(0, uvOffset);
         }
         
         /* Assign the parameters to the mesh */
@@ -435,8 +487,46 @@ public class PuzzleRoomEditor : MonoBehaviour {
 
         /* Add a meshFilter and meshRenderer to be able to draw the clouds */
         clouds.AddComponent<MeshFilter>();
-        clouds.GetComponent<MeshFilter>().mesh = cloudMesh;
+        clouds.GetComponent<MeshFilter>().sharedMesh = cloudMesh;
         clouds.AddComponent<MeshRenderer>();
         clouds.GetComponent<MeshRenderer>().material = cloudMaterial;
+
+        
+        /* Place a single plane at the end of the clouds to ensure the player cannot see past them */
+        GameObject blocker = new GameObject();
+        Mesh blockerMesh = new Mesh();
+        blocker.name = "End of clouds";
+        blocker.transform.position =  new Vector3(0, -cloudDensity, 0);
+        blocker.transform.parent = clouds.transform;
+
+        /* Create and assign the blocker's mesh */
+        CreateMesh(xScale, zScale, ref initialVertices, ref initialTriangles);
+        blockerMesh.vertices = initialVertices;
+        blockerMesh.triangles = initialTriangles;
+        blocker.AddComponent<MeshFilter>().sharedMesh = blockerMesh;
+        blocker.AddComponent<MeshRenderer>();
+
+        /* Make the blocker's material be a solid black */
+        blocker.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Unlit/Color"));
+        blocker.GetComponent<MeshRenderer>().material.color = Color.black;
+    }
+    
+    public void CreateMesh(float xScale, float zScale, ref Vector3[] vertices, ref int[] triangles){
+    	/*
+    	 * Create a mesh using the given scale values and save it's verts and triangles into the given references.
+    	 *
+    	 * It expects the given arrays to not yet be initialized.
+    	 */
+    
+    	vertices = new Vector3[4];
+    	vertices[0] = new Vector3(0.5f*xScale, 0, 0.5f*zScale);
+        vertices[1] = new Vector3(-0.5f*xScale, 0, 0.5f*zScale);
+        vertices[2] = new Vector3(-0.5f*xScale, 0, -0.5f*zScale);
+        vertices[3] = new Vector3(0.5f*xScale, 0, -0.5f*zScale);
+        
+        triangles = new int[]{
+            2, 1, 0,
+            3, 2, 0
+        };
     }
 }
