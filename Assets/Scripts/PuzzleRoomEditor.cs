@@ -17,13 +17,14 @@ public class PuzzleRoomEditor : MonoBehaviour {
     public Transform puzzleRoomEntrancePoint;
     public Transform puzzleRoomExitPoint;
 
-    /* The parent of all the walls that form the puzzle room */
+    /* The parent of all the walls and clouds that form the puzzle room */
     public GameObject puzzleRoomWalls;
     public GameObject puzzleRoomClouds;
 
-    /* The material used in the puzzleRoom */
+    /* The materials used in the puzzleRoom */
     public Material wallMaterial;
     public Material cloudMaterial;
+    private Material cloudBlockerMaterial;
 
     /* The walls that make up the puzzle room. Each wall has a specific place in the array and the room */
     [HideInInspector]
@@ -34,33 +35,34 @@ public class PuzzleRoomEditor : MonoBehaviour {
     public GameObject upperClouds;
     [HideInInspector]
     public GameObject lowerClouds;
-    /* How many cloud meshes are used in each set */
     /* How many "clouds" (i.e. a flat square mesh) are in a set */
-    public int cloudAmount;
-    /* The amout of distance that each cloud mesh set covers */
-    public float cloudDensity;
-    
-    /* How much an offset from the center the cloud sets are. Used when tracking player position. */
-    public float cloudOffset = 0;
-    /* How much distance the clouds are from the room's center */
     public float cloudHeight;
+    /* Distance between a cloud set's first and last cloud mesh */
+    public int cloudAmount;
+    /* How much distance the clouds sets are from the room's center */
+    public float cloudDensity;
+    /* Y displacement applied to the clouds container. Used to keep the player between both cloud sets. */
+    public float cloudOffset = 0;
+    
 
-    /* The given sizes of the room */
-    public float givenRoomWidth;
-    public float givenRoomHeight;
+    /* The given width of the room */
+    //public float givenRoomWidth;
 
     
     /* Stats on the room calculated once initialized */
     private float roomLength;
     private float roomHeight;
-    private float roomWidth;
+    public float roomWidth;
 
 
     /* The minimum distance the player needs to be from the center before the clouds move in confunction with them */
-    public float minYClouds;
+    //public float minYClouds;
+    /* The maximum distance from the center the "puzzle area" occupies */
+    public float maxYPlayArea;
+    
 
-    /* the maximum distance the player can fall from the levels center before getting teleported to the other side. */
-    public float minYTeleport;
+    /* the minimum distance the player needs to fall from the level's center before getting teleported to the other side. */
+    private float minYTeleport;
 
     /* Set this value to true to update the walls */
     public bool updateWalls;
@@ -71,6 +73,13 @@ public class PuzzleRoomEditor : MonoBehaviour {
         /*
 		 * force the walls to update on startup
 		 */
+		
+		/* Make sure the blocker material is properly created */
+		if(cloudBlockerMaterial == null){
+			cloudBlockerMaterial = new Material(Shader.Find("Unlit/Color"));
+			cloudBlockerMaterial.color = Color.black;
+			Debug.Log("create bloker");
+		}
 
         updateWalls = true;
         Update();
@@ -119,7 +128,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
 
 
             /* Teleport the player to the other top/bottom boundary */
-            if(playerFromCenter > minYTeleport || playerFromCenter < -minYTeleport) {
+            if(Mathf.Abs(playerFromCenter) > minYTeleport) {
                 /* Teleport the player to the other side */
                 float newHeight = playerFromCenter - minYTeleport*2;
                 collider.transform.position -= new Vector3(0, Mathf.Sign(playerFromCenter)*minYTeleport*2, 0);
@@ -129,10 +138,10 @@ public class PuzzleRoomEditor : MonoBehaviour {
             }
 
             /* Have the clouds follow the player, with it being more centered the further the player */
-            if(playerFromCenter > minYClouds || playerFromCenter < -minYClouds) {
+            if(Mathf.Abs(playerFromCenter) > maxYPlayArea) {
                 cloudOffset = playerFromCenter;
-                cloudOffset -= (minYClouds*Mathf.Sign(playerFromCenter))
-                        *(1 - ((Mathf.Abs(playerFromCenter) - minYClouds)/(minYTeleport-minYClouds)));
+                cloudOffset -= (maxYPlayArea*Mathf.Sign(playerFromCenter))
+                        *(1 - ((Mathf.Abs(playerFromCenter) - maxYPlayArea)/(minYTeleport-maxYPlayArea)));
             }
 
             /* Player is within the room's minimum size, do not offset the clouds */
@@ -147,17 +156,18 @@ public class PuzzleRoomEditor : MonoBehaviour {
 
 	public void UpdateSizes(){
         /*
-	     * Calculate the sizes of the room to be used with the creation functions
+	     * Calculate the sizes of the room to be used with the creation functions.
+		 * Length is given by the exit placement and height by cloud variables.
 	     */
-         
-        /* Set the room's height while keeping the exits within the room */
-        roomHeight = givenRoomHeight;
-
-        /* Set the width of the room, i.e. the distance from the left wall to the right wall */
-        roomWidth = givenRoomWidth;
 
         /* Get the distance between the room's exit points's along the Z axis for the room length */
         roomLength = Mathf.Abs((entrance.exitPoint.position - exit.exitPoint.position).z);
+        
+        /* Calculate the distance needed for the player to teleport, which is the distance needed for the clouds to completely cover the level */
+        minYTeleport = maxYPlayArea + cloudHeight + cloudDensity;
+
+        /* Get the rooms height using the maximum distance the clouds can reach */
+        roomHeight = maxYPlayArea*2 + (cloudHeight*2 + cloudDensity*2)*2;
     }
 
     private void UpdateAttachedRooms() {
@@ -265,7 +275,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
         walls[0].transform.parent = puzzleRoomWalls.transform;
         walls[0].transform.localEulerAngles = new Vector3(90, -90, 0);
         walls[0].transform.position = new Vector3(0, 0, roomLength/2f) + 
-                new Vector3(givenRoomWidth/2f, 0, 0);
+                new Vector3(roomWidth/2f, 0, 0);
 
         walls[1] = new GameObject();
         walls[1].name = "Right wall";
@@ -273,7 +283,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
         walls[1].transform.parent = puzzleRoomWalls.transform;
         walls[1].transform.localEulerAngles = new Vector3(90, 90, 0);
         walls[1].transform.position = new Vector3(0, 0, roomLength/2f) + 
-                new Vector3(-givenRoomWidth/2f, 0, 0);
+                new Vector3(-roomWidth/2f, 0, 0);
 
         /* Create and place the walls that are situated bellow the room's entrance/exit */
         walls[2] = new GameObject();
@@ -364,7 +374,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
         CreateCloudsMesh(upperClouds, roomWidth, roomLength, cloudAmount, cloudDensity);
         upperClouds.name = "Upper Clouds";
         upperClouds.transform.parent = puzzleRoomClouds.transform;
-        upperClouds.transform.position = new Vector3(0, cloudHeight/2f, roomLength/2f);
+        upperClouds.transform.position = new Vector3(0, cloudHeight, roomLength/2f);
         upperClouds.transform.localEulerAngles = new Vector3(180, 0, 0);
 
         /* Create and position new lowerclouds */
@@ -372,7 +382,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
         CreateCloudsMesh(lowerClouds, roomWidth, roomLength, cloudAmount, cloudDensity);
         lowerClouds.name = "Lower Clouds";
         lowerClouds.transform.parent = puzzleRoomClouds.transform;
-        lowerClouds.transform.position = new Vector3(0, -cloudHeight/2f, roomLength/2f);
+        lowerClouds.transform.position = new Vector3(0, -cloudHeight, roomLength/2f);
     }
 
     private void CreatePlayerDetector() {
@@ -492,7 +502,8 @@ public class PuzzleRoomEditor : MonoBehaviour {
         clouds.GetComponent<MeshRenderer>().material = cloudMaterial;
 
         
-        /* Place a single plane at the end of the clouds to ensure the player cannot see past them */
+
+        /* Place a single mesh at the end of the clouds to block the players view past the clouds */
         GameObject blocker = new GameObject();
         Mesh blockerMesh = new Mesh();
         blocker.name = "End of clouds";
@@ -504,11 +515,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
         blockerMesh.vertices = initialVertices;
         blockerMesh.triangles = initialTriangles;
         blocker.AddComponent<MeshFilter>().sharedMesh = blockerMesh;
-        blocker.AddComponent<MeshRenderer>();
-
-        /* Make the blocker's material be a solid black */
-        blocker.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Unlit/Color"));
-        blocker.GetComponent<MeshRenderer>().material.color = Color.black;
+        blocker.AddComponent<MeshRenderer>().material = cloudBlockerMaterial;
     }
     
     public void CreateMesh(float xScale, float zScale, ref Vector3[] vertices, ref int[] triangles){
