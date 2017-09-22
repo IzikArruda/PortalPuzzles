@@ -142,6 +142,9 @@ public class PuzzleRoomEditor : MonoBehaviour {
                 cloudOffset = playerFromCenter;
                 cloudOffset -= (maxYPlayArea*Mathf.Sign(playerFromCenter))
                         *(1 - ((Mathf.Abs(playerFromCenter) - maxYPlayArea)/(minYTeleport-maxYPlayArea)));
+
+                /* When the player is out of the play area, force them to fast fall */
+                collider.GetComponent<CustomPlayerController>().ApplyFastfall();
             }
 
             /* Player is within the room's minimum size, do not offset the clouds */

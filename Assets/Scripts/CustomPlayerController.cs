@@ -7,11 +7,11 @@ using System.Collections;
  * 	Effenctivly removing any effect a gravity vector could hsve.
  * falling: Legs are looking for an object to connect to
  *	 As the player is being pulled down by gravity.
- 
  */
 public enum PlayerStates{
     Standing,
-	Falling 
+	Falling,
+    FastFalling
 };
 
 
@@ -20,47 +20,43 @@ public enum PlayerStates{
  * it's "body" above the floor, letting the player walk up and down stairs or slopes smoothly. 
  */
 public class CustomPlayerController : MonoBehaviour {
+    public int state;
 
+	/* --- Attached GameObjects ------------------- */
     /* The UserInputs object linked to this player */
     private UserInputs inputs;
-
     /* The current position of the camera. Smoothly morphs to restingCameraTransform each frame */
     public Transform currentCameraTransform;
-
     /* The camera used for the player's view */
     public Camera playerCamera;
 
-    /* The viewing angle of the player's camera */
-    private float xRotation;
-    private float yRotation;
 
+	/* --- Player Control/Movement ----------------- */
     /* The direction and magnitude of player's movement input */
     private Vector3 inputVector = Vector3.zero;
-
+    /* How fast a player moves using player inputs */
+    public float movementSpeed;
+    public float runSpeedMultiplier;
     /* Sliding determines how much of getAxis should be used over getAxisRaw. */
     [Range(1, 0)]
     public float sliding;
 
-    /* How fast a player moves using player inputs */
-    public float movementSpeed;
-    public float runSpeedMultiplier;
-
     /* How fast a player accelerates towards their feet when falling. */
     public float gravity;
-
-    /* How fast a player travels upward when they jump */
-    public float jumpSpeed;
-
     /* The Y velocity of the player along with its max(positive) */
     public float currentYVelocity;
     public float maxYVelocity;
-
+    
+    /* How fast a player travels upward when they jump */
+    public float jumpSpeed;
     /* Used to determine the state of the jump. If true, the next jump opportunity will cause the player to jump. */
     private bool jumpPrimed;
     /* The state of the jump key on the current and previous frame. true = pressed */
     private bool jumpKeyPrevious = false;
     private bool jumpKeyCurrent = false;
 
+
+	/* --- Body/Leg Sizes---------------------- */
     /* The sizes of the player's capsule collider */
     public float playerBodyLength;
     public float playerBodyRadius;
@@ -68,54 +64,55 @@ public class CustomPlayerController : MonoBehaviour {
     /* Percentage of player radius that is used to sepperate the legs from the player's center */
     [Range(1, 0)]
     public float legGap;
-
     /* How much distance will be between the player's collider and the floor */
     public float givenLegLength;
     private float currentLegLength;
-
-    /* The length of the player's leg at this frame */
-    private float expectedLegLength;
-
-    /* How low a player can step down for them to snap to the ground */
+    /* How low a player can step down from their legLength to snap to the ground */
     public float givenStepHeight;
     private float currentStepHeight;
 
-    /* How many extra feet are used when handling ground checks */
-    public int extraFeet;
-
+    /* How many extra legs are used when handling grounded checks */
+    public int extraLegs;
+    /* The length of each leg of the player */
+    private float[] extraLegLenths;
+    
     /* The average position of all the player's standing feet */
     private Vector3 currentFootPosition;
 
-    /* The length of each leg of the player */
-    private float[] extraLegLenths;
 
-    /* If the player is falling with gravity or standing with their legs */
-    private bool falling = false;
 
-    /* An offset that differentiates currentCameraTransform from restingCameraTransform */
-    public float cameraYOffset;
-    /* How fast currentCameraTransform morphs to restingCameraTransform each frame, in percentage. */
-    [Range(1, 0)]
-    public float morphPercentage;
 
+	
     //Default (0, 1, 0)
+    //DOES GIVENPOS HAVE A VALUE? WE DONT NEED IT
     public Vector3 givenPosition;
     //Default (0, 0, 1)
     public Vector3 givenDirection;
     //Default (0, 1, 0)
     public Vector3 givenUp;
 
-    public float headHeight;
 
+	/* --- Camera Positioning ---------------------- */
+    /* The viewing angle of the player's camera */
+	/* Current rotations of the camera */
+	/* These should be private */
     public float cameraXRotation;
     public float cameraYRotation;
+    /* How high the player camera is from their body's origin */
+    public float headHeight;
+    /* An offset that differentiates currentCameraTransform from the expected head height */
+    public float cameraYOffset;
+    /* How fast cameraYOffset morphs towards 0 each frame, in percentage. */
+    [Range(1, 0)]
+    public float morphPercentage;
     
-    /* The current state the player is in */
-    public int state;
+    
+    
+    
+    
+    
 
-
-    /* Whether the player is in fast fall mode */
-    public bool fastFall;
+    
 
     /* -------------- Built-in Unity Functions ---------------------------------------------------------- */
 
@@ -128,7 +125,7 @@ public class CustomPlayerController : MonoBehaviour {
         inputs = new UserInputs();
 
         /* Initilize the leg lengths */
-        extraLegLenths = new float[extraFeet + 1];
+        extraLegLenths = new float[extraLegs + 1];
 
         /* Put the starting foot position at the base of the default player model */
         currentFootPosition = transform.TransformPoint(new Vector3(0, -GetComponent<CapsuleCollider>().height/2, 0));
@@ -157,7 +154,7 @@ public class CustomPlayerController : MonoBehaviour {
 			UpdateStanding();
 		}
 
-        else if(state == (int) PlayerStates.Falling) {
+        else if(PlayerIsFalling()) {
             UpdateFalling();
         }
 
@@ -165,7 +162,8 @@ public class CustomPlayerController : MonoBehaviour {
 
 
 		/* Draw a debug ray from the camera */
-        Vector3 pos = givenPosition;
+        //Vector3 pos = givenPosition;
+        Vector3 pos = transform.position;
         Quaternion givenRotation = Quaternion.LookRotation(givenDirection, givenUp);
         float dis = 10f;
         RayTrace(ref pos, ref givenRotation, ref dis, true, true);
@@ -262,7 +260,7 @@ public class CustomPlayerController : MonoBehaviour {
 		}
 		
 		/* Shorten the legs when falling */
-		else if(state == (int) PlayerStates.Falling){
+		else if(PlayerIsFalling()){
             /* While falling upwards, heavily shorten the legs */
             if(currentYVelocity >= 0) {
                 currentLegLength = givenLegLength*0.1f + playerBodyLength/2f;
@@ -334,7 +332,7 @@ public class CustomPlayerController : MonoBehaviour {
         /* Run sepperate functions depending on the state */
 		if(state == (int) PlayerStates.Standing){
 			StepPlayerStanding();
-		} else if(state == (int) PlayerStates.Falling){
+		} else if(PlayerIsFalling()){
 			StepPlayerFalling();
 		}
     }
@@ -363,8 +361,7 @@ public class CustomPlayerController : MonoBehaviour {
 		/* Update the footPosition and the player's position if they are still standing */
 		else {
 		
-			/* Calculate the current foot position of the player by finding the expectedLegLength */
-			//AdjustBodyAfterStep/
+			/* Calculate the current foot position of the player by finding the new leg length */
             float newLegLength = 0;
             for(int i = 0; i < extraLegLenths.Length; i++) {
                 if(extraLegLenths[i] >= 0) {
@@ -407,7 +404,7 @@ public class CustomPlayerController : MonoBehaviour {
             UpdateLegLengths();
 
 
-            /* Calculate the current foot position of the player by finding the expectedLegLength */
+            /* Calculate the current foot position of the player by finding the new leg length */
             //AdjustBodyAfterStep/
             float newLegLength = 0;
             for(int i = 0; i < extraLegLenths.Length; i++) {
@@ -428,16 +425,15 @@ public class CustomPlayerController : MonoBehaviour {
      	 */
         Vector3 upDirection = transform.rotation*Vector3.up;
 
-        //Maybe remove the body length mod
-
         /* Place the footPosition using the stepLegLength */
-        currentFootPosition = transform.position - upDirection*(playerBodyLength/2f + stepLegLength);
+        currentFootPosition = transform.position - upDirection*(stepLegLength);
     
     	/* Move the player's body so that their "legs" are now of proper length */
-    	MovePlayer(-transform.position + currentFootPosition + upDirection*(playerBodyLength/2f + currentLegLength));
-    
-    	/* Revert any movement done to the camera to smooth the players view */
-    	currentCameraTransform.transform.position -= upDirection*(currentLegLength - stepLegLength);
+    	MovePlayer(-transform.position + currentFootPosition + upDirection*(currentLegLength));
+
+        /* Revert any movement done to the camera to smooth the players view */
+        //currentCameraTransform.transform.position -= upDirection*(currentLegLength - stepLegLength);
+        cameraYOffset -= (currentLegLength - stepLegLength);
     }
     
     public void MovePlayer() {
@@ -465,14 +461,15 @@ public class CustomPlayerController : MonoBehaviour {
     	Vector3 gravityVector = Vector3.zero;
     
          /* If the player is falling, apply gravity to their yVelocity */
-    	if(state == (int) PlayerStates.Falling) {
+    	if(PlayerIsFalling()) {
 
-            /* If the player is under the effects of "fastfall", Increase the falling speed and maximum limit */
-            if(fastFall) {
+            /* If the player is FastFalling, Increase the falling speed and maximum limit */
+            if(state == (int) PlayerStates.FastFalling) {
                 int fastFallMod = 10;
                 currentYVelocity -= gravity*Time.deltaTime*60*fastFallMod/10f;
                 if(currentYVelocity < -maxYVelocity*fastFallMod) { currentYVelocity = -maxYVelocity*fastFallMod; }
             }
+            
             else {
                 currentYVelocity -= gravity*Time.deltaTime*60;
                 if(currentYVelocity < -maxYVelocity) { currentYVelocity = -maxYVelocity; }
@@ -491,7 +488,8 @@ public class CustomPlayerController : MonoBehaviour {
     void AdjustCameraPosition() {
         /*
          * Position and rotate the player camera according to their inputs.
-         * The camera is positionned headHeight above the player origin.
+         * The camera is positionned headHeight above the player origin,
+         * with the cameraYOffset applying an offset when needed.
          * 
          * The camera's position and rotation is calculated by firing a RayTrace command from the player origin
          * upwards (relative to the player) to the expected view position. The RayTrace will collide with walls
@@ -502,15 +500,16 @@ public class CustomPlayerController : MonoBehaviour {
         Vector3 playerOrigin;
         float playerCameraHeight;
 
-        /* Copy the player's transform to the camera as we take in user inputs to calculate it's facing direction */
+        /* Copy the player's transform to the camera as we get it's facing direction */
         currentCameraTransform.position = transform.position;
         currentCameraTransform.rotation = transform.rotation;
         RotateCamera();
-
+		
+		//maybe adjust the yoffset at this point. ie use the morph percentage
         /* Apply a rayTrace from the player's origin to the camera's position that is effected by teleport triggers */
         playerOrigin = transform.position;
         toCamRotation = Quaternion.LookRotation(transform.up, transform.forward);
-        playerCameraHeight = headHeight;
+        playerCameraHeight = GetCameraOffset();
         rotationDifference = RayTrace(ref playerOrigin, ref toCamRotation, ref playerCameraHeight, true, true);
 
         /* Use the new position and rotation to find the camera's final position and rotation */
@@ -524,8 +523,55 @@ public class CustomPlayerController : MonoBehaviour {
         //Debug.DrawRay(playerCamera.transform.position, currentCameraTransform.forward, Color.cyan);
     }
 
+	float GetCameraOffset(){
+        /*
+		 * Get the height offset the player camera is from the player origin.
+         * Re-adjust the cameraYOffset after using it and prevent it from being too large.
+		 */
+        float headOffset;
+
+        /* If the player is falling, adjust the cameraYOffset to reflect it's falling velocity */
+        if(PlayerIsFalling()) {
+            cameraYOffset += currentYVelocity/5f;
+        }
+
+
+        /* Prevent the offset from becoming larger than half the player's body length */
+        if(cameraYOffset > playerBodyLength/2f){
+            cameraYOffset = playerBodyLength/2f;
+		}else if(cameraYOffset < -playerBodyLength/2f){
+            cameraYOffset  = -playerBodyLength/2f;
+		}
+
+        /* If the offset is very small, snap it to 0 */
+        if(cameraYOffset < 0.001 && cameraYOffset > -0.001) {
+            cameraYOffset = 0;
+        }
+
+        /* Use the cameraYOffset to get the head's offset */
+        headOffset = headHeight + cameraYOffset;
+
+        /* Reduce the cameraYOffset once it gets used */
+        cameraYOffset *= morphPercentage;
+
+        return headOffset;
+	} 
+	
 
     /* ----------- Event Functions ------------------------------------------------------------- */
+    
+    public void ApplyFastfall(){
+    	/* 
+    	 * Put the player into the fast fall state if possible
+    	 */
+    
+    	/* Only go into fast fall if the state is already in free fall */
+    	if(PlayerIsFalling() && state != (int) PlayerStates.FastFalling){
+    		ChangeState((int) PlayerStates.FastFalling);
+    	}
+    }
+    
+    
     
     void FireLegRays() {
     	/*
@@ -558,8 +604,13 @@ public class CustomPlayerController : MonoBehaviour {
     void ChangeState(int newState) {
         /*
          * Change the player's current state to the given newState. Run certain lines if
-         * certain states change into other specific states (standin > falling will attempt to jump)
+         * certain states change into other specific states (fast falling > standing)
          */
+
+        if(state == (int) PlayerStates.FastFalling && newState == (int) PlayerStates.Standing) {
+            Debug.Log("HARD FALL");
+            cameraYOffset = -10;
+        }
 
         state = newState;
     }
@@ -654,7 +705,7 @@ public class CustomPlayerController : MonoBehaviour {
         /* Travel towards the rotation's forward for the remaining distance */
         while(distance > 0 && stopRayTrace == false) {
             //reduce the distance every loop to prevent infinite loops
-            distance -= 0.001f;
+            //distance -= 0.001f;
 
             /* Check for any collisions from the current position towards the current direction */
             if(Physics.Raycast(position, rotation*Vector3.forward, out hitInfo, distance, rayLayerMask)) {
@@ -694,5 +745,35 @@ public class CustomPlayerController : MonoBehaviour {
         }
 
         return totalRotation;
+    }
+    
+    
+    
+    bool PlayerIsStanding(){
+    	/*
+    	 * Return true if the player is in a grounded state
+    	 * (standing)
+    	 */
+    	bool isGrounded = false;
+    
+    	if(state == (int) PlayerStates.Standing){
+    		isGrounded = true;
+    	}
+    
+    	return isGrounded;
+    }
+    
+    bool PlayerIsFalling(){
+    	/*
+    	 * Return true if the player is in a freefall state
+    	 * (falling, fastFalling)
+    	 */
+    	bool isFalling = false;
+    
+    	if(state == (int) PlayerStates.Falling || state == (int) PlayerStates.FastFalling){
+    		isFalling = true;
+    	}
+    
+    	return isFalling;
     }
 }
