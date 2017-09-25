@@ -103,6 +103,8 @@ public class CustomPlayerController : MonoBehaviour {
     [Range(1, 0)]
     public float morphPercentage;
     
+    public int cameraEffectsEnabled = -1;
+    
 
     /* -------------- Built-in Unity Functions ---------------------------------------------------------- */
 
@@ -140,18 +142,25 @@ public class CustomPlayerController : MonoBehaviour {
          */
         inputs.UpdateInputs();
         stateTime += Time.deltaTime;
+        
+        /* Apply any needed effects to the camera */
+        UpdateCameraEffects();
 
         /* Run a given set of functions depending on the player state */
         if(state == (int) PlayerStates.Standing){
 			UpdateStanding();
 		}
 
-        if(state == (int) PlayerStates.Landing) {
+        else if(state == (int) PlayerStates.Landing) {
             UpdateLanding();
         }
 
-        else if(PlayerIsAirborn()) {
+        else if(state == (int) PlayerStates.Falling) {
             UpdateFalling();
+        }
+        
+        else if(state == (int) PlayerStates.FastFalling) {
+        	UpdateFalling();
         }
 
 
@@ -345,27 +354,36 @@ public class CustomPlayerController : MonoBehaviour {
          */
         float xRot = 0;
         float yRot = 0;
-        float cameraHeight = 0;
-        float state1 = 0.025f;
-        float state2 = 0.4f;
-        float angleRotation = 15;
+        float cameraHeightOffset = 0;
+        float posState1 = 0.05f;
+        float posState2 = 0.75f;
+        float rotState1 = 0.15f;
+        float rotState2 = 0.65f;
+        float angleRotation = 10;
 
-        /* Set the camera's y rotation values to follow the sine graph */
+        //Have it tilt down for 75% then tilt back up
+        /* Set the camera's y rotation values to follow the sine graph [0, PI]> */
         xRot = cameraXRotation;
-        yRot = cameraYRotation - angleRotation*Mathf.Sin(Mathf.PI*ValueWithinRange(0, state2, stateTime));
-        Debug.Log(Mathf.Sin(Mathf.PI*ValueWithinRange(0, state2, stateTime)));
+		if(stateTime < rotState1) {
+			yRot = cameraYRotation - angleRotation*Mathf.Sin(0 + (Mathf.PI/2f)*RatioWithinRange(0, rotState1, stateTime));
+		}else if (stateTime < rotState2) {
+			yRot = cameraYRotation - angleRotation*Mathf.Sin((Mathf.PI/2f) + (Mathf.PI/2f)*RatioWithinRange(rotState1, rotState2, stateTime));
+		}else {
+            yRot = cameraYRotation;
+        }
+
+        
 
         /* Set the camera's positional values depending on the time spent in the current state */
-        if(stateTime < state1) {
-            cameraHeight = headHeight - (headHeight + playerBodyLength/2f)*ValueWithinRange(0, state1, stateTime);
-        } else if(stateTime < state2) {
-            cameraHeight = -playerBodyLength/2f + (headHeight + playerBodyLength/2f)* (Mathf.Cos(Mathf.PI + ValueWithinRange(state1, state2, stateTime)*Mathf.PI)+1)/2f;
+        if(stateTime < posState1) {
+            cameraHeightOffset -= (headHeight + playerBodyLength/2f) * Mathf.Sin((Mathf.PI/2f)*RatioWithinRange(0, posState1, stateTime));
+        } else if(stateTime < posState2) {
+            cameraHeightOffset -= (headHeight + playerBodyLength/2f) * (Mathf.Cos(Mathf.PI*RatioWithinRange(posState1, posState2, stateTime))+1)/2f;
         }
 
         /* Set the values to their expected value before entering the standing state */
         else {
-            cameraHeight = headHeight;
-            cameraYOffset = 0;
+            cameraHeightOffset = 0;
             ChangeState((int) PlayerStates.Standing);
         }
 
@@ -374,7 +392,7 @@ public class CustomPlayerController : MonoBehaviour {
         currentCameraTransform.rotation *= Quaternion.Euler(-yRot, -xRot, 0);
 
         /* Set the position of the camera using it's own process */
-        AdjustCameraPosition(cameraHeight);
+        AdjustCameraPosition(GetCameraHeight() + cameraHeightOffset);
     }
 
     /* ----------------- Step Functions ------------------------------------------------------------- */
@@ -581,6 +599,16 @@ public class CustomPlayerController : MonoBehaviour {
                 newState = (int) PlayerStates.Landing;
                 cameraYOffset = 0;
             }
+            
+            /* Changing to the fastfalling state will start camera effects */
+            if(newState == (int) PlayerStates.FastFalling){
+            	StartCameraEffects();
+            }
+            /* Leaving the fastfalling state will stop camera effects */
+            if(state == (int) PlayerStates.FastFalling){
+            	
+            }
+
 
             stateTime = 0;
             state = newState;
@@ -856,21 +884,79 @@ public class CustomPlayerController : MonoBehaviour {
     	return isFalling;
     }
 
-    float ValueWithinRange(float min, float max, float value) {
+    float RatioWithinRange(float min, float max, float value) {
         /*
-         * Return the ratio of the  value between min and max. Returns 0 if
-         * value is equal to or less than min, 1 if value is more or equal to max
+         * Return the ratio of the value between min and max. Returns 0 if
+         * value is equal to or less than min, 1 if value is more or equal to max.
+         * 0.5 if it is equally between both min and max.
          */
-        float range = 0;
+        float ratio;
 
         if(value < min) {
-            range = 0;
+            ratio = 0;
         }else if(value > max) {
-            range = 1;
+            ratio = 1;
         }else {
-            range = (value - min)/(max - min);
+            ratio = (value - min)/(max - min);
         }
 
-        return range;
+        return ratio;
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    void StartCameraEffects(){
+    	/*
+    	 * Enable the value to tell the camera to add effects
+    	 */
+    
+    	cameraEffectsEnabled = 0;
+    }
+    
+    void StopCameraEffects(){
+    	/*
+    	 * Disable the camera effects value to stop any camera effects
+    	 */
+    
+    	cameraEffectsEnabled = -1;
+    }
+    
+    void UpdateCameraEffects(){
+    	/*
+    	 * Add the effects to the camera every frame
+    	 */
+    
+    	/* Add camera effects for fast falling */
+    	if(cameraEffectsEnabled == 0){
+    
+    	}
     }
 }
