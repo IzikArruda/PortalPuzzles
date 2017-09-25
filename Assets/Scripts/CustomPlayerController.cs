@@ -30,6 +30,8 @@ public enum PlayerStates{
  */
 public class CustomPlayerController : MonoBehaviour {
     public int state;
+    /* How long the player has spent in the current state */
+    public float stateTime;
 
 	/* --- Attached GameObjects ------------------- */
     /* The UserInputs object linked to this player */
@@ -96,7 +98,7 @@ public class CustomPlayerController : MonoBehaviour {
     /* How high the player camera is from their body's origin */
     public float headHeight;
     /* An offset that differentiates currentCameraTransform from the expected head height */
-    private float cameraYOffset;
+    public float cameraYOffset;
     /* How fast cameraYOffset morphs towards 0 each frame, in percentage. */
     [Range(1, 0)]
     public float morphPercentage;
@@ -125,9 +127,10 @@ public class CustomPlayerController : MonoBehaviour {
         /* Adjust the player model's position to reflect the player's leg length */
         transform.position = currentFootPosition;
         transform.localPosition += new Vector3(0, playerBodyLength/2f + 0, 0);
- 
-		/* Start the player in the falling state so they can link themselves to the floor */
-		state = (int) PlayerStates.Standing;
+
+        /* Start the player in the standing state so they can link themselves to the floor */
+        state = -1;
+        ChangeState((int) PlayerStates.Standing);
    }
 
     void Update() {
@@ -136,9 +139,10 @@ public class CustomPlayerController : MonoBehaviour {
          * send the input signals to the current overriddenScript.
          */
         inputs.UpdateInputs();
-         
-		/* Run a given set of functions depending on the player state */
-		if(state == (int) PlayerStates.Standing){
+        stateTime += Time.deltaTime;
+
+        /* Run a given set of functions depending on the player state */
+        if(state == (int) PlayerStates.Standing){
 			UpdateStanding();
 		}
 
@@ -175,7 +179,8 @@ public class CustomPlayerController : MonoBehaviour {
         StepPlayer();
 
         /* Adjust the camera's default transform (currentCameraTransform) now that the player has moved */
-        AdjustCameraPosition();
+        AdjustCameraRotation();
+        AdjustCameraPosition(GetCameraHeight());
     }
 
 	void UpdateFalling(){
@@ -191,8 +196,9 @@ public class CustomPlayerController : MonoBehaviour {
         StepPlayer();
 
         /* Adjust the camera's default transform (currentCameraTransform) now that the player has moved */
-        AdjustCameraPosition();
-	}
+        AdjustCameraRotation();
+        AdjustCameraPosition(GetCameraHeight());
+    }
     
     void UpdateLanding() {
         /*
@@ -200,13 +206,16 @@ public class CustomPlayerController : MonoBehaviour {
          * Prevent the player from moving and force the camera into an animation.
          * Do not let them input any movement or prime a jump.
          */
-         
+
+        /* Move the player using the input vector and gravity */
+        MovePlayer();
+
         /* Let the player undergo any steps that may occur */
         StepPlayer();
 
-        /* Force the camera to follow a specific path/animation that will not respond to inputs */
-        //for now move the camera from use inputs
-        AdjustCameraPosition();
+        /* Force the camera to follow a specific path/animation, but still respond to mouse inputs */
+        AdjustCameraRotation();
+        AnimatedCameraLanding();
     }
 
     
@@ -261,44 +270,112 @@ public class CustomPlayerController : MonoBehaviour {
         MovePlayer(gravityVector + inputVector);
     }
     
-    void AdjustCameraPosition() {
+    void AdjustCameraRotation() {
         /*
-         * Position and rotate the player camera according to their inputs.
+         * Take in user inputs to properly rotate the currentCameraTransform's facing direction.
+         */
+
+        /* Copy the player's current rotation before rotating the camera */
+        currentCameraTransform.rotation = transform.rotation;
+
+        /* Ensure the X rotation does not overflow */
+        cameraXRotation -= inputs.mouseX;
+        if(cameraXRotation < 0) { cameraXRotation += 360; }
+        else if(cameraXRotation > 360) { cameraXRotation -= 360; }
+
+        /* Prevent the Y rotation from rotating too high or low */
+        cameraYRotation += inputs.mouseY;
+        cameraYRotation = Mathf.Clamp(cameraYRotation, -75, 75);
+
+        /* Apply the rotations to the camera's default transform */
+        currentCameraTransform.rotation *= Quaternion.Euler(-cameraYRotation, -cameraXRotation, 0);
+        playerCamera.transform.rotation = currentCameraTransform.rotation;
+    }
+
+    void AdjustCameraPosition(float cameraHeight) {
+        /*
+         * Position and rotate the player camera according to the player's inputs.
          * The camera is positionned headHeight above the player origin,
-         * with the cameraYOffset applying an offset when needed.
+         * with the cameraYOffset applying an offset.
          * 
-         * The camera's position and rotation is calculated by firing a RayTrace command from the player origin
-         * upwards (relative to the player) to the expected view position. The RayTrace will collide with walls
-         * and will teleport from triggers, letting the player's "head" pass through portals without their "body".
+         * Properly position the camera where the player's "head" should be. The new position and rotation 
+         * is calculated by firing a RayTrace command from the player origin upwards (relative to the player) 
+         * to the expected view position. The RayTrace will collide with walls and will teleport from triggers, 
+         * letting the player's "head" pass through portals without their "body".
+         * 
+         * The cameraHeight value should be "GetCameraHeight()" as default 
+         * unless a function wants to set the camera's offset on it's own.
          */
         Quaternion toCamRotation;
         Quaternion rotationDifference;
-        Vector3 playerOrigin;
-        float playerCameraHeight;
+        Vector3 cameraPosition;
 
-        /* Copy the player's transform to the camera as we get it's facing direction */
+        /* Place the camera onto the player origin before firing the rayTrace */
         currentCameraTransform.position = transform.position;
-        currentCameraTransform.rotation = transform.rotation;
-        UpdateCamera();
-
-        //maybe adjust the yoffset at this point. ie use the morph percentage
-        /* Apply a rayTrace from the player's origin to the camera's position that is effected by teleport triggers */
-        playerOrigin = transform.position;
+        
+        /* Prepare the values used with the rayTrace */
+        cameraPosition = transform.position;
         toCamRotation = Quaternion.LookRotation(transform.up, transform.forward);
-        playerCameraHeight = GetCameraOffset();
-        rotationDifference = RayTrace(ref playerOrigin, ref toCamRotation, ref playerCameraHeight, true, true);
+
+        /* If the distance is negative, have the camera's rotation go down instead of up */
+        //WE DONT KNOW IF THIS WILL PROPERLY TELEPORT.NEED TO TEST WITH THE PLAYER STEPPING THROUGH A TILTED TELEPORTER 
+        if(cameraHeight < 0) {
+            cameraHeight *= -1;
+            toCamRotation = Quaternion.LookRotation(-transform.up, transform.forward);
+        }
+
+        /* RayTrace from the player's origin to the camera's position */
+        rotationDifference = RayTrace(ref cameraPosition, ref toCamRotation, ref cameraHeight, true, true);
 
         /* Use the new position and rotation to find the camera's final position and rotation */
-        currentCameraTransform.position = playerOrigin;
+        currentCameraTransform.position = cameraPosition;
         currentCameraTransform.rotation = rotationDifference*currentCameraTransform.rotation;
         playerCamera.transform.position = currentCameraTransform.position;
         playerCamera.transform.rotation = currentCameraTransform.rotation;
-
-        //Draw lines that represent the camera's final rotation
-        //Debug.DrawRay(playerCamera.transform.position, currentCameraTransform.up, Color.cyan);
-        //Debug.DrawRay(playerCamera.transform.position, currentCameraTransform.forward, Color.cyan);
     }
     
+    void AnimatedCameraLanding() {
+        /*
+         * Apply an offset to the camera by setting it to a specific position.
+         * 
+         * The animation that the camera undergoes can be defined by these stages, sepperated by stateTime:
+         * state1: Animate the camera from the player's headHeight to their body base
+         * state2: Move the camera upwards
+         * Once the final state ends, change the state back to standing.
+         */
+        float xRot = 0;
+        float yRot = 0;
+        float cameraHeight = 0;
+        float state1 = 0.025f;
+        float state2 = 0.4f;
+        float angleRotation = 15;
+
+        /* Set the camera's y rotation values to follow the sine graph */
+        xRot = cameraXRotation;
+        yRot = cameraYRotation - angleRotation*Mathf.Sin(Mathf.PI*ValueWithinRange(0, state2, stateTime));
+        Debug.Log(Mathf.Sin(Mathf.PI*ValueWithinRange(0, state2, stateTime)));
+
+        /* Set the camera's positional values depending on the time spent in the current state */
+        if(stateTime < state1) {
+            cameraHeight = headHeight - (headHeight + playerBodyLength/2f)*ValueWithinRange(0, state1, stateTime);
+        } else if(stateTime < state2) {
+            cameraHeight = -playerBodyLength/2f + (headHeight + playerBodyLength/2f)* (Mathf.Cos(Mathf.PI + ValueWithinRange(state1, state2, stateTime)*Mathf.PI)+1)/2f;
+        }
+
+        /* Set the values to their expected value before entering the standing state */
+        else {
+            cameraHeight = headHeight;
+            cameraYOffset = 0;
+            ChangeState((int) PlayerStates.Standing);
+        }
+
+        /* Set the rotation of the camera on it's own */
+        currentCameraTransform.rotation = transform.rotation;
+        currentCameraTransform.rotation *= Quaternion.Euler(-yRot, -xRot, 0);
+
+        /* Set the position of the camera using it's own process */
+        AdjustCameraPosition(cameraHeight);
+    }
 
     /* ----------------- Step Functions ------------------------------------------------------------- */
 
@@ -403,24 +480,6 @@ public class CustomPlayerController : MonoBehaviour {
     
 
     /* ----------------- Value Updating Functions ------------------------------------------------------------- */
-
-    void UpdateCamera() {
-        /*
-         * Take in user inputs to properly rotate the player camera's facing direction.
-         */
-         
-        /* Ensure the X rotation does not overflow */
-        cameraXRotation -= inputs.mouseX;
-        if(cameraXRotation < 0) { cameraXRotation += 360; }
-        else if(cameraXRotation > 360) { cameraXRotation -= 360; }
-
-        /* Prevent the Y rotation from rotating too high or low */
-        cameraYRotation += inputs.mouseY;
-        cameraYRotation = Mathf.Clamp(cameraYRotation, -75, 75);
-
-        /* Apply the rotations to the camera's default transform */
-        currentCameraTransform.rotation *= Quaternion.Euler(-cameraYRotation, -cameraXRotation, 0);
-    }
     
     void UpdateJumpingValues() {
         /*
@@ -513,14 +572,19 @@ public class CustomPlayerController : MonoBehaviour {
          * certain states change into other specific states (fast falling > standing)
          */
 
-        /* FastFalling > Standing : A "hard fall" occurs and forces the player into a landing animation. */
-        if(state == (int) PlayerStates.FastFalling && newState == (int) PlayerStates.Standing) {
-            Debug.Log("HARD FALL");
-            newState = (int) PlayerStates.Landing;
-            cameraYOffset = -10;
-        }
+        /* Dont change anything if the player is already in the new state */
+        if(state != newState) {
 
-        state = newState;
+            /* FastFalling > Standing : A "hard fall" occurs and forces the player into a landing animation. */
+            if(state == (int) PlayerStates.FastFalling && newState == (int) PlayerStates.Standing) {
+                Debug.Log("HARD FALL");
+                newState = (int) PlayerStates.Landing;
+                cameraYOffset = 0;
+            }
+
+            stateTime = 0;
+            state = newState;
+        }
     }
 
     void MovePlayer(Vector3 movementVector) {
@@ -642,7 +706,7 @@ public class CustomPlayerController : MonoBehaviour {
         return gravityVector;
     }
 
-    float GetCameraOffset() {
+    float GetCameraHeight() {
         /*
 		 * Get the height offset the player camera is from the player origin.
          * Re-adjust the cameraYOffset after using it and prevent it from being too large.
@@ -727,7 +791,7 @@ public class CustomPlayerController : MonoBehaviour {
             /* Check for any collisions from the current position towards the current direction */
             if(Physics.Raycast(position, rotation*Vector3.forward, out hitInfo, distance, rayLayerMask)) {
                 /* When hitting a collider, move the position up to the collision point */
-                Debug.DrawLine(position, rotation*Vector3.forward*hitInfo.distance, Color.white);
+                Debug.DrawLine(position, position + rotation*Vector3.forward*hitInfo.distance, Color.red);
                 position += rotation * Vector3.forward * hitInfo.distance;
                 distance -= hitInfo.distance;
                 
@@ -790,5 +854,23 @@ public class CustomPlayerController : MonoBehaviour {
     	}
     
     	return isFalling;
+    }
+
+    float ValueWithinRange(float min, float max, float value) {
+        /*
+         * Return the ratio of the  value between min and max. Returns 0 if
+         * value is equal to or less than min, 1 if value is more or equal to max
+         */
+        float range = 0;
+
+        if(value < min) {
+            range = 0;
+        }else if(value > max) {
+            range = 1;
+        }else {
+            range = (value - min)/(max - min);
+        }
+
+        return range;
     }
 }
