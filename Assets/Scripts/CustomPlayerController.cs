@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using UnityEngine.PostProcessing;
 
 /* 
  * The potential states the player can be in.
@@ -29,6 +30,13 @@ public enum PlayerStates{
  * it's "body" above the floor, letting the player walk up and down stairs or slopes smoothly. 
  */
 public class CustomPlayerController : MonoBehaviour {
+
+
+
+
+
+
+
     public int state;
     /* How long the player has spent in the current state */
     public float stateTime;
@@ -57,6 +65,8 @@ public class CustomPlayerController : MonoBehaviour {
     /* The Y velocity of the player along with its max(positive) */
     private float currentYVelocity;
     public float maxYVelocity;
+    /* The velocity modifier when the player is FastFalling */
+    public int fastFallMod;
     
     /* How fast a player travels upward when they jump */
     public float jumpSpeed;
@@ -112,6 +122,9 @@ public class CustomPlayerController : MonoBehaviour {
         /*
          * Initilize required objects and set starting values for certain variables 
          */
+
+        /* Set up the camera post-processing effects */
+        SetupPostProcessingEffects();
 
         /* Create the UserInputs object linked to this player */
         inputs = new UserInputs();
@@ -606,7 +619,7 @@ public class CustomPlayerController : MonoBehaviour {
             }
             /* Leaving the fastfalling state will stop camera effects */
             if(state == (int) PlayerStates.FastFalling){
-            	
+                StopCameraEffects();
             }
 
 
@@ -714,8 +727,7 @@ public class CustomPlayerController : MonoBehaviour {
 
             /* If the player is FastFalling, Increase the falling speed and maximum limit */
             if(state == (int) PlayerStates.FastFalling) {
-                int fastFallMod = 10;
-                currentYVelocity -= gravity*Time.deltaTime*60*fastFallMod/10f;
+                currentYVelocity -= gravity*Time.deltaTime*60*fastFallMod/5f;
                 if(currentYVelocity < -maxYVelocity*fastFallMod) { currentYVelocity = -maxYVelocity*fastFallMod; }
             }
 
@@ -902,43 +914,58 @@ public class CustomPlayerController : MonoBehaviour {
 
         return ratio;
     }
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /*
+     * Camera values and functions
+     */
+    private VignetteModel cameraVignette;
+    private ChromaticAberrationModel cameraChromaticAberrationSettings;
+
+    void SetupPostProcessingEffects() {
+        /*
+         * Runs on startup, used to assign starting values to the post processing effects
+         */
+
+        cameraVignette = playerCamera.GetComponent<PostProcessingBehaviour>().profile.vignette;
+        cameraVignette.enabled = false;
+
+        cameraChromaticAberrationSettings = playerCamera.GetComponent<PostProcessingBehaviour>().profile.chromaticAberration;
+        cameraChromaticAberrationSettings.enabled = false;
+    }
+
+
     void StartCameraEffects(){
     	/*
     	 * Enable the value to tell the camera to add effects
     	 */
     
-    	cameraEffectsEnabled = 0;
+    	cameraVignette.enabled = true;
     }
     
     void StopCameraEffects(){
@@ -946,17 +973,26 @@ public class CustomPlayerController : MonoBehaviour {
     	 * Disable the camera effects value to stop any camera effects
     	 */
     
-    	cameraEffectsEnabled = -1;
+    	cameraVignette.enabled = false;
     }
+    
+    /* The model settings of each post-processing effect used */
     
     void UpdateCameraEffects(){
     	/*
-    	 * Add the effects to the camera every frame
+    	 * Add the effects to the camera every frame.
+    	 * Runs every frame no matter the state.
     	 */
     
-    	/* Add camera effects for fast falling */
-    	if(cameraEffectsEnabled == 0){
-    
-    	}
+    	/* Add a vignette effect as the person's fallingspeed increases */
+    	if(cameraVignette.enabled){
+
+            /* Set the intensity of the vignetting to be relative to the players speed */
+            float intensity = 0.3f*((-currentYVelocity - maxYVelocity) / (maxYVelocity*(fastFallMod-1)));
+            if(intensity < 0) { intensity = 0; }
+            VignetteModel.Settings vignetteSettings = cameraVignette.settings;
+            vignetteSettings.intensity = intensity;
+            cameraVignette.settings = vignetteSettings;
+	    }
     }
 }
