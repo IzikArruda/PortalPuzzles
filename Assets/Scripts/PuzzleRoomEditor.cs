@@ -510,7 +510,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
         GameObject blocker = new GameObject();
         Mesh blockerMesh = new Mesh();
         blocker.name = "End of clouds";
-        blocker.transform.position =  new Vector3(0, -cloudDensity, 0);
+        blocker.transform.position =  new Vector3(0, -cloudDensity - (cloudDepth/cloudCount), 0);
         blocker.transform.parent = clouds.transform;
 
         /* Create and assign the blocker's mesh */
