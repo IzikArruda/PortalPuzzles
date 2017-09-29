@@ -164,7 +164,7 @@ public class CustomPlayerController : MonoBehaviour {
         }
         
         else if(state == (int) PlayerStates.FastFalling) {
-        	UpdateFalling();
+        	UpdateFastFalling();
         }
 
 
@@ -230,6 +230,22 @@ public class CustomPlayerController : MonoBehaviour {
         AdjustCameraRotation();
         AnimatedCameraLanding();
     }
+    
+    void UpdateFastFalling() {
+    	/*
+    	 * Fast falling is similar to normal falling, but with random camera rotations
+    	 */
+    	
+    	/*Do everything that is done when falling normally */ 
+    	UpdateFalling();
+    
+    	/* Apply a random variance to the players camera relative to their speed */
+    	float speedRatio = RatioWithinRange(maxYVelocity, maxYVelocity*fastFallMod, -currentYVelocity);
+    	float r = speedRatio*0.2f;
+    	currentCameraTransform.rotation *= Quaternion.Euler(
+				Random.Range(-r, r), Random.Range(-r, r), Random.Range(-r, r));
+    	playerCamera.transform.rotation = currentCameraTransform.rotation;
+	}
 
     
     /* ----------------- Secondairy Update Functions ------------------------------------------------------------- */
@@ -256,10 +272,10 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Run sepperate functions depending on the state */
         if(PlayerIsGrounded()) {
-            StepPlayerStanding();
+            StepPlayerGrounded();
         }
         else if(PlayerIsAirborn()) {
-            StepPlayerFalling();
+            StepPlayerAirborn();
         }
         else {
             Debug.Log("Warning: state " + state + " does not handle player stepping");
@@ -365,7 +381,6 @@ public class CustomPlayerController : MonoBehaviour {
         float rotState2 = 0.65f;
         float angleRotation = 10;
 
-        //Have it tilt down for 75% then tilt back up
         /* Set the camera's y rotation values to follow the sine graph [0, PI]> */
         xRot = cameraXRotation;
 		if(stateTime < rotState1) {
@@ -402,7 +417,7 @@ public class CustomPlayerController : MonoBehaviour {
 
     /* ----------------- Step Functions ------------------------------------------------------------- */
 
-    void StepPlayerStanding() {
+    void StepPlayerGrounded() {
         /*
     	 * Check each leg's distance and whether they can reach down to an object. 
     	 * If enough legs are no longer grounded, attempt to jump and enter the falling state.
@@ -439,7 +454,7 @@ public class CustomPlayerController : MonoBehaviour {
         }
     }
 
-    void StepPlayerFalling() {
+    void StepPlayerAirborn() {
         /*
          * While in the general state of airborn, check if enough legs can properly hit objects and ground the player.
          * If this occurs, get the new footPosition and snap the player to the floor 
@@ -447,11 +462,6 @@ public class CustomPlayerController : MonoBehaviour {
          * 
          * During the falling state, the player's leg lengths will be drastically changed.
 		 */
-        //note: as the player falls/ graviry increases, the footStep distance increases.
-        //meaning the faster the player travels the further they are abke to snap to a floor
-
-
-
         int requiredGroundedCount = 1;
 
         /* Get how many legs are keeping the player "grounded" */
@@ -468,9 +478,7 @@ public class CustomPlayerController : MonoBehaviour {
             ChangeState((int) PlayerStates.Standing);
             UpdateLegLengths();
 
-
             /* Calculate the current foot position of the player by finding the new leg length */
-            //AdjustBodyAfterStep/
             float newLegLength = 0;
             for(int i = 0; i < extraLegLenths.Length; i++) {
                 if(extraLegLenths[i] >= 0) {
@@ -598,25 +606,42 @@ public class CustomPlayerController : MonoBehaviour {
         /* Dont change anything if the player is already in the new state */
         if(state != newState) {
 
-            /* FastFalling > Standing : A "hard fall" occurs and forces the player into a landing animation. */
-            if(state == (int) PlayerStates.FastFalling && newState == (int) PlayerStates.Standing) {
-                Debug.Log("HARD FALL");
-                newState = (int) PlayerStates.Landing;
-                cameraYOffset = 0;
-            }
-            
-            /* Entering the fastfalling state will start the vignette camera effect */
-            if(newState == (int) PlayerStates.FastFalling){
-            	StartEffectVignette();
+			/* Entering the Standing state... */
+			if(newState == (int) PlayerStates.Standing){
+			
+				/*... When leaving the Falling state... */
+				if(state == (int) PlayerStates.Falling){
+					/*... Will lower the camera offset relative to the falling speed */
+					cameraYOffset = -(headHeight + playerBodyLength/2f)*RatioWithinRange(0, (maxYVelocity), -currentYVelocity);
+				}
+				
+				/*... When leaving the FastFalling state... */
+				if(state == (int) PlayerStates.FastFalling){
+					/*... Causes a "hard fall", forcing the player into a landing animation. */
+					Debug.Log("HARD FALL");
+                	newState = (int) PlayerStates.Landing;
+                	cameraYOffset = 0;
+				}
+			}
+			
+			/* Entering the Falling state... */
+			if(newState == (int) PlayerStates.Falling){
+				
+				/*...When leaving the Landing state... */
+				if(state == (int) PlayerStates.Landing){
+					//Should we set the camera height to its relative position in the landing animstion?
+				}
+			}
+			
+			/* Entering the FastFalling state... */
+			if(newState == (int) PlayerStates.FastFalling){
+				
+				/*... Will start a set of post processing effects... */
+				StartEffectVignette();
                 StartChromaticAberration();
-            }
-            
-            /* Entering the landing state will start the chromAb camera effect */
-            if(newState == (int) PlayerStates.Landing){
-            	//StartChromaticAberration();
-            }
+			}
 
-
+			/* Set the new state and reset the stateTimer */
             stateTime = 0;
             state = newState;
         }
@@ -685,6 +710,16 @@ public class CustomPlayerController : MonoBehaviour {
     	 * Use the player's current position and their current leg length
     	 * to fire off a ray for each "leg" in the leg array,tracking how long they reach.
     	 */
+    	//UPDATE TO GO THROUGH PORTLAS
+    	/*
+    	1. Make tempPosition and tempDirection vectors.
+    		These will be used with the RayTrace function calls.
+    	2. After the playerCenter to legStart rayTrace(assuming it nevee hit anythig)
+    		rotate the tempDirection like 90degrees along its z.
+    		what needs to happen is that ot retains itsproper rotation
+    		after going through a portal when doing the leg gab
+    	3. keep the function LegCollisionTest, but let it take in references
+    	*/
         Vector3 upDirection = transform.rotation*Vector3.up;
         Vector3 forwardVector = transform.rotation*Vector3.forward;
         Vector3 tempForwardVector = Vector3.zero;
@@ -752,13 +787,14 @@ public class CustomPlayerController : MonoBehaviour {
             cameraYOffset += currentYVelocity/5f;
         }
 
-
-        /* Prevent the offset from becoming larger than half the player's body length */
+		/* Keep the range of cameraYOffset to be [bodyLength/2, -(height + boyLength/2] */
         if(cameraYOffset > playerBodyLength/2f) {
             cameraYOffset = playerBodyLength/2f;
         }
-        else if(cameraYOffset < -playerBodyLength/2f) {
-            cameraYOffset  = -playerBodyLength/2f;
+        
+        else if(cameraYOffset < -(headHeight + playerBodyLength/2f)) {
+            cameraYOffset  = -(headHeight + playerBodyLength/2f);
+            Debug.Log("lowered");
         }
 
         /* If the offset is very small, snap it to 0 */
@@ -780,7 +816,12 @@ public class CustomPlayerController : MonoBehaviour {
 
     public void ApplyFastfall() {
         /* 
-    	 * Put the player into the fast fall state if they are currently airborn
+    	 * Put the player into the fast fall state if they are currently airborn.
+    	 * This will run any time the player is outside the play area of a room.
+    	 *
+    	 * When the player is standing while outside the play area
+    	 * (Walking on the wall), A good idea will be to have a 
+    	 * "press R to reset". Also add a r to reset function.
     	 */
 
         /* Do not go into fastfall if the player is not currently falling or already fastfalling */
@@ -996,10 +1037,10 @@ public class CustomPlayerController : MonoBehaviour {
     	 */
     	float intensity = 0;
         float minTime = 0.1f;
-
+		
         /* Set the intensity relative to the player speed */
-        if(state == (int) PlayerStates.FastFalling){
-    		intensity =  0.15f*((-currentYVelocity) / (maxYVelocity*fastFallMod));
+        if(state == (int) PlayerStates.FastFalling) {
+    		intensity = 0.15f*RatioWithinRange(maxYVelocity, maxYVelocity*fastFallMod, -currentYVelocity);
     	}
     
     	/* Set the intensity depending on the stateTime */
@@ -1034,7 +1075,7 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Set the intensity relative to the player speed */
         if(state == (int) PlayerStates.FastFalling) {
-            intensity = 3*((-currentYVelocity - maxYVelocity) / (maxYVelocity*(fastFallMod-1)));
+			intensity = 3*RatioWithinRange(maxYVelocity, maxYVelocity*fastFallMod, -currentYVelocity);
         }
 
         /* Keep the intensity at a set value for the duration of the landing state */

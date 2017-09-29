@@ -78,7 +78,6 @@ public class PuzzleRoomEditor : MonoBehaviour {
 		if(cloudBlockerMaterial == null){
 			cloudBlockerMaterial = new Material(Shader.Find("Unlit/Color"));
 			cloudBlockerMaterial.color = Color.black;
-			Debug.Log("create bloker");
 		}
 
         updateWalls = true;
