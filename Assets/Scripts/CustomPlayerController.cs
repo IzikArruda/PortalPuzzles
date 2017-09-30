@@ -683,26 +683,48 @@ public class CustomPlayerController : MonoBehaviour {
         }
     }
 
-    void LegCollisionTest(Vector3 position, Vector3 direction, float length, int index) {
+    void LegCollisionTest(ref Vector3 position, ref Quaternion direction, ref float length, int index) {
         /*
          * Use the given values to send a ray trace of the player's leg and return the distance of the ray.
          * Update the arrays that track the status of the leg with the given index. If the given
          * index is -1, then do not update the array
          */
-        RaycastHit hitInfo = new RaycastHit();
-        Ray bodyToFeet = new Ray(position, direction);
+       // RaycastHit hitInfo = new RaycastHit();
+        //Ray bodyToFeet = new Ray(position, direction);
 
-        if(Physics.Raycast(bodyToFeet, out hitInfo, length)) {
-            extraLegLenths[index] = hitInfo.distance;
+		/* Use the RayTrace function */
+		float tempLength = length;
+		RayTrace(ref position, ref direction, ref length, true, true);
+		
+		
+		/* Update the legLengths array if needed */
+		if(index != -1){
+		
+			/* The leg did not hit any objects/colliders */
+			if(length == 0){
+                extraLegLenths[index] = -1;
+			} 
+			
+			/* The leg hit an object/collider */
+			else {
+                extraLegLenths[index] = tempLength - length;
+			}
+		}
+		
+		
+		
+		
+        //if(Physics.Raycast(bodyToFeet, out hitInfo, length)) {
+        //    extraLegLenths[index] = hitInfo.distance;
 
-            /* Draw the point for reference */
-            Debug.DrawLine(position, position + direction*(length), Color.green);
-        }
-        else {
-            /* Draw the point for reference */
-            Debug.DrawLine(position, position + direction*(length), Color.red);
-            extraLegLenths[index] = -1;
-        }
+        //    /* Draw the point for reference */
+        //    Debug.DrawLine(position, position + direction*(length), Color.green);
+        //}
+        //else {
+        //    /* Draw the point for reference */
+        //    Debug.DrawLine(position, position + direction*(length), Color.red);
+        //    extraLegLenths[index] = -1;
+        //}
     }
 
     void FireLegRays() {
@@ -724,24 +746,68 @@ public class CustomPlayerController : MonoBehaviour {
         Vector3 forwardVector = transform.rotation*Vector3.forward;
         Vector3 tempForwardVector = Vector3.zero;
 
+
+
+
+
+
+//start with this
+		Vector3 tempLegPos = transform.position;
+		Quaternion tempLegRotation;
+		float tempLegLength = currentLegLength + currentStepHeight;
+
+        //Test the first leg that goes down relative to the player
+        tempLegRotation = Quaternion.LookRotation(-transform.up, transform.forward);
+        LegCollisionTest(ref tempLegPos, ref tempLegRotation, ref tempLegLength, 0);
+		
+		//Test the collision for each oter leg
+		for(int i = 1; i < extraLegLenths.Length; i++) {
+			
+			//Check if nothing is blocking the space between the leg and the player
+			float legGapDistance = legGap*playerBodyRadius;
+			tempLegPos = transform.position;
+            //MIGHT AHVE TO CHANCE THE ORDER OF THESE TWO
+			tempLegRotation = Quaternion.AngleAxis(i*(360/(extraLegLenths.Length-1)), upDirection)*transform.rotation;
+			LegCollisionTest(ref tempLegPos, ref tempLegRotation, ref legGapDistance, -1);
+			
+			//Fire the actual leg ray if nothing is blocking it
+			if(legGapDistance == 0){
+                //Rotate the leg so it is rayTracing downward
+                tempLegRotation = Quaternion.LookRotation(tempLegRotation*-Vector3.up, tempLegRotation*Vector3.forward);
+				tempLegLength = currentLegLength + currentStepHeight;
+				LegCollisionTest(ref tempLegPos, ref tempLegRotation, ref tempLegLength, i);
+			}
+			
+			//Dont use this leg if the gap between the leg and the player is blocked
+			else {
+                extraLegLenths[i] = -1;
+			}
+		}
+/////////
+
+
+
+
+
+
+
         /* Test the collision for the first leg, protruding downward from the player's center */
-        LegCollisionTest(transform.position, -upDirection, currentLegLength + currentStepHeight, 0);
+        //LegCollisionTest(transform.position, -upDirection, currentLegLength + currentStepHeight, 0);
 
         /* Test the collision for each leg that forms a circle around the player using legGap*playerBodyRadius as a radius */
-        for(int i = 1; i < extraLegLenths.Length; i++) {
-            tempForwardVector = Quaternion.AngleAxis(i*(360/(extraLegLenths.Length-1)), upDirection)*forwardVector;
+        //for(int i = 1; i < extraLegLenths.Length; i++) {
+         //   tempForwardVector = Quaternion.AngleAxis(i*(360/(extraLegLenths.Length-1)), upDirection)*forwardVector;
 
             /* Fire a ray from the players center to the leg's starting point to ensure nothing is blocking the leg */
-            Debug.DrawLine(transform.position, transform.position + tempForwardVector*(legGap*playerBodyRadius));
-            if(Physics.Raycast(transform.position, tempForwardVector, legGap*playerBodyRadius)) {
+         //   Debug.DrawLine(transform.position, transform.position + tempForwardVector*(legGap*playerBodyRadius));
+         //   if(Physics.Raycast(transform.position, tempForwardVector, legGap*playerBodyRadius)) {
                 /* If we cant reach the leg from the player's center, do not use the leg in finding the footPosition */
-                extraLegLenths[i] = -1;
-            }
-            else {
+        //        extraLegLenths[i] = -1;
+        //    }
+         //   else {
                 /* Fire a ray from the leg's starting point to it's end point, updating the leg array with the distance it reached */
-                LegCollisionTest(transform.position + tempForwardVector*legGap*playerBodyRadius, -upDirection, currentLegLength + currentStepHeight, i);
-            }
-        }
+         //       LegCollisionTest(transform.position + tempForwardVector*legGap*playerBodyRadius, -upDirection, currentLegLength + currentStepHeight, i);
+        //    }
     }
 
     Vector3 GetGravityVector() {
