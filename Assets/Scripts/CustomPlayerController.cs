@@ -83,12 +83,12 @@ public class CustomPlayerController : MonoBehaviour {
     private float currentLegLength;
     /* How low a player can step down from their legLength to snap to the ground */
     public float givenStepHeight;
-    private float currentStepHeight;
+    private float currentStepHeight; 
 
     /* How many extra legs are used when handling grounded checks */
     public int extraLegs;
     /* The length of each leg of the player */
-    private float[] extraLegLenths;
+    public float[] extraLegLenths;
     
     /* The average position of all the player's standing feet */
     private Vector3 currentFootPosition;
@@ -114,25 +114,14 @@ public class CustomPlayerController : MonoBehaviour {
          * Initilize required objects and set starting values for certain variables 
          */
 
-        /* Set up the camera post-processing effects */
+        /* Set up the camera's post-processing effects */
         SetupPostProcessingEffects();
 
         /* Create the UserInputs object linked to this player */
         inputs = new UserInputs();
 
-        /* Initilize the leg lengths */
-        extraLegLenths = new float[extraLegs + 1];
-
-        /* Put the starting foot position at the base of the default player model */
-        currentFootPosition = transform.TransformPoint(new Vector3(0, -GetComponent<CapsuleCollider>().height/2, 0));
-
-        /* Adjust the player's height and width */
-        GetComponent<CapsuleCollider>().height = playerBodyLength;
-        GetComponent<CapsuleCollider>().radius = playerBodyRadius;
-
-        /* Adjust the player model's position to reflect the player's leg length */
-        transform.position = currentFootPosition;
-        transform.localPosition += new Vector3(0, playerBodyLength/2f + 0, 0);
+		/* Set up the player's body and leg values on startup */
+		SetupPlayerBody();
 
         /* Start the player in the standing state so they can link themselves to the floor */
         state = -1;
@@ -146,9 +135,6 @@ public class CustomPlayerController : MonoBehaviour {
          */
         inputs.UpdateInputs();
         stateTime += Time.deltaTime;
-        
-        /* Apply any needed effects to the camera */
-        UpdateCameraEffects();
 
         /* Run a given set of functions depending on the player state */
         if(state == (int) PlayerStates.Standing){
@@ -167,7 +153,8 @@ public class CustomPlayerController : MonoBehaviour {
         	UpdateFastFalling();
         }
 
-
+		/* Apply any needed effects to the camera */
+        UpdateCameraEffects();
         
         //Draw a line in the camera's forward vector
         Debug.DrawLine(playerCamera.transform.position, playerCamera.transform.position + playerCamera.transform.rotation*Vector3.forward*0.5f, Color.green);
@@ -179,14 +166,14 @@ public class CustomPlayerController : MonoBehaviour {
     void UpdateStanding() {
         /*
          * Handle the inputs of the user and the movement of the player
-         * when they are standing on an object.
+         * when they are standing on an object (Enough legs hit an object)
          */
          
         /* Move the player using the input vector and gravity */
         MovePlayer();
 
         /* Update the player's jumping conditions, letting the player prime their jump */
-        UpdateJumpingValues();
+        PrimeJumpingValue();
 
         /* Find the footPosition of the player and check if they are falling or standing. Place the player's body position. */
         StepPlayer();
@@ -240,11 +227,7 @@ public class CustomPlayerController : MonoBehaviour {
     	UpdateFalling();
     
     	/* Apply a random variance to the players camera relative to their speed */
-    	float speedRatio = RatioWithinRange(maxYVelocity, maxYVelocity*fastFallMod, -currentYVelocity);
-    	float r = speedRatio*0.2f;
-    	currentCameraTransform.rotation *= Quaternion.Euler(
-				Random.Range(-r, r), Random.Range(-r, r), Random.Range(-r, r));
-    	playerCamera.transform.rotation = currentCameraTransform.rotation;
+    	AnimateCameraFastFalling();
 	}
 
     
@@ -307,12 +290,12 @@ public class CustomPlayerController : MonoBehaviour {
         /* Copy the player's current rotation before rotating the camera */
         currentCameraTransform.rotation = transform.rotation;
 
-        /* Ensure the X rotation does not overflow */
+        /* Add the X input rotation and ensure it does not overflow */
         cameraXRotation -= inputs.mouseX;
         if(cameraXRotation < 0) { cameraXRotation += 360; }
         else if(cameraXRotation > 360) { cameraXRotation -= 360; }
 
-        /* Prevent the Y rotation from rotating too high or low */
+        /* Add the Y input rotation and ensure it does not overflow */
         cameraYRotation += inputs.mouseY;
         cameraYRotation = Mathf.Clamp(cameraYRotation, -75, 75);
 
@@ -369,19 +352,21 @@ public class CustomPlayerController : MonoBehaviour {
          * 
          * The animation that the camera undergoes can be defined by these stages, sepperated by stateTime:
          * state1: Animate the camera from the player's headHeight to their body base
-         * state2: Move the camera upwards
+         * state2: Move the camera upwards from the player's.body base to the default head height.
+         
          * Once the final state ends, change the state back to standing.
+         * Note that the player can still walk off into the falling state mid-animation.
          */
         float xRot = 0;
         float yRot = 0;
         float cameraHeightOffset = 0;
+        float angleRotation = 10;
         float posState1 = 0.05f;
         float posState2 = 0.75f;
         float rotState1 = 0.15f;
         float rotState2 = 0.65f;
-        float angleRotation = 10;
 
-        /* Set the camera's y rotation values to follow the sine graph [0, PI]> */
+        /* Camera's Y rotation will follow the sine graph of [0, PI] with x axis being time spent in thos state */
         xRot = cameraXRotation;
 		if(stateTime < rotState1) {
 			yRot = cameraYRotation - angleRotation*Mathf.Sin(0 + (Mathf.PI/2f)*RatioWithinRange(0, rotState1, stateTime));
@@ -391,17 +376,15 @@ public class CustomPlayerController : MonoBehaviour {
             yRot = cameraYRotation;
         }
 
-        
-
-        /* Set the camera's positional values depending on the time spent in the current state */
+        /* Camera's y position offset also follows a trig function relative to time spent in this state */
         if(stateTime < posState1) {
             cameraHeightOffset -= (headHeight + playerBodyLength/2f) * Mathf.Sin((Mathf.PI/2f)*RatioWithinRange(0, posState1, stateTime));
         } else if(stateTime < posState2) {
             cameraHeightOffset -= (headHeight + playerBodyLength/2f) * (Mathf.Cos(Mathf.PI*RatioWithinRange(posState1, posState2, stateTime))+1)/2f;
         }
 
-        /* Set the values to their expected value before entering the standing state */
-        else {
+        /* Switch to the standing state if the camera animation is complete */
+        if(stateTime > posState2 && stateTime > rotState2) {
             cameraHeightOffset = 0;
             ChangeState((int) PlayerStates.Standing);
         }
@@ -410,8 +393,21 @@ public class CustomPlayerController : MonoBehaviour {
         currentCameraTransform.rotation = transform.rotation;
         currentCameraTransform.rotation *= Quaternion.Euler(-yRot, -xRot, 0);
 
-        /* Set the position of the camera using it's own process */
+        /* Set the position of the camera using te expected height + the calculated offset */
         AdjustCameraPosition(GetCameraHeight() + cameraHeightOffset);
+    }
+    
+    void AnimateCameraFastFalling(){
+    	/*
+    	 * Apply a slight random rotation to the camera depending on
+    	 * the player speed ti signify how fast they are falling.
+    	 */
+    	float speedRatio = RatioWithinRange(maxYVelocity, maxYVelocity*fastFallMod, -currentYVelocity);
+    	float r = speedRatio*0.2f;
+    
+    	currentCameraTransform.rotation *= Quaternion.Euler(
+				Random.Range(-r, r), Random.Range(-r, r), Random.Range(-r, r));
+    	playerCamera.transform.rotation = currentCameraTransform.rotation;
     }
 
 
@@ -495,7 +491,7 @@ public class CustomPlayerController : MonoBehaviour {
         /*
     	 * Update the player's footingPosition along with the new
     	 * position for the body and the camera to complete a "step"
-     	 */
+     	*/
         Vector3 upDirection = transform.rotation*Vector3.up;
 
         /* Place the footPosition using the stepLegLength */
@@ -512,7 +508,28 @@ public class CustomPlayerController : MonoBehaviour {
 
     /* ----------------- Value Updating Functions ------------------------------------------------------------- */
     
-    void UpdateJumpingValues() {
+    void SetupPlayerBody(){
+   	/*
+   	 * Set the variables that are relevent to the player's.body and legs.
+   	 * This is to ensure there is a default value on startup.
+   	 */
+   
+   	 /* Initilize the leg lengths */
+        extraLegLenths = new float[extraLegs + 1];
+
+        /* Put the starting foot position at the base of the default player model */
+        currentFootPosition = transform.TransformPoint(new Vector3(0, -GetComponent<CapsuleCollider>().height/2, 0));
+
+        /* Adjust the player's height and width */
+        GetComponent<CapsuleCollider>().height = playerBodyLength;
+        GetComponent<CapsuleCollider>().radius = playerBodyRadius;
+
+        /* Adjust the player model's position to reflect the player's leg length */
+        transform.position = currentFootPosition;
+        transform.localPosition += new Vector3(0, playerBodyLength/2f + 0, 0);
+   }
+    
+    void PrimeJumpingValue() {
         /*
          * Prime a jump if the jump key was recently pressed. Also check if the player
          * is attempting a jump by looking for the release of the jump key.
@@ -533,32 +550,34 @@ public class CustomPlayerController : MonoBehaviour {
 
     void UpdateLegLengths() {
         /*
-         * Change the player's leg lengths depending on the state they are in.
+         * Change the player's leg and step lengths depending on the state they are in.
          * The legs start at the base of the player model, so legswill always
          * have a length equal or larger than half the bodyLength.
          */
+         
+         /* The legs must always reach atleast the base of the player's.body */
+		currentLegLength = playerBodyLength/2f; 
+		currentStepHeight = givenStepHeight;
 		
 		/* Keep the leg lengths their default size when grounded */
 		if(PlayerIsGrounded()){
-			currentLegLength = givenLegLength + playerBodyLength/2f;
-            currentStepHeight = givenStepHeight;
+			currentLegLength += givenLegLength;
 		}
 		
-		/* Shorten the legs when airborn */
+		/* Change the leg length while airborn */
 		else if(PlayerIsAirborn()){
             /* While falling upwards, heavily shorten the legs */
             if(currentYVelocity >= 0) {
-                currentLegLength = givenLegLength*0.1f + playerBodyLength/2f;
-                currentStepHeight = givenStepHeight*0.1f;
+                currentLegLength = givenLegLength*0.1f;
+                ///currentStepHeight = givenStepHeight*0.1f;
             }
-            /* While falling downwards, have the leg's length become relative to the players falling speed */
+            /* While falling downwards, have the leg's length become relative to the players falling speed. 
+			 * This will prevent the player's torso from landing onto an object before their legs 
+			 * Unless a large frame delay (time.deltatime) or feet dont hit enough objects. 
+			 * the legs are the same length of the distance that will be travelled next frame + stepheight for insurance. */
             else {
-                currentLegLength = -currentYVelocity + playerBodyLength/2f;
-                currentStepHeight = givenStepHeight*0.5f;
+                currentLegLength += -currentYVelocity;
             }
-
-
-            //Note: Add a new "fastfall", where the player falls much faster and their legs extend much longer
 		}
     }
 
@@ -577,17 +596,9 @@ public class CustomPlayerController : MonoBehaviour {
         }
 
         /* Add the player speed to the movement vector */
+        inputVector *= movementSpeed;
         if(Input.GetKey(KeyCode.LeftShift)) {
-            inputVector *= movementSpeed*runSpeedMultiplier;
-        }
-        else {
-            inputVector *= movementSpeed;
-        }
-
-        
-        /* Keep the movement's magnitude from going bellow 0.01. This prevents passing through teleportweTriggers */
-        if(inputVector.magnitude < 0.01f) {
-            inputVector = Vector3.zero;
+            inputVector *= runSpeedMultiplier;
         }
 
         /* Rotate the input direction to match the player's view. Only use the view's rotation along the Y axis */
@@ -689,13 +700,10 @@ public class CustomPlayerController : MonoBehaviour {
          * Update the arrays that track the status of the leg with the given index. If the given
          * index is -1, then do not update the array
          */
-       // RaycastHit hitInfo = new RaycastHit();
-        //Ray bodyToFeet = new Ray(position, direction);
 
 		/* Use the RayTrace function */
-		float tempLength = length;
+		float preLength = length;
 		RayTrace(ref position, ref direction, ref length, true, true);
-		
 		
 		/* Update the legLengths array if needed */
 		if(index != -1){
@@ -707,73 +715,42 @@ public class CustomPlayerController : MonoBehaviour {
 			
 			/* The leg hit an object/collider */
 			else {
-                extraLegLenths[index] = tempLength - length;
+                extraLegLenths[index] = preLength - length;
 			}
 		}
-		
-		
-		
-		
-        //if(Physics.Raycast(bodyToFeet, out hitInfo, length)) {
-        //    extraLegLenths[index] = hitInfo.distance;
-
-        //    /* Draw the point for reference */
-        //    Debug.DrawLine(position, position + direction*(length), Color.green);
-        //}
-        //else {
-        //    /* Draw the point for reference */
-        //    Debug.DrawLine(position, position + direction*(length), Color.red);
-        //    extraLegLenths[index] = -1;
-        //}
     }
 
     void FireLegRays() {
         /*
-    	 * Use the player's current position and their current leg length
-    	 * to fire off a ray for each "leg" in the leg array,tracking how long they reach.
+    	 * Use the player's current position and their current leg length to fire off a ray for each "leg" 
+         * in the leg array, tracking how far they reach. If the leg does not reach an object 
+         * or the gap between the leg and the pleyer's center is blocked, set the  distance 
+         * of the leg in the extraLegLengths to -1, indicating the leg is not used.
     	 */
-    	//UPDATE TO GO THROUGH PORTLAS
-    	/*
-    	1. Make tempPosition and tempDirection vectors.
-    		These will be used with the RayTrace function calls.
-    	2. After the playerCenter to legStart rayTrace(assuming it nevee hit anythig)
-    		rotate the tempDirection like 90degrees along its z.
-    		what needs to happen is that ot retains itsproper rotation
-    		after going through a portal when doing the leg gab
-    	3. keep the function LegCollisionTest, but let it take in references
-    	*/
         Vector3 upDirection = transform.rotation*Vector3.up;
-        Vector3 forwardVector = transform.rotation*Vector3.forward;
-        Vector3 tempForwardVector = Vector3.zero;
-
-
-
-
-
-
-//start with this
-		Vector3 tempLegPos = transform.position;
+		Vector3 tempLegPos;
 		Quaternion tempLegRotation;
-		float tempLegLength = currentLegLength + currentStepHeight;
+		float tempLegLength;
 
-        //Test the first leg that goes down relative to the player
+        /* Test the first leg. It goes straight down relative to the player's center. */
         tempLegRotation = Quaternion.LookRotation(-transform.up, transform.forward);
+        tempLegPos = transform.position;
+        tempLegLength = currentLegLength + currentStepHeight;
         LegCollisionTest(ref tempLegPos, ref tempLegRotation, ref tempLegLength, 0);
 		
-		//Test the collision for each oter leg
+		/* Test the collision for the other legs */
 		for(int i = 1; i < extraLegLenths.Length; i++) {
-			
-			//Check if nothing is blocking the space between the leg and the player
-			float legGapDistance = legGap*playerBodyRadius;
+
+            /* Check if nothing is blocking the space between the leg starting point and the player's center */
+            float legGapDistance = legGap*playerBodyRadius;
 			tempLegPos = transform.position;
-            //MIGHT AHVE TO CHANCE THE ORDER OF THESE TWO
 			tempLegRotation = Quaternion.AngleAxis(i*(360/(extraLegLenths.Length-1)), upDirection)*transform.rotation;
 			LegCollisionTest(ref tempLegPos, ref tempLegRotation, ref legGapDistance, -1);
 			
-			//Fire the actual leg ray if nothing is blocking it
+			/* Fire the actual leg ray if there is nothing blocking the leg gab */
 			if(legGapDistance == 0){
-                //Rotate the leg so it is rayTracing downward
-                tempLegRotation = Quaternion.LookRotation(tempLegRotation*-Vector3.up, tempLegRotation*Vector3.forward);
+                /* Rotate the leg so it is rayTracing downward */
+                tempLegRotation = Quaternion.LookRotation(tempLegRotation*-Vector3.up, tempLegRotation*Vector3.forward	);
 				tempLegLength = currentLegLength + currentStepHeight;
 				LegCollisionTest(ref tempLegPos, ref tempLegRotation, ref tempLegLength, i);
 			}
@@ -783,31 +760,6 @@ public class CustomPlayerController : MonoBehaviour {
                 extraLegLenths[i] = -1;
 			}
 		}
-/////////
-
-
-
-
-
-
-
-        /* Test the collision for the first leg, protruding downward from the player's center */
-        //LegCollisionTest(transform.position, -upDirection, currentLegLength + currentStepHeight, 0);
-
-        /* Test the collision for each leg that forms a circle around the player using legGap*playerBodyRadius as a radius */
-        //for(int i = 1; i < extraLegLenths.Length; i++) {
-         //   tempForwardVector = Quaternion.AngleAxis(i*(360/(extraLegLenths.Length-1)), upDirection)*forwardVector;
-
-            /* Fire a ray from the players center to the leg's starting point to ensure nothing is blocking the leg */
-         //   Debug.DrawLine(transform.position, transform.position + tempForwardVector*(legGap*playerBodyRadius));
-         //   if(Physics.Raycast(transform.position, tempForwardVector, legGap*playerBodyRadius)) {
-                /* If we cant reach the leg from the player's center, do not use the leg in finding the footPosition */
-        //        extraLegLenths[i] = -1;
-        //    }
-         //   else {
-                /* Fire a ray from the leg's starting point to it's end point, updating the leg array with the distance it reached */
-         //       LegCollisionTest(transform.position + tempForwardVector*legGap*playerBodyRadius, -upDirection, currentLegLength + currentStepHeight, i);
-        //    }
     }
 
     Vector3 GetGravityVector() {
@@ -860,7 +812,6 @@ public class CustomPlayerController : MonoBehaviour {
         
         else if(cameraYOffset < -(headHeight + playerBodyLength/2f)) {
             cameraYOffset  = -(headHeight + playerBodyLength/2f);
-            Debug.Log("lowered");
         }
 
         /* If the offset is very small, snap it to 0 */
@@ -909,7 +860,7 @@ public class CustomPlayerController : MonoBehaviour {
          * the position and rotation to the hit trigger's partner using it's teleportParameters function.
          * teleportTrigger Collisions with detectTeleportTriggers as false will be ignored.
          * 
-         * detectOtherColliders as true will cause any collision with any other trigger to cause
+         * detect other Colliders as true will cause any collision with any other trigger to cause
          * the position to stop at the point of collision and reduce the distance amount respectively.
          * these type of collisions will be ignored if detectOtherColliders is false.
          */
@@ -932,7 +883,7 @@ public class CustomPlayerController : MonoBehaviour {
             /* Check for any collisions from the current position towards the current direction */
             if(Physics.Raycast(position, rotation*Vector3.forward, out hitInfo, distance, rayLayerMask)) {
                 /* When hitting a collider, move the position up to the collision point */
-                Debug.DrawLine(position, position + rotation*Vector3.forward*hitInfo.distance, Color.red);
+                Debug.DrawLine(position, position + rotation*Vector3.forward*hitInfo.distance, Color.green);
                 position += rotation * Vector3.forward * hitInfo.distance;
                 distance -= hitInfo.distance;
                 
@@ -942,7 +893,7 @@ public class CustomPlayerController : MonoBehaviour {
                     rotationDifference = hitInfo.collider.GetComponent<TeleporterTrigger>().TeleportParameters(ref position, ref rotation);
                     totalRotation = rotationDifference*totalRotation;
                     //Prevent the rayTrace from hitting another trigger after teleporting
-                    rayLayerMask = 0;
+                    //rayLayerMask = 0;
                     //Debug.Log("hit tele");
                 }
 
@@ -960,7 +911,7 @@ public class CustomPlayerController : MonoBehaviour {
 
             /* The raytrace hit nothing, so travel along the direction for the remaining distance */
             else {
-                Debug.DrawLine(position, position + rotation*Vector3.forward*distance);
+                Debug.DrawLine(position, position + rotation*Vector3.forward*distance, Color.white);
                 position += rotation*Vector3.forward*distance;
                 distance = 0;
             }
@@ -1080,6 +1031,7 @@ public class CustomPlayerController : MonoBehaviour {
     	/*
     	 * Add the effects to the camera every frame.
     	 * Runs every frame no matter the state.
+    	 * Current playerState controls what effects are used.
     	 */
     
     	/* The vignette is effected by the speed of a fastFall and duration of a landing */
