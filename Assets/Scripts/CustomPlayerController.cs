@@ -108,6 +108,7 @@ public class CustomPlayerController : MonoBehaviour {
     /* The script that contains all the post processing effects that will be applied to the camera */
     public CustomPlayerCameraEffects cameraEffectsScript;
 
+    public AudioClip landingSound;
 
     /* -------------- Built-in Unity Functions ---------------------------------------------------------- */
 
@@ -626,6 +627,9 @@ public class CustomPlayerController : MonoBehaviour {
 				if(state == (int) PlayerStates.Falling){
 					/*... Will lower the camera offset relative to the falling speed */
 					cameraYOffset = -(headHeight + playerBodyLength/2f)*RatioWithinRange(0, (maxYVelocity), -currentYVelocity);
+
+                    /*... Will play a soft landing sound */
+                    PlaySound(landingSound);
 				}
 				
 				/*... When leaving the FastFalling state... */
@@ -976,9 +980,14 @@ public class CustomPlayerController : MonoBehaviour {
 
         return ratio;
     }
+    
 
-    
-    #region Post-Processing Camera Effects
-    
-    #endregion
+    public void PlaySound(AudioClip soundSource) {
+        /*
+         * Play the given sound effects
+         */
+
+        GetComponent<AudioSource>().clip = soundSource;
+        GetComponent<AudioSource>().Play();
+    }
 }
