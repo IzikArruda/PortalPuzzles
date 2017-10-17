@@ -105,10 +105,14 @@ public class CustomPlayerController : MonoBehaviour {
     [Range(1, 0)]
     public float morphPercentage;
 
+	
+	/* --- Player Scripts --------------------------- */
     /* The script that contains all the post processing effects that will be applied to the camera */
     public CustomPlayerCameraEffects cameraEffectsScript;
 
-    public AudioClip landingSound;
+	/* Script that handles all sounds produced by the player */
+	public PlayerSounds playerSoundsScript;
+
 
     /* -------------- Built-in Unity Functions ---------------------------------------------------------- */
 
@@ -627,9 +631,8 @@ public class CustomPlayerController : MonoBehaviour {
 				if(state == (int) PlayerStates.Falling){
 					/*... Will lower the camera offset relative to the falling speed */
 					cameraYOffset = -(headHeight + playerBodyLength/2f)*RatioWithinRange(0, (maxYVelocity), -currentYVelocity);
-
-                    /*... Will play a soft landing sound */
-                    PlaySound(landingSound);
+					/*... Will play a footstep sound. */
+					playerSoundsScript.PlayFootstep();
 				}
 				
 				/*... When leaving the FastFalling state... */
@@ -856,6 +859,8 @@ public class CustomPlayerController : MonoBehaviour {
     public float GetYVelocityFastFallRatio() {
         /*
          * A very specific equaition to get a very specific value used with camera post-processing effects.
+         * It returns the ratio of the player's velocity as it approaches it's fastFalling terminal velocity.
+         * Value ranges between [0, 1]. 0 being <= max Falling velocity. 1 being >= max FastFalling velocity 
          */
 
         return RatioWithinRange(maxYVelocity, maxYVelocity*fastFallMod, -currentYVelocity);
@@ -979,15 +984,5 @@ public class CustomPlayerController : MonoBehaviour {
         }
 
         return ratio;
-    }
-    
-
-    public void PlaySound(AudioClip soundSource) {
-        /*
-         * Play the given sound effects
-         */
-
-        GetComponent<AudioSource>().clip = soundSource;
-        GetComponent<AudioSource>().Play();
     }
 }
