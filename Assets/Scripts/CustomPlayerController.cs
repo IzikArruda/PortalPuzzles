@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
 using System.Collections;
-using UnityEngine.PostProcessing;
 
 /* 
  * The potential states the player can be in.
@@ -105,7 +104,10 @@ public class CustomPlayerController : MonoBehaviour {
     /* How fast cameraYOffset morphs towards 0 each frame, in percentage. */
     [Range(1, 0)]
     public float morphPercentage;
-    
+
+    /* The script that contains all the post processing effects that will be applied to the camera */
+    public CustomPlayerCameraEffects cameraEffectsScript;
+
 
     /* -------------- Built-in Unity Functions ---------------------------------------------------------- */
 
@@ -115,7 +117,7 @@ public class CustomPlayerController : MonoBehaviour {
          */
 
         /* Set up the camera's post-processing effects */
-        SetupPostProcessingEffects();
+        cameraEffectsScript.SetupPostProcessingEffects(playerCamera, this);
 
         /* Create the UserInputs object linked to this player */
         inputs = new UserInputs();
@@ -153,8 +155,8 @@ public class CustomPlayerController : MonoBehaviour {
         	UpdateFastFalling();
         }
 
-		/* Apply any needed effects to the camera */
-        UpdateCameraEffects();
+        /* Apply any needed effects to the camera */
+        cameraEffectsScript.UpdateCameraEffects();
         
         //Draw a line in the camera's forward vector
         Debug.DrawLine(playerCamera.transform.position, playerCamera.transform.position + playerCamera.transform.rotation*Vector3.forward*0.5f, Color.green);
@@ -646,10 +648,10 @@ public class CustomPlayerController : MonoBehaviour {
 			
 			/* Entering the FastFalling state... */
 			if(newState == (int) PlayerStates.FastFalling){
-				
-				/*... Will start a set of post processing effects... */
-				StartEffectVignette();
-                StartChromaticAberration();
+
+                /*... Will start a set of post processing effects... */
+                cameraEffectsScript.StartEffectVignette();
+                cameraEffectsScript.StartChromaticAberration();
 			}
 
 			/* Set the new state and reset the stateTimer */
@@ -847,6 +849,14 @@ public class CustomPlayerController : MonoBehaviour {
         }
     }
 
+    public float GetYVelocityFastFallRatio() {
+        /*
+         * A very specific equaition to get a very specific value used with camera post-processing effects.
+         */
+
+        return RatioWithinRange(maxYVelocity, maxYVelocity*fastFallMod, -currentYVelocity);
+    }
+
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
 
@@ -969,149 +979,6 @@ public class CustomPlayerController : MonoBehaviour {
 
     
     #region Post-Processing Camera Effects
-    /*  Post-Processing Effect Pointers */
-    private VignetteModel cameraVignette;
-    private ChromaticAberrationModel cameraChromaticAberration;
-
-
-    /* ----------- Set-up Functions ------------------------------------------------------------- */
-
-    void SetupPostProcessingEffects() {
-        /*
-         * Runs on startup, used to assign starting values to the post processing effects
-         */
-		
-		if(playerCamera.GetComponent<PostProcessingBehaviour>()){
-        	cameraVignette = playerCamera.GetComponent<PostProcessingBehaviour>().profile.vignette;
-        	cameraVignette.enabled = false;
-
-        	cameraChromaticAberration = playerCamera.GetComponent<PostProcessingBehaviour>().profile.chromaticAberration;
-        	cameraChromaticAberration.enabled = false;
-        }else{
-        	Debug.Log("WARNING: playerCamera is missing missing a PostProcessingBehaviour");
-        }
-    }
     
-    void StartEffectVignette(){
-    	/*
-    	 * Enable the vignetting effect on the player camera
-    	 */
-    
-    	cameraVignette.enabled = true;
-    }
-
-    void StartChromaticAberration(){
-    	/* 
-    	 * Enable chromatic aberration, an effect that discolors the edges of the camera
-    	 */
-    	
-    	cameraChromaticAberration.enabled =  true;
-    }
-    
-    void StopEffectVignette(){
-    	/*
-    	 * Disable the vignetting effect on the player camera
-    	 */
-    
-    	cameraVignette.enabled = false;
-    }
-
-    void StopChromaticAberration(){
-    	/* 
-    	 * Disable the chromatic aberration effect on the camera
-    	 */
-    	
-    	cameraChromaticAberration.enabled =  false;
-    }
-
-
-    /* ----------- Update Functions ------------------------------------------------------------- */
-
-    void UpdateCameraEffects(){
-    	/*
-    	 * Add the effects to the camera every frame.
-    	 * Runs every frame no matter the state.
-    	 * Current playerState controls what effects are used.
-    	 */
-    
-    	/* The vignette is effected by the speed of a fastFall and duration of a landing */
-    	if(cameraVignette.enabled){
-			UpdateEffectVignette();
-	    }
-	
-		/* Chromatic Aberration last during the landing animation the fades away */
-		if(cameraChromaticAberration.enabled){
-			UpdateEffectChromaticAberration();
-		}
-    }
-    
-    void UpdateEffectVignette(){
-    	/*
-    	 * The vignette effect adds a border around the camera's view.
-    	 * When in fastfall, the player speed directly effects the intensity.
-    	 * The start frames of landing will have a large amount of intensity.
-    	 * When outside the previously mentionned states, a duration value
-    	 * will count down as the vignetting dissipates.
-    	 */
-    	float intensity = 0;
-        float minTime = 0.1f;
-		
-        /* Set the intensity relative to the player speed */
-        if(state == (int) PlayerStates.FastFalling) {
-    		intensity = 0.15f*RatioWithinRange(maxYVelocity, maxYVelocity*fastFallMod, -currentYVelocity);
-    	}
-    
-    	/* Set the intensity depending on the stateTime */
-    	else if(state == (int) PlayerStates.Landing && stateTime < minTime){
-            intensity = 0.15f + 0.15f*Mathf.Sin((Mathf.PI/2f)*(stateTime/minTime));
-    	} 
-
-		/* Reduce the vignette intensity. Disable the effect once it reaches 0 */
-		else{
-
-    		/* If theres intensity to be reduce, start reducing it */
-    		intensity = cameraVignette.settings.intensity - Time.deltaTime*60/240f;
-    		
-    		/* Once the intensity reaches 0, disable the vignetting */
-    		if(intensity <= 0){
-                StopEffectVignette();
-    		}
-    	}
-    
-    	/* Apply the intensity to the camera's vignetting effect */
-    	VignetteModel.Settings vignetteSettings = cameraVignette.settings;
-        vignetteSettings.intensity = intensity;
-        cameraVignette.settings = vignetteSettings;
-    }
-    
-    void UpdateEffectChromaticAberration(){
-    	/*
-    	 * The intensity of this effect will remain at max when in the landing state.
-    	 * Any other state will cause a reduction in it's intensity.
-    	 */
-    	float intensity = 0f;
-
-        /* Set the intensity relative to the player speed */
-        if(state == (int) PlayerStates.FastFalling) {
-			intensity = 3*RatioWithinRange(maxYVelocity, maxYVelocity*fastFallMod, -currentYVelocity);
-        }
-
-        /* Keep the intensity at a set value for the duration of the landing state */
-        else if(state == (int) PlayerStates.Landing){
-    		intensity = 4;
-    	}
-    
-    	/* Slowly reduce the intensity, disabling the effect once it reaches 0 */
-    	else {
-    		intensity = cameraChromaticAberration.settings.intensity - Time.deltaTime*60/60f;
-    		if(intensity <= 0){
-    			StopChromaticAberration();
-    		}
-    	}
-    
-    	ChromaticAberrationModel.Settings chromaticAberrationSettings = cameraChromaticAberration.settings;
-    	chromaticAberrationSettings.intensity = intensity;
-    	cameraChromaticAberration.settings = chromaticAberrationSettings;
-    }
     #endregion
 }
