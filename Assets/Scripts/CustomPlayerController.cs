@@ -641,7 +641,10 @@ public class CustomPlayerController : MonoBehaviour {
 					Debug.Log("HARD FALL");
                 	newState = (int) PlayerStates.Landing;
                 	cameraYOffset = 0;
-				}
+
+                    /*... Plays a fastfall landing audio clip */
+                    playerSoundsScript.FastFallLanding();
+                }
 			}
 			
 			/* Entering the Falling state... */
@@ -656,12 +659,12 @@ public class CustomPlayerController : MonoBehaviour {
 			/* Entering the FastFalling state... */
 			if(newState == (int) PlayerStates.FastFalling){
 
+                /*... Will start playing the fastfalling audio */
+                playerSoundsScript.EnterFastFall();
+
                 /*... Will start a set of post processing effects. */
                 cameraEffectsScript.StartEffectVignette();
                 cameraEffectsScript.StartChromaticAberration();
-                
-                /*... Will start playing music. */
-                playerSoundsScript.PlayMusic();
 			}
 
 			/* Set the new state and reset the stateTimer */
