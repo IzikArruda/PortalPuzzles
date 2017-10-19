@@ -9,46 +9,64 @@ public class PlayerSounds : MonoBehaviour {
 
     /* The main gameObject that will hold all audioSources.
      * This will change if the position of the audioSource effects it's sound */
-    public GameObject mainSourceHolder;
+    public GameObject mainSourceContainer;
+    
+    /* --- Clips */
+    
+    /* Sources */
+    
+    
+    /* Indexes */
+    
+    
+    /* Misc */
+    
+    
+    /* --- Volume Variables ------------------- */
+    /* How loud the volume of the audio is at max */
+    public float maxVolume;
+
+    /* How fast the audio fades universally. Rate is relative to maxVolume and ___Fade (+-x) */
+    [Range(1, 0)]
+    public float fadeRate;
+    /* 0: Nothing. -x: Fade out the music. +x: Fade in the music */
+	private int musicFade = 0;
+	private int fallingFade = 0;
+
 
 	/* --- Footstep Variables ------------------- */
-	/* The sound effects that will be used for footsteps */
+	/* The sound clips and audio sources that will be used for footsteps */
 	public AudioClip[] stepClips;
-    /* The audioSources that will play the footstep sound effects */
     private AudioSource[] stepSources; 
-    /* The gameObject that will contain the footstep audio sources */
-    //public GameObject stepObject;
-	/* Only allow up to stepSourceCount footstep effects from playing at once. */
-	public int stepSourceCount;
+	/* limit the amout of footstep effects from playing at once by limiting stepSources size */
+	public int maxSimultaniousStepEffects;
     /* The index of the last played footstep effect */
-    private int previousStepEffectIndex;
+    private int lastStepClipIndex;
 	
 	
 	/* --- Ambient Music Variables --------------------------------- */
-	/* The music files that will be used as background music */
+	/* The music clips and the source that will play them */
 	public AudioClip[] musicClips;
-    /* The audioSource that plays the game's music */
-    public AudioSource musicSource;
-    /* The gameObject that contains the music sources */
-    //public GameObject musicObject;
-	/* The index of the currently playing musicClip to prevent repetition */
-	private int currentMusicClipIndex;
-	/* 0: Nothing. -1: Fade out the music. 1: Fade in the music */
-	private int musicFade = 0;
+    private AudioSource musicSource;
+	/* The index of the last music clip that played musicClip to prevent repetition */
+	private int lastMusicClipIndex;
 	
 	
-	/* --- Landing/Falling Audio Variables --------------------------------- */
-	/* The music that will be used while fastfalling */
+	/* --- Falling Audio Variables --------------------------------- */
+	/* The clip and source for the audio that plays when fast falling */
 	//fastfall audio : bus and jet engine?
-	public AudioClip fastFallingClip;
-	/* The audioSource to play the fallig sounds */
-	public AudioSource fastFallingSource;
-	/* The gameObject that holds the falling audio source */
-	//public GameObject fastFallingObject;
-    /* The audio clip that plays when the player lands from a fastfall */
-    //just use the whitney houston bang
-    public AudioClip fastFallLandingClip;
+	public AudioClip fallingClip;
+	private AudioSource fallingSource;
+    
 
+	
+	
+	/* --- Falling Audio Variables --------------------------------- */
+	/* The clip and source for the audio of the player landing from a fast fall */
+	//just use the whitney houston bang
+	public AudioClip landingClip;
+	private AudioSource landingSource;
+	
 
     /* ----------- Built-in Unity Functions ------------------------------------------------------------- */
 
@@ -58,32 +76,20 @@ public class PlayerSounds : MonoBehaviour {
 		 */
          
         /* Set the clip index trackers. No matter what value they are, a clip will always get culled */
-		previousStepEffectIndex = stepClips.Length;
-        currentMusicClipIndex = musicClips.Length;
+        lastStepClipIndex = stepClips.Length;
+        lastMusicClipIndex = musicClips.Length;
 
-        /* If no gameObject is given to house the AudioSources, use the one linked to this script. */
-        /*if(stepObject == null){
-			stepObject = gameObject;
-		}
-		if(musicObject == null){
-			musicObject = gameObject;
-		}
-		if(fastFallingObject == null){
-			fastFallingObject = gameObject;
-		}*/
-
-        /* Create the appropriate amount of audioSources for the footstep effects */
-        stepSources = new AudioSource[stepSourceCount];
-		for(int i = 0; i < stepSourceCount; i++){
-            stepSources[i] = mainSourceHolder.AddComponent<AudioSource>();
-		}
-		
-		/* Create the audioSource for the game music */
-		musicSource = mainSourceHolder.AddComponent<AudioSource>();
-        Debug.Log(musicSource);
+        /* Create the appropriate amount of audioSources */
+        stepSources = new AudioSource[maxSimultaniousStepEffects];
+        for(int i = 0; i < stepSources.Length; i++){
+        	stepSources[i] = mainSourceContainer.AddComponent<AudioSource>();
+        }
+		musicSource = mainSourceContainer.AddComponent<AudioSource>();
+        fallingSource = mainSourceContainer.AddComponent<AudioSource>();
+        landingSource = mainSourceContainer.AddComponent<AudioSource>();
         
-        /* Create the audioSource for the fastfall audio */
-        fastFallingSource = mainSourceHolder.AddComponent<AudioSource>();
+        /* Apply the maxVolume to each audioSource */
+        ApplyMaxVolume();
 	}
 	
 	void Update(){
@@ -100,13 +106,14 @@ public class PlayerSounds : MonoBehaviour {
 		 * used to prevent constant audioSources from poping up in the editor.
 		 */
 		
-		for(int i = 0; i < stepSourceCount; i++){
+		for(int i = 0; i < stepSources.Length; i++){
 			Destroy(stepSources[i]);
 		}
         stepSources = null;
 		
 		Destroy(musicSource);
-		Destroy(fastFallingSource);
+		Destroy(fallingSource);
+		Destroy(landingSource);
 	}
 	
 	
@@ -123,7 +130,7 @@ public class PlayerSounds : MonoBehaviour {
 		AudioSource source = null;
 	
 		/* Pick a random footstep effect if theres more than 1 to choose from */
-		stepEffectIndex = RandomClip(stepClips, previousStepEffectIndex);
+		stepEffectIndex = RandomClip(stepClips, lastStepClipIndex);
 		
 		/* Search the footstep audioSources for one not currently in use */
 		source = UnusedSoundSource(stepSources);
@@ -137,7 +144,7 @@ public class PlayerSounds : MonoBehaviour {
 		else{
 			source.clip = stepClips[stepEffectIndex];
 			source.Play();
-			previousStepEffectIndex = stepEffectIndex;
+			lastStepClipIndex = stepEffectIndex;
 		}
 	}
 	
@@ -151,13 +158,12 @@ public class PlayerSounds : MonoBehaviour {
 		int songIndex;
 		
 		/* Get the index of a new song */
-		songIndex = RandomClip(musicClips, currentMusicClipIndex);
+		songIndex = RandomClip(musicClips, lastMusicClipIndex);
 
         /* Update the musicSource with the new song */
-        Debug.Log(songIndex);
 		musicSource.clip = musicClips[songIndex];
         musicSource.Play();
-		currentMusicClipIndex = songIndex;
+		lastMusicClipIndex = songIndex;
 	}
 	
 	public void EnterFastFall(){
@@ -169,13 +175,14 @@ public class PlayerSounds : MonoBehaviour {
 		/* fade out the music */
 		musicFade = -1;
 		
-		/* Start and fade in the fastFalling sound */
-		fastFallingSource.clip = fastFallingClip;
-		fastFallingSource.volume = 1;
-        fastFallingSource.Play();
+		/* Start and fade in the FastFalling state audio */
+		fallingSource.clip = fallingClip;
+		fallingSource.volume = 0;
+		fallingFade = 1;
+        fallingSource.Play();
 	}
 	
-	public void FastFallLanding(){
+	public void PlayLanding(){
 		/*
 		 * When landing from the FastFall state, play a landing sound and start the music again.
 		 */
@@ -184,44 +191,66 @@ public class PlayerSounds : MonoBehaviour {
 		PlayMusic();
 		musicFade = 1;
 		
-		/* Stop the falling audio and start the landing audio */
-		fastFallingSource.Stop();
-		fastFallingSource.clip = fastFallLandingClip;
-		fastFallingSource.Play();
+		/* Stop the falling audio */
+		fallingSource.Stop();
+		
+		/* Play the landing audio */
+		landingSource.clip = landingClip;
+		landingSource.Play();
 	}
 	
 	
 	/* ----------- Audio Mixing Functions ------------------------------------------------------------- */
 	
-	void UpdateSourceVolume(){
+	void ApplyMaxVolume(){
 		/*
-		 * Change the volume of an audio source, simulating a fade effect on the clip
+		 * Apply the max volume to all audio sources.
+		 * Should only ever be run at startup.
 		 */
 		
-		if(musicFade == -1){
-			
-			/* Stop the fade out and the audio source once it's fully muted */
-			if(musicSource.volume <= 0){
-				musicSource.Stop();
-				musicFade = 0;
-			}else{
-				musicSource.volume = musicSource.volume - 0.01f;
-			}
+		for(int i = 0; i < stepSources.Length; i++){
+            stepSources[i].volume = maxVolume;
 		}
-		else if(musicFade == 1){
-			
-			/* Stop the fade in once the audio sources is max volume (1.0f) */
-			if(musicSource.volume >= 1.0f){
-				musicSource.volume = 1.0f;
-			}else{
-				musicSource.volume = musicSource.volume + 0.01f;
-			}
-		} 
+		musicSource.volume = maxVolume;
+		fallingSource.volume = maxVolume;
+		landingSource.volume = maxVolume;
 	}
 	
-	/* ----------- Helper Functions ------------------------------------------------------------- */
-	
-	public int RandomClip(AudioClip[] clips, int previousClipIndex){
+	void UpdateSourceVolume(){
+		/*
+		 * Change the volume of an audio source, simulating a fade effect on the clip.
+         * Use a generalized UpdateSourceVolume function for each potential fade source.
+		 */
+		
+		UpdateSourceVolume(ref musicFade, musicSource);
+		UpdateSourceVolume(ref fallingFade, fallingSource);
+	}
+
+    void UpdateSourceVolume(ref int fade, AudioSource source) {
+        /*
+         * A generalized function that will either fade in or fade out 
+         * the given source using the given fade value.
+         */
+
+		if(fade != 0){
+			source.volume = source.volume + maxVolume*fadeRate*fade;
+			
+			/* Stop the fading if the sources reaches max volume or is fully muted */
+			if(source.volume <= 0){
+				source.Stop();
+				source.volume = 0;
+				fade = 0;
+			}
+			else if(source.volume >= maxVolume){
+				source.volume = maxVolume;
+				fade = 0;
+			}
+		}
+    }
+
+    /* ----------- Helper Functions ------------------------------------------------------------- */
+
+    public int RandomClip(AudioClip[] clips, int previousClipIndex){
 		/*
 		 * Using the given array of clips, pick the index of a random clip.
 		 * Do not include the clip given by the given int previousClip.

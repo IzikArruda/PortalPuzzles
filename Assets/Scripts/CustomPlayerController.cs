@@ -643,7 +643,7 @@ public class CustomPlayerController : MonoBehaviour {
                 	cameraYOffset = 0;
 
                     /*... Plays a fastfall landing audio clip */
-                    playerSoundsScript.FastFallLanding();
+                    playerSoundsScript.PlayLanding();
                 }
 			}
 			
