@@ -112,6 +112,12 @@ public class CustomPlayerController : MonoBehaviour {
 
 	/* Script that handles all sounds produced by the player */
 	public PlayerSounds playerSoundsScript;
+	
+	
+	
+	
+	/* The current x/z distance travelled since the last footstep sound was played */
+	public float footstepDistance = 0;
 
 
     /* -------------- Built-in Unity Functions ---------------------------------------------------------- */
@@ -162,6 +168,9 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Apply any needed effects to the camera */
         cameraEffectsScript.UpdateCameraEffects();
+        
+        /* Check if enough distance was travelled to warrent a footstep sound effect */
+        UpdateFootstep();
         
         //Draw a line in the camera's forward vector
         Debug.DrawLine(playerCamera.transform.position, playerCamera.transform.position + playerCamera.transform.rotation*Vector3.forward*0.5f, Color.green);
@@ -286,7 +295,13 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Send a move command to the player using the gravity and input vectors */
         //MovePlayer(gravityVector + (inputVector)*Time.deltaTime*60);
-        MovePlayer(gravityVector + inputVector);
+        float remainingDistance = MovePlayer(gravityVector + inputVector).magnitude;
+        
+        
+        /* Add the distance travelled to the step tracker if the player is moving while grounded */
+		if(PlayerIsGrounded()){
+        	AddHorizontalStep(inputVector.magnitude - remainingDistance);
+        }
     }
     
     void AdjustCameraRotation() {
@@ -510,6 +525,12 @@ public class CustomPlayerController : MonoBehaviour {
         /* Revert any movement done to the camera to smooth the players view */
         //currentCameraTransform.transform.position -= upDirection*(currentLegLength - stepLegLength);
         cameraYOffset -= (currentLegLength - stepLegLength);
+        
+
+        /* Taking a vertical step will add the depth of the step to the step tracker */
+        if(PlayerIsGrounded()){
+			AddVerticalStep((currentLegLength - stepLegLength));
+		}
     }
     
 
@@ -631,8 +652,6 @@ public class CustomPlayerController : MonoBehaviour {
 				if(state == (int) PlayerStates.Falling){
 					/*... Will lower the camera offset relative to the falling speed */
 					cameraYOffset = -(headHeight + playerBodyLength/2f)*RatioWithinRange(0, (maxYVelocity), -currentYVelocity);
-					/*... Will play a footstep sound. */
-					playerSoundsScript.PlayFootstep();
 				}
 				
 				/*... When leaving the FastFalling state... */
@@ -673,20 +692,23 @@ public class CustomPlayerController : MonoBehaviour {
         }
     }
 
-    void MovePlayer(Vector3 movementVector) {
+    Vector3 MovePlayer(Vector3 movementVector) {
         /*
          * Move the player by the given movementVector. To move the player, run a rayTrace command using the
          * given movementVector as a direction and distance. The position used will be the player's origin,
          * i.e. the transform this script is attached to. This means for the player to be teleported, their
          * origin point must collide with a teleporterTrigger when using a rayTrace command.
+         * 
+         * Return the amount of distance from the movementVector that was not covered.
          */
         Quaternion rotationDifference;
+        float remainingDistance = 0;
 
         if(movementVector.magnitude != 0) {
             /* Set values to be used with the rayTrace call */
             Vector3 position = transform.position;
             Quaternion direction = Quaternion.LookRotation(movementVector.normalized, transform.up);
-            float remainingDistance = movementVector.magnitude;
+            remainingDistance = movementVector.magnitude;
 
             /* Fire the rayTrace command and retrive the rotation difference */
             rotationDifference = RayTrace(ref position, ref direction, ref remainingDistance, true, true);
@@ -695,6 +717,8 @@ public class CustomPlayerController : MonoBehaviour {
             transform.position = position;
             transform.rotation = transform.rotation * rotationDifference;
         }
+        
+        return movementVector.normalized*remainingDistance;
     }
 
     void JumpAttempt() {
@@ -991,4 +1015,65 @@ public class CustomPlayerController : MonoBehaviour {
 
         return ratio;
     }
+
+
+
+
+
+
+    #region footsteps
+    //idea. use the previous 3 step directions and weight the new steps against that.
+    //3 steps go north. stepFavor is full north.
+    //next step goes north. stepFavor is north. step is now half value, stepFavor remains.
+    //next step goes south. stepFavor is north. step is worth double, avg of north north south is north.
+    //another south, makes favor become south.
+    //steps like northSouth with a favor of north will be worth a bit more than half and change a bit of the favor.
+    //*This only handles direction. The power/distance of a dtep will have a sepperate favor.
+    //*a change in stride will cause a quick step to adjust to the new speed (walk to run, run to walk)
+    //3 idle steps in a row will indicate the player stopped.
+    //////////Footstep region
+    public float currentHorizontalStep;
+    public float currentVerticalStep;
+    
+    public void AddHorizontalStep(float horizontalDistance){
+    	/*
+    	 * Add the given distance to the current horizontal step distance
+    	 */
+    	
+    	currentHorizontalStep += horizontalDistance;
+    }
+    
+    public void AddVerticalStep(float verticalDistance){
+    	/*
+    	 * Add the given distance to the current vertical step distance
+    	 */
+    
+    	currentVerticalStep += verticalDistance;
+    }
+    
+    
+    public void UpdateFootstep(){
+        /*
+    	 * Check the current step values and determine if a step effect should play.
+    	 */
+
+    	/* Arbitrairaly calculate whether a footstep sound effect should be calculated */
+    	if(Mathf.Abs(currentHorizontalStep) > 0.1f || Mathf.Abs(currentVerticalStep) > 0.1f) {
+            PlayStep();
+    	}
+    }
+    
+    public void PlayStep(){
+        /*
+    	 * A step has been made, so send a command to play a stepping sound effect.
+    	 */
+
+        /* Play a stepping sound */
+        playerSoundsScript.PlayFootstep();
+
+        /* Reset the step distances once a step has been made */
+        currentHorizontalStep = 0;
+    	currentVerticalStep = 0;
+    }
+    #endregion
 }
