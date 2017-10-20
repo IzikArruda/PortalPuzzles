@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 /* 
  * The potential states the player can be in.
@@ -294,13 +295,13 @@ public class CustomPlayerController : MonoBehaviour {
         UpdateInputVector();
 
         /* Send a move command to the player using the gravity and input vectors */
-        //MovePlayer(gravityVector + (inputVector)*Time.deltaTime*60);
-        float remainingDistance = MovePlayer(gravityVector + inputVector).magnitude;
+        Vector3 movementVector = gravityVector + inputVector;
+        movementVector -= movementVector.normalized*MovePlayer(movementVector);
         
-        
-        /* Add the distance travelled to the step tracker if the player is moving while grounded */
+        /* If grounded, pass the inputVector and how much was used in the move to the footstep tracker.
+         * Multiply it by the inverse of the player's rotation to get the input direction relative to the world. */
 		if(PlayerIsGrounded()){
-        	AddHorizontalStep(inputVector.magnitude - remainingDistance);
+        	AddHorizontalStep(Quaternion.Inverse(transform.rotation)*movementVector);
         }
     }
     
@@ -692,7 +693,7 @@ public class CustomPlayerController : MonoBehaviour {
         }
     }
 
-    Vector3 MovePlayer(Vector3 movementVector) {
+    float MovePlayer(Vector3 movementVector) {
         /*
          * Move the player by the given movementVector. To move the player, run a rayTrace command using the
          * given movementVector as a direction and distance. The position used will be the player's origin,
@@ -718,7 +719,7 @@ public class CustomPlayerController : MonoBehaviour {
             transform.rotation = transform.rotation * rotationDifference;
         }
         
-        return movementVector.normalized*remainingDistance;
+        return remainingDistance;
     }
 
     void JumpAttempt() {
@@ -1032,15 +1033,43 @@ public class CustomPlayerController : MonoBehaviour {
     //*a change in stride will cause a quick step to adjust to the new speed (walk to run, run to walk)
     //3 idle steps in a row will indicate the player stopped.
     //////////Footstep region
+    /* The current distance the player has moved since the last footstep effect was played */
     public float currentHorizontalStep;
     public float currentVerticalStep;
+    /* How far the player can move before a footstep sound should play */
+    public float maxHorizontalStride;
+    public float maxVerticalStride;
     
-    public void AddHorizontalStep(float horizontalDistance){
+    
+    /* How many past directions are used to calculate the current average direction */
+    public float lookbackCount;
+    /* A list of past directions to calculate the average */
+    public List<Vector3> pastDirections = new List<Vector3>();
+    /* The average direction the player is heading towards using the previous lookbackCount moves */
+    public Vector3 averageDirection;
+    
+    
+    public void AddHorizontalStep(Vector3 horizontalDistance){
     	/*
     	 * Add the given distance to the current horizontal step distance
     	 */
+    	float stepValue;
     	
-    	currentHorizontalStep += horizontalDistance;
+    	/* Get the average direction of the player's previous steps */
+    	Vector3 avgDirection = AverageStepDirection();
+    	float avgDistance = AverageStepDistance();
+        
+        /* Calculate a "step value" by comparing the current step made to the average step */
+        stepValue = horizontalDistance.magnitude;
+        
+        /* Add the final step value to the current stride progress */
+        currentHorizontalStep += stepValue;
+    
+    	/* Update the past directions list by adding the new direction and removing an old one */
+    	pastDirections.Add(horizontalDistance);
+    	if(pastDirections.Count > lookbackCount){
+            pastDirections.RemoveAt(0);
+    	}
     }
     
     public void AddVerticalStep(float verticalDistance){
@@ -1051,14 +1080,48 @@ public class CustomPlayerController : MonoBehaviour {
     	currentVerticalStep += verticalDistance;
     }
     
+    public Vector3 AverageStepDirection(){
+    	/* 
+    	 * Return the average step direction. Each direction is converted
+    	 * to a unit vector as we do not want their magnitude to effect the direction.
+    	 */
+    	Vector3 avgDirection = Vector3.zero;
+    
+    	/* Add all tracked normalized direction */
+        foreach(Vector3 dir in pastDirections) {
+            avgDirection += dir.normalized;
+        }
+    
+    	/* Get the average of all the directions */
+    	avgDirection = (avgDirection/pastDirections.Count).normalized;
+    
+    	return avgDirection;
+    }
+
+    public float AverageStepDistance(){
+    	/*
+    	 * Get the average step distance using the magnitude of each pastDirections vector
+    	 */
+    	float avgDistance = 0;
+    
+    	/* Add the magnitude of all tracked directions */
+        foreach(Vector3 dir in pastDirections) {
+            avgDistance += dir.magnitude;
+        }
+
+        /* Get the average of the magnitudes */
+        avgDistance /= pastDirections.Count;
+    
+    	return avgDistance;
+    }
     
     public void UpdateFootstep(){
         /*
-    	 * Check the current step values and determine if a step effect should play.
+    	 * Check the current stride values and determine if a step effect should play.
     	 */
 
-    	/* Arbitrairaly calculate whether a footstep sound effect should be calculated */
-    	if(Mathf.Abs(currentHorizontalStep) > 0.1f || Mathf.Abs(currentVerticalStep) > 0.1f) {
+    	/* Check whether a footstep sound effect should be played by comparing the current step progress */
+    	if(Mathf.Abs(currentHorizontalStep) > maxHorizontalStride || Mathf.Abs(currentVerticalStep) > maxVerticalStride) {
             PlayStep();
     	}
     }
