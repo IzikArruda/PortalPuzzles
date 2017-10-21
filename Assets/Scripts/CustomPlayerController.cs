@@ -128,6 +128,9 @@ public class CustomPlayerController : MonoBehaviour {
          * Initilize required objects and set starting values for certain variables 
          */
 
+        /* Set up the footstep tracker */
+        CalculateStrideDistances();
+
         /* Set up the camera's post-processing effects */
         cameraEffectsScript.SetupPostProcessingEffects(playerCamera, this);
 
@@ -170,11 +173,12 @@ public class CustomPlayerController : MonoBehaviour {
         /* Apply any needed effects to the camera */
         cameraEffectsScript.UpdateCameraEffects();
         
-        /* Check if enough distance was travelled to warrent a footstep sound effect */
-        UpdateFootstep();
+        /* Update the player's stride progress to determine when a footstep sound effect should play */
+        UpdateStride();
         
         //Draw a line in the camera's forward vector
-        Debug.DrawLine(playerCamera.transform.position, playerCamera.transform.position + playerCamera.transform.rotation*Vector3.forward*0.5f, Color.green);
+        Debug.DrawLine(playerCamera.transform.position, 
+                playerCamera.transform.position + playerCamera.transform.rotation*Vector3.forward*0.5f, Color.green);
     }
 
 
@@ -1032,54 +1036,120 @@ public class CustomPlayerController : MonoBehaviour {
     //*This only handles direction. The power/distance of a dtep will have a sepperate favor.
     //*a change in stride will cause a quick step to adjust to the new speed (walk to run, run to walk)
     //3 idle steps in a row will indicate the player stopped.
-    //////////Footstep region
+
+
+    /* --- Stride Values ------------------- */
     /* The current distance the player has moved since the last footstep effect was played */
-    public float currentHorizontalStep;
-    public float currentVerticalStep;
-    /* How far the player can move before a footstep sound should play */
-    public float maxHorizontalStride;
-    public float maxVerticalStride;
-    
-    
+    public float currentHorizontalStride;
+    public float currentVerticalStride;
+    /* How far the player can move before a footstep sound should play. */
+    private float maxHorizontalStride;
+    private float maxVerticalStride;
+    /* Variables used to calculate the maxStride values. Relative to the player's movementSpeed */
+    public float horizontalStrideRelative;
+
+
+    /* --- Footstep Tracker ------------------- */
     /* How many past directions are used to calculate the current average direction */
     public float lookbackCount;
     /* A list of past directions to calculate the average */
+    //Note: this should reset upon landing. Add a reset steps function that also resets the stride progress.
     public List<Vector3> pastDirections = new List<Vector3>();
-    /* The average direction the player is heading towards using the previous lookbackCount moves */
-    public Vector3 averageDirection;
+
     
+    /* ----------- Set-up Functions ------------------------------------------------------------- */
+
+    public void CalculateStrideDistances() {
+        /*
+         * Calculate the max stride distances, which represents how far 
+         * a player will travel before a footstep effect will play.  
+         */
+        //40 is a good value if the person is moving forward forever
+        horizontalStrideRelative = 40;
+        
+        maxHorizontalStride = movementSpeed*horizontalStrideRelative;
+    }
+
+
+    /* ----------- Step/Stride Functions ------------------------------------------------------------- */
     
     public void AddHorizontalStep(Vector3 horizontalDistance){
-    	/*
-    	 * Add the given distance to the current horizontal step distance
+        /*
+         * A step along the player's relative horizontal (x, z) was made.
+    	 * Add the given distance to the current horizontal stride distance.
+         * 
+         * Use an array of past step directions that track previous footstep directions
+         * to calculate how much the player is "changing their momentum".
+         * Having an input identical to the average of the previous step directions
+         * means very little momentum change, i.e. longer strides/more distance between each step.
+         * Having a large difference means a sharp turn, i.e. short, quick steps.
     	 */
-    	float stepValue;
-    	
-    	/* Get the average direction of the player's previous steps */
     	Vector3 avgDirection = AverageStepDirection();
     	float avgDistance = AverageStepDistance();
-        
+        float stepValue, stepAngleDiff;
+        //Draw the input from the player
+        Debug.DrawRay(transform.position, horizontalDistance*50, Color.green);
+
+        /* Get the angle between the player's inputted direction and the average step direction */
+        stepAngleDiff = Vector3.Angle(avgDirection, horizontalDistance);
+
         /* Calculate a "step value" by comparing the current step made to the average step */
         stepValue = horizontalDistance.magnitude;
         
-        /* Add the final step value to the current stride progress */
-        currentHorizontalStep += stepValue;
-    
-    	/* Update the past directions list by adding the new direction and removing an old one */
-    	pastDirections.Add(horizontalDistance);
+        /////
+        //Do stuff with the step value here
+        /////
+
+
+
+        /* Add the final step value to the current horizontal stride progress */
+        currentHorizontalStride += stepValue;
+        
+        /* Update the past directions list by adding the new direction and removing an old one */
+        pastDirections.Add(horizontalDistance);
     	if(pastDirections.Count > lookbackCount){
             pastDirections.RemoveAt(0);
     	}
     }
     
     public void AddVerticalStep(float verticalDistance){
-    	/*
-    	 * Add the given distance to the current vertical step distance
+        /*
+         * The player made a step along their relative Y axis.
+    	 * Add the given distance to the current vertical stride distance
     	 */
-    
-    	currentVerticalStep += verticalDistance;
+
+        currentVerticalStride += verticalDistance;
     }
-    
+
+    public void UpdateStride() {
+        /*
+         * Check the player's current stride values to determine if a step sound effect should play.
+    	 */
+        //Draw a ray of the avg direction
+        Debug.DrawRay(transform.position, AverageStepDirection()*10, Color.red);
+
+        /* Check whether a footstep sound effect should be played by comparing the current stride progress */
+        if(Mathf.Abs(currentHorizontalStride) > maxHorizontalStride) {
+            PlayStep();
+        }
+    }
+
+    public void PlayStep() {
+        /*
+    	 * A step has been made, so send a command to play a footstep sound effect.
+    	 */
+
+        /* Play a footstep sound */
+        playerSoundsScript.PlayFootstep();
+
+        /* Reset the current stride distances */
+        currentHorizontalStride = 0;
+        currentVerticalStride = 0;
+    }
+
+
+    /* ----------- Helper Functions ------------------------------------------------------------- */
+
     public Vector3 AverageStepDirection(){
     	/* 
     	 * Return the average step direction. Each direction is converted
@@ -1114,29 +1184,6 @@ public class CustomPlayerController : MonoBehaviour {
     
     	return avgDistance;
     }
-    
-    public void UpdateFootstep(){
-        /*
-    	 * Check the current stride values and determine if a step effect should play.
-    	 */
 
-    	/* Check whether a footstep sound effect should be played by comparing the current step progress */
-    	if(Mathf.Abs(currentHorizontalStep) > maxHorizontalStride || Mathf.Abs(currentVerticalStep) > maxVerticalStride) {
-            PlayStep();
-    	}
-    }
-    
-    public void PlayStep(){
-        /*
-    	 * A step has been made, so send a command to play a stepping sound effect.
-    	 */
-
-        /* Play a stepping sound */
-        playerSoundsScript.PlayFootstep();
-
-        /* Reset the step distances once a step has been made */
-        currentHorizontalStep = 0;
-    	currentVerticalStep = 0;
-    }
     #endregion
 }
