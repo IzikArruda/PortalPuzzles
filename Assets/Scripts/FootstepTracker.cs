@@ -73,19 +73,15 @@ public class FootstepTracker : MonoBehaviour {
         Debug.DrawRay(transform.position, AverageStepDirection()*10, Color.red);
 
         /* Check whether a footstep sound effect should be played by comparing the current stride progress */
-        if(Mathf.Abs(currentHorizontalStride) > maxHorizontalStride) {
+        if(Mathf.Abs(currentHorizontalStride) >= maxHorizontalStride) {
             PlayStep();
         }
     }
 
-    public void AddHorizontalStep(Vector3 horizontalDistance) {
+    public void AddHorizontalStep(Vector3 horizontalInputDirection) {
         /*
-         * Update the horizontal stride distance and the pastDirections array with a new
+         * Update the horizontal (x, z) stride distance and the pastDirections array with a new
          * direction. This will be run every frame whenever the player is in a grounded state.
-         * 
-         * 
-         * Movement along the player's relative horizontal (x, z) was made.
-    	 * Add the given distance to the current horizontal stride distance.
          * 
          * Use an array of past step directions that track previous footstep directions
          * to calculate how much the player is "changing their momentum".
@@ -93,32 +89,114 @@ public class FootstepTracker : MonoBehaviour {
          * means very little momentum change, i.e. longer strides/more distance between each step.
          * Having a large difference means a sharp turn, i.e. short, quick steps.
     	 */
-        Vector3 avgDirection = AverageStepDirection();
-        float avgDistance = AverageStepDistance();
-        float stepValue, stepAngleDiff;
-        //Draw the input from the player
-        Debug.DrawRay(transform.position, horizontalDistance*50, Color.green);
+        float stepValue = 0;
 
-        /* Get the angle between the player's inputted direction and the average step direction */
-        stepAngleDiff = Vector3.Angle(avgDirection, horizontalDistance);
-
-        /* Calculate a "step value" by comparing the current step made to the average step */
-        stepValue = horizontalDistance.magnitude;
-
-        /////
-        //Do stuff with the step value here
-        /////
+        /* If the player gave an input that was not immobile, calculate a stepValue */
+        if(horizontalInputDirection.magnitude != 0) {
+            stepValue = CalculateStepValue(horizontalInputDirection);
+        }
+        /* If the player was previously moving but now stopped, force a footstep effect to imply they stopped */
+        else if(AverageStepDirection().magnitude != 0 && pastDirections.Count >= lookbackCount) {
+            Debug.Log("stopped");
+            currentHorizontalStride = maxHorizontalStride;
+            pastDirections.Clear();
+        }
 
 
+        /* If the player is speeding up/slowing down compared to their average distance, increase the stepValue */
+        if(horizontalInputDirection.magnitude != 0) {
+            //stepValue can increase by up to 5*.
+            //If the difference between the magnitudes is larger than the player's normal speed, remain at 5* increase.
+            float distanceDiff = Mathf.Abs(horizontalInputDirection.magnitude - AverageStepDistance());
+            if(distanceDiff < 0.04f) {
+                stepValue += 5*stepValue*(distanceDiff/0.04f);
+            }
+            else {
+                stepValue += 5*stepValue;
+            }
+        }
 
-        /* Add the final step value to the current horizontal stride progress */
+
+
+
+        /* Add the final stepValue to the current horizontal stride progress */
         currentHorizontalStride += stepValue;
 
-        /* Update the past directions list by adding the new direction and removing an old one */
-        pastDirections.Add(horizontalDistance);
+        /* Update the past directions list by adding the new inputted direction */
+        pastDirections.Add(horizontalInputDirection);
         if(pastDirections.Count > lookbackCount) {
+            /* Remove the oldest input if we reached max directions to track */
             pastDirections.RemoveAt(0);
         }
+    }
+
+    public float CalculateStepValue(Vector3 horizontalInputDirection) {
+        /*
+         * Using a series of set angle values and the user's given direction compared to the average direction,
+         * return a "stepValue" that determines how much the player moved given the input.
+         * If the player's given input goes againts the average direction, it can be seen as moving againts
+         * their current momentum. Moving against your momentum will increase the step value.
+         * 
+         * A given direction with a magnitude of 0 means the player is not moving.
+         */
+        Vector3 avgDirection = AverageStepDirection();
+        float stepValue;
+        float stepAngleDiff;
+
+        /* Get the angle between the player's inputted direction and the average step direction */
+        stepAngleDiff = Vector3.Angle(avgDirection, horizontalInputDirection);
+
+        /* Set the stepValue to be relative to the player's inputted direction's magnitude */
+        stepValue = horizontalInputDirection.magnitude;
+
+        //Debug.Log(stepAngleDiff);
+        /* Change the stepValue relative to the angle difference of the input and average direction */
+        //Track what kind of value change occurs. Steps that have had a lot fo value change will be 
+        //quick ones that have the player seem very agile and quick on their feet, like spinning in a circle.
+        //These steps should sound different, like a quicker step. A vlaue will need to be tracked
+        //so that once the footstep is played it takes into account how much value change has occured
+        /* minAngle marks when an angle difference starts effecting the stepValue */
+        float minAngle = 0;
+        /* maxAngle marks when any increase in angle difference will have no extra change to the stepValue */
+        float maxAngle = 75;
+        /* Above resetAngle will force a step and reset the pastdirections. Simulate a sharp sudden turn. */
+        float resetAngle = 125f;
+        float increaseAmount = 3;
+        float relativeIncrease = 1;
+
+        if(stepAngleDiff < minAngle) {
+            /* Step value remains unchanged */
+        }
+        else if(stepAngleDiff < maxAngle) {
+            /* Increase the step value depending on the angleDifference */
+            stepValue += stepValue*increaseAmount*((stepAngleDiff-minAngle) / (maxAngle-minAngle));
+            relativeIncrease += increaseAmount*((stepAngleDiff-minAngle) / (maxAngle-minAngle));
+        }
+        else if(stepAngleDiff < resetAngle) {
+            /* Increase the step value by a (relatively) set amount */
+            stepValue += stepValue*increaseAmount;
+            relativeIncrease += increaseAmount;
+        }
+        else {
+            /* Force a step and reset the tracking */
+            Debug.Log("REDIRECT");
+            currentHorizontalStride = maxHorizontalStride;
+            pastDirections.Clear();
+        }
+        //Debug.Log(relativeIncrease);
+        //Note there is a condition where the avg becomes 0/the player stops moving.
+        //This is difference than having the step angle reach 180. 
+        //when they stop, force a step to occur and maybe reset the previous tracked steps.
+
+
+
+
+        //Idea: if the player fully reaches around/past maxAmount, play a footstep and change 
+        //the entire past tracked values to the given new one since 
+        //the player took a quick step to fully change their momentum
+
+
+        return stepValue;
     }
 
     public void AddVerticalStep(float verticalDistance) {
@@ -150,6 +228,7 @@ public class FootstepTracker : MonoBehaviour {
         /* 
     	 * Return the average step direction. Each direction is converted
     	 * to a unit vector as we do not want their magnitude to effect the direction.
+         * If the pastDirections array is empty, return a zero vector.
     	 */
         Vector3 avgDirection = Vector3.zero;
 
@@ -159,14 +238,17 @@ public class FootstepTracker : MonoBehaviour {
         }
 
         /* Get the average of all the directions */
-        avgDirection = (avgDirection/pastDirections.Count).normalized;
+        if(pastDirections.Count > 0) {
+            avgDirection = (avgDirection/pastDirections.Count).normalized;
+        }
 
         return avgDirection;
     }
 
     public float AverageStepDistance() {
         /*
-    	 * Get the average step distance using the magnitude of each pastDirections vector
+    	 * Get the average step distance using the magnitude of each pastDirections vector.
+         * If the pastDirections array is empty, just return 0.
     	 */
         float avgDistance = 0;
 
@@ -176,7 +258,9 @@ public class FootstepTracker : MonoBehaviour {
         }
 
         /* Get the average of the magnitudes */
-        avgDistance /= pastDirections.Count;
+        if(pastDirections.Count > 0) {
+            avgDistance /= pastDirections.Count;
+        }
 
         return avgDistance;
     }
