@@ -140,6 +140,8 @@ public class CustomPlayerController : MonoBehaviour {
         /* Start the player in the standing state so they can link themselves to the floor */
         state = -1;
         ChangeState((int) PlayerStates.Standing);
+        transform.localPosition = new Vector3(transform.localPosition.x, 
+                givenLegLength + playerBodyLength/2f, transform.localPosition.z);
    }
 
     void Update() {
@@ -461,12 +463,19 @@ public class CustomPlayerController : MonoBehaviour {
         /* Update the footPosition and the player's position if they are still standing */
         else {
 
+
             /* Calculate the current foot position of the player by finding the new leg length */
             float newLegLength = 0;
             for(int i = 0; i < extraLegLenths.Length; i++) {
                 if(extraLegLenths[i] >= 0) {
                     newLegLength += extraLegLenths[i]/currentGroundedCount;
                 }
+            }
+
+            /////Since the player is grounded,
+            /* Taking a vertical step will add the depth of the step to the step tracker */
+            if(PlayerIsGrounded()) {
+                playerStepTracker.AddVerticalStep((currentLegLength - newLegLength));
             }
 
             /* Use the new legLength to make the player undergo a "step" */
@@ -527,12 +536,6 @@ public class CustomPlayerController : MonoBehaviour {
         /* Revert any movement done to the camera to smooth the players view */
         //currentCameraTransform.transform.position -= upDirection*(currentLegLength - stepLegLength);
         cameraYOffset -= (currentLegLength - stepLegLength);
-        
-
-        /* Taking a vertical step will add the depth of the step to the step tracker */
-        if(PlayerIsGrounded()){
-            playerStepTracker.AddVerticalStep((currentLegLength - stepLegLength));
-		}
     }
     
 
@@ -654,7 +657,10 @@ public class CustomPlayerController : MonoBehaviour {
 				if(state == (int) PlayerStates.Falling){
 					/*... Will lower the camera offset relative to the falling speed */
 					cameraYOffset = -(headHeight + playerBodyLength/2f)*RatioWithinRange(0, (maxYVelocity), -currentYVelocity);
-				}
+
+                    /*... Will inform the footstep tracker of the landing. */
+                    playerStepTracker.Landing();
+                }
 				
 				/*... When leaving the FastFalling state... */
 				if(state == (int) PlayerStates.FastFalling){

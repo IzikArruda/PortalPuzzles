@@ -51,6 +51,7 @@ public class FootstepTracker : MonoBehaviour {
         horizontalStrideRelative = 40;
 
         maxHorizontalStride = playerMovementSpeed*horizontalStrideRelative;
+        maxVerticalStride = 0.5f;
     }
 
     public void SetSoundsScript(PlayerSounds givenSoundsScript) {
@@ -73,7 +74,9 @@ public class FootstepTracker : MonoBehaviour {
         Debug.DrawRay(transform.position, AverageStepDirection()*10, Color.red);
 
         /* Check whether a footstep sound effect should be played by comparing the current stride progress */
-        if(Mathf.Abs(currentHorizontalStride) >= maxHorizontalStride) {
+        //if(Mathf.Abs(currentHorizontalStride) >= maxHorizontalStride) {
+        Debug.Log(currentVerticalStride);
+        if(Mathf.Abs(currentVerticalStride) >= maxVerticalStride || Mathf.Abs(currentHorizontalStride) >= maxHorizontalStride) {
             PlayStep();
         }
     }
@@ -221,6 +224,19 @@ public class FootstepTracker : MonoBehaviour {
         currentVerticalStride = 0;
     }
 
+    public void Landing() {
+        /*
+         * Runs when the player lands from a fall. This will play a specific footstep
+         * effect used to landing and it will reset the current momentum.
+         */
+
+        //Play the landing effect
+
+        /* Reset the player momentum (current stride and pastDirections) */
+        currentHorizontalStride = 0;
+        currentVerticalStride = 0;
+        pastDirections.Clear();
+    }
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
 
