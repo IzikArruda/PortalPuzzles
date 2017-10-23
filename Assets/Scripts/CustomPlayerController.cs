@@ -125,7 +125,7 @@ public class CustomPlayerController : MonoBehaviour {
          */
 
         /* Set up the footstep tracker */
-        playerStepTracker.CalculateStrideDistances(movementSpeed);
+        playerStepTracker.CalculateStrideDistances(movementSpeed, givenLegLength);
         playerStepTracker.SetSoundsScript(playerSoundsScript);
 
         /* Set up the camera's post-processing effects */
