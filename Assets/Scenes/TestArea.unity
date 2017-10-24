@@ -1627,7 +1627,7 @@ MonoBehaviour:
   fadeRate: 0.01
   stepClips:
   - {fileID: 8300000, guid: c8696334e981b0142a5955dfc5d60a92, type: 3}
-  maxSimultaniousStepEffects: 10
+  maxSimultaniousStepEffects: 1
   musicClips:
   - {fileID: 8300000, guid: 38b260ac2faad944caf6d4bd216c8fe7, type: 3}
   fallingClip: {fileID: 0}
@@ -1643,8 +1643,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4a9473899447d1d4a998ed24462c39ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  horizontalStrideRelative: 0
+  maxHorizontalStride: 0
+  maxVerticalStride: 0
+  horiStrideMod: 0
+  vertStrideMod: 0
   lookbackCount: 10
+  timeSinceStep: []
 --- !u!4 &386859432 stripped
 Transform:
   m_PrefabParentObject: {fileID: 4000012095888948, guid: abccb9387f230fd4e8546aad42b67e6f,
@@ -1756,6 +1760,11 @@ Prefab:
     - target: {fileID: 4000010553342494, guid: 6c0f2fc5d5376d7438cdcc70511d13cd, type: 2}
       propertyPath: m_LocalPosition.z
       value: -5
+      objectReference: {fileID: 0}
+    - target: {fileID: 114000012144535074, guid: 6c0f2fc5d5376d7438cdcc70511d13cd,
+        type: 2}
+      propertyPath: sliding
+      value: 0.1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: 6c0f2fc5d5376d7438cdcc70511d13cd, type: 2}

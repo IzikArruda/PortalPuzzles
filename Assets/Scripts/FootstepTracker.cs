@@ -10,7 +10,10 @@ public class FootstepTracker : MonoBehaviour {
 
     /* The sound script that will be used to play the footsteps */
     private PlayerSounds playerSoundsScript;
-//add a reference to player controler
+
+    /* --- Player stats Values ------------------- */
+    private float playerMovementSpeed;
+    private float playerLegLength;
 
     /* --- Stride Values ------------------- */
     /* The current distance the player has moved since the last footstep effect was played */
@@ -19,9 +22,12 @@ public class FootstepTracker : MonoBehaviour {
     /* How far the player can move before a footstep sound should play. */
     public float maxHorizontalStride;
     public float maxVerticalStride;
-    /* Used to calculate the maxStride values. Relative to the player's movementSpeed and leg length*/
-    public float horiStrideMod;
-    public float vertStrideMod;
+
+    /* --- User Inputted Values ------------------- */
+    /* Modifies the required horizontal distance to play a footstep. Relative to playerMovementSpeed */
+    public float horiStrideMod = 40;
+    /* Modifies the required vertical distance to play a footstep. Relative to playerLegLength */
+    public float vertStrideMod = 0.9f;
 
 
     /* --- Footstep Tracker ------------------- */
@@ -31,29 +37,24 @@ public class FootstepTracker : MonoBehaviour {
     private List<Vector3> pastDirections = new List<Vector3>();
     /* The time between the last footstep effect for a given foot */
     public float[] timeSinceStep;
-	
+
 
     /* ----------- Set-up Functions ------------------------------------------------------------- */
 
-	public void Start(){
-		
-		/* Setup the step times array to track each foot's timing */
-		timeSinceStep = new float[2];
-		for(int i = 0; i < timeSinceStep.Length; i++){
-			timeSinceStep[i] = 0.0f;
-		}
-	}
+    public void Start() {
 
-
-    public void CalculateStrideDistances(float playerMovementSpeed, float playerLegLength) {
+        /* Setup the step times array to track each foot's timing */
+        timeSinceStep = new float[2];
+        ResetFootTiming();
+    }
+    
+    public void CalculateStrideDistances(float movementSpeed, float legLength) {
         /*
          * Calculate the max stride distances, which represents how far 
          * a player will travel before a footstep effect will play.  
          */
-        //40 is a good value if the person is moving forward forever
-        horiStrideMod = 40;
-        vertStrideMod = 0.9f;
-
+        playerMovementSpeed = movementSpeed;
+        playerLegLength = legLength;
         maxHorizontalStride = playerMovementSpeed*horiStrideMod;
         maxVerticalStride = playerLegLength*vertStrideMod;
     }
@@ -77,13 +78,12 @@ public class FootstepTracker : MonoBehaviour {
         //Draw a ray of the avg direction
         Debug.DrawRay(transform.position, AverageStepDirection()*10, Color.red);
 
-		/* Update the footstep timing values */
-		for(int i = 0; i < timeSinceStep.Length; i++){
-			timeSinceStep[i] += Time.deltaTime;
-		}
+        /* Update the footstep timing values */
+        for(int i = 0; i < timeSinceStep.Length; i++) {
+            timeSinceStep[i] += Time.deltaTime;
+        }
 
         /* Check whether a footstep sound effect should be played by comparing the current stride progress */
-        //if(Mathf.Abs(currentHorizontalStride) >= maxHorizontalStride) {
         if(Mathf.Abs(currentVerticalStride) >= maxVerticalStride || Mathf.Abs(currentHorizontalStride) >= maxHorizontalStride) {
             PlayStep();
         }
@@ -93,129 +93,115 @@ public class FootstepTracker : MonoBehaviour {
         /*
          * Update the horizontal (x, z) stride distance and the pastDirections array with a new
          * direction. This will be run every frame whenever the player is in a grounded state.
-         * 
-         * Use an array of past step directions that track previous footstep directions
-         * to calculate how much the player is "changing their momentum".
-         * Having an input identical to the average of the previous step directions
-         * means very little momentum change, i.e. longer strides/more distance between each step.
-         * Having a large difference means a sharp turn, i.e. short, quick steps.
-    	 */
-        float stepValue = 0;
+         *
+         * If the player is moving slowly, don't add to the horizontal stride progress as 
+         * slow careful steps are silent. This could be changed by simply adjusting the
+         * sound of the step relative to the average speed upon making the footstep effect.
+         *
+         * If the player is immobile, reset the tracking values as they would not have
+         * any momentum or make any footstep sounds while standing still.
+         */
 
-        /* If the player gave an input that was not immobile, calculate a stepValue */
-        if(horizontalInputDirection.magnitude != 0) {
-            stepValue = CalculateStepValue(horizontalInputDirection);
-        }
-        /* The player is immobile, reset the tracking values */
-        else {
-            currentHorizontalStride = 0;
-            currentVerticalStride = 0;
+        /* The player is immobile - reset the step tracking variables */
+        if(horizontalInputDirection.magnitude == 0) {
+
             pastDirections.Clear();
             ResetFootTiming();
+            ResetStrideProgress();
+
+            //Add a condition that checks if the pastDirections is full and has a faily fast avg speed. This will imdicate a hard stop
         }
 
+        /* Continuously staying under a slow speed will prevent the producing of any footsteps */
+        else if(pastDirections.Count >= lookbackCount &&
+                horizontalInputDirection.magnitude <= playerMovementSpeed/2f &&
+                AverageStepSpeed() <= playerMovementSpeed/2f) {
+            ResetFootTiming();
+            ResetStrideProgress();
+            Debug.Log("Slow walking");
+        }
 
-        /* If the player is speeding up/slowing down compared to their average distance, increase the stepValue */
-        //These values (0.04 and 5) need accees to the playerCobtroller script for values
-        if(horizontalInputDirection.magnitude != 0) {
-            //stepValue can increase by up to 5*.
-            //If the difference between the magnitudes is larger than the player's normal speed, remain at 5* increase.
-            float distanceDiff = Mathf.Abs(horizontalInputDirection.magnitude - AverageStepDistance());
-            if(distanceDiff < 0.04f) {
-                stepValue += 5*stepValue*(distanceDiff/0.04f);
+        
+        /* Player is moving and is above the "slow" movement condition */
+        else {
+            
+            /* Only add to the horizontal stride progress if the player is moving above the slow speed */
+            if(horizontalInputDirection.magnitude > playerMovementSpeed/2f) {
+                currentHorizontalStride += CalculateStepValue(horizontalInputDirection);
             }
+            /* Let the step timings increase without incrementing the horizontal stride progress */
             else {
-                stepValue += 5*stepValue;
+                Debug.Log("entering slowWalk");
+            }
+            
+            /* Track the directionnal input by adding it to the pastDirections array */
+            pastDirections.Add(horizontalInputDirection);
+            if(pastDirections.Count > lookbackCount) {
+                /* Remove the oldest input if we reached max directions to track */
+                pastDirections.RemoveAt(0);
             }
         }
 
 
 
-
-        /* Add the final stepValue to the current horizontal stride progress */
-        currentHorizontalStride += stepValue;
-
-        /* Update the past directions list by adding the new inputted direction */
-        pastDirections.Add(horizontalInputDirection);
-        if(pastDirections.Count > lookbackCount) {
-            /* Remove the oldest input if we reached max directions to track */
-            pastDirections.RemoveAt(0);
-        }
     }
 
     public float CalculateStepValue(Vector3 horizontalInputDirection) {
         /*
-         * Using a series of set angle values and the user's given direction compared to the average direction,
-         * return a "stepValue" that determines how much the player moved given the input.
-         * If the player's given input goes againts the average direction, it can be seen as moving againts
-         * their current momentum. Moving against your momentum will increase the step value.
-         * 
-         * A given direction with a magnitude of 0 means the player is not moving.
-         */
+         * Compare the input to the average direction produced by pastDirections.
+         * This average will represent the player's current momentum.
+         *
+         * Depending on how different (direction and magnitude) the input and average are,
+         * the distance value to be added to the current horizontal stride will increase.
+         * Moving against momentum (turning, slowing down) requires more effort.
+    	 */
         Vector3 avgDirection = AverageStepDirection();
-        float stepValue;
-        float stepAngleDiff;
+        float avgSpeed = AverageStepSpeed();
+        float stepAngleDiff = Vector3.Angle(avgDirection, horizontalInputDirection);
+        float stepSpeedDiff = Mathf.Abs(horizontalInputDirection.magnitude - avgSpeed);
+        float stepValue = horizontalInputDirection.magnitude;
+        float speedValue = 0;
+        float angleValue = 0;
 
-        /* Get the angle between the player's inputted direction and the average step direction */
-        stepAngleDiff = Vector3.Angle(avgDirection, horizontalInputDirection);
-
-        /* Set the stepValue to be relative to the player's inputted direction's magnitude */
-        stepValue = horizontalInputDirection.magnitude;
-
-        /* If the given input is small (relative to the player's expected speed), do not add to the value */
-        if(horizontalInputDirection.magnitude < 0.04f/2f) {
-            stepValue = 0;
-        }
-
-
-
-        //Debug.Log(stepAngleDiff);
-        /* Change the stepValue relative to the angle difference of the input and average direction */
-        //Track what kind of value change occurs. Steps that have had a lot fo value change will be 
-        //quick ones that have the player seem very agile and quick on their feet, like spinning in a circle.
-        //These steps should sound different, like a quicker step. A vlaue will need to be tracked
-        //so that once the footstep is played it takes into account how much value change has occured
-        /* minAngle marks when an angle difference starts effecting the stepValue */
-        float minAngle = 0;
-        /* maxAngle marks when any increase in angle difference will have no extra change to the stepValue */
+        /* Use the angle difference between the given and the average directions */
+        /* Set key angle values that mark when the angle effects the stepValue */
+        float minAngle = 5;
         float maxAngle = 75;
-        /* Above resetAngle will force a step and reset the pastdirections. Simulate a sharp sudden turn. */
         float resetAngle = 125f;
-        float increaseAmount = 3;
-        float relativeIncrease = 1;
+        float angleIncreaseRatio = 2;
 
-        if(stepAngleDiff < minAngle) {
-            /* Step value remains unchanged */
-        }
+        /* Step value remains uneffected */
+        if(stepAngleDiff < minAngle) { }
+
+        /* Step value increases as the angle difference increases */
         else if(stepAngleDiff < maxAngle) {
-            /* Increase the step value depending on the angleDifference */
-            stepValue += stepValue*increaseAmount*((stepAngleDiff-minAngle) / (maxAngle-minAngle));
-            relativeIncrease += increaseAmount*((stepAngleDiff-minAngle) / (maxAngle-minAngle));
+            angleValue += stepValue*angleIncreaseRatio*((stepAngleDiff-minAngle) / (maxAngle-minAngle));
         }
+
+        /* Step value increases by an amount as if the angle difference is equal to angleMax */
         else if(stepAngleDiff < resetAngle) {
-            /* Increase the step value by a (relatively) set amount */
-            stepValue += stepValue*increaseAmount;
-            relativeIncrease += increaseAmount;
+            angleValue += stepValue*angleIncreaseRatio;
         }
-        else {
-            /* Force a step and reset the tracking and foot timing*/
-            Debug.Log("REDIRECT");
-            currentHorizontalStride = maxHorizontalStride;
-            pastDirections.Clear();
-            ResetFootTiming();
+        
+
+        /* Use the difference between the input speed and the average speed */
+        /* Set key speed values that mark when the speed difference starts effecting the step value */
+        float maxSpeed = playerMovementSpeed/2f;
+        float speedIncreaseRatio = 4;
+
+        /* A speed difference bellow the max will effect the stepValue relative to the difference */
+        if(stepSpeedDiff < maxSpeed) {
+            speedValue += playerMovementSpeed*speedIncreaseRatio*(stepSpeedDiff/maxSpeed);
         }
-        //Debug.Log(relativeIncrease);
-        //Note there is a condition where the avg becomes 0/the player stops moving.
-        //This is difference than having the step angle reach 180. 
-        //when they stop, force a step to occur and maybe reset the previous tracked steps.
+        
+        /* A speed difference above the max will not add any extra value to the stepValue */
+        else{
+            speedValue += playerMovementSpeed*speedIncreaseRatio;
+        }
 
 
-
-
-        //Idea: if the player fully reaches around/past maxAmount, play a footstep and change 
-        //the entire past tracked values to the given new one since 
-        //the player took a quick step to fully change their momentum
-
+        /* Add the extra "distance" from the angle and speed to the stepValue */
+        stepValue += angleValue + speedValue;
 
         return stepValue;
     }
@@ -234,29 +220,32 @@ public class FootstepTracker : MonoBehaviour {
     	 * A step has been made, so send a command to play a footstep sound effect.
     	 * SFX will be applied to the step depending on current variables.
     	 */
-		
-		//print the foot times
-		Debug.Log("---");
-		for(int i = 0; i < timeSinceStep.Length; i++){
-			Debug.Log(timeSinceStep[i]);
-		}
-		Debug.Log("---");
 
-        
+        //print the foot times
+        Debug.Log("---");
+        for(int i = 0; i < timeSinceStep.Length; i++) {
+            Debug.Log(timeSinceStep[i]);
+        }
+        Debug.Log("---");
+
+
         /* Get the amount of time since the next foot played a footstep effect */
         float timing = ResetFootTiming(GetNextFoot());
 
-        /* Play a footstep sound */
+        /* Adjust the FX of the sound using tracked foostep stats.
+         * timing: Controls the playback speed. Short time between steps mean 
+         * 		they are taking quick, short steps. Shorter steps will also 
+         * 		sound quieter and end quicker while longer steps may have a slight echo.
+         * currentVerticalStride: Controls the pitch. Stepping up will gave a higher frequency
+         * 		while stepping down has a lower pitch. Should be slight, but more than the variance.
+         */
         playerSoundsScript.PlayFootstep();
 
+
         /* Reset the current stride distances */
-        currentHorizontalStride = 0;
-        currentVerticalStride = 0;
+        ResetStrideProgress();
     }
     
-    
-    
-
     public void Landing() {
         /*
          * Runs when the player lands from a fall. This will play a specific footstep
@@ -266,10 +255,11 @@ public class FootstepTracker : MonoBehaviour {
         //Play the landing effect
 
         /* Reset the player momentum (current stride and pastDirections) */
-        currentHorizontalStride = 0;
-        currentVerticalStride = 0;
+        ResetStrideProgress();
+        ResetFootTiming();
         pastDirections.Clear();
     }
+
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
 
@@ -294,63 +284,73 @@ public class FootstepTracker : MonoBehaviour {
         return avgDirection;
     }
 
-    public float AverageStepDistance() {
+    public float AverageStepSpeed() {
         /*
-    	 * Get the average step distance using the magnitude of each pastDirections vector.
-         * If the pastDirections array is empty, just return 0.
+    	 * Get the average step speed using the magnitude of each pastDirections vector.
+         * If the pastDirections array is empty, just return 0. If the list is not full, 
+         * assume all other entries have a speed of 0.
     	 */
-        float avgDistance = 0;
+        float avgSpeed = 0;
 
         /* Add the magnitude of all tracked directions */
         foreach(Vector3 dir in pastDirections) {
-            avgDistance += dir.magnitude;
+            avgSpeed += dir.magnitude;
         }
 
         /* Get the average of the magnitudes */
         if(pastDirections.Count > 0) {
-            avgDistance /= pastDirections.Count;
+            avgSpeed /= lookbackCount;
         }
 
-        return avgDistance;
+        return avgSpeed;
     }
-    
-    public int GetNextFoot(){
-    	/*
+
+    public int GetNextFoot() {
+        /*
     	 * Search the foot timing variables and return the index
     	 * to the next foot that will hit the ground (longest time since step)
     	 */
-    	int nextFootRef = 0;
-    
-    	/* Search the array for the "oldest" foot */
-    	for(int i = 1; i < timeSinceStep.Length; i++){
-    		if(timeSinceStep[i] > timeSinceStep[nextFootRef]) {
-    			nextFootRef = i;
-    		}
-    	}
-    	
-    	return nextFootRef;
+        int nextFootRef = 0;
+
+        /* Search the array for the "oldest" foot */
+        for(int i = 1; i < timeSinceStep.Length; i++) {
+            if(timeSinceStep[i] > timeSinceStep[nextFootRef]) {
+                nextFootRef = i;
+            }
+        }
+
+        return nextFootRef;
     }
-    
-    public float ResetFootTiming(int footIndex){
-    	/* 
+
+    public float ResetFootTiming(int footIndex) {
+        /* 
     	 * With the given reference to a foot's last play time,
     	 * reset it's timing back to 0 and return what it's final time was.
     	 */
-    	float footFinalTime = timeSinceStep[footIndex];
+        float footFinalTime = timeSinceStep[footIndex];
 
         timeSinceStep[footIndex] = 0;
 
         return footFinalTime;
     }
-    
-    public void ResetFootTiming(){
-    	/*
+
+    public void ResetFootTiming() {
+        /*
     	 * Reset the timings of each footstep.
     	 * Runs when the player is immobile or lands.
     	 */
-    	
-    	for(int i = 0; i < timeSinceStep.Length; i++){
-    		timeSinceStep[i] = 0;
-    	}
+
+        for(int i = 0; i < timeSinceStep.Length; i++) {
+            timeSinceStep[i] = 0;
+        }
+    }
+
+    public void ResetStrideProgress() {
+        /*
+    	 * Reset the player's current stride progress back to 0
+    	 */
+
+        currentHorizontalStride = 0;
+        currentVerticalStride = 0;
     }
 }
