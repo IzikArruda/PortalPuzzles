@@ -49,17 +49,19 @@ public class PlayerSounds : MonoBehaviour {
     public float fadeRate = 0.01f;
     /* limit the amout of footstep effects from playing at once by limiting stepSources size */
     public int maxSimultaniousStepEffects;
-    
 
-	/* --- Misc ------------------- */
-	/* 0: Nothing. -x: Fade out the music. +x: Fade in the music. Relative to fadeRate. */
-	private float musicFade = 0;
-	private float fallingFade = 0;
-	private float[] stepFade;
-	private float[] stepFadeDelay;
+
+    /* --- Misc ------------------- */
     /* Track the index of the previously used clip to prevent repeated plays */
     private int lastStepClipIndex;
-	private int lastMusicClipIndex;
+    private int lastMusicClipIndex;
+    /* 0: Nothing. -x: Fade out the music. +x: Fade in the music. Relative to fadeRate. */
+    private float musicFade = 0;
+	private float fallingFade = 0;
+    /* The stepFade is set by the script as it varies between sources */
+    private float[] stepFade;
+    /* How many samples into the clip a footstep effect needs to be before the fade begins */
+	private int[] stepFadeDelay;
 	
 
     /* ----------- Built-in Unity Functions ------------------------------------------------------------- */
@@ -81,10 +83,10 @@ public class PlayerSounds : MonoBehaviour {
 		
 		/* Initialize the fade values for the steps */
 		stepFade = new float[stepSources.Length];
-		stepFadeDelay = new float[stepSources.Length];
+		stepFadeDelay = new int[stepSources.Length];
 		for(int i = 0; i < stepSources.Length; i++){
 			stepFade[i] = 0f;
-			stepFadeDelay[i] = 0f;
+			stepFadeDelay[i] = 0;
 		}
 		
         /* Apply the maxVolume to each audioSource */
@@ -101,7 +103,9 @@ public class PlayerSounds : MonoBehaviour {
 		/* Adjust the volume of audio sources if needed */
 		/* Apply any fade effects for the frame */
 		ApplyFade();
-	}
+        
+
+    }
 	
 	
     /* ----------- Play Sounds Functions ------------------------------------------------------------- */
@@ -142,13 +146,40 @@ public class PlayerSounds : MonoBehaviour {
 		
 			/* Set the volume of the clip to be relative to the maxVolume and the given ratio */
 			source.volume = maxVolume*1;
-			
-			/* Play the clip */
-			source.clip = stepClips[stepEffectIndex];
+            
+            /* Short steps will begin fading away much earlier than longer steps */
+            float fadeMin = 0.6f;
+            float fadeMax = 0.9f;
+            if(lastStepTime < fadeMin) {
+                stepFadeDelay[stepEffectIndex] = stepClips[stepEffectIndex].samples/8;
+            }
+            else if(lastStepTime < fadeMax) {
+                stepFadeDelay[stepEffectIndex] = stepClips[stepEffectIndex].samples/4;
+            }
+            else {
+                stepFadeDelay[stepEffectIndex] = stepClips[stepEffectIndex].samples;
+            }
+            
+            /* The time between the steps directly effects the volume of the step */
+            float minTime = 0.4f;
+            float maxTime = 1.1f;
+            float minVolume = 0.3f;
+            if(lastStepTime < minTime) {
+                source.volume = maxVolume*minVolume;
+            }
+            else if(lastStepTime < maxTime) {
+                source.volume = maxVolume*minVolume + maxVolume*(maxVolume - minVolume)*RatioWithinRange(minTime, maxTime, lastStepTime);
+            }
+            else {
+                source.volume  = maxVolume*1;
+            }
+            
+            /* Play the clip */
+            source.clip = stepClips[stepEffectIndex];
 			source.Play();
 			lastStepClipIndex = stepEffectIndex;
-			
-			
+
+            Debug.Log(lastStepTime);
 		}
 	}
 	
@@ -221,12 +252,16 @@ public class PlayerSounds : MonoBehaviour {
 		ApplyFade(ref musicFade, musicSource);
 		ApplyFade(ref fallingFade, fallingSource);
 		
+        /* Check if a fade effect needs to be applied to any of the footstep sources */
 		for(int i = 0; i < stepSources.Length; i++){
-			//Once the step reaches past the stepFadeDelay time into it's audio clip, start fading out
-			//if(stepSource[i].progress >= stepFadeDelay[i]){
-			//	stepFade[i] = -10;
-			//}
-			ApplyFade(ref stepFade[i], stepSources[i]);
+            if(stepSources[i].isPlaying) {
+
+                /* Check if the playing source is past the stepDelay */
+                if(stepSources[i].timeSamples >= stepFadeDelay[i]) {
+                    stepFade[i] = -10;
+                }
+                ApplyFade(ref stepFade[i], stepSources[i]);
+            }
 		}
 	}
 
@@ -251,6 +286,7 @@ public class PlayerSounds : MonoBehaviour {
 			}
 		}
     }
+
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
 
@@ -318,5 +354,28 @@ public class PlayerSounds : MonoBehaviour {
         /* Add the audioSource and any required filters */
         source = container.AddComponent<AudioSource>();
         filter = container.AddComponent<AudioReverbFilter>();
-	}
+        filter.enabled = false;
+
+    }
+
+    float RatioWithinRange(float min, float max, float value) {
+        /*
+         * Return the ratio of the value between min and max. Returns 0 if
+         * value is equal to or less than min, 1 if value is more or equal to max.
+         * 0.5 if it is equally between both min and max.
+         */
+        float ratio;
+
+        if(value < min) {
+            ratio = 0;
+        }
+        else if(value > max) {
+            ratio = 1;
+        }
+        else {
+            ratio = (value - min)/(max - min);
+        }
+
+        return ratio;
+    }
 }

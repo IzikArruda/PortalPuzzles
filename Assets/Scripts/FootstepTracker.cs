@@ -131,7 +131,7 @@ public class FootstepTracker : MonoBehaviour {
             }
             /* Let the step timings increase without incrementing the horizontal stride progress */
             else {
-                Debug.Log("entering slowWalk");
+
             }
             
             /* Track the directionnal input by adding it to the pastDirections array */
@@ -220,15 +220,7 @@ public class FootstepTracker : MonoBehaviour {
     	 * A step has been made, so send a command to play a footstep sound effect.
     	 * SFX will be applied to the step depending on current variables.
     	 */
-
-        //print the foot times
-        Debug.Log("---");
-        for(int i = 0; i < timeSinceStep.Length; i++) {
-            Debug.Log(timeSinceStep[i]);
-        }
-        Debug.Log("---");
-
-
+         
         /* Get the amount of time since the next foot played a footstep effect */
         float timing = ResetFootTiming(GetNextFoot());
 
