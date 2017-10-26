@@ -1627,7 +1627,8 @@ MonoBehaviour:
   fadeRate: 0.01
   stepClips:
   - {fileID: 8300000, guid: c8696334e981b0142a5955dfc5d60a92, type: 3}
-  maxSimultaniousStepEffects: 1
+  audioContainers: []
+  maxSimultaniousStepEffects: 5
   musicClips:
   - {fileID: 8300000, guid: 38b260ac2faad944caf6d4bd216c8fe7, type: 3}
   fallingClip: {fileID: 0}
@@ -1645,8 +1646,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxHorizontalStride: 0
   maxVerticalStride: 0
-  horiStrideMod: 0
-  vertStrideMod: 0
+  horiStrideMod: 40
+  vertStrideMod: 0.9
   lookbackCount: 10
   timeSinceStep: []
 --- !u!4 &386859432 stripped

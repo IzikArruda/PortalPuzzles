@@ -10,7 +10,10 @@ public class PlayerSounds : MonoBehaviour {
     /* The main gameObject that will hold all audioSources.
      * This will change if the position of the audioSource effects it's sound */
     public GameObject mainSourceContainer;
+
+
     
+
     /* --- Clips */
     
     /* Sources */
@@ -37,9 +40,11 @@ public class PlayerSounds : MonoBehaviour {
 	/* --- Footstep Variables ------------------- */
 	/* The sound clips and audio sources that will be used for footsteps */
 	public AudioClip[] stepClips;
-    private AudioSource[] stepSources; 
-	/* limit the amout of footstep effects from playing at once by limiting stepSources size */
-	public int maxSimultaniousStepEffects;
+    private AudioSource[] stepSources;     
+    /* Each audio source needs to have it's own container to be able to handle the audio effects */
+    public GameObject[] audioContainers;
+    /* limit the amout of footstep effects from playing at once by limiting stepSources size */
+    public int maxSimultaniousStepEffects;
     /* The index of the last played footstep effect */
     private int lastStepClipIndex;
 	
@@ -79,14 +84,20 @@ public class PlayerSounds : MonoBehaviour {
         lastStepClipIndex = stepClips.Length;
         lastMusicClipIndex = musicClips.Length;
 
-        /* Create the appropriate amount of audioSources */
+        /* Create the appropriate amount of audioSources and put them in their corresponding containers*/
+
         stepSources = new AudioSource[maxSimultaniousStepEffects];
+        audioContainers = new GameObject[maxSimultaniousStepEffects];
         for(int i = 0; i < stepSources.Length; i++){
-        	stepSources[i] = mainSourceContainer.AddComponent<AudioSource>();
+            audioContainers[i] = new GameObject();
+            audioContainers[i].transform.parent = mainSourceContainer.transform;
+            stepSources[i] = audioContainers[i].AddComponent<AudioSource>();
+            audioContainers[i].AddComponent<AudioReverbFilter>();
         }
 		musicSource = mainSourceContainer.AddComponent<AudioSource>();
         fallingSource = mainSourceContainer.AddComponent<AudioSource>();
         landingSource = mainSourceContainer.AddComponent<AudioSource>();
+
         
         /* Apply the maxVolume to each audioSource */
         ApplyMaxVolume();
