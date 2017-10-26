@@ -687,7 +687,7 @@ public class CustomPlayerController : MonoBehaviour {
 			if(newState == (int) PlayerStates.FastFalling){
 
                 /*... Will start playing the fastfalling audio */
-                playerSoundsScript.EnterFastFall();
+                playerSoundsScript.PlayFastFall();
 
                 /*... Will start a set of post processing effects. */
                 cameraEffectsScript.StartEffectVignette();

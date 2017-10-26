@@ -239,7 +239,7 @@ public class FootstepTracker : MonoBehaviour {
          * currentVerticalStride: Controls the pitch. Stepping up will gave a higher frequency
          * 		while stepping down has a lower pitch. Should be slight, but more than the variance.
          */
-        playerSoundsScript.PlayFootstep();
+        playerSoundsScript.PlayFootstep(timing, currentVerticalStride);
 
 
         /* Reset the current stride distances */
