@@ -20,8 +20,9 @@ public class PlayerSounds : MonoBehaviour {
 	
 	
 	/* --- Audio Sources ------------------- */
-	private AudioSource[] stepSources;    
-	private AudioSource musicSource;
+    private AudioSource[] upperStepSource;
+    private AudioSource[] lowerStepSource;
+    private AudioSource musicSource;
 	private AudioSource landingSource;
 	private AudioSource fallingSource;
 	
@@ -31,11 +32,12 @@ public class PlayerSounds : MonoBehaviour {
 	private AudioReverbFilter musicFilter;
 	private AudioReverbFilter landingFilter;     
 	private AudioReverbFilter fallingFilter;
-	
-	
-	/* --- Audio Clips ------------------- */
-	public AudioClip[] stepClips;
-	public AudioClip[] musicClips;
+
+
+    /* --- Audio Clips ------------------- */
+    public AudioClip[] upperStepClips;
+    public AudioClip[] lowerStepClips;
+    public AudioClip[] musicClips;
 	public AudioClip landingClip;
 	//fastfall audio : bus and jet engine?
 	public AudioClip fallingClip;
@@ -70,29 +72,36 @@ public class PlayerSounds : MonoBehaviour {
         /*
 		 * Initialize the audio objects and assign variables to their default
 		 */
+
+        int stepArrayLength = Mathf.Min(upperStepClips.Length, lowerStepClips.Length);
+        if(upperStepClips.Length != lowerStepClips.Length) {
+            Debug.Log("Warning: Footstep audio clip count does not match");
+        }
          
         /* Set the clip index trackers. No matter what value they are, the final clip will always get culled at first */
-        lastStepClipIndex = stepClips.Length;
+        lastStepClipIndex = upperStepClips.Length;
         lastMusicClipIndex = musicClips.Length;
 
         /* Create the appropriate amount of audioSources and put them in their corresponding containers*/
-		InitializeAudioArray(ref stepSources, ref stepContainers, ref stepFilters, maxSimultaniousStepEffects, "Footsteps");
+        InitializeStepArray(ref upperStepSource, ref lowerStepSource, ref stepContainers, ref stepFilters, upperStepClips.Length);
 		InitializeAudioObject(ref musicSource, ref musicContainer, ref musicFilter, "Music");
 		InitializeAudioObject(ref fallingSource, ref fallingContainer, ref fallingFilter, "Falling");
 		InitializeAudioObject(ref landingSource, ref landingContainer, ref landingFilter, "Landing");
 		
 		/* Initialize the fade values for the steps */
-		stepFade = new float[stepSources.Length];
-		stepFadeDelay = new int[stepSources.Length];
-		for(int i = 0; i < stepSources.Length; i++){
+		stepFade = new float[stepArrayLength];
+		stepFadeDelay = new int[stepArrayLength];
+		for(int i = 0; i < stepArrayLength; i++){
 			stepFade[i] = 0f;
 			stepFadeDelay[i] = 0;
 		}
 		
         /* Apply the maxVolume to each audioSource */
-        for(int i = 0; i < stepSources.Length; i++){
-            stepSources[i].volume = maxVolume;
-		}
+        for(int i = 0; i < stepArrayLength; i++){
+            upperStepSource[i].volume = maxVolume;
+            lowerStepSource[i].volume = maxVolume;
+
+        }
 		musicSource.volume = maxVolume;
 		fallingSource.volume = maxVolume;
 		landingSource.volume = maxVolume;
@@ -106,84 +115,90 @@ public class PlayerSounds : MonoBehaviour {
         
 
     }
-	
-	
+
+
     /* ----------- Play Sounds Functions ------------------------------------------------------------- */
-	
-	public void PlayFootstep(float lastStepTime, float stepHeight){
-		/*
+
+    public void PlayFootstep(float lastStepTime, float stepHeight) {
+        /*
 		 * Play a sound effect of a footstep. The given parameters will apply 
 		 * effects to the clip, such as pitch shifting or volume control.
-		 * 
-		 * lastStepTime is the amount of time between the steps. This controls
-		 * the duration of the clip where steps with a short time will play 
-		 * quick clips that get cut off early through a fade effect. The longer
-		 * steps will have an echo effect along with a higher volume.
 		 *
-		 * stepHeight will change the tone of the footstep. stepheight is directly
-		 * proportional to the height change the player underwent after taking a step.
-		 * Stepping up will play a "higher" sound while stepping down will play a "low" sound.
-		 * If tone/pitch cant be implemented, we can use two clips of the same step -
-		 * one high and one low. Play them at the same time and adjust their 
-		 * individual volumes to control the overall sound.
+		 * lastStepTime is the amount of time between the steps. This controls
+		 * the volume and the length of the footstep effect. A longer step will 
+		 * be louder and spend more time playing an echo.
+		 * 
+		.* stepHeight controls the tone of the step. This is done by having
+		 * each footstep sound effect split the highs and lows into sepperate clips.
+		 * By controlling the volume of each part, we can systematically control the tone.
 		 */
-		AudioSource source = null;
-		int stepEffectIndex;
-	
-		/* Pick a random footstep effect if theres more than 1 to choose from */
-		stepEffectIndex = RandomClip(stepClips, lastStepClipIndex);
-		
-		/* Search the footstep audioSources for one not currently in use */
-		source = UnusedSoundSource(stepSources);
-		
-		
-		if(source == null){
-			Debug.Log("Footstep effect cannot play - no available audio sources");
-		}
-		
-		/* Play the footstep effect using the found audio source and apply the effects */
-		else{
-		
-			/* Set the volume of the clip to be relative to the maxVolume and the given ratio */
-			source.volume = maxVolume*1;
-            
+        int sourceIndex = UnusedSoundSource(upperStepSource);
+        int stepEffectIndex = RandomClip(upperStepClips, lastStepClipIndex);
+
+        /* Play the footstep effect using the found audio source and clip */
+        if(sourceIndex != -1) {
+
+
             /* Short steps will begin fading away much earlier than longer steps */
             float fadeMin = 0.6f;
             float fadeMax = 0.9f;
+            int clipSampleSize = upperStepClips[stepEffectIndex].samples;
             if(lastStepTime < fadeMin) {
-                stepFadeDelay[stepEffectIndex] = stepClips[stepEffectIndex].samples/8;
+                stepFadeDelay[stepEffectIndex] = clipSampleSize/8;
             }
             else if(lastStepTime < fadeMax) {
-                stepFadeDelay[stepEffectIndex] = stepClips[stepEffectIndex].samples/4;
+                stepFadeDelay[stepEffectIndex] = clipSampleSize/4;
             }
             else {
-                stepFadeDelay[stepEffectIndex] = stepClips[stepEffectIndex].samples;
+                stepFadeDelay[stepEffectIndex] = clipSampleSize;
             }
-            
+
+
             /* The time between the steps directly effects the volume of the step */
             float minTime = 0.4f;
             float maxTime = 1.1f;
-            float minVolume = 0.3f;
+            float maxVolumeLoss = 0.7f;
+            float volumePower = maxVolume*(1 - maxVolumeLoss);
             if(lastStepTime < minTime) {
-                source.volume = maxVolume*minVolume;
+                volumePower += maxVolume*0;
             }
             else if(lastStepTime < maxTime) {
-                source.volume = maxVolume*minVolume + maxVolume*(maxVolume - minVolume)*RatioWithinRange(minTime, maxTime, lastStepTime);
+                volumePower += maxVolume*maxVolumeLoss*RatioWithinRange(minTime, maxTime, lastStepTime);
             }
             else {
-                source.volume  = maxVolume*1;
+                volumePower  += maxVolume*maxVolumeLoss;
             }
-            
-            /* Play the clip */
-            source.clip = stepClips[stepEffectIndex];
-			source.Play();
-			lastStepClipIndex = stepEffectIndex;
 
+
+            //Splt the volue across the step's multiple sources.
+            //if stepHeight is 0, the split is 50/50.Leave it at only that for jow
+            float volumeRatio = 0.5f;
+
+
+
+            AudioSource upperSource = upperStepSource[sourceIndex];
+            AudioSource lowerSource = lowerStepSource[sourceIndex];
+            /* Set the volume of the sources using the power and ratio */
+            upperSource.volume = volumePower*volumeRatio;
+            lowerSource.volume = volumePower*(1 - volumeRatio);
+
+            /* Set the proper clips for the sources */
+            upperSource.clip = upperStepClips[stepEffectIndex];
+            lowerSource.clip = lowerStepClips[stepEffectIndex];
+
+            /* Play the full footstep sound clip with the added audio effects */
+            upperSource.Play();
+            lowerSource.Play();
+            lastStepClipIndex = stepEffectIndex;
             Debug.Log(lastStepTime);
-		}
-	}
-	
-	public void PlayMusic(){
+        }
+
+        else {
+            Debug.Log("Footstep effect cannot play - no available audio sources");
+        }
+    }
+
+    public void PlayMusic(){
 		/*
 		 * Take a random song clip and play it for the game's music
 		 */
@@ -234,15 +249,6 @@ public class PlayerSounds : MonoBehaviour {
 	
 	/* ----------- Audio Mixing Functions ------------------------------------------------------------- */
 	
-	void ApplyMaxVolume(){
-		/*
-		 * Apply the max volume to all audio sources.
-		 * Should only ever be run at startup.
-		 */
-		
-		
-	}
-	
 	void ApplyFade(){
 		/*
 		 * Change the volume of an audio source, simulating a fade effect on the clip.
@@ -253,14 +259,16 @@ public class PlayerSounds : MonoBehaviour {
 		ApplyFade(ref fallingFade, fallingSource);
 		
         /* Check if a fade effect needs to be applied to any of the footstep sources */
-		for(int i = 0; i < stepSources.Length; i++){
-            if(stepSources[i].isPlaying) {
+		for(int i = 0; i < upperStepSource.Length; i++){
+            if(upperStepSource[i].isPlaying) {
 
                 /* Check if the playing source is past the stepDelay */
-                if(stepSources[i].timeSamples >= stepFadeDelay[i]) {
+                if(upperStepSource[i].timeSamples >= stepFadeDelay[i]) {
                     stepFade[i] = -10;
                 }
-                ApplyFade(ref stepFade[i], stepSources[i]);
+
+                ApplyFade(ref stepFade[i], upperStepSource[i]);
+                ApplyFade(ref stepFade[i], lowerStepSource[i]);
             }
 		}
 	}
@@ -312,23 +320,50 @@ public class PlayerSounds : MonoBehaviour {
 		return randomIndex;
 	}
 	
-	public AudioSource UnusedSoundSource(AudioSource[] sourceArray){
+	public int UnusedSoundSource(AudioSource[] sourceArray){
         /*
 		 * Search the given array of soundSources and return the first one
 		 * that is not currently playing a sound. Return null if none are free.
 		 */
-        AudioSource freeSource = null;
+        int freeSource = -1;
 		
-		for(int i = 0; (i < sourceArray.Length && freeSource == null); i++){
+		for(int i = 0; (i < sourceArray.Length && freeSource == -1); i++){
 			if(sourceArray[i].isPlaying == false){
-				freeSource = sourceArray[i];
+				freeSource = i;
 			}
 		}
 		
 		return freeSource;
 	}
 	
-	void InitializeAudioArray(ref AudioSource[] sourceArray, ref GameObject[] containerArray, ref AudioReverbFilter[] filterArray, int sourceSize, string name){
+
+
+
+
+    void InitializeStepArray(ref AudioSource[] upperSource, ref AudioSource[] lowerSource, 
+            ref GameObject[] containerArray, ref AudioReverbFilter[] filterArray, int sourceSize) {
+        /*
+         * Create the audio sources that play the footsteps and the containers that hold them.
+         */
+
+        upperSource = new AudioSource[sourceSize];
+        lowerSource = new AudioSource[sourceSize];
+        containerArray = new GameObject[sourceSize];
+        filterArray = new AudioReverbFilter[sourceSize];
+        for(int i = 0; i < sourceSize; i++) {
+            containerArray[i] = new GameObject();
+            containerArray[i].transform.parent = sourceContainer.transform;
+            containerArray[i].name = name;
+
+            upperSource[i] = containerArray[i].AddComponent<AudioSource>();
+            lowerSource[i] = containerArray[i].AddComponent<AudioSource>();
+            filterArray[i] = containerArray[i].AddComponent<AudioReverbFilter>();
+            filterArray[i].enabled = false;
+        }
+    }
+
+
+    void InitializeAudioArray(ref AudioSource[] sourceArray, ref GameObject[] containerArray, ref AudioReverbFilter[] filterArray, int sourceSize, string name){
 		/*
 		 * Initialize the given arrays with audioSources and their containers
 		 */
