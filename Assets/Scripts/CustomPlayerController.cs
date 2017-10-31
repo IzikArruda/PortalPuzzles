@@ -646,6 +646,13 @@ public class CustomPlayerController : MonoBehaviour {
          * Change the player's current state to the given newState. Run certain lines if
          * certain states change into other specific states (fast falling > standing)
          */
+    
+        /* Going from airborn to grounded... */
+        if(StateIsAirborn(state) && !StateIsAirborn(newState)) {
+            /*... Will inform the footstep tracker of the landing. */
+            playerStepTracker.PlayLanding(-currentYVelocity/maxYVelocity);
+        }
+
 
         /* Dont change anything if the player is already in the new state */
         if(state != newState) {
@@ -658,8 +665,6 @@ public class CustomPlayerController : MonoBehaviour {
 					/*... Will lower the camera offset relative to the falling speed */
 					cameraYOffset = -(headHeight + playerBodyLength/2f)*RatioWithinRange(0, (maxYVelocity), -currentYVelocity);
 
-                    /*... Will inform the footstep tracker of the landing. */
-                    playerStepTracker.Landing();
                 }
 				
 				/*... When leaving the FastFalling state... */
@@ -668,9 +673,6 @@ public class CustomPlayerController : MonoBehaviour {
 					Debug.Log("HARD FALL");
                 	newState = (int) PlayerStates.Landing;
                 	cameraYOffset = 0;
-
-                    /*... Plays a fastfall landing audio clip */
-                    playerSoundsScript.PlayLanding();
                 }
 			}
 			
@@ -979,33 +981,37 @@ public class CustomPlayerController : MonoBehaviour {
     
     bool PlayerIsGrounded(){
     	/*
-    	 * Return true if the player is in a grounded state
-    	 * (standing, landing)
+    	 * Return true if the player is in a grounded state with theor legs linked to an object
     	 */
-    	bool isGrounded = false;
     
-    	if(state == (int) PlayerStates.Standing || state == (int) PlayerStates.Landing) {
-    		isGrounded = true;
-    	}
-    
-    	return isGrounded;
+    	return !StateIsAirborn(state);
     }
     
     bool PlayerIsAirborn(){
     	/*
-    	 * Return true if the player is in a freefall state/legs do not connect
-    	 * (falling, fastFalling)
+    	 * Return true if the player is in a freefall state/legs do not connect to an object
+    	 */
+
+    	return StateIsAirborn(state);
+    }
+    
+    bool StateIsAirborn(int givenState){
+    	/* 
+    	 * Return true if the given state is airborn. So far, a state 
+    	 * can only either be airborn or grounded (not airborn).
     	 */
     	bool isFalling = false;
     
-    	if(state == (int) PlayerStates.Falling || state == (int) PlayerStates.FastFalling){
+    	if(givenState == (int) PlayerStates.Falling || givenState == (int) PlayerStates.FastFalling){
     		isFalling = true;
     	}
     
     	return isFalling;
     }
+    
+    
 
-    float RatioWithinRange(float min, float max, float value) {
+    public static float RatioWithinRange(float min, float max, float value) {
         /*
          * Return the ratio of the value between min and max. Returns 0 if
          * value is equal to or less than min, 1 if value is more or equal to max.

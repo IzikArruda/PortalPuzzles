@@ -17,18 +17,19 @@ public class FootstepTracker : MonoBehaviour {
 
     /* --- Stride Values ------------------- */
     /* The current distance the player has moved since the last footstep effect was played */
-    private float currentHorizontalStride;
-    private float currentVerticalStride;
+    private float horiStride;
+    private float vertStride;
     /* How far the player can move before a footstep sound should play. */
-    public float maxHorizontalStride;
-    public float maxVerticalStride;
+    public float maxHoriStride;
+    public float maxVertStride;
 
     /* --- User Inputted Values ------------------- */
     /* Modifies the required horizontal distance to play a footstep. Relative to playerMovementSpeed */
     public float horiStrideMod = 40;
     /* Modifies the required vertical distance to play a footstep. Relative to playerLegLength */
     public float vertStrideMod = 0.9f;
-
+	/* How many "feet" the player has. Controls the outputted timeSinceStep */
+	public int footCount = 2;
 
     /* --- Footstep Tracker ------------------- */
     /* How many past directions are tracked */
@@ -44,7 +45,7 @@ public class FootstepTracker : MonoBehaviour {
     public void Start() {
 
         /* Setup the step times array to track each foot's timing */
-        timeSinceStep = new float[2];
+        timeSinceStep = new float[footCount];
         ResetFootTiming();
     }
     
@@ -55,8 +56,8 @@ public class FootstepTracker : MonoBehaviour {
          */
         playerMovementSpeed = movementSpeed;
         playerLegLength = legLength;
-        maxHorizontalStride = playerMovementSpeed*horiStrideMod;
-        maxVerticalStride = playerLegLength*vertStrideMod;
+        maxHoriStride = horiStrideMod*playerMovementSpeed;
+        maxVertStride = vertStrideMod*playerLegLength;
     }
 
     public void SetSoundsScript(PlayerSounds givenSoundsScript) {
@@ -75,8 +76,6 @@ public class FootstepTracker : MonoBehaviour {
          * Check the player's current stride values to determine if a footstep sound effect should play.
          * This is run everytime the player's Update function runs while in a grounded state.
     	 */
-        //Draw a ray of the avg direction
-        Debug.DrawRay(transform.position, AverageStepDirection()*10, Color.red);
 
         /* Update the footstep timing values */
         for(int i = 0; i < timeSinceStep.Length; i++) {
@@ -84,7 +83,7 @@ public class FootstepTracker : MonoBehaviour {
         }
 
         /* Check whether a footstep sound effect should be played by comparing the current stride progress */
-        if(Mathf.Abs(currentVerticalStride) >= maxVerticalStride || Mathf.Abs(currentHorizontalStride) >= maxHorizontalStride) {
+        if(Mathf.Abs(vertStride) >= maxVertStride || Mathf.Abs(horiStride) >= maxHoriStride) {
             PlayStep();
         }
     }
@@ -127,7 +126,7 @@ public class FootstepTracker : MonoBehaviour {
             
             /* Only add to the horizontal stride progress if the player is moving above the slow speed */
             if(horizontalInputDirection.magnitude > playerMovementSpeed/2f) {
-                currentHorizontalStride += CalculateStepValue(horizontalInputDirection);
+                horiStride += CalculateStepValue(horizontalInputDirection);
             }
             /* Let the step timings increase without incrementing the horizontal stride progress */
             else {
@@ -212,8 +211,11 @@ public class FootstepTracker : MonoBehaviour {
     	 * Add the given distance to the current vertical stride distance
     	 */
 
-        currentVerticalStride += verticalDistance;
+        vertStride += verticalDistance;
     }
+
+
+    /* ----------- Play Sound Functions ------------------------------------------------------------- */
 
     public void PlayStep() {
         /*
@@ -224,33 +226,62 @@ public class FootstepTracker : MonoBehaviour {
         /* Get the amount of time since the next foot played a footstep effect */
         float timing = ResetFootTiming(GetNextFoot());
 
-        /* Adjust the FX of the sound using tracked foostep stats.
-         * timing: Controls the playback speed. Short time between steps mean 
-         * 		they are taking quick, short steps. Shorter steps will also 
-         * 		sound quieter and end quicker while longer steps may have a slight echo.
-         * currentVerticalStride: Controls the pitch. Stepping up will gave a higher frequency
-         * 		while stepping down has a lower pitch. Should be slight, but more than the variance.
-         */
-        playerSoundsScript.PlayFootstep(timing, currentVerticalStride);
+        /* Adjust the FX of the sound using tracked foostep stats */
+        playerSoundsScript.PlayFootstep(timing, vertStride);
 
 
         /* Reset the current stride distances */
         ResetStrideProgress();
     }
     
-    public void Landing() {
+    public void PlayLanding(float fallingSpeedRatio) {
         /*
-         * Runs when the player lands from a fall. This will play a specific footstep
-         * effect used to landing and it will reset the current momentum.
+         * Runs when the player enters a grounded state from an airborn state.
+         * Plays a landing sound effect chosen by how fast the player was falling as the landed.
+         * 
+         * The given value is the ratio of the players falling speed to their
+		 * given terminal velocity. Therefore the given float will only ever
+         * go above 1 if the player is in the fastFall state.
          */
-
-        //Play the landing effect
+         float minSpeedRatio = 0.2f;
+         
+		/* If the landing was soft enough, simply play two footsteps, one with a delay */
+		if(fallingSpeedRatio < minSpeedRatio) {
+        	//Play two footsteps, one delayed
+        	playerSoundsScript.PlayFootstep(0, 0, 0, 0);
+        	playerSoundsScript.PlayFootstep(0, 0, 0, 0);
+            Debug.Log("Play soft landing");
+        }
+        
+        /* Alter the landing clip relative to how hard the landig was */
+		else if(fallingSpeedRatio <= 1){
+            //The given value is echo values delay and decay
+            playerSoundsScript.PlayLanding(0, 0);
+            Debug.Log("Play landing");
+        }
+		
+		/* Falling above the given max falling speed will play a hard landing sound */
+		else{
+			playerSoundsScript.PlayHardLanding();
+            Debug.Log("Play hard landing");
+        }
+		
 
         /* Reset the player momentum (current stride and pastDirections) */
         ResetStrideProgress();
         ResetFootTiming();
         pastDirections.Clear();
     }
+
+	public void PlayJump(){
+		/*
+		 * Runs when the player undergoes a jump. Play the sound
+		 * of footsteps, both short and high, one with a small delay.
+		 */
+		
+		playerSoundsScript.PlayFootstep(0, 0, 0, 0);
+        playerSoundsScript.PlayFootstep(0, 0, 0, 0);
+	}
 
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
@@ -342,7 +373,7 @@ public class FootstepTracker : MonoBehaviour {
     	 * Reset the player's current stride progress back to 0
     	 */
 
-        currentHorizontalStride = 0;
-        currentVerticalStride = 0;
+        horiStride = 0;
+        vertStride = 0;
     }
 }

@@ -115,9 +115,9 @@ public class PlayerSounds : MonoBehaviour {
 
     public void PlayFootstep(float lastStepTime, float stepHeight) {
         /*
-		 * Play a sound effect of a footstep. The given parameters will apply 
-		 * effects to the clip, such as pitch shifting or volume control.
-		 *
+         * Use the given values to derive the required parameters 
+         * to properly send a request to play a footstep.
+         *
 		 * lastStepTime is the amount of time between the steps. This controls
 		 * the volume and the length of the footstep effect. A longer step will 
 		 * be louder and spend more time playing an echo.
@@ -128,80 +128,101 @@ public class PlayerSounds : MonoBehaviour {
 		 */
         int sourceIndex = UnusedSoundSource(upperStepSource);
         int stepEffectIndex = RandomClip(stepClips, lastStepClipIndex);
+		float volumeRatio;
+		float footstepToneRatio;
+		float sampleRatio;
+
+		/* VolumePowerRatio meassures how loud the footstep effect will be */
+		float minTime = 0.4f;
+        float maxTime = 1.1f;
+        float maxVolumeLoss = 0.7f;
+        volumeRatio = 1 - maxVolumeLoss;
+        if(lastStepTime < minTime) {
+            volumeRatio += 0;
+        }
+        else if(lastStepTime < maxTime) {
+            volumeRatio += maxVolumeLoss*CustomPlayerController.RatioWithinRange(minTime, maxTime, lastStepTime);
+        }
+        else {
+            volumeRatio += maxVolumeLoss;
+        }
+        
+        /* footstepToneRatio controls the pitch of the step. Higher value = higher tone */
+        float minHeight = 0.1f;
+        float maxHeight = 0.5f;
+        float maxRatio = 0.25f;
+        footstepToneRatio = 0.5f;
+        if(Mathf.Abs(stepHeight) < minHeight) {
+        	/* Keep the ratio on it's default */
+        }
+        else if(Mathf.Abs(stepHeight) < maxHeight) {
+            /* Increase the ratio as the steHeight Increases */
+            footstepToneRatio += maxRatio*CustomPlayerController.RatioWithinRange(minHeight, maxHeight, Mathf.Abs(stepHeight))*Mathf.Sign(stepHeight);
+        }
+        else {
+        	/* Ratio is at it's max difference */
+            footstepToneRatio += maxRatio*Mathf.Sign(stepHeight);
+        }
+        
+	 	/* sampleRatio inidactes how far into the clip the fade effect will begin */
+        float fadeMin = 0.6f;
+        float fadeMax = 0.9f;
+        sampleRatio = 1;
+        if(lastStepTime < fadeMin) {
+            sampleRatio = 1f/8f;
+        }
+        else if(lastStepTime < fadeMax) {
+            sampleRatio = 1f/4f;
+        }
+        else {
+            sampleRatio = 1;
+        }
+        
+        /* Send a request to play a footstep with the calculated parameters */
+        PlayFootstep(volumeRatio, footstepToneRatio, sampleRatio, 0);
+        Debug.Log(lastStepTime);
+    }
+
+    public void PlayFootstep(float volumeRatio, float toneRatio, float fadeDelayRatio, float playDelay) {
+        /*
+         *  Play a sound effect of a footstep. The given parameters will apply 
+		 * effects to the clip, such as pitch shifting, volume and delay.
+         */
+         
+        /* Get the index of a free audioSource to use */
+        int sourceIndex = UnusedSoundSource(upperStepSource);
+        int clipIndex = RandomClip(stepClips, lastStepClipIndex);
 
         /* Play the footstep effect using the found audio source and clip */
-        if(sourceIndex != -1) {
-
-            /* Short steps will begin fading away much earlier than longer steps */
-            int clipSampleSize = stepClips[stepEffectIndex].samples;
-            float fadeMin = 0.6f;
-            float fadeMax = 0.9f;
-            if(lastStepTime < fadeMin) {
-                stepFadeDelay[stepEffectIndex] = clipSampleSize/8;
-            }
-            else if(lastStepTime < fadeMax) {
-                stepFadeDelay[stepEffectIndex] = clipSampleSize/4;
-            }
-            else {
-                stepFadeDelay[stepEffectIndex] = clipSampleSize;
-            }
-
-
-            /* The time between the steps directly effects the volume of the step */
-            float minTime = 0.4f;
-            float maxTime = 1.1f;
-            float maxVolumeLoss = 0.7f;
-            float volumePower = maxVolume*(1 - maxVolumeLoss);
-            if(lastStepTime < minTime) {
-                volumePower += maxVolume*0;
-            }
-            else if(lastStepTime < maxTime) {
-                volumePower += maxVolume*maxVolumeLoss*RatioWithinRange(minTime, maxTime, lastStepTime);
-            }
-            else {
-                volumePower  += maxVolume*maxVolumeLoss;
-            }
-
-            
-            /* Add/Reduce the volumeRation relative to the stepHeight */
-            float volumeRatio = 0.5f;
-            float minHeight = 0.1f;
-            float maxHeight = 0.5f;
-            float maxRatio = 0.25f;
-            /* Keep the ratio on it's default */
-            if(Mathf.Abs(stepHeight) < minHeight) {
-            }
-
-            /* Increase the ratio as the steHeight Increases */
-            else if(Mathf.Abs(stepHeight) < maxHeight) {
-                volumeRatio += maxRatio*RatioWithinRange(minHeight, maxHeight, Mathf.Abs(stepHeight))*Mathf.Sign(stepHeight);
-            }
-
-            /* Ratio is at it's max difference */
-            else {
-                volumeRatio += maxRatio*Mathf.Sign(stepHeight);
-            }
-            
-            
-            AudioSource upperSource = upperStepSource[sourceIndex];
+        if(sourceIndex != -1){
+        	/* Get both sources that have both upper and lower tones of the step */
+        	AudioSource upperSource = upperStepSource[sourceIndex];
             AudioSource lowerSource = lowerStepSource[sourceIndex];
-            /* Set the volume of the sources using the power and ratio */
-            upperSource.volume = volumePower*volumeRatio;
-            lowerSource.volume = volumePower*(1 - volumeRatio);
+            
+            /* Set the volume of the footstep to be relative to the maxVolume */
+            upperSource.volume = maxVolume*volumeRatio;
+            lowerSource.volume = maxVolume*volumeRatio;
+
+			/* Set the tone of the overall footstep sound by having different volumes */
+			upperSource.volume *= toneRatio;
+            lowerSource.volume *= (1 - toneRatio);
+
+            /* Set the fade's starting point on the step*/
+            stepFadeDelay[sourceIndex] = Mathf.FloorToInt(stepClips[clipIndex].samples*fadeDelayRatio);
 
             /* Set the proper clips for the sources */
-            upperSource.clip = stepClips[stepEffectIndex];
-            lowerSource.clip = stepClips[stepEffectIndex];
+            upperSource.clip = stepClips[clipIndex];
+            lowerSource.clip = stepClips[clipIndex];
 
-            /* Play the full footstep sound clip with the added audio effects */
-            upperSource.Play();
-            lowerSource.Play();
-            lastStepClipIndex = stepEffectIndex;
-            Debug.Log(lastStepTime);
+            /* Play the full footstep sound clip with the given delay */
+            upperSource.PlayDelayed(playDelay);
+            lowerSource.PlayDelayed(playDelay);
+            
+            /* Remember the index of the clip used to avoid it next step */
+            lastStepClipIndex = clipIndex;
         }
-
-        else {
-            Debug.Log("Footstep effect cannot play - no available audio sources");
+        else{
+        	Debug.Log("Footstep effect cannot play - no available audio sources");
         }
     }
 
@@ -236,14 +257,10 @@ public class PlayerSounds : MonoBehaviour {
         fallingSource.Play();
 	}
 	
-	public void PlayLanding(){
+	public void PlayLanding(float x, float y) {
 		/*
-		 * When landing from the FastFall state, play a landing sound and start the music again.
+		 * Determine if a hardLanding occured
 		 */
-		
-		/* Fade in the music */
-		PlayMusic();
-		musicFade = 1;
 		
 		/* Stop the falling audio */
 		fallingSource.Stop();
@@ -251,12 +268,21 @@ public class PlayerSounds : MonoBehaviour {
 		/* Play the landing audio */
 		landingSource.clip = landingClip;
 		landingSource.Play();
-	}
-	
-	
-	/* ----------- Audio Mixing Functions ------------------------------------------------------------- */
-	
-	void ApplyFade(){
+    }
+
+    public void PlayHardLanding() {
+        /*
+		 * When landing from the FastFall state, play the hardLanding clip and start the music again.
+		 */
+		
+		/* Fade in the music */
+		PlayMusic();
+		musicFade = 1;
+    }
+
+    /* ----------- Audio Mixing Functions ------------------------------------------------------------- */
+
+    void ApplyFade(){
 		/*
 		 * Change the volume of an audio source, simulating a fade effect on the clip.
          * Use a generalized UpdateSourceVolume function for each potential fade source.
@@ -395,26 +421,5 @@ public class PlayerSounds : MonoBehaviour {
         container.transform.parent = sourceContainer.transform;
         container.name = name;
         source = container.AddComponent<AudioSource>();
-    }
-
-    float RatioWithinRange(float min, float max, float value) {
-        /*
-         * Return the ratio of the value between min and max. Returns 0 if
-         * value is equal to or less than min, 1 if value is more or equal to max.
-         * 0.5 if it is equally between both min and max.
-         */
-        float ratio;
-
-        if(value < min) {
-            ratio = 0;
-        }
-        else if(value > max) {
-            ratio = 1;
-        }
-        else {
-            ratio = (value - min)/(max - min);
-        }
-
-        return ratio;
     }
 }
