@@ -647,8 +647,15 @@ public class CustomPlayerController : MonoBehaviour {
          * certain states change into other specific states (fast falling > standing)
          */
     
-        /* Going from airborn to grounded... */
+    
+    	/* Going from FastFalling to a grounded state... */
+    	if(state == (int) PlayerStates.FastFalling){
+    		/*... Will have the player undergo a hard landing. */
+    		playerStepTracker.PlayHardLanding();
+    	}
+    	/* Going from an airborn state to a grounded state... */
         if(StateIsAirborn(state) && !StateIsAirborn(newState)) {
+        	
             /*... Will inform the footstep tracker of the landing. */
             playerStepTracker.PlayLanding(-currentYVelocity/maxYVelocity);
         }
@@ -1009,8 +1016,6 @@ public class CustomPlayerController : MonoBehaviour {
     	return isFalling;
     }
     
-    
-
     public static float RatioWithinRange(float min, float max, float value) {
         /*
          * Return the ratio of the value between min and max. Returns 0 if

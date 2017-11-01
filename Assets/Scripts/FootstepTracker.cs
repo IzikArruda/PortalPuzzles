@@ -248,25 +248,32 @@ public class FootstepTracker : MonoBehaviour {
 		/* If the landing was soft enough, simply play two footsteps, one with a delay */
 		if(fallingSpeedRatio < minSpeedRatio) {
         	//Play two footsteps, one delayed
-        	playerSoundsScript.PlayFootstep(0, 0, 0, 0);
-        	playerSoundsScript.PlayFootstep(0, 0, 0, 0);
+        	playerSoundsScript.PlayFootstep(1, 0.5f, 1, 0);
+        	playerSoundsScript.PlayFootstep(1, 0.5f, 1, 0);
             Debug.Log("Play soft landing");
         }
         
         /* Alter the landing clip relative to how hard the landig was */
-		else if(fallingSpeedRatio <= 1){
+		else {
             //The given value is echo values delay and decay
-            playerSoundsScript.PlayLanding(0, 0);
-            Debug.Log("Play landing");
+            playerSoundsScript.PlayLanding(fallingSpeedRatio);
+            Debug.Log("Play landing" + fallingSpeedRatio);
         }
-		
-		/* Falling above the given max falling speed will play a hard landing sound */
-		else{
-			playerSoundsScript.PlayHardLanding();
-            Debug.Log("Play hard landing");
-        }
-		
 
+        /* Reset the player momentum (current stride and pastDirections) */
+        ResetStrideProgress();
+        ResetFootTiming();
+        pastDirections.Clear();
+    }
+    
+    public void PlayHardLanding(){
+    	/*
+    	 * Runs qhen the player labds from a fast falling state.
+    	 */
+    
+    	playerSoundsScript.PlayHardLanding();
+        Debug.Log("Play hard landing");
+        
         /* Reset the player momentum (current stride and pastDirections) */
         ResetStrideProgress();
         ResetFootTiming();

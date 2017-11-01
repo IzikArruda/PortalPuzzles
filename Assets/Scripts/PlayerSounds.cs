@@ -14,17 +14,17 @@ public class PlayerSounds : MonoBehaviour {
     private GameObject[] upperStepContainers;
     private GameObject[] lowerStepContainers;
     private GameObject musicContainer; 
-	private GameObject landingContainer;
+	private GameObject[] landingContainer;
 	private GameObject fallingContainer;
 	/* The main soundEffect container that contains all the source's containers */
 	public GameObject sourceContainer;
 
 
     /* --- Audio Sources ------------------- */
-    private AudioSource[] upperStepSource;
-    private AudioSource[] lowerStepSource;
+    private AudioSource[] upperStepSources;
+    private AudioSource[] lowerStepSources;
     private AudioSource musicSource;
-	private AudioSource landingSource;
+	private AudioSource[] landingSources;
 	private AudioSource fallingSource;
 	
 	
@@ -36,7 +36,8 @@ public class PlayerSounds : MonoBehaviour {
     /* --- Audio Clips ------------------- */
     public AudioClip[] stepClips;
     public AudioClip[] musicClips;
-	public AudioClip landingClip;
+	public AudioClip[] landingClips;
+	public AudioClip hardLandingClip;
 	//fastfall audio : bus and jet engine?
 	public AudioClip fallingClip;
 	
@@ -53,8 +54,8 @@ public class PlayerSounds : MonoBehaviour {
 
     /* --- Misc ------------------- */
     /* Track the index of the previously used clip to prevent repeated plays */
-    private int lastStepClipIndex;
-    private int lastMusicClipIndex;
+    private int lastStepClipIndex = -1;
+    private int lastMusicClipIndex = -1;
     /* 0: Nothing. -x: Fade out the music. +x: Fade in the music. Relative to fadeRate. */
     private float musicFade = 0;
 	private float fallingFade = 0;
@@ -70,17 +71,13 @@ public class PlayerSounds : MonoBehaviour {
         /*
 		 * Initialize the audio objects and assign variables to their default
 		 */
-         
-        /* Set the clip index trackers. No matter what value they are, the final clip will always get culled at first */
-        lastStepClipIndex = stepClips.Length;
-        lastMusicClipIndex = musicClips.Length;
 
         /* Create the appropriate amount of audioSources and put them in their corresponding containers*/
-        InitializeStepArray(ref upperStepSource, ref lowerStepSource, ref upperStepContainers, ref lowerStepContainers,
+        InitializeStepArray(ref upperStepSources, ref lowerStepSources, ref upperStepContainers, ref lowerStepContainers,
                     ref stepHighPass, ref stepLowPass, maxSimultaniousStepEffects);
         InitializeAudioObject(ref musicSource, ref musicContainer, "Music");
 		InitializeAudioObject(ref fallingSource, ref fallingContainer, "Falling");
-		InitializeAudioObject(ref landingSource, ref landingContainer, "Landing");
+		InitializeAudioArray(ref landingSources, ref landingContainer, 3, "Landing");
 		
 		/* Initialize the fade values for the steps */
 		stepFade = new float[maxSimultaniousStepEffects];
@@ -92,13 +89,15 @@ public class PlayerSounds : MonoBehaviour {
 		
         /* Apply the maxVolume to each audioSource */
         for(int i = 0; i < maxSimultaniousStepEffects; i++){
-            upperStepSource[i].volume = maxVolume;
-            lowerStepSource[i].volume = maxVolume;
+            upperStepSources[i].volume = maxVolume;
+            lowerStepSources[i].volume = maxVolume;
 
+        }
+        for(int i = 0; i < landingSources.Length; i++){
+        	landingSources[i].volume = maxVolume;
         }
 		musicSource.volume = maxVolume;
 		fallingSource.volume = maxVolume;
-		landingSource.volume = maxVolume;
 	}
 	
 	void Update(){
@@ -126,7 +125,7 @@ public class PlayerSounds : MonoBehaviour {
 		 * each footstep sound effect split the highs and lows into sepperate clips.
 		 * By controlling the volume of each part, we can systematically control the tone.
 		 */
-        int sourceIndex = UnusedSoundSource(upperStepSource);
+        int sourceIndex = UnusedSoundSource(upperStepSources);
         int stepEffectIndex = RandomClip(stepClips, lastStepClipIndex);
 		float volumeRatio;
 		float footstepToneRatio;
@@ -190,14 +189,14 @@ public class PlayerSounds : MonoBehaviour {
          */
          
         /* Get the index of a free audioSource to use */
-        int sourceIndex = UnusedSoundSource(upperStepSource);
+        int sourceIndex = UnusedSoundSource(upperStepSources);
         int clipIndex = RandomClip(stepClips, lastStepClipIndex);
 
         /* Play the footstep effect using the found audio source and clip */
         if(sourceIndex != -1){
         	/* Get both sources that have both upper and lower tones of the step */
-        	AudioSource upperSource = upperStepSource[sourceIndex];
-            AudioSource lowerSource = lowerStepSource[sourceIndex];
+        	AudioSource upperSource = upperStepSources[sourceIndex];
+            AudioSource lowerSource = lowerStepSources[sourceIndex];
             
             /* Set the volume of the footstep to be relative to the maxVolume */
             upperSource.volume = maxVolume*volumeRatio;
@@ -257,25 +256,54 @@ public class PlayerSounds : MonoBehaviour {
         fallingSource.Play();
 	}
 	
-	public void PlayLanding(float x, float y) {
+	public void PlayLanding(float fallingSpeedRatio) {
 		/*
-		 * Determine if a hardLanding occured
+		 * Play the sound of the player landing from a falling.
+		 * The given ___ indicates how fast the player was 
+		 * falling, with 1 being terminal velocity.
 		 */
+		int sourceIndex = UnusedSoundSource(landingSources);
+        int clipIndex = RandomClip(landingClips, -1);
+		AudioSource landingSource;
 		
-		/* Stop the falling audio */
-		fallingSource.Stop();
-		
-		/* Play the landing audio */
-		landingSource.clip = landingClip;
-		landingSource.Play();
+		/* Play a landing clip with a free audio source */ 
+		if(sourceIndex != -1) {
+            landingSource = landingSources[sourceIndex];
+
+            /* The volume of the landing clip is relative to the player's velocity */
+            float volumeLossRatio = 0.75f;
+            landingSource.volume = maxVolume*((1 - volumeLossRatio) + 
+                    volumeLossRatio*CustomPlayerController.RatioWithinRange(0.4f, 0.8f, fallingSpeedRatio));
+			
+			/* Play the landing audio */
+			landingSource.clip = landingClips[clipIndex];
+			landingSource.Play();
+		}
+		else{
+        	Debug.Log("Landing effect cannot play - no available audio sources");
+        }
     }
 
     public void PlayHardLanding() {
         /*
 		 * When landing from the FastFall state, play the hardLanding clip and start the music again.
 		 */
+		int sourceIndex = UnusedSoundSource(landingSources);
+		AudioSource landingSource;
 		
-		/* Fade in the music */
+		/* Use a landing audioSource to play the hardLanding sound */
+		if(sourceIndex != -1){
+			landingSource = landingSources[sourceIndex];
+			landingSource.volume = maxVolume;
+			landingSource.clip = hardLandingClip;
+			landingSource.Play();
+		}
+		else{
+			Debug.Log("Landing effect cannot play - no available audio sources");
+		}
+		
+		/* Stop playing the fastFalling audio and fade in the music */
+		fallingSource.Stop();
 		PlayMusic();
 		musicFade = 1;
     }
@@ -293,15 +321,23 @@ public class PlayerSounds : MonoBehaviour {
 		
         /* Check if a fade effect needs to be applied to any of the footstep sources */
 		for(int i = 0; i < maxSimultaniousStepEffects; i++){
-            if(upperStepSource[i].isPlaying) {
+            if(upperStepSources[i].isPlaying) {
 
                 /* Check if the playing source is past the stepDelay */
-                if(upperStepSource[i].timeSamples >= stepFadeDelay[i]) {
+                if(upperStepSources[i].timeSamples >= stepFadeDelay[i]) {
                     stepFade[i] = -10;
                 }
 
-                ApplyFade(ref stepFade[i], upperStepSource[i]);
-                ApplyFade(ref stepFade[i], lowerStepSource[i]);
+
+                float upperFade = stepFade[i];
+                float lowerFade = stepFade[i];
+                ApplyFade(ref upperFade, upperStepSources[i]);
+                ApplyFade(ref lowerFade, lowerStepSources[i]);
+                /* Only change the real fade value if both values are identical.
+                 * This will prevent one clip from ending earlier and forcing the other to stop too. */
+                if(upperFade == lowerFade) {
+                    stepFade[i] = upperFade;
+                }
             }
 		}
 	}
@@ -311,6 +347,7 @@ public class PlayerSounds : MonoBehaviour {
          * A generalized function that will either fade in or fade out 
          * the given source using the given fade value.
          */
+         //maybe ad an option to take in two sources
 
 		if(fade != 0){
 			source.volume = source.volume + maxVolume*fadeRate*fade;
@@ -335,11 +372,13 @@ public class PlayerSounds : MonoBehaviour {
 		/*
 		 * Using the given array of clips, pick the index of a random clip.
 		 * Do not include the clip given by the given int previousClip.
+		 * 
+		 * If a previousClipIndex given is -1, do not cull a clip 
 		 */
 		int randomIndex = 0;
 		
 		/* Pick a random index if there exists more than 1 clip to choose from */
-		if(clips.Length > 1){
+		if(clips.Length > 1 && previousClipIndex != -1){
 		
 			/* Get a random integer between 0 and X-1 where X is the amount of unique footstep sounds */
 			randomIndex = Random.Range(0, clips.Length-2);
@@ -348,6 +387,10 @@ public class PlayerSounds : MonoBehaviour {
 			if(randomIndex >= previousClipIndex){
 				randomIndex++;
 			}
+		}
+		 /* Choose a truly random clip */
+		else if(previousClipIndex == -1){
+			randomIndex = Random.Range(0, clips.Length-1);
 		}
 		
 		return randomIndex;
@@ -407,7 +450,7 @@ public class PlayerSounds : MonoBehaviour {
 		sourceArray = new AudioSource[sourceSize];
         containerArray = new GameObject[sourceSize];
         for(int i = 0; i < sourceArray.Length; i++){
-        	InitializeAudioObject(ref sourceArray[i], ref containerArray[i], name);
+        	InitializeAudioObject(ref sourceArray[i], ref containerArray[i], name + " " + i);
         }
 	}
 	
