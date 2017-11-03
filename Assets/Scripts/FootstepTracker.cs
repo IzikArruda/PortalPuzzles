@@ -237,29 +237,19 @@ public class FootstepTracker : MonoBehaviour {
     public void PlayLanding(float fallingSpeedRatio) {
         /*
          * Runs when the player enters a grounded state from an airborn state.
-         * Plays a landing sound effect chosen by how fast the player was falling as the landed.
+         * A landing sound effect is the same sound effect used for a footstep.
          * 
-         * The given value is the ratio of the players falling speed to their
-		 * given terminal velocity. Therefore the given float will only ever
-         * go above 1 if the player is in the fastFall state.
+         * The given value is the ratio of the player's falling speed to their
+		 * given terminal velocity. It is used to control the volume of the
+         * landing sound effect.
          */
-         float minSpeedRatio = 0.2f;
-         
-		/* If the landing was soft enough, simply play two footsteps, one with a delay */
-		if(fallingSpeedRatio < minSpeedRatio) {
-        	//Play two footsteps, one delayed
-        	playerSoundsScript.PlayFootstep(1, 0.5f, 1, 0);
-        	playerSoundsScript.PlayFootstep(1, 0.5f, 1, 0);
-            Debug.Log("Play soft landing");
-        }
+        float minVolume = 0.2f;
+        float landingVolume = minVolume + (1-minVolume)*CustomPlayerController.RatioWithinRange(0.1f, 0.4f, fallingSpeedRatio);
         
-        /* Alter the landing clip relative to how hard the landig was */
-		else {
-            //The given value is echo values delay and decay
-            playerSoundsScript.PlayLanding(fallingSpeedRatio);
-            Debug.Log("Play landing" + fallingSpeedRatio);
-        }
-
+        /* Play two footstep sound effects to simulate the player landing from a fall */
+        playerSoundsScript.PlayFootstep(landingVolume, 0.5f, 1, 0);
+        playerSoundsScript.PlayFootstep(landingVolume, 0.5f, 1, 0.05f);
+        
         /* Reset the player momentum (current stride and pastDirections) */
         ResetStrideProgress();
         ResetFootTiming();

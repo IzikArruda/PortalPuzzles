@@ -184,7 +184,7 @@ public class PlayerSounds : MonoBehaviour {
 
     public void PlayFootstep(float volumeRatio, float toneRatio, float fadeDelayRatio, float playDelay) {
         /*
-         *  Play a sound effect of a footstep. The given parameters will apply 
+         * Play a sound effect of a footstep. The given parameters will apply 
 		 * effects to the clip, such as pitch shifting, volume and delay.
          */
          
@@ -208,6 +208,7 @@ public class PlayerSounds : MonoBehaviour {
 
             /* Set the fade's starting point on the step*/
             stepFadeDelay[sourceIndex] = Mathf.FloorToInt(stepClips[clipIndex].samples*fadeDelayRatio);
+            stepFade[sourceIndex] = 0;
 
             /* Set the proper clips for the sources */
             upperSource.clip = stepClips[clipIndex];
@@ -256,34 +257,6 @@ public class PlayerSounds : MonoBehaviour {
         fallingSource.Play();
 	}
 	
-	public void PlayLanding(float fallingSpeedRatio) {
-		/*
-		 * Play the sound of the player landing from a falling.
-		 * The given ___ indicates how fast the player was 
-		 * falling, with 1 being terminal velocity.
-		 */
-		int sourceIndex = UnusedSoundSource(landingSources);
-        int clipIndex = RandomClip(landingClips, -1);
-		AudioSource landingSource;
-		
-		/* Play a landing clip with a free audio source */ 
-		if(sourceIndex != -1) {
-            landingSource = landingSources[sourceIndex];
-
-            /* The volume of the landing clip is relative to the player's velocity */
-            float volumeLossRatio = 0.75f;
-            landingSource.volume = maxVolume*((1 - volumeLossRatio) + 
-                    volumeLossRatio*CustomPlayerController.RatioWithinRange(0.4f, 0.8f, fallingSpeedRatio));
-			
-			/* Play the landing audio */
-			landingSource.clip = landingClips[clipIndex];
-			landingSource.Play();
-		}
-		else{
-        	Debug.Log("Landing effect cannot play - no available audio sources");
-        }
-    }
-
     public void PlayHardLanding() {
         /*
 		 * When landing from the FastFall state, play the hardLanding clip and start the music again.
