@@ -36,6 +36,7 @@ public class PlayerSounds : MonoBehaviour {
     /* --- Audio Clips ------------------- */
     public AudioClip[] stepClips;
     public AudioClip[] musicClips;
+    public AudioClip[] musicClipsUpgrades;
 	public AudioClip[] landingClips;
 	public AudioClip hardLandingClip;
 	//fastfall audio : bus and jet engine?
@@ -98,6 +99,9 @@ public class PlayerSounds : MonoBehaviour {
         }
 		musicSource.volume = maxVolume;
 		fallingSource.volume = maxVolume;
+
+        //Play a normal song at the start
+        PlayMusic(true);
 	}
 	
 	void Update(){
@@ -226,17 +230,27 @@ public class PlayerSounds : MonoBehaviour {
         }
     }
 
-    public void PlayMusic(){
+    public void PlayMusic(bool upgraded){
 		/*
-		 * Take a random song clip and play it for the game's music
+		 * Take a random song clip and play it for the game's music. The given boolean 
+         * will indicate whether the song used will be the "upgraded" version.
 		 */
 		int songIndex;
-		
-		/* Get the index of a new song */
-		songIndex = RandomClip(musicClips, lastMusicClipIndex);
+        AudioClip musicClip;
+
+        /* Get the index of a new song */
+        songIndex = RandomClip(musicClips, lastMusicClipIndex);
+
+        /* Get the proper song clip */
+        if(upgraded) {
+            musicClip = musicClips[songIndex];
+        }else {
+            musicClip = musicClipsUpgrades[songIndex];
+        }
+
 
         /* Update the musicSource with the new song */
-		musicSource.clip = musicClips[songIndex];
+        musicSource.clip = musicClip;
         musicSource.Play();
 		lastMusicClipIndex = songIndex;
 	}
@@ -248,12 +262,12 @@ public class PlayerSounds : MonoBehaviour {
 		 */
 		
 		/* fade out the music */
-		musicFade = -1;
+		musicFade = -0.25f;
 		
 		/* Start and fade in the FastFalling state audio */
 		fallingSource.clip = fallingClip;
 		fallingSource.volume = 0;
-		fallingFade = 1;
+		fallingFade = 0.025f;
         fallingSource.Play();
 	}
 	
@@ -277,8 +291,8 @@ public class PlayerSounds : MonoBehaviour {
 		
 		/* Stop playing the fastFalling audio and fade in the music */
 		fallingSource.Stop();
-		PlayMusic();
-		musicFade = 1;
+		PlayMusic(false);
+		musicFade = 0.2f;
     }
 
     /* ----------- Audio Mixing Functions ------------------------------------------------------------- */
