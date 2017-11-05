@@ -69,7 +69,12 @@ public class PlayerSounds : MonoBehaviour {
     private float[] stepFade;
     /* How many samples into the clip a footstep effect needs to be before the fade begins */
 	private int[] stepFadeDelay;
-	
+
+
+
+
+    public bool testMusic;
+    public int testMusicIndex;
 
     /* ----------- Built-in Unity Functions ------------------------------------------------------------- */
 
@@ -120,8 +125,20 @@ public class PlayerSounds : MonoBehaviour {
 		/* Adjust the volume of audio sources if needed */
 		/* Apply any fade effects for the frame */
 		ApplyFade();
-        
 
+
+        //Test the values for the music
+        if(testMusic) {
+            SetMusicFade(-1);
+        }else {
+            SetMusicFade(1);
+        }
+        //Set the clip of the music
+        if(testMusicIndex != -1) {
+            musicSourceMuted.clip = musicClipsMuted[testMusicIndex];
+            musicSourceUpgraded.clip = musicClipsUpgraded[testMusicIndex];
+            testMusicIndex = -1;
+        }
     }
 
 
@@ -321,12 +338,12 @@ public class PlayerSounds : MonoBehaviour {
 		 */
 		
         /* Apply the fade effect to the fallingSources */
-		ApplyFade(ref fallingFade, fallingSource);
+		ApplyFade(ref fallingFade, fallingSource, true);
         
 
         /* Apply the fade effect to the two musicSources */
-        ApplyFade(ref musicFadeMuted, musicSourceMuted);
-        ApplyFade(ref musicFadeUpgraded , musicSourceUpgraded);
+        ApplyFade(ref musicFadeMuted, musicSourceMuted, false);
+        ApplyFade(ref musicFadeUpgraded , musicSourceUpgraded, false);
 
 
         /* Check if a fade effect needs to be applied to any of the footstep sources */
@@ -341,8 +358,8 @@ public class PlayerSounds : MonoBehaviour {
 
                 float upperFade = stepFade[i];
                 float lowerFade = stepFade[i];
-                ApplyFade(ref upperFade, upperStepSources[i]);
-                ApplyFade(ref lowerFade, lowerStepSources[i]);
+                ApplyFade(ref upperFade, upperStepSources[i], false);
+                ApplyFade(ref lowerFade, lowerStepSources[i], false);
                 /* Only change the real fade value if both values are identical.
                  * This will prevent one clip from ending earlier and forcing the other to stop too. */
                 if(upperFade == lowerFade) {
@@ -352,19 +369,21 @@ public class PlayerSounds : MonoBehaviour {
 		}
 	}
 
-    void ApplyFade(ref float fade, AudioSource source) {
+    void ApplyFade(ref float fade, AudioSource source, bool stopOnMute) {
         /*
          * A generalized function that will either fade in or fade out 
-         * the given source using the given fade value.
+         * the given source using the given fade value. The stopOnMute
+         * indicates if the source should stop playing if fully muted.
          */
-         //maybe ad an option to take in two sources
 
-		if(fade != 0){
+        if(fade != 0){
 			source.volume = source.volume + maxVolume*fadeRate*fade;
 			
 			/* Stop the fading if the sources reaches max volume or is fully muted */
 			if(source.volume <= 0){
-				source.Stop();
+                if(stopOnMute) {
+                    source.Stop();
+                }
 				source.volume = 0;
 				fade = 0;
 			}
