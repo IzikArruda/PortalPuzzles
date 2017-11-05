@@ -6,6 +6,8 @@ using System.Collections;
  * This inludes sound effects and music. The playerController
  * will call functions from this script when requesting to play a sound.
  * Each sound effect will have it's own audioSource and gameObject.
+ * To properly play a song, we need a clip to have two versions:
+ * a muted and an upgraded version.
  */
 public class PlayerSounds : MonoBehaviour {
 
@@ -13,9 +15,10 @@ public class PlayerSounds : MonoBehaviour {
     /* --- Source Containers ------------------- */
     private GameObject[] upperStepContainers;
     private GameObject[] lowerStepContainers;
-    private GameObject musicContainer; 
-	private GameObject[] landingContainer;
-	private GameObject fallingContainer;
+	private GameObject[] landingContainers;
+    private GameObject musicContainerMuted;
+    private GameObject musicContainerUpgraded;
+    private GameObject fallingContainer;
 	/* The main soundEffect container that contains all the source's containers */
 	public GameObject sourceContainer;
 
@@ -23,9 +26,10 @@ public class PlayerSounds : MonoBehaviour {
     /* --- Audio Sources ------------------- */
     private AudioSource[] upperStepSources;
     private AudioSource[] lowerStepSources;
-    private AudioSource musicSource;
 	private AudioSource[] landingSources;
-	private AudioSource fallingSource;
+    private AudioSource musicSourceMuted;
+    private AudioSource musicSourceUpgraded;
+    private AudioSource fallingSource;
 	
 	
 	/* --- Audio Filters ------------------- */
@@ -35,9 +39,9 @@ public class PlayerSounds : MonoBehaviour {
 
     /* --- Audio Clips ------------------- */
     public AudioClip[] stepClips;
-    public AudioClip[] musicClips;
-    public AudioClip[] musicClipsUpgrades;
-	public AudioClip[] landingClips;
+    public AudioClip[] landingClips;
+    public AudioClip[] musicClipsMuted;
+    public AudioClip[] musicClipsUpgraded;
 	public AudioClip hardLandingClip;
 	//fastfall audio : bus and jet engine?
 	public AudioClip fallingClip;
@@ -57,9 +61,10 @@ public class PlayerSounds : MonoBehaviour {
     /* Track the index of the previously used clip to prevent repeated plays */
     private int lastStepClipIndex = -1;
     private int lastMusicClipIndex = -1;
-    /* 0: Nothing. -x: Fade out the music. +x: Fade in the music. Relative to fadeRate. */
-    private float musicFade = 0;
-	private float fallingFade = 0;
+    /* 0: Nothing. -x: Fade out the clip. +x: Fade in the clip. Relative to fadeRate. */
+    private float fallingFade = 0;
+    private float musicFadeMuted;
+    private float musicFadeUpgraded;
     /* The stepFade is set by the script as it varies between sources */
     private float[] stepFade;
     /* How many samples into the clip a footstep effect needs to be before the fade begins */
@@ -76,9 +81,10 @@ public class PlayerSounds : MonoBehaviour {
         /* Create the appropriate amount of audioSources and put them in their corresponding containers*/
         InitializeStepArray(ref upperStepSources, ref lowerStepSources, ref upperStepContainers, ref lowerStepContainers,
                     ref stepHighPass, ref stepLowPass, maxSimultaniousStepEffects);
-        InitializeAudioObject(ref musicSource, ref musicContainer, "Music");
-		InitializeAudioObject(ref fallingSource, ref fallingContainer, "Falling");
-		InitializeAudioArray(ref landingSources, ref landingContainer, 3, "Landing");
+        InitializeAudioObject(ref musicSourceMuted, ref musicContainerMuted, "Music(muted)");
+        InitializeAudioObject(ref musicSourceUpgraded, ref musicContainerUpgraded, "Music(upgraded)");
+        InitializeAudioObject(ref fallingSource, ref fallingContainer, "Falling");
+		InitializeAudioArray(ref landingSources, ref landingContainers, 3, "Landing");
 		
 		/* Initialize the fade values for the steps */
 		stepFade = new float[maxSimultaniousStepEffects];
@@ -87,7 +93,11 @@ public class PlayerSounds : MonoBehaviour {
 			stepFade[i] = 0f;
 			stepFadeDelay[i] = 0;
 		}
-		
+
+        /* Initialize the fade values for the music */
+        musicFadeMuted = 0;
+        musicFadeUpgraded = 0;
+
         /* Apply the maxVolume to each audioSource */
         for(int i = 0; i < maxSimultaniousStepEffects; i++){
             upperStepSources[i].volume = maxVolume;
@@ -97,11 +107,12 @@ public class PlayerSounds : MonoBehaviour {
         for(int i = 0; i < landingSources.Length; i++){
         	landingSources[i].volume = maxVolume;
         }
-		musicSource.volume = maxVolume;
+        musicSourceMuted.volume = maxVolume;
+        musicSourceUpgraded.volume = maxVolume;
 		fallingSource.volume = maxVolume;
 
-        //Play a normal song at the start
-        PlayMusic(true);
+        //Play an upgraded song at the start
+        PlayMusic(1);
 	}
 	
 	void Update(){
@@ -230,44 +241,48 @@ public class PlayerSounds : MonoBehaviour {
         }
     }
 
-    public void PlayMusic(bool upgraded){
+    public void PlayMusic(int upgraded){
 		/*
-		 * Take a random song clip and play it for the game's music. The given boolean 
-         * will indicate whether the song used will be the "upgraded" version.
-		 */
+         * Get a random song clip and play it's muted and upgraded versions using both musicSources.
+         * The given boolean controls the volumes of both sources.
+         * -1 = only hear the non-upgraded song
+         * 0 = set both volumes to 0
+         * 1 = only hear the upgraded song
+         */
 		int songIndex;
-        AudioClip musicClip;
+        
+        /* Get the index of a new clip */
+        songIndex = RandomClip(musicClipsMuted, lastMusicClipIndex);
 
-        /* Get the index of a new song */
-        songIndex = RandomClip(musicClips, lastMusicClipIndex);
+        /* Play the clip and it's upgraded version using the two musicSources*/
+        musicSourceMuted.clip = musicClipsMuted[songIndex];
+        musicSourceUpgraded.clip = musicClipsUpgraded[songIndex];
 
-        /* Get the proper song clip */
-        if(upgraded) {
-            musicClip = musicClips[songIndex];
-        }else {
-            musicClip = musicClipsUpgrades[songIndex];
-        }
+        /* Set the volume of the clips */
+        musicSourceMuted.volume = -upgraded*maxVolume;
+        musicSourceUpgraded.volume = upgraded*maxVolume;
 
-
-        /* Update the musicSource with the new song */
-        musicSource.clip = musicClip;
-        musicSource.Play();
-		lastMusicClipIndex = songIndex;
+        /* play the clips and track the clip's index */
+        musicSourceMuted.Play();
+        musicSourceUpgraded.Play();
+        lastMusicClipIndex = songIndex;
 	}
 	
 	public void PlayFastFall(){
-		/* 
+        /* 
 		 * As the player enters the fastfalling state, the game music should switch over to
 		 * the "sound of falling". This is done by fading out the music and in the falling audio.
 		 */
-		
-		/* fade out the music */
-		musicFade = -0.25f;
-		
-		/* Start and fade in the FastFalling state audio */
-		fallingSource.clip = fallingClip;
+
+        /* fade out the music */
+        musicFadeMuted = -0.25f;
+        musicFadeUpgraded = -0.25f;
+
+        /* Start and fade in the FastFalling state audio */
+        fallingSource.clip = fallingClip;
 		fallingSource.volume = 0;
-		fallingFade = 0.025f;
+        fallingSource.loop = true;
+        fallingFade = 0.025f;
         fallingSource.Play();
 	}
 	
@@ -290,10 +305,12 @@ public class PlayerSounds : MonoBehaviour {
 		}
 		
 		/* Stop playing the fastFalling audio and fade in the music */
-		fallingSource.Stop();
-		PlayMusic(false);
-		musicFade = 0.2f;
+        fallingFade = -2.5f;
+        PlayMusic(0);
+        /* Fade in the non-upgraded music */
+        musicFadeMuted = 0.1f;
     }
+
 
     /* ----------- Audio Mixing Functions ------------------------------------------------------------- */
 
@@ -303,11 +320,17 @@ public class PlayerSounds : MonoBehaviour {
          * Use a generalized UpdateSourceVolume function for each potential fade source.
 		 */
 		
-		ApplyFade(ref musicFade, musicSource);
+        /* Apply the fade effect to the fallingSources */
 		ApplyFade(ref fallingFade, fallingSource);
-		
+        
+
+        /* Apply the fade effect to the two musicSources */
+        ApplyFade(ref musicFadeMuted, musicSourceMuted);
+        ApplyFade(ref musicFadeUpgraded , musicSourceUpgraded);
+
+
         /* Check if a fade effect needs to be applied to any of the footstep sources */
-		for(int i = 0; i < maxSimultaniousStepEffects; i++){
+        for(int i = 0; i < maxSimultaniousStepEffects; i++){
             if(upperStepSources[i].isPlaying) {
 
                 /* Check if the playing source is past the stepDelay */
@@ -352,6 +375,17 @@ public class PlayerSounds : MonoBehaviour {
 		}
     }
 
+    void SetMusicFade(int fade) {
+        /*
+         * Set the fade value of both music sources. This will allow the game to swap
+         * between the upgraded and normal versions of a song.
+         * -1 = fade out the upgraded version, fade in the normal version
+         * 1 = fade out the normal version, fade in the upgraded version
+         */
+
+        musicFadeMuted = -fade;
+        musicFadeUpgraded = fade;
+    }
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
 
