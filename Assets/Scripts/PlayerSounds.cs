@@ -115,29 +115,29 @@ public class PlayerSounds : MonoBehaviour {
         musicSourceMuted.volume = maxVolume;
         musicSourceUpgraded.volume = maxVolume;
 		fallingSource.volume = maxVolume;
-
-        //Play an upgraded song at the start
-        PlayMusic(1);
 	}
 	
 	void Update(){
 		
-		/* Adjust the volume of audio sources if needed */
 		/* Apply any fade effects for the frame */
 		ApplyFade();
+        
 
 
-        //Test the values for the music
-        if(testMusic) {
-            SetMusicFade(-1);
-        }else {
+
+
+
+        //Check if the player has pressed the P key, which will play a new song. Always play a upgraded song
+        if(Input.GetKeyDown("p")){
+            PlayMusic(1);
+        }
+
+        //Pressing L will upgrade the music while k will downgrade
+        if(Input.GetKeyDown("l")) {
             SetMusicFade(1);
         }
-        //Set the clip of the music
-        if(testMusicIndex != -1) {
-            musicSourceMuted.clip = musicClipsMuted[testMusicIndex];
-            musicSourceUpgraded.clip = musicClipsUpgraded[testMusicIndex];
-            testMusicIndex = -1;
+        if(Input.GetKeyDown("k")) {
+            SetMusicFade(-1);
         }
     }
 
@@ -274,6 +274,7 @@ public class PlayerSounds : MonoBehaviour {
         /* Play the clip and it's upgraded version using the two musicSources*/
         musicSourceMuted.clip = musicClipsMuted[songIndex];
         musicSourceUpgraded.clip = musicClipsUpgraded[songIndex];
+        Debug.Log(songIndex);
 
         /* Set the volume of the clips */
         musicSourceMuted.volume = -upgraded*maxVolume;
@@ -420,8 +421,9 @@ public class PlayerSounds : MonoBehaviour {
 		/* Pick a random index if there exists more than 1 clip to choose from */
 		if(clips.Length > 1 && previousClipIndex != -1){
 		
-			/* Get a random integer between 0 and X-1 where X is the amount of unique footstep sounds */
-			randomIndex = Random.Range(0, clips.Length-2);
+			/* Get a random integer between 0 and X-1 where X is the amount of unique footstep sounds.
+             * Because Range is exclusive when handling ints, add +1 to the max range. */
+			randomIndex = Random.Range(0, clips.Length-1);
 		
 			/* If the effect's index is equal or above the previous played effect, increase it by 1 */
 			if(randomIndex >= previousClipIndex){
