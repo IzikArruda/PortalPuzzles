@@ -3,19 +3,26 @@ using System.Collections;
 
 /*
  * Create a marble column using the given parameters. A column is divided into multiple parts.
- * For now, only create the base that will sandwich the pillar.
+ * For now, only create the base that will sandwich the pillar. The column is seperated into sections:
+ * 
+ * Base: The top and bottom of the column, a very simple shape that reaches the pillar's size limits.
+ * The lowest and highest points are part of the base.
  */
 [ExecuteInEditMode]
 public class ColumnCreator : MonoBehaviour {
 
-    /* Key values given by the user that define the column */
-    public float width;
-    public float height;
-    
+    /* --- Key Shape Values ------------------- */
+    /* Sizes of the column's base */
+    public float baseWidth;
+    public float baseHeight;
+
+
+    /* --- Change Detection Values ------------------- */
     /* Detect when a key value has changed to recreate the column */
     public bool recreateObject;
 
 
+    /* ----------- Built-in Unity Functions ------------------------------------------------------------- */
 
     void Start() {
         /*
@@ -27,6 +34,11 @@ public class ColumnCreator : MonoBehaviour {
         }
         if(gameObject.GetComponent<MeshRenderer>() == null) {
             gameObject.AddComponent<MeshRenderer>();
+        }
+
+        /* Update the material for the meshRenderer */
+        if(gameObject.GetComponent<MeshRenderer>().sharedMaterial == null) {
+            gameObject.GetComponent<MeshRenderer>().sharedMaterial = new Material(Shader.Find("Default"));
         }
 
         /* Set a value to indicate the column needs to be created */
@@ -45,11 +57,15 @@ public class ColumnCreator : MonoBehaviour {
     }
 
 
+    /* ----------- Column Creation Functions ------------------------------------------------------------- */
 
     void CreateColumn() {
         /*
          * When the column needs to be created, this is the method that will build it
          */
+
+        /* Remove the current mesh of the column */
+        GetComponent<MeshFilter>().sharedMesh = null;
 
         /* Create the base of the column */
         CreateBase();
@@ -60,19 +76,25 @@ public class ColumnCreator : MonoBehaviour {
          * Creating a base is simply creating a box within a set size
          */
 
-        CreateBox(width, height);
+        /* Adjust the starting position of the base so it does not pass bellow this gameObject's negative y axis */
+        Vector3 bottomBase = new Vector3(0, baseHeight/2f, 0);
+        CreateBox(bottomBase, baseWidth, baseHeight);
+
+        /* Add another base above to test out the mesh creation */
+        Vector3 topBase = new Vector3(0, 2 + baseHeight/2f, 0);
+        CreateBox(topBase, baseWidth, baseHeight);
     }
 
 
-    void CreateBox(float boxWidth, float boxHeight) {
+    /* ----------- Mesh Setting Functions ------------------------------------------------------------- */
+
+    void CreateBox(Vector3 origin, float boxWidth, float boxHeight) {
         /*
-         * Create a box mesh using the given width and height.
-         * 
-         * Assume the center is at the origin and the box expands outwards in equal directions
+         * Create a box mesh using the given width and height that expands outward of the origin equally.
          */
         Mesh boxMesh = new Mesh();
         Vector3[] vertices;
-        Vector2[] UV;
+        Vector2[] UVs;
         int[] triangles;
 
         /* Get the distance each vertex of the cube will be from it's center */
@@ -113,6 +135,10 @@ public class ColumnCreator : MonoBehaviour {
             new Vector3(L, -H, -W),
             new Vector3(-L, -H, -W)
         };
+        //Adjust the vertices to be centered around the origin point
+        for(int i = 0; i < vertices.Length; i++) {
+            vertices[i] += origin;
+        }
 
         /* Set up the polygons that form the cube */
         triangles = new int[] {
@@ -131,7 +157,7 @@ public class ColumnCreator : MonoBehaviour {
         };
 
         /* Set the UVs of the cube */
-        UV = new Vector2[] {
+        UVs = new Vector2[] {
             //X+ plane
             new Vector2(-H, -W),
             new Vector2(-H, +W),
@@ -164,12 +190,56 @@ public class ColumnCreator : MonoBehaviour {
             new Vector2(-L, -H)
         };
 
-        
-        /* Assign the mesh to the meshRenderer */
-        boxMesh.vertices = vertices;
-        boxMesh.triangles = triangles;
-        boxMesh.uv = UV;
-        boxMesh.RecalculateNormals();
-        GetComponent<MeshFilter>().mesh = boxMesh;
+
+        /* Add the vertices, triangles and UVs to the column's current mesh */
+        AddToMesh(vertices, triangles, UVs);
+    }
+
+
+    void AddToMesh(Vector3[] addedVertices, int[] addedTriangles, Vector2[] addedUVs) {
+        /*
+         * Add the given vertices, triangles and UVs to the column's current mesh.
+         */
+        Vector3[] currentVertices, newVertices;
+        int[] currentTriangles, newTriangles;
+        Vector2[] currentUVs, newUVs;
+        Mesh newMesh = new Mesh();
+
+        /* Get the current mesh's arrays. If the mesh does not yet exist, use empty arrays */
+        if(GetComponent<MeshFilter>().sharedMesh != null) {
+            currentVertices = GetComponent<MeshFilter>().sharedMesh.vertices;
+            currentTriangles = GetComponent<MeshFilter>().sharedMesh.triangles;
+            currentUVs = GetComponent<MeshFilter>().sharedMesh.uv;
+        }else {
+            currentVertices = new Vector3[0];
+            currentTriangles = new int[0];
+            currentUVs = new Vector2[0];
+        }
+
+        /* Concatenate the added vertices and UVs to the current arrays */
+        newVertices = new Vector3[currentVertices.Length + addedVertices.Length];
+        currentVertices.CopyTo(newVertices, 0);
+        addedVertices.CopyTo(newVertices, currentVertices.Length);
+        newUVs = new Vector2[currentUVs.Length + addedUVs.Length];
+        currentUVs.CopyTo(newUVs, 0);
+        addedUVs.CopyTo(newUVs, currentUVs.Length);
+
+        /* Update the triangles so they reflect the new position of the vertices in the concatenated array */
+        int indexOffset = currentVertices.Length;
+        Debug.Log(indexOffset);
+        for(int i = 0; i < addedTriangles.Length; i++) {
+            addedTriangles[i] += indexOffset;
+        }
+        newTriangles = new int[currentTriangles.Length + addedTriangles.Length];
+        currentTriangles.CopyTo(newTriangles, 0);
+        addedTriangles.CopyTo(newTriangles, currentTriangles.Length);
+
+        /* Set the new mesh to the meshFilter */
+        newMesh.name = "Pillar";
+        newMesh.vertices = newVertices;
+        newMesh.triangles = newTriangles;
+        newMesh.uv = newUVs;
+        newMesh.RecalculateNormals();
+        GetComponent<MeshFilter>().mesh = newMesh;
     }
 }
