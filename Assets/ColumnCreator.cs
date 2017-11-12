@@ -16,6 +16,10 @@ public class ColumnCreator : MonoBehaviour {
     public float baseWidth;
     public float baseHeight;
 
+    /* Sizes of the pillar's cylinder */
+    public float cylinderHeight;
+    public float cylinderRadius;
+
 
     /* --- Change Detection Values ------------------- */
     /* Detect when a key value has changed to recreate the column */
@@ -67,22 +71,34 @@ public class ColumnCreator : MonoBehaviour {
         /* Remove the current mesh of the column */
         GetComponent<MeshFilter>().sharedMesh = null;
 
-        /* Create the base of the column */
-        CreateBase();
-    }
-
-    void CreateBase() {
-        /*
-         * Creating a base is simply creating a box within a set size
-         */
-
-        /* Adjust the starting position of the base so it does not pass bellow this gameObject's negative y axis */
+        /* Create the base of the column that sits on the y = 0 point. */
         Vector3 bottomBase = new Vector3(0, baseHeight/2f, 0);
         CreateBox(bottomBase, baseWidth, baseHeight);
 
-        /* Add another base above to test out the mesh creation */
-        Vector3 topBase = new Vector3(0, 2 + baseHeight/2f, 0);
+
+        /* Create the cylinder center of the column */
+        CreateCenterCylinder();
+
+        /* Create the top base of the column that sits on the highest point of the pillar */
+        Vector3 topBase = new Vector3(0, baseHeight + cylinderHeight + baseHeight/2f, 0);
         CreateBox(topBase, baseWidth, baseHeight);
+    }
+    
+
+    void CreateCenterCylinder() {
+        /*
+         * Create the center cylinder
+         */
+
+        /* Get the points that will be used to form one edge of the cylinder */
+        Vector3 bottomPoint = new Vector3(cylinderRadius, baseHeight, 0);
+        Vector3 topPoint = new Vector3(cylinderRadius, baseHeight + cylinderHeight, 0);
+        Vector3[] cylinderPoints = new Vector3[2];
+        cylinderPoints[0] = bottomPoint;
+        cylinderPoints[1] = topPoint;
+
+        //Use a function that takes in a series of vector3s and circles them around the origin
+        CreateCircularMesh(cylinderPoints);
     }
 
 
@@ -91,6 +107,7 @@ public class ColumnCreator : MonoBehaviour {
     void CreateBox(Vector3 origin, float boxWidth, float boxHeight) {
         /*
          * Create a box mesh using the given width and height that expands outward of the origin equally.
+         * Used to create the square bases on the top and bottom of the column.
          */
         Mesh boxMesh = new Mesh();
         Vector3[] vertices;
@@ -194,7 +211,32 @@ public class ColumnCreator : MonoBehaviour {
         /* Add the vertices, triangles and UVs to the column's current mesh */
         AddToMesh(vertices, triangles, UVs);
     }
+    
+    void CreateCircularMesh(Vector3[] vertexPoints) {
+        /*
+         * Create a mesh that rotates around the origin using each vertex's x distance as a radius.
+         */
+        float circleRadius;
+        int circleVertexCount;
 
+        /* Set how many vertexes will be used to render the circle around the pillar of a single vertex */
+        circleVertexCount = 10;
+
+        for(int i = 0; i < vertexPoints.Length; i++) {
+            circleRadius = vertexPoints[i].x;
+            
+            /* Get an array of all vectors that form a circle by rotating the current vertex around the origin */
+            Vector3[] vectorCircle = CirclePoints(vertexPoints[i].x, vertexPoints[i].y, circleVertexCount);
+
+            /* Create a box for each vertex to see if the circles are properly created */
+            for(int ii = 0; ii < vectorCircle.Length; ii++) {
+                CreateBox(vectorCircle[ii], 0.1f, 0.1f);
+            }
+        }
+
+        CreateBox(vertexPoints[0], 0.1f, 0.1f);
+        CreateBox(vertexPoints[1], 0.1f, 0.1f);
+    }
 
     void AddToMesh(Vector3[] addedVertices, int[] addedTriangles, Vector2[] addedUVs) {
         /*
@@ -226,7 +268,6 @@ public class ColumnCreator : MonoBehaviour {
 
         /* Update the triangles so they reflect the new position of the vertices in the concatenated array */
         int indexOffset = currentVertices.Length;
-        Debug.Log(indexOffset);
         for(int i = 0; i < addedTriangles.Length; i++) {
             addedTriangles[i] += indexOffset;
         }
@@ -241,5 +282,23 @@ public class ColumnCreator : MonoBehaviour {
         newMesh.uv = newUVs;
         newMesh.RecalculateNormals();
         GetComponent<MeshFilter>().mesh = newMesh;
+    }
+
+
+    Vector3[] CirclePoints(float radius, float height, int vertexCount) {
+        /*
+         * Return an array of vertexes that form a circle by rotating a point around the y axis.
+         */
+        Vector3[] circle = new Vector3[vertexCount];
+        float x, z;
+
+        /* Create each vertex used to define the circle */
+        for(int i = 0; i < circle.Length; i++) {
+            x = radius*Mathf.Sin(2*Mathf.PI*i/circle.Length);
+            z = radius*Mathf.Cos(2*Mathf.PI*i/circle.Length);
+            circle[i] = new Vector3(x, height, z);
+        }
+
+        return circle;
     }
 }
