@@ -92,10 +92,12 @@ public class ColumnCreator : MonoBehaviour {
 
         /* Get the points that will be used to form one edge of the cylinder */
         Vector3 bottomPoint = new Vector3(cylinderRadius, baseHeight, 0);
+        Vector3 centerPoint = new Vector3(cylinderRadius, (baseHeight + cylinderHeight)/2f, 0);
         Vector3 topPoint = new Vector3(cylinderRadius, baseHeight + cylinderHeight, 0);
-        Vector3[] cylinderPoints = new Vector3[2];
+        Vector3[] cylinderPoints = new Vector3[3];
         cylinderPoints[0] = bottomPoint;
-        cylinderPoints[1] = topPoint;
+        cylinderPoints[1] = centerPoint;
+        cylinderPoints[2] = topPoint;
 
         //Use a function that takes in a series of vector3s and circles them around the origin
         CreateCircularMesh(cylinderPoints);
@@ -216,26 +218,33 @@ public class ColumnCreator : MonoBehaviour {
         /*
          * Create a mesh that rotates around the origin using each vertex's x distance as a radius.
          */
-        float circleRadius;
         int circleVertexCount;
-
-        /* Set how many vertexes will be used to render the circle around the pillar of a single vertex */
+        int sectionVertexCount;
+        Vector3[] vertices;
+        
+        /* Set the vertex counts. circle is the amount when rotating a point around the center
+         * while section is the amount of vertexes needed on the same y axis to define the pillar */
         circleVertexCount = 10;
+        sectionVertexCount = vertexPoints.Length;
 
-        for(int i = 0; i < vertexPoints.Length; i++) {
-            circleRadius = vertexPoints[i].x;
-            
+
+        /* Initialize the main vector array now that we know the amount of vectors to be used */
+        vertices = new Vector3[sectionVertexCount * circleVertexCount];
+
+        for(int i = 0; i < sectionVertexCount; i++) {
             /* Get an array of all vectors that form a circle by rotating the current vertex around the origin */
             Vector3[] vectorCircle = CirclePoints(vertexPoints[i].x, vertexPoints[i].y, circleVertexCount);
 
-            /* Create a box for each vertex to see if the circles are properly created */
-            for(int ii = 0; ii < vectorCircle.Length; ii++) {
-                CreateBox(vectorCircle[ii], 0.1f, 0.1f);
-            }
+            /* Add the vectors that form the found circle into the main vector array */
+            vectorCircle.CopyTo(vertices, circleVertexCount*i);
         }
+        
+        /* Get the array of triangles that define the polygons of the cylinder */
+        int[] triangles = GetCircularTriangles(vertices, circleVertexCount, sectionVertexCount);
 
-        CreateBox(vertexPoints[0], 0.1f, 0.1f);
-        CreateBox(vertexPoints[1], 0.1f, 0.1f);
+        /* With the array of vertices and triangles we can now add this cylinder to the mesh */
+        Vector2[] UVs = new Vector2[0];
+        AddToMesh(vertices, triangles, UVs);
     }
 
     void AddToMesh(Vector3[] addedVertices, int[] addedTriangles, Vector2[] addedUVs) {
@@ -279,10 +288,12 @@ public class ColumnCreator : MonoBehaviour {
         newMesh.name = "Pillar";
         newMesh.vertices = newVertices;
         newMesh.triangles = newTriangles;
-        newMesh.uv = newUVs;
+        //newMesh.uv = newUVs;
         newMesh.RecalculateNormals();
         GetComponent<MeshFilter>().mesh = newMesh;
     }
+
+
 
 
     Vector3[] CirclePoints(float radius, float height, int vertexCount) {
@@ -300,5 +311,44 @@ public class ColumnCreator : MonoBehaviour {
         }
 
         return circle;
+    }
+
+    int[] GetCircularTriangles(Vector3[] vertices, int circleVertexCount, int sectionVertexCount) {
+        /*
+         * Assuming the array of vertices are ordered from section to section starting with the bottom
+         * and going up, use the given vertex counts to generate an array of triangles to define the mesh.
+         */
+        int[] triangles = new int[circleVertexCount*sectionVertexCount*6];
+        int triangleIndex;
+        int vertexIndex;
+        int ii;
+
+        /* Define the meshes for each section of the column */
+        for(int i = 0; i < sectionVertexCount-1; i++) {
+
+            /* Define the circular mesh of each section */
+            for(ii = 0; ii < circleVertexCount-1; ii++) {
+                triangleIndex = i*(circleVertexCount*6) + ii*6;
+                vertexIndex = i*circleVertexCount + ii;
+                triangles[triangleIndex + 0] = vertexIndex;
+                triangles[triangleIndex + 1] = vertexIndex + 1;
+                triangles[triangleIndex + 2] = vertexIndex + circleVertexCount + 1;
+                triangles[triangleIndex + 3] = vertexIndex + circleVertexCount + 1;
+                triangles[triangleIndex + 4] = vertexIndex + circleVertexCount;
+                triangles[triangleIndex + 5] = vertexIndex;
+            }
+            /* Connect the circle using the final and first vertices */
+            ii = circleVertexCount-1;
+            triangleIndex = i*(circleVertexCount*6) + (circleVertexCount-1)*6;
+            vertexIndex = i*circleVertexCount + (circleVertexCount-1);
+            triangles[triangleIndex + 0] = vertexIndex;
+            triangles[triangleIndex + 1] = vertexIndex - circleVertexCount + 1;
+            triangles[triangleIndex + 2] = vertexIndex + 1;
+            triangles[triangleIndex + 3] = vertexIndex;
+            triangles[triangleIndex + 4] = vertexIndex + 1;
+            triangles[triangleIndex + 5] = vertexIndex + circleVertexCount;
+        }
+        
+        return triangles;
     }
 }
