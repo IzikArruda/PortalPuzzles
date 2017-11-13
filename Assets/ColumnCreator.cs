@@ -11,6 +11,10 @@ using System.Collections;
 [ExecuteInEditMode]
 public class ColumnCreator : MonoBehaviour {
 
+    //The material used by the pillar
+    public Material columnMaterial;
+
+
     /* --- Key Shape Values ------------------- */
     /* Sizes of the column's base */
     public float baseWidth;
@@ -42,7 +46,7 @@ public class ColumnCreator : MonoBehaviour {
 
         /* Update the material for the meshRenderer */
         if(gameObject.GetComponent<MeshRenderer>().sharedMaterial == null) {
-            gameObject.GetComponent<MeshRenderer>().sharedMaterial = new Material(Shader.Find("Default"));
+            gameObject.GetComponent<MeshRenderer>().sharedMaterial = columnMaterial;
         }
 
         /* Set a value to indicate the column needs to be created */
@@ -224,7 +228,7 @@ public class ColumnCreator : MonoBehaviour {
         
         /* Set the vertex counts. circle is the amount when rotating a point around the center
          * while section is the amount of vertexes needed on the same y axis to define the pillar */
-        circleVertexCount = 10;
+        circleVertexCount = 20 +1;
         sectionVertexCount = vertexPoints.Length;
 
 
@@ -233,7 +237,7 @@ public class ColumnCreator : MonoBehaviour {
 
         for(int i = 0; i < sectionVertexCount; i++) {
             /* Get an array of all vectors that form a circle by rotating the current vertex around the origin */
-            Vector3[] vectorCircle = CirclePoints(vertexPoints[i].x, vertexPoints[i].y, circleVertexCount);
+            Vector3[] vectorCircle = GetCircularVertices(vertexPoints[i].x, vertexPoints[i].y, circleVertexCount);
 
             /* Add the vectors that form the found circle into the main vector array */
             vectorCircle.CopyTo(vertices, circleVertexCount*i);
@@ -241,9 +245,10 @@ public class ColumnCreator : MonoBehaviour {
         
         /* Get the array of triangles that define the polygons of the cylinder */
         int[] triangles = GetCircularTriangles(vertices, circleVertexCount, sectionVertexCount);
-
+        
         /* With the array of vertices and triangles we can now add this cylinder to the mesh */
-        Vector2[] UVs = new Vector2[0];
+        Vector2[] UVs = GetCircularUVs(vertices, circleVertexCount, sectionVertexCount, 0, 0.25f);
+        
         AddToMesh(vertices, triangles, UVs);
     }
 
@@ -288,7 +293,7 @@ public class ColumnCreator : MonoBehaviour {
         newMesh.name = "Pillar";
         newMesh.vertices = newVertices;
         newMesh.triangles = newTriangles;
-        //newMesh.uv = newUVs;
+        newMesh.uv = newUVs;
         newMesh.RecalculateNormals();
         GetComponent<MeshFilter>().mesh = newMesh;
     }
@@ -296,7 +301,9 @@ public class ColumnCreator : MonoBehaviour {
 
 
 
-    Vector3[] CirclePoints(float radius, float height, int vertexCount) {
+    /* ----------- Helper Functions ------------------------------------------------------------- */
+    
+    Vector3[] GetCircularVertices(float radius, float height, int vertexCount) {
         /*
          * Return an array of vertexes that form a circle by rotating a point around the y axis.
          */
@@ -305,8 +312,8 @@ public class ColumnCreator : MonoBehaviour {
 
         /* Create each vertex used to define the circle */
         for(int i = 0; i < circle.Length; i++) {
-            x = radius*Mathf.Sin(2*Mathf.PI*i/circle.Length);
-            z = radius*Mathf.Cos(2*Mathf.PI*i/circle.Length);
+            x = radius*Mathf.Sin(2*Mathf.PI*i/(circle.Length-1));
+            z = radius*Mathf.Cos(2*Mathf.PI*i/(circle.Length-1));
             circle[i] = new Vector3(x, height, z);
         }
 
@@ -321,13 +328,12 @@ public class ColumnCreator : MonoBehaviour {
         int[] triangles = new int[circleVertexCount*sectionVertexCount*6];
         int triangleIndex;
         int vertexIndex;
-        int ii;
 
         /* Define the meshes for each section of the column */
         for(int i = 0; i < sectionVertexCount-1; i++) {
 
             /* Define the circular mesh of each section */
-            for(ii = 0; ii < circleVertexCount-1; ii++) {
+            for(int ii = 0; ii < circleVertexCount-1; ii++) {
                 triangleIndex = i*(circleVertexCount*6) + ii*6;
                 vertexIndex = i*circleVertexCount + ii;
                 triangles[triangleIndex + 0] = vertexIndex;
@@ -337,18 +343,43 @@ public class ColumnCreator : MonoBehaviour {
                 triangles[triangleIndex + 4] = vertexIndex + circleVertexCount;
                 triangles[triangleIndex + 5] = vertexIndex;
             }
-            /* Connect the circle using the final and first vertices */
-            ii = circleVertexCount-1;
-            triangleIndex = i*(circleVertexCount*6) + (circleVertexCount-1)*6;
-            vertexIndex = i*circleVertexCount + (circleVertexCount-1);
-            triangles[triangleIndex + 0] = vertexIndex;
-            triangles[triangleIndex + 1] = vertexIndex - circleVertexCount + 1;
-            triangles[triangleIndex + 2] = vertexIndex + 1;
-            triangles[triangleIndex + 3] = vertexIndex;
-            triangles[triangleIndex + 4] = vertexIndex + 1;
-            triangles[triangleIndex + 5] = vertexIndex + circleVertexCount;
         }
         
         return triangles;
+    }
+
+    Vector2[] GetCircularUVs(Vector3[] vertices, int circleVertexCount, int sectionVertexCount, 
+            float startingHeight, float height) {
+        /*
+         * Use the given array of vertices to calculate the proper UVs. How the UVs are calculated is done
+         * using the given height values in conjunction with the vertice's y position.
+         */
+        Vector2[] UVs;
+        float lowestVertice;
+        float highestVertice;
+        float x, y;
+
+        /* Get the limits of the vertices on the y axis to properly value each vert's UV */
+        lowestVertice = vertices[0].y;
+        highestVertice = vertices[vertices.Length-1].y;
+
+        /* Create the UVs */
+        UVs = new Vector2[vertices.Length];
+        /* Go through each section of the column */
+        for(int i = 0; i < sectionVertexCount; i++) {
+            /* Set the UV for each vertice on this section's series of cirular vertices */
+            for(int ii = 0; ii < circleVertexCount; ii++) {
+
+                /* X is dependent on what index position the vector is in */
+                x = ii / ((float)circleVertexCount-1);
+
+                /* Y is dependent on the Y position of the vector relative to the other vectors */
+                y = startingHeight + height*((vertices[i*circleVertexCount + ii].y - lowestVertice) / (highestVertice - lowestVertice));
+
+                UVs[i*circleVertexCount + ii] = new Vector2(x, y);
+            }
+        }
+
+        return UVs;
     }
 }
