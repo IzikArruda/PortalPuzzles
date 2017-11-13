@@ -24,6 +24,8 @@ public class ColumnCreator : MonoBehaviour {
     public float cylinderHeight;
     public float cylinderRadius;
 
+    /* The amount of distance between the base and the center cylinder */
+    public float fillerHeight;
 
     /* --- Change Detection Values ------------------- */
     /* Detect when a key value has changed to recreate the column */
@@ -75,29 +77,29 @@ public class ColumnCreator : MonoBehaviour {
         /* Remove the current mesh of the column */
         GetComponent<MeshFilter>().sharedMesh = null;
 
-        /* Create the base of the column that sits on the y = 0 point. */
+        /* Create the base of the column that sits on the y = 0 point and the highest point of the column */
         Vector3 bottomBase = new Vector3(0, baseHeight/2f, 0);
+        Vector3 topBase = new Vector3(0, baseHeight + fillerHeight*2 + cylinderHeight + baseHeight/2f, 0);
         CreateBox(bottomBase, baseWidth, baseHeight);
+        CreateBox(topBase, baseWidth, baseHeight);
 
+        /* Create a series of filler shapes that are placed between the base and the center cylinder */
+        CreateFiller(true);
+        CreateFiller(false);
 
         /* Create the cylinder center of the column */
         CreateCenterCylinder();
-
-        /* Create the top base of the column that sits on the highest point of the pillar */
-        Vector3 topBase = new Vector3(0, baseHeight + cylinderHeight + baseHeight/2f, 0);
-        CreateBox(topBase, baseWidth, baseHeight);
     }
     
-
     void CreateCenterCylinder() {
         /*
          * Create the center cylinder
          */
 
         /* Get the points that will be used to form one edge of the cylinder */
-        Vector3 bottomPoint = new Vector3(cylinderRadius, baseHeight, 0);
-        Vector3 centerPoint = new Vector3(cylinderRadius, (baseHeight + cylinderHeight)/2f, 0);
-        Vector3 topPoint = new Vector3(cylinderRadius, baseHeight + cylinderHeight, 0);
+        Vector3 bottomPoint = new Vector3(cylinderRadius, baseHeight + fillerHeight, 0);
+        Vector3 centerPoint = new Vector3(cylinderRadius, baseHeight + cylinderHeight/2f + fillerHeight, 0);
+        Vector3 topPoint = new Vector3(cylinderRadius, baseHeight + fillerHeight + cylinderHeight, 0);
         Vector3[] cylinderPoints = new Vector3[3];
         cylinderPoints[0] = bottomPoint;
         cylinderPoints[1] = centerPoint;
@@ -107,6 +109,33 @@ public class ColumnCreator : MonoBehaviour {
         CreateCircularMesh(cylinderPoints);
     }
 
+    void CreateFiller(bool bottomBase) {
+        /*
+         * Create a series of shapes to be placed between the base and the main cylinder of the column.
+         * The given boolean will be true if the filler is added on the bottom base instead of the top base.
+         */
+        float currentYPos;
+        float boxHeight, boxWidth;
+        int directionAdjustment;
+
+        /* Change how the position will increase/decrease depending on if the filler is added above or bellow */
+        if(bottomBase) {
+            directionAdjustment = 1;
+            currentYPos = baseHeight;
+        }
+        else {
+            directionAdjustment = -1;
+            currentYPos = baseHeight + cylinderHeight + fillerHeight*2;
+        }
+        
+
+        //Create a smaller box right above the main base
+        boxWidth = baseWidth*0.85f;
+        boxHeight = fillerHeight;
+        currentYPos += directionAdjustment*boxHeight/2f;
+        CreateBox(new Vector3(0, currentYPos, 0), boxWidth, boxHeight);
+        currentYPos += directionAdjustment*boxHeight/2f;
+    }
 
     /* ----------- Mesh Setting Functions ------------------------------------------------------------- */
 
@@ -247,7 +276,7 @@ public class ColumnCreator : MonoBehaviour {
         int[] triangles = GetCircularTriangles(vertices, circleVertexCount, sectionVertexCount);
         
         /* With the array of vertices and triangles we can now add this cylinder to the mesh */
-        Vector2[] UVs = GetCircularUVs(vertices, circleVertexCount, sectionVertexCount, 0, 0.25f);
+        Vector2[] UVs = GetCircularUVs(vertices, circleVertexCount, sectionVertexCount, 0, 1.2f);
         
         AddToMesh(vertices, triangles, UVs);
     }
