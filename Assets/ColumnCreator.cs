@@ -88,7 +88,7 @@ public class ColumnCreator : MonoBehaviour {
         CreateFiller(false);
 
         /* Create the cylinder center of the column */
-        CreateCenterCylinder();
+        //CreateCenterCylinder();
     }
     
     void CreateCenterCylinder() {
@@ -115,6 +115,7 @@ public class ColumnCreator : MonoBehaviour {
          * The given boolean will be true if the filler is added on the bottom base instead of the top base.
          */
         float currentYPos;
+        float fillerPartHeight;
         float boxHeight, boxWidth;
         int directionAdjustment;
 
@@ -127,14 +128,49 @@ public class ColumnCreator : MonoBehaviour {
             directionAdjustment = -1;
             currentYPos = baseHeight + cylinderHeight + fillerHeight*2;
         }
-        
 
-        //Create a smaller box right above the main base
-        boxWidth = baseWidth*0.85f;
-        boxHeight = fillerHeight;
-        currentYPos += directionAdjustment*boxHeight/2f;
+        /* 
+         * Add meshes to the filler area until the fillerHeight distance is met 
+         */
+
+        /* Add a box to the filler section */
+        fillerPartHeight = fillerHeight/2f;
+        CreateFillerBox(ref currentYPos, fillerPartHeight, baseWidth*0.8f);
+
+
+        /* Add a circular mesh to the filler section */
+        fillerPartHeight = fillerHeight/2f;
+        CreateFillerCircularMesh(ref currentYPos, fillerPartHeight, 5);
+    }
+
+    void CreateFillerBox(ref float currentYPos, float fillerSectionHeigth, float boxWidth) {
+        /*
+         * Use the given variables to create a box that will be used as a filler mesh placed between
+         * the base and the main cylinder of the column.
+         */
+        float boxHeight;
+        
+        /* The height of the box is meassured using the height of this section piece */
+        boxHeight = Mathf.Abs(fillerSectionHeigth);
+
+        currentYPos += fillerSectionHeigth/2f;
         CreateBox(new Vector3(0, currentYPos, 0), boxWidth, boxHeight);
-        currentYPos += directionAdjustment*boxHeight/2f;
+        currentYPos += fillerSectionHeigth/2f;
+    }
+
+    void CreateFillerCircularMesh(ref float currentYPos, float fillerSectionHeigth, int vertexCount) {
+        /*
+         * Create a circular mesh using the given parameters
+         */
+
+        Vector3[] roundedEdgeVertices = new Vector3[vertexCount];
+        for(int i = 0; i < roundedEdgeVertices.Length; i++) {
+            roundedEdgeVertices[i].x = (baseWidth*0.65f + baseWidth*0.15f*Mathf.Sin(Mathf.PI/2f + (Mathf.PI/2f)*i/vertexCount))/2f;
+            roundedEdgeVertices[i].z = 0;
+            roundedEdgeVertices[i].y = currentYPos;
+            currentYPos += fillerSectionHeigth/vertexCount;
+        }
+        CreateCircularMesh(roundedEdgeVertices);
     }
 
     /* ----------- Mesh Setting Functions ------------------------------------------------------------- */
