@@ -80,8 +80,8 @@ public class ColumnCreator : MonoBehaviour {
         /* Create the base of the column that sits on the y = 0 point and the highest point of the column */
         Vector3 bottomBase = new Vector3(0, baseHeight/2f, 0);
         Vector3 topBase = new Vector3(0, baseHeight + fillerHeight*2 + cylinderHeight + baseHeight/2f, 0);
-        CreateBox(bottomBase, baseWidth, baseHeight);
-        CreateBox(topBase, baseWidth, baseHeight);
+        CreateBox(bottomBase, baseHeight, baseWidth, baseWidth);
+        CreateBox(topBase, baseHeight, baseWidth, baseWidth);
 
         /* Create a series of filler shapes that are placed between the base and the center cylinder */
         CreateFiller(true);
@@ -135,15 +135,15 @@ public class ColumnCreator : MonoBehaviour {
 
         /* Add a box to the filler section */
         fillerPartHeight = fillerHeight/2f;
-        CreateFillerBox(ref currentYPos, fillerPartHeight, baseWidth*0.8f);
+        CreateFillerBox(ref currentYPos, fillerPartHeight, baseWidth*0.8f, baseWidth*0.8f);
 
 
         /* Add a circular mesh to the filler section */
         fillerPartHeight = fillerHeight/2f;
-        CreateFillerCircularMesh(ref currentYPos, fillerPartHeight, 5);
+        CreateFillerCircularMesh(ref currentYPos, fillerPartHeight, 5, 0.65f*baseWidth, 0.1f*baseWidth, 0, 0.5f);
     }
 
-    void CreateFillerBox(ref float currentYPos, float fillerSectionHeigth, float boxWidth) {
+    void CreateFillerBox(ref float currentYPos, float fillerSectionHeigth, float boxTopWidth, float boxBottomWidth) {
         /*
          * Use the given variables to create a box that will be used as a filler mesh placed between
          * the base and the main cylinder of the column.
@@ -154,28 +154,39 @@ public class ColumnCreator : MonoBehaviour {
         boxHeight = Mathf.Abs(fillerSectionHeigth);
 
         currentYPos += fillerSectionHeigth/2f;
-        CreateBox(new Vector3(0, currentYPos, 0), boxWidth, boxHeight);
+        CreateBox(new Vector3(0, currentYPos, 0), boxHeight, boxTopWidth*1f, boxBottomWidth);
         currentYPos += fillerSectionHeigth/2f;
     }
 
-    void CreateFillerCircularMesh(ref float currentYPos, float fillerSectionHeigth, int vertexCount) {
+    void CreateFillerCircularMesh(ref float currentYPos, float fillerSectionHeigth, int vertexCount,
+			float width, float maxBumpWidth, float startingRad, float radInc) {
         /*
-         * Create a circular mesh using the given parameters
+         * Create a circular mesh using the given parameters. Use a sine function to add an offset
+         * to the radius to allow bumbs (think of the outter half of a taurus).
+         * Note we use width instead of radius because the sizes will most likely be relative to baseWidth.
+         *
+         * radius: the starting radius of the circular mesh for each vertex. The radius changes by a sine function.
+         * maxBumpRadius: The extra width added sine function. 0 will prevent the radous from ever changing.
+         * startingRad: What rad degrees the radius starts at from a 0 to 1 scale with 1 being PI*2.
+         * radInc: How much the rad will increase over the section's height. 1 is equal to PI*2, ie the whole sine wave.
          */
+         float sineWaveOffset;
 
         Vector3[] roundedEdgeVertices = new Vector3[vertexCount];
-        for(int i = 0; i < roundedEdgeVertices.Length; i++) {
-            roundedEdgeVertices[i].x = (baseWidth*0.65f + baseWidth*0.15f*Mathf.Sin(Mathf.PI/2f + (Mathf.PI/2f)*i/vertexCount))/2f;
-            roundedEdgeVertices[i].z = 0;
+        for(int i = 0; i < vertexCount; i++) {
+        	sineWaveOffset = Mathf.Sin(startingRad*Mathf.PI*2f + radInc*(Mathf.PI*2f)*i/(float)vertexCount);
+            roundedEdgeVertices[i].x = (width + maxBumpWidth*sineWaveOffset)/2f;
             roundedEdgeVertices[i].y = currentYPos;
+            roundedEdgeVertices[i].z = 0;
             currentYPos += fillerSectionHeigth/vertexCount;
         }
+        
         CreateCircularMesh(roundedEdgeVertices);
     }
 
     /* ----------- Mesh Setting Functions ------------------------------------------------------------- */
 
-    void CreateBox(Vector3 origin, float boxWidth, float boxHeight) {
+    void CreateBox(Vector3 origin, float boxHeight, float boxTopWidth, float boxBottomWidth) {
         /*
          * Create a box mesh using the given width and height that expands outward of the origin equally.
          * Used to create the square bases on the top and bottom of the column.
@@ -186,42 +197,42 @@ public class ColumnCreator : MonoBehaviour {
         int[] triangles;
 
         /* Get the distance each vertex of the cube will be from it's center */
-        float W = boxWidth/2f;
-        float L = boxWidth/2f;
+        float WT = boxTopWidth/2f;
+        float WB = boxBottomWidth/2f;
         float H = boxHeight/2f;
 
         /* Get the vertices that make up the cube */
         vertices = new Vector3[] {
             //X+ plane
-            new Vector3(L, H, W),
-            new Vector3(L, H, -W),
-            new Vector3(L, -H, W),
-            new Vector3(L, -H, -W),
+            new Vector3(WT, H, WT),
+            new Vector3(WT, H, -WT),
+            new Vector3(WB, -H, WB),
+            new Vector3(WB, -H, -WB),
             //X- plane
-            new Vector3(-L, H, W),
-            new Vector3(-L, H, -W),
-            new Vector3(-L, -H, W),
-            new Vector3(-L, -H, -W),
+            new Vector3(-WT, H, WT),
+            new Vector3(-WT, H, -WT),
+            new Vector3(-WB, -H, WB),
+            new Vector3(-WB, -H, -WB),
             //Y+ plane
-            new Vector3(L, H, -W),
-            new Vector3(L, H, W),
-            new Vector3(-L, H, -W),
-            new Vector3(-L, H, W),
+            new Vector3(WT, H, -WT),
+            new Vector3(WT, H, WT),
+            new Vector3(-WT, H, -WT),
+            new Vector3(-WT, H, WT),
             //Y- plane
-            new Vector3(L, -H, -W),
-            new Vector3(L, -H, W),
-            new Vector3(-L, -H, -W),
-            new Vector3(-L, -H, W),
+            new Vector3(WB, -H, -WB),
+            new Vector3(WB, -H, WB),
+            new Vector3(-WB, -H, -WB),
+            new Vector3(-WB, -H, WB),
             //Z+ plane
-            new Vector3(L, H, W),
-            new Vector3(-L, H, W),
-            new Vector3(L, -H, W),
-            new Vector3(-L, -H, W),
+            new Vector3(WT, H, WT),
+            new Vector3(-WT, H, WT),
+            new Vector3(WB, -H, WB),
+            new Vector3(-WB, -H, WB),
             //Z- plane
-            new Vector3(L, H, -W),
-            new Vector3(-L, H, -W),
-            new Vector3(L, -H, -W),
-            new Vector3(-L, -H, -W)
+            new Vector3(WT, H, -WT),
+            new Vector3(-WT, H, -WT),
+            new Vector3(WB, -H, -WB),
+            new Vector3(-WB, -H, -WB)
         };
         //Adjust the vertices to be centered around the origin point
         for(int i = 0; i < vertices.Length; i++) {
@@ -247,35 +258,35 @@ public class ColumnCreator : MonoBehaviour {
         /* Set the UVs of the cube */
         UVs = new Vector2[] {
             //X+ plane
-            new Vector2(-H, -W),
-            new Vector2(-H, +W),
-            new Vector2(+H, -W),
-            new Vector2(+H, +W),
+            new Vector2(-H, -WB),
+            new Vector2(-H, +WB),
+            new Vector2(+H, -WT),
+            new Vector2(+H, +WT),
             //X- plane
-            new Vector2(-H, -W),
-            new Vector2(-H, W),
-            new Vector2(H, -W),
-            new Vector2(H, W),
+            new Vector2(-H, -WB),
+            new Vector2(-H, WB),
+            new Vector2(H, -WT),
+            new Vector2(H, WT),
             //Y+ plane
-            new Vector2(W, L),
-            new Vector2(-W, L),
-            new Vector2(W, -L),
-            new Vector2(-W, -L),
+            new Vector2(WT, WT),
+            new Vector2(-WT, WT),
+            new Vector2(WT, -WT),
+            new Vector2(-WT, -WT),
             //Y- plane
-            new Vector2(-L, -W),
-            new Vector2(-L, W),
-            new Vector2(L, -W),
-            new Vector2(L, W),
+            new Vector2(-WB, -WB),
+            new Vector2(-WB, WB),
+            new Vector2(WB, -WB),
+            new Vector2(WB, WB),
             //Z+ plane
-            new Vector2(-H, -L),
-            new Vector2(-H, L),
-            new Vector2(H, -L),
-            new Vector2(H, L),
+            new Vector2(-H, -WB),
+            new Vector2(-H, WB),
+            new Vector2(H, -WT),
+            new Vector2(H, WT),
             //Z- plane
-            new Vector2(L, H),
-            new Vector2(-L, H),
-            new Vector2(L, -H),
-            new Vector2(-L, -H)
+            new Vector2(WT, H),
+            new Vector2(-WT, H),
+            new Vector2(WB, -H),
+            new Vector2(-WB, -H)
         };
 
 
