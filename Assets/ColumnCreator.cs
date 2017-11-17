@@ -80,22 +80,22 @@ public class ColumnCreator : MonoBehaviour {
         /* Create the base of the column that sits on the y = 0 point and the highest point of the column */
         Vector3 bottomBase = new Vector3(0, baseHeight/2f, 0);
         Vector3 topBase = new Vector3(0, baseHeight + fillerHeight*2 + cylinderHeight + baseHeight/2f, 0);
-        //CreateBox(bottomBase, baseHeight, baseWidth, baseWidth);
-        //CreateBox(topBase, baseHeight, baseWidth, baseWidth);
+        CreateBox(bottomBase, baseHeight, baseWidth, baseWidth);
+        CreateBox(topBase, baseHeight, baseWidth, baseWidth);
 
         /* Create a series of filler shapes that are placed between the base and the center cylinder */
         CreateFiller(true);
         CreateFiller(false);
 
         /* Create the cylinder center of the column */
-        //CreateCenterCylinder();
+        CreateCenterCylinder();
     }
     
     void CreateCenterCylinder() {
         /*
          * Create the center cylinder
          */
-
+          
         /* Get the points that will be used to form one edge of the cylinder */
         Vector3 bottomPoint = new Vector3(cylinderRadius, baseHeight + fillerHeight, 0);
         Vector3 centerPoint = new Vector3(cylinderRadius, baseHeight + cylinderHeight/2f + fillerHeight, 0);
@@ -132,15 +132,15 @@ public class ColumnCreator : MonoBehaviour {
         /* 
          * Add meshes to the filler area until the fillerHeight distance is met 
          */
+        /* Add a circular mesh to the filler section */
+        fillerPartHeight = fillerHeight/2f;
+        CreateFillerCircularMesh(ref currentYPos, fillerPartHeight*directionAdjustment, 25, 0.5f*baseWidth, 0.25f*baseWidth, 0, 1f);
 
         /* Add a box to the filler section */
         fillerPartHeight = fillerHeight/2f;
-        CreateFillerBox(ref currentYPos, fillerPartHeight, baseWidth*0.5f, baseWidth*0.8f);
+        CreateFillerBox(ref currentYPos, fillerPartHeight*directionAdjustment, baseWidth*0.9f, baseWidth*0.9f);
 
 
-        /* Add a circular mesh to the filler section */
-        fillerPartHeight = fillerHeight/2f;
-        //CreateFillerCircularMesh(ref currentYPos, fillerPartHeight, 5, 0.65f*baseWidth, 0.1f*baseWidth, 0, 0.5f);
     }
 
     void CreateFillerBox(ref float currentYPos, float fillerSectionHeigth, float boxTopWidth, float boxBottomWidth) {
@@ -154,7 +154,7 @@ public class ColumnCreator : MonoBehaviour {
         boxHeight = Mathf.Abs(fillerSectionHeigth);
 
         currentYPos += fillerSectionHeigth/2f;
-        CreateBox(new Vector3(0, currentYPos, 0), boxHeight, boxTopWidth*1f, boxBottomWidth);
+        CreateBox(new Vector3(0, currentYPos, 0), boxHeight, boxTopWidth, boxBottomWidth);
         currentYPos += fillerSectionHeigth/2f;
     }
 
@@ -170,15 +170,22 @@ public class ColumnCreator : MonoBehaviour {
          * startingRad: What rad degrees the radius starts at from a 0 to 1 scale with 1 being PI*2.
          * radInc: How much the rad will increase over the section's height. 1 is equal to PI*2, ie the whole sine wave.
          */
-         float sineWaveOffset;
+        float sineWaveOffset;
+        //fillerSectionHeigth = Mathf.Abs(fillerSectionHeigth);
 
+        Debug.Log(vertexCount);
         Vector3[] roundedEdgeVertices = new Vector3[vertexCount];
-        for(int i = 0; i < vertexCount; i++) {
-        	sineWaveOffset = Mathf.Sin(startingRad*Mathf.PI*2f + radInc*(Mathf.PI*2f)*i/(float)vertexCount);
+        //p[lace thje starting vertexes
+        roundedEdgeVertices[0].x = (width + maxBumpWidth*Mathf.Sin(startingRad*Mathf.PI*2f))/2f;
+        roundedEdgeVertices[0].y = currentYPos;
+        roundedEdgeVertices[0].z = 0;
+        //
+        for(int i = 1; i < vertexCount; i++) {
+        	sineWaveOffset = Mathf.Sin(startingRad*Mathf.PI*2f + radInc*(Mathf.PI*2f)*i/(float)(vertexCount-1));
+            currentYPos += fillerSectionHeigth/(vertexCount-1);
             roundedEdgeVertices[i].x = (width + maxBumpWidth*sineWaveOffset)/2f;
             roundedEdgeVertices[i].y = currentYPos;
             roundedEdgeVertices[i].z = 0;
-            currentYPos += fillerSectionHeigth/vertexCount;
         }
         
         CreateCircularMesh(roundedEdgeVertices);
@@ -195,6 +202,7 @@ public class ColumnCreator : MonoBehaviour {
         Vector3[] vertices;
         Vector2[] UVs;
         int[] triangles;
+        float currentHeight = origin.y - boxHeight/2f;
 
         /* Get the distance each vertex of the cube will be from it's center */
         float WT = boxTopWidth/2f;
@@ -260,34 +268,38 @@ public class ColumnCreator : MonoBehaviour {
         /* Change the UV depending on if the box has the same height on top and bottom */
         float diffBot, diffTop, largest;
         if(boxBottomWidth == boxTopWidth) {
-            WB = Mathf.Ceil(boxBottomWidth)/4f;
-            WT = Mathf.Ceil(boxTopWidth)/4f;
+            WB = Mathf.Ceil(boxBottomWidth);
+            WT = Mathf.Ceil(boxTopWidth);
             largest = WB;
             diffBot = 0;
             diffTop = 0;
         }
         /* Set the values depending on which width is the largest */
         else if(WT > WB) {
+            WT = boxTopWidth;
+            WB = boxBottomWidth;
             largest = WT;
             diffBot = WT - WB;
             diffTop = 0;
         }
         else {
+            WT = boxTopWidth;
+            WB = boxBottomWidth;
             largest = WB;
             diffTop = WB - WT;
             diffBot = 0;
         }
         UVs = new Vector2[] {
             //X+ plane
-            new Vector2(WT + diffTop/2f, H),
-            new Vector2(diffTop/2f, H),
-            new Vector2(WB + diffBot/2f, 0),
-            new Vector2(diffBot/2f, 0),
+            new Vector2(WT + diffTop/2f, currentHeight + boxHeight),
+            new Vector2(diffTop/2f, currentHeight + boxHeight),
+            new Vector2(WB + diffBot/2f, currentHeight),
+            new Vector2(diffBot/2f, currentHeight),
             //X- plane
-            new Vector2(largest*2 + 0 + diffTop/2f, H),
-            new Vector2(largest*2 + WT + diffTop/2f, H),
-            new Vector2(largest*2 + diffBot/2f, 0),
-            new Vector2(largest*2 + WB + diffBot/2f, 0),
+            new Vector2(largest*2 + 0 + diffTop/2f, currentHeight + boxHeight),
+            new Vector2(largest*2 + WT + diffTop/2f, currentHeight + boxHeight),
+            new Vector2(largest*2 + diffBot/2f, currentHeight),
+            new Vector2(largest*2 + WB + diffBot/2f, currentHeight),
             //Y+ plane
             new Vector2(-WT/2f, WT/2f),
             new Vector2(WT/2f, WT/2f),
@@ -299,15 +311,15 @@ public class ColumnCreator : MonoBehaviour {
             new Vector2(WB/2f, -WB/2f),
             new Vector2(-WB/2f, -WB/2f),
             //Z+ plane
-            new Vector2(largest + 0 + diffTop/2f, H),
-            new Vector2(largest + WT + diffTop/2f, H),
-            new Vector2(largest + diffBot/2f, 0),
-            new Vector2(largest + WB + diffBot/2f, 0),
+            new Vector2(largest + 0 + diffTop/2f, currentHeight + boxHeight),
+            new Vector2(largest + WT + diffTop/2f, currentHeight + boxHeight),
+            new Vector2(largest + diffBot/2f, currentHeight),
+            new Vector2(largest + WB + diffBot/2f, currentHeight),
             //Z- plane
-            new Vector2(largest*3 + WT + diffTop/2f, H),
-            new Vector2(largest*3 + 0 + diffTop/2f, H),
-            new Vector2(largest*3 + WB + diffBot/2f, 0),
-            new Vector2(largest*3 + diffBot/2f, 0)
+            new Vector2(largest*3 + WT + diffTop/2f, currentHeight + boxHeight),
+            new Vector2(largest*3 + 0 + diffTop/2f, currentHeight + boxHeight),
+            new Vector2(largest*3 + WB + diffBot/2f, currentHeight),
+            new Vector2(largest*3 + diffBot/2f, currentHeight)
         };
 
 
@@ -441,7 +453,7 @@ public class ColumnCreator : MonoBehaviour {
                 triangles[triangleIndex + 5] = vertexIndex;
             }
         }
-        
+
         return triangles;
     }
 
@@ -456,6 +468,9 @@ public class ColumnCreator : MonoBehaviour {
         float highestVertice;
         float x, y;
 
+		/* Get the perimeter length of the circle to properly size the x UV value */
+		float perimiter = Mathf.Ceil((vertices[0].z) * Mathf.PI * 2);
+
         /* Get the limits of the vertices on the y axis to properly value each vert's UV */
         lowestVertice = vertices[0].y;
         highestVertice = vertices[vertices.Length-1].y;
@@ -468,10 +483,10 @@ public class ColumnCreator : MonoBehaviour {
             for(int ii = 0; ii < circleVertexCount; ii++) {
 
                 /* X is dependent on what index position the vector is in */
-                x = ii / ((float)circleVertexCount-1);
+                x = -perimiter*ii / ((float)circleVertexCount-1);
 
                 /* Y is dependent on the Y position of the vector relative to the other vectors */
-                y = startingHeight + height*((vertices[i*circleVertexCount + ii].y - lowestVertice) / (highestVertice - lowestVertice));
+                y = vertices[i*circleVertexCount + ii].y;
 
                 UVs[i*circleVertexCount + ii] = new Vector2(x, y);
             }
