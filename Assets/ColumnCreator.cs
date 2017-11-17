@@ -80,8 +80,8 @@ public class ColumnCreator : MonoBehaviour {
         /* Create the base of the column that sits on the y = 0 point and the highest point of the column */
         Vector3 bottomBase = new Vector3(0, baseHeight/2f, 0);
         Vector3 topBase = new Vector3(0, baseHeight + fillerHeight*2 + cylinderHeight + baseHeight/2f, 0);
-        CreateBox(bottomBase, baseHeight, baseWidth, baseWidth);
-        CreateBox(topBase, baseHeight, baseWidth, baseWidth);
+        //CreateBox(bottomBase, baseHeight, baseWidth, baseWidth);
+        //CreateBox(topBase, baseHeight, baseWidth, baseWidth);
 
         /* Create a series of filler shapes that are placed between the base and the center cylinder */
         CreateFiller(true);
@@ -135,12 +135,12 @@ public class ColumnCreator : MonoBehaviour {
 
         /* Add a box to the filler section */
         fillerPartHeight = fillerHeight/2f;
-        CreateFillerBox(ref currentYPos, fillerPartHeight, baseWidth*0.8f, baseWidth*0.8f);
+        CreateFillerBox(ref currentYPos, fillerPartHeight, baseWidth*0.5f, baseWidth*0.8f);
 
 
         /* Add a circular mesh to the filler section */
         fillerPartHeight = fillerHeight/2f;
-        CreateFillerCircularMesh(ref currentYPos, fillerPartHeight, 5, 0.65f*baseWidth, 0.1f*baseWidth, 0, 0.5f);
+        //CreateFillerCircularMesh(ref currentYPos, fillerPartHeight, 5, 0.65f*baseWidth, 0.1f*baseWidth, 0, 0.5f);
     }
 
     void CreateFillerBox(ref float currentYPos, float fillerSectionHeigth, float boxTopWidth, float boxBottomWidth) {
@@ -255,38 +255,59 @@ public class ColumnCreator : MonoBehaviour {
             22, 21, 20, 22, 23, 21
         };
 
-        /* Set the UVs of the cube */
+        /* Set the UVs of the cube. Make sure the UV positions that get used 
+         * are integer numbers to allow perfect looping of the texture. */
+        /* Change the UV depending on if the box has the same height on top and bottom */
+        float diffBot, diffTop, largest;
+        if(boxBottomWidth == boxTopWidth) {
+            WB = Mathf.Ceil(boxBottomWidth)/4f;
+            WT = Mathf.Ceil(boxTopWidth)/4f;
+            largest = WB;
+            diffBot = 0;
+            diffTop = 0;
+        }
+        /* Set the values depending on which width is the largest */
+        else if(WT > WB) {
+            largest = WT;
+            diffBot = WT - WB;
+            diffTop = 0;
+        }
+        else {
+            largest = WB;
+            diffTop = WB - WT;
+            diffBot = 0;
+        }
         UVs = new Vector2[] {
             //X+ plane
-            new Vector2(-H, -WB),
-            new Vector2(-H, +WB),
-            new Vector2(+H, -WT),
-            new Vector2(+H, +WT),
+            new Vector2(WT + diffTop/2f, H),
+            new Vector2(diffTop/2f, H),
+            new Vector2(WB + diffBot/2f, 0),
+            new Vector2(diffBot/2f, 0),
             //X- plane
-            new Vector2(-H, -WB),
-            new Vector2(-H, WB),
-            new Vector2(H, -WT),
-            new Vector2(H, WT),
+            new Vector2(largest*2 + 0 + diffTop/2f, H),
+            new Vector2(largest*2 + WT + diffTop/2f, H),
+            new Vector2(largest*2 + diffBot/2f, 0),
+            new Vector2(largest*2 + WB + diffBot/2f, 0),
             //Y+ plane
-            new Vector2(WT, WT),
-            new Vector2(-WT, WT),
-            new Vector2(WT, -WT),
-            new Vector2(-WT, -WT),
+            new Vector2(-WT/2f, WT/2f),
+            new Vector2(WT/2f, WT/2f),
+            new Vector2(-WT/2f, -WT/2f),
+            new Vector2(WT/2f, -WT/2f),
             //Y- plane
-            new Vector2(-WB, -WB),
-            new Vector2(-WB, WB),
-            new Vector2(WB, -WB),
-            new Vector2(WB, WB),
+            new Vector2(WB/2f, WB/2f),
+            new Vector2(-WB/2f, WB/2f),
+            new Vector2(WB/2f, -WB/2f),
+            new Vector2(-WB/2f, -WB/2f),
             //Z+ plane
-            new Vector2(-H, -WB),
-            new Vector2(-H, WB),
-            new Vector2(H, -WT),
-            new Vector2(H, WT),
+            new Vector2(largest + 0 + diffTop/2f, H),
+            new Vector2(largest + WT + diffTop/2f, H),
+            new Vector2(largest + diffBot/2f, 0),
+            new Vector2(largest + WB + diffBot/2f, 0),
             //Z- plane
-            new Vector2(WT, H),
-            new Vector2(-WT, H),
-            new Vector2(WB, -H),
-            new Vector2(-WB, -H)
+            new Vector2(largest*3 + WT + diffTop/2f, H),
+            new Vector2(largest*3 + 0 + diffTop/2f, H),
+            new Vector2(largest*3 + WB + diffBot/2f, 0),
+            new Vector2(largest*3 + diffBot/2f, 0)
         };
 
 
