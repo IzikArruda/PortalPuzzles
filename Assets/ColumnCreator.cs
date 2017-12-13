@@ -109,56 +109,55 @@ public class ColumnCreator : MonoBehaviour {
         CreateCircularMesh(cylinderPoints);
     }
 
-    void CreateFiller(bool bottomBase) {
+    void CreateFiller(bool topBase) {
         /*
          * Create a series of shapes to be placed between the base and the main cylinder of the column.
          * The given boolean will be true if the filler is added on the bottom base instead of the top base.
          */
         float currentYPos;
         float fillerPartHeight;
-        float boxHeight, boxWidth;
-        int directionAdjustment;
+        int directionAdjustment = 1;
 
         /* Change how the position will increase/decrease depending on if the filler is added above or bellow */
-        if(bottomBase) {
-            directionAdjustment = 1;
-            currentYPos = baseHeight;
-        }
-        else {
+        if(topBase) {
             directionAdjustment = -1;
-            currentYPos = baseHeight + cylinderHeight + fillerHeight*2;
         }
 
-        /* 
-         * Add meshes to the filler area until the fillerHeight distance is met 
-         */
-        /* Add a circular mesh to the filler section */
-        fillerPartHeight = fillerHeight/2f;
-        CreateFillerCircularMesh(ref currentYPos, fillerPartHeight*directionAdjustment, 25, 0.5f*baseWidth, 0.25f*baseWidth, 0, 1f);
-
-        /* Add a box to the filler section */
-        fillerPartHeight = fillerHeight/2f;
-        CreateFillerBox(ref currentYPos, fillerPartHeight*directionAdjustment, baseWidth*0.9f, baseWidth*0.9f);
-
-
+        /* Get the position to be at the start of the selected filler */
+        currentYPos = baseHeight + fillerHeight + cylinderHeight/2f + directionAdjustment*cylinderHeight/2f;
+        
+        /* Create each filler object */
+        fillerPartHeight = directionAdjustment*fillerHeight/2f;
+        currentYPos += fillerPartHeight/2f;
+        CreateFillerCircularMesh(currentYPos, fillerPartHeight, 25, 0.5f*baseWidth, 0.25f*baseWidth, 0, 1f);
+        currentYPos += fillerPartHeight/2f;
+        
+        fillerPartHeight = directionAdjustment*fillerHeight/2f;
+        currentYPos += fillerPartHeight/2f;
+        CreateFillerBox(currentYPos, fillerPartHeight, baseWidth*0.9f, baseWidth*0.5f);
+        currentYPos += fillerPartHeight/2f;
     }
 
-    void CreateFillerBox(ref float currentYPos, float fillerSectionHeigth, float boxTopWidth, float boxBottomWidth) {
+    void CreateFillerBox(float currentYPos, float fillerSectionHeigth, float boxTopWidth, float boxBottomWidth) {
         /*
          * Use the given variables to create a box that will be used as a filler mesh placed between
          * the base and the main cylinder of the column.
+         * 
+         * If the fillerSectionHeight is negative, then reverse the top and bottom widths as the box will be flipped.
          */
         float boxHeight;
-        
-        /* The height of the box is meassured using the height of this section piece */
-        boxHeight = Mathf.Abs(fillerSectionHeigth);
 
-        currentYPos += fillerSectionHeigth/2f;
-        CreateBox(new Vector3(0, currentYPos, 0), boxHeight, boxTopWidth, boxBottomWidth);
-        currentYPos += fillerSectionHeigth/2f;
+        if(fillerSectionHeigth < 0) {
+            float temp = boxTopWidth;
+            boxTopWidth = boxBottomWidth;
+            boxBottomWidth = temp;
+        }
+        
+        /* Create a box using the given sizes */
+        CreateBox(new Vector3(0, currentYPos, 0), Mathf.Abs(fillerSectionHeigth), boxTopWidth, boxBottomWidth);
     }
 
-    void CreateFillerCircularMesh(ref float currentYPos, float fillerSectionHeigth, int vertexCount,
+    void CreateFillerCircularMesh(float currentYPos, float fillerSectionHeigth, int vertexCount,
 			float width, float maxBumpWidth, float startingRad, float radInc) {
         /*
          * Create a circular mesh using the given parameters. Use a sine function to add an offset
@@ -171,18 +170,21 @@ public class ColumnCreator : MonoBehaviour {
          * radInc: How much the rad will increase over the section's height. 1 is equal to PI*2, ie the whole sine wave.
          */
         float sineWaveOffset;
-        //fillerSectionHeigth = Mathf.Abs(fillerSectionHeigth);
-
-        Debug.Log(vertexCount);
+        currentYPos -= Mathf.Abs(fillerSectionHeigth)/2f;
+        
+        /* If fillerSectionHeigth is negative, change the rad values to flip the filler mesh */
+        if(fillerSectionHeigth < 0) {
+            startingRad =+ radInc;
+            radInc *= -1f;
+        }
+        
         Vector3[] roundedEdgeVertices = new Vector3[vertexCount];
-        //p[lace thje starting vertexes
         roundedEdgeVertices[0].x = (width + maxBumpWidth*Mathf.Sin(startingRad*Mathf.PI*2f))/2f;
         roundedEdgeVertices[0].y = currentYPos;
         roundedEdgeVertices[0].z = 0;
-        //
         for(int i = 1; i < vertexCount; i++) {
         	sineWaveOffset = Mathf.Sin(startingRad*Mathf.PI*2f + radInc*(Mathf.PI*2f)*i/(float)(vertexCount-1));
-            currentYPos += fillerSectionHeigth/(vertexCount-1);
+            currentYPos += Mathf.Abs(fillerSectionHeigth)/(vertexCount-1);
             roundedEdgeVertices[i].x = (width + maxBumpWidth*sineWaveOffset)/2f;
             roundedEdgeVertices[i].y = currentYPos;
             roundedEdgeVertices[i].z = 0;
@@ -190,6 +192,7 @@ public class ColumnCreator : MonoBehaviour {
         
         CreateCircularMesh(roundedEdgeVertices);
     }
+
 
     /* ----------- Mesh Setting Functions ------------------------------------------------------------- */
 
@@ -406,9 +409,7 @@ public class ColumnCreator : MonoBehaviour {
         newMesh.RecalculateNormals();
         GetComponent<MeshFilter>().mesh = newMesh;
     }
-
-
-
+    
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
     
