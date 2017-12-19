@@ -20,9 +20,15 @@ public class ColumnCreator : MonoBehaviour {
     public float baseWidth;
     public float baseHeight;
 
-    /* Sizes of the pillar's cylinder */
+    /* Sizes of the pillar's cylinder. An offset is applied as a sin function to have the pillar seem curved */
     public float cylinderHeight;
     public float cylinderRadius;
+    /* How much extra radius is applied to the cylinder */
+    public float cylinderBumpRadius;
+    /* How stretched the sin function will be when applying the bump */
+    public float cylinderBumpStretch;
+    /* An Offset applied to the center cylinder's bump amount */
+    public float cylinderBumpOffset;
 
     /* The amount of distance between the base and the center cylinder */
     public float fillerHeight;
@@ -93,19 +99,22 @@ public class ColumnCreator : MonoBehaviour {
     
     void CreateCenterCylinder() {
         /*
-         * Create the center cylinder
+         * Create the center cylinder of the pillar. The amount of vertices used to define the pillar 
+         * increase as the pillar's height increases.
          */
           
-        /* Get the points that will be used to form one edge of the cylinder */
-        Vector3 bottomPoint = new Vector3(cylinderRadius, baseHeight + fillerHeight, 0);
-        Vector3 centerPoint = new Vector3(cylinderRadius, baseHeight + cylinderHeight/2f + fillerHeight, 0);
-        Vector3 topPoint = new Vector3(cylinderRadius, baseHeight + fillerHeight + cylinderHeight, 0);
-        Vector3[] cylinderPoints = new Vector3[3];
-        cylinderPoints[0] = bottomPoint;
-        cylinderPoints[1] = centerPoint;
-        cylinderPoints[2] = topPoint;
+        /* How much distance is between the points that form the pillar's center cylinder */
+        float cylinderPointDistance = 0.2f;
+        int pointCount = Mathf.CeilToInt(cylinderHeight/cylinderPointDistance);
 
-        //Use a function that takes in a series of vector3s and circles them around the origin
+        /* Create an array of points that represent the center cylinder */
+        Vector3[] cylinderPoints = new Vector3[pointCount];
+        for(int i = 0; i < pointCount; i++) {
+            float width = cylinderRadius + cylinderBumpRadius*Mathf.Sin(cylinderBumpOffset*2*Mathf.PI + i*2*Mathf.PI/(pointCount-1));
+            float height = baseHeight + fillerHeight + i*(cylinderHeight/(pointCount-1));
+            cylinderPoints[i] = new Vector3(width, height, 0);
+        }
+        
         CreateCircularMesh(cylinderPoints);
     }
 
