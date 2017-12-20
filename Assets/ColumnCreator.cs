@@ -83,6 +83,9 @@ public class ColumnCreator : MonoBehaviour {
         /* Remove the current mesh of the column */
         GetComponent<MeshFilter>().sharedMesh = null;
 
+        /* Remove any colliders associated with the previous column model */
+        DeleteColliders();
+
         /* Create the base of the column that sits on the y = 0 point and the highest point of the column */
         Vector3 bottomBase = new Vector3(0, baseHeight/2f, 0);
         Vector3 topBase = new Vector3(0, baseHeight + fillerHeight*2 + cylinderHeight + baseHeight/2f, 0);
@@ -333,10 +336,17 @@ public class ColumnCreator : MonoBehaviour {
             new Vector2(largest*3 + WB + diffBot/2f, currentHeight),
             new Vector2(largest*3 + diffBot/2f, currentHeight)
         };
-
-
+        
         /* Add the vertices, triangles and UVs to the column's current mesh */
         AddToMesh(vertices, triangles, UVs);
+
+
+
+        /* Create a box collider mesh that represents this position */
+        BoxCollider box1 = gameObject.AddComponent<BoxCollider>();
+        box1.center = origin;
+        float averageWidth = (boxBottomWidth + boxTopWidth)/2f;
+        box1.size = new Vector3(averageWidth, boxHeight, averageWidth);
     }
     
     void CreateCircularMesh(Vector3[] vertexPoints) {
@@ -371,6 +381,22 @@ public class ColumnCreator : MonoBehaviour {
         Vector2[] UVs = GetCircularUVs(vertices, circleVertexCount, sectionVertexCount, 0, 1.2f);
         
         AddToMesh(vertices, triangles, UVs);
+
+
+        /* Create the capsule collider used to define this mesh */
+        float capsuleHeight = (vertexPoints[vertexPoints.Length-1].y - vertexPoints[0].y);
+        float centerHeigth = (vertexPoints[0].y + vertexPoints[vertexPoints.Length-1].y)/2f;
+        float capsuleWidth = 0;
+        foreach(Vector3 vec in vertexPoints) { capsuleWidth+= vec.x; }
+        capsuleWidth /= vertexPoints.Length;
+        CapsuleCollider capsule = gameObject.AddComponent<CapsuleCollider>();
+        capsule.center = new Vector3(0, centerHeigth, 0);
+        capsule.radius = capsuleWidth;
+        capsule.height = capsuleHeight;
+
+        //Add the radius amount to the height so that the capsule overlaps onto the next section
+        capsule.height += capsule.radius;
+
     }
 
     void AddToMesh(Vector3[] addedVertices, int[] addedTriangles, Vector2[] addedUVs) {
@@ -418,10 +444,23 @@ public class ColumnCreator : MonoBehaviour {
         newMesh.RecalculateNormals();
         GetComponent<MeshFilter>().mesh = newMesh;
     }
-    
+
+
+    /* ----------- Event Functions ------------------------------------------------------------- */
+
+    void DeleteColliders() {
+        /*
+         * Get each collider associated with this column and delete them.
+         */
+
+        Collider col = gameObject.GetComponent<Collider>();
+        while(col != null) {
+            DestroyImmediate(col);
+            col = gameObject.GetComponent<Collider>();
+        }
+    }
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
-    
     Vector3[] GetCircularVertices(float radius, float height, int vertexCount) {
         /*
          * Return an array of vertexes that form a circle by rotating a point around the y axis.
@@ -504,4 +543,5 @@ public class ColumnCreator : MonoBehaviour {
 
         return UVs;
     }
+
 }
