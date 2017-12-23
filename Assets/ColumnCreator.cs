@@ -14,6 +14,9 @@ public class ColumnCreator : MonoBehaviour {
     //The material used by the pillar
     public Material columnMaterial;
 
+    /* The seed used to set the random values used to define the column */
+    public int seed;
+
 
     /* --- Key Shape Values ------------------- */
     /* Sizes of the column's base */
@@ -183,25 +186,23 @@ public class ColumnCreator : MonoBehaviour {
          */
         float sineWaveOffset;
         currentYPos -= Mathf.Abs(fillerSectionHeigth)/2f;
-        
+
         /* If fillerSectionHeigth is negative, change the rad values to flip the filler mesh */
         if(fillerSectionHeigth < 0) {
             startingRad =+ radInc;
             radInc *= -1f;
         }
         
+        /* Populate the vertices array for the circular filler mesh */
         Vector3[] roundedEdgeVertices = new Vector3[vertexCount];
-        roundedEdgeVertices[0].x = (width + maxBumpWidth*Mathf.Sin(startingRad*Mathf.PI*2f))/2f;
-        roundedEdgeVertices[0].y = currentYPos;
-        roundedEdgeVertices[0].z = 0;
-        for(int i = 1; i < vertexCount; i++) {
+        for(int i = 0; i < vertexCount; i++) {
         	sineWaveOffset = Mathf.Sin(startingRad*Mathf.PI*2f + radInc*(Mathf.PI*2f)*i/(float)(vertexCount-1));
-            currentYPos += Mathf.Abs(fillerSectionHeigth)/(vertexCount-1);
             roundedEdgeVertices[i].x = (width + maxBumpWidth*sineWaveOffset)/2f;
             roundedEdgeVertices[i].y = currentYPos;
             roundedEdgeVertices[i].z = 0;
+            currentYPos += Mathf.Abs(fillerSectionHeigth)/(vertexCount-1);
         }
-        
+
         CreateCircularMesh(roundedEdgeVertices);
     }
 
@@ -352,6 +353,9 @@ public class ColumnCreator : MonoBehaviour {
     void CreateCircularMesh(Vector3[] vertexPoints) {
         /*
          * Create a mesh that rotates around the origin using each vertex's x distance as a radius.
+         * The goal is to produce a cylinder that is closed off on both top and bottom.
+         * circleVertexCount is the amount of vertexes used with one rotation around the Y axis.
+         * sectionVertexCount is how many times this rotation around the Y axis will occur.
          */
         int circleVertexCount;
         int sectionVertexCount;
@@ -362,26 +366,62 @@ public class ColumnCreator : MonoBehaviour {
         circleVertexCount = 20 +1;
         sectionVertexCount = vertexPoints.Length;
 
-
         /* Initialize the main vector array now that we know the amount of vectors to be used */
-        vertices = new Vector3[sectionVertexCount * circleVertexCount];
+        vertices = new Vector3[(sectionVertexCount+2) * circleVertexCount + 2];
 
+
+        /*
+         * Set the vertices of the circular mesh
+         */
+        /* Get an array for each circle that rotates around the Y axis and add them to the main vertices array */
         for(int i = 0; i < sectionVertexCount; i++) {
-            /* Get an array of all vectors that form a circle by rotating the current vertex around the origin */
             Vector3[] vectorCircle = GetCircularVertices(vertexPoints[i].x, vertexPoints[i].y, circleVertexCount);
-
-            /* Add the vectors that form the found circle into the main vector array */
             vectorCircle.CopyTo(vertices, circleVertexCount*i);
         }
-        
+
+        /* Set the vertices that are used to close off the top and bottom of the mesh */
+        vertices[(sectionVertexCount+1)*circleVertexCount] = new Vector3(0, vertices[0].y, 0);
+        vertices[(sectionVertexCount+2)*circleVertexCount + 1] = new Vector3(0, vertices[sectionVertexCount*circleVertexCount-1].y, 0);
+        for(int i = 0; i < circleVertexCount; i++) {
+            vertices[sectionVertexCount*circleVertexCount + i] = vertices[i];
+            vertices[(sectionVertexCount+1)*circleVertexCount + 1 + i] = vertices[(sectionVertexCount-1)*circleVertexCount + i];
+        }
+
+
+        /*
+         * Set the triangles of the circular mesh
+         */
         /* Get the array of triangles that define the polygons of the cylinder */
         int[] triangles = GetCircularTriangles(vertices, circleVertexCount, sectionVertexCount);
-        
+
+        /* Add the triangles that close off the top and bottom */
+        for(int i = 0; i < circleVertexCount; i++) {
+            triangles[circleVertexCount*sectionVertexCount*6 + i*6 + 0] = sectionVertexCount*circleVertexCount+i + 1;
+            triangles[circleVertexCount*sectionVertexCount*6 + i*6 + 1] = sectionVertexCount*circleVertexCount+i;
+            //Bottom Center vertex
+            triangles[circleVertexCount*sectionVertexCount*6 + i*6 + 2] = (sectionVertexCount+1)*circleVertexCount;
+
+            triangles[circleVertexCount*sectionVertexCount*6 + i*6 + 3] = (sectionVertexCount+1)*circleVertexCount+1+i;
+            triangles[circleVertexCount*sectionVertexCount*6 + i*6 + 4] = (sectionVertexCount+1)*circleVertexCount+1+i + 1;
+            //Top Center vertex
+            triangles[circleVertexCount*sectionVertexCount*6 + i*6 + 5] = (sectionVertexCount+2)*circleVertexCount+1;
+        }
+
+
+        /*
+         * Set the UVs of the circular mesh
+         */
         /* With the array of vertices and triangles we can now add this cylinder to the mesh */
         Vector2[] UVs = GetCircularUVs(vertices, circleVertexCount, sectionVertexCount, 0, 1.2f);
-        
-        AddToMesh(vertices, triangles, UVs);
 
+        /* Set the UVs for the top and bottom closed off ends of the mesh */
+        for(int i = sectionVertexCount*circleVertexCount; i < UVs.Length; i++) {
+            UVs[i].x = vertices[i].x;
+            UVs[i].y = vertices[i].z;
+        }
+
+
+        AddToMesh(vertices, triangles, UVs);
 
         /* Create the capsule collider used to define this mesh */
         float capsuleHeight = (vertexPoints[vertexPoints.Length-1].y - vertexPoints[0].y);
@@ -394,9 +434,8 @@ public class ColumnCreator : MonoBehaviour {
         capsule.radius = capsuleWidth;
         capsule.height = capsuleHeight;
 
-        //Add the radius amount to the height so that the capsule overlaps onto the next section
+        /* Add the radius amount to the height so that the capsule overlaps onto the next section */
         capsule.height += capsule.radius;
-
     }
 
     void AddToMesh(Vector3[] addedVertices, int[] addedTriangles, Vector2[] addedUVs) {
@@ -460,6 +499,7 @@ public class ColumnCreator : MonoBehaviour {
         }
     }
 
+
     /* ----------- Helper Functions ------------------------------------------------------------- */
     Vector3[] GetCircularVertices(float radius, float height, int vertexCount) {
         /*
@@ -483,7 +523,7 @@ public class ColumnCreator : MonoBehaviour {
          * Assuming the array of vertices are ordered from section to section starting with the bottom
          * and going up, use the given vertex counts to generate an array of triangles to define the mesh.
          */
-        int[] triangles = new int[circleVertexCount*sectionVertexCount*6];
+        int[] triangles = new int[circleVertexCount*sectionVertexCount*6 + circleVertexCount*6];
         int triangleIndex;
         int vertexIndex;
 
