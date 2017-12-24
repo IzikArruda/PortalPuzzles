@@ -11,34 +11,51 @@ using System.Collections;
 [ExecuteInEditMode]
 public class ColumnCreator : MonoBehaviour {
 
-    //The material used by the pillar
+    /* The material used by the pillar */
     public Material columnMaterial;
 
     /* The seed used to set the random values used to define the column */
     public int seed;
+    public bool newSeed;
+    
+    /* When this is true, the next update frame will recreate the column */
+    public bool recreateObject;
 
+    
+    /* --- User Given Pillar Stats ------------------- */
+    /* The pillar's total height. It will not reach above or bellow this value */
+    public float totalHeight;
 
-    /* --- Key Shape Values ------------------- */
-    /* Sizes of the column's base */
+    /* The width of the base and it's min/max ratio controls the width of all over pillar elements */
     public float baseWidth;
     public float baseHeight;
+    [Range(1, 0)]
+    public float minWidthRatio;
+    [Range(1, 2)]
+    public float maxWidthRatio;
 
-    /* Sizes of the pillar's cylinder. An offset is applied as a sin function to have the pillar seem curved */
-    public float cylinderHeight;
-    public float cylinderRadius;
-    /* How much extra radius is applied to the cylinder */
+
+    /* --- Seed Given Pillar Stats ---------------------- */
+
+    //Cylinder
+    private float cylinderHeight;
+    private float cylinderRadius;
+    /* How much extra radius is applied to the cylinder by the bump */
     public float cylinderBumpRadius;
     /* How stretched the sin function will be when applying the bump */
+    //default 1. 
     public float cylinderBumpStretch;
     /* An Offset applied to the center cylinder's bump amount */
+    //only from 0 to 1
     public float cylinderBumpOffset;
 
-    /* The amount of distance between the base and the center cylinder */
+    //Filler
+    /* How the filler of the pillar is made. Each fillerStat is of the form of a vector3 where:
+     * x = the form of the filler. 0 is circular, 1 is box
+     * y = the (ratio of baseWidth) width for box, radius for circular.
+     * z = nothing yet */
+    public Vector3[] fillerStats;
     public float fillerHeight;
-
-    /* --- Change Detection Values ------------------- */
-    /* Detect when a key value has changed to recreate the column */
-    public bool recreateObject;
 
 
     /* ----------- Built-in Unity Functions ------------------------------------------------------------- */
@@ -69,7 +86,16 @@ public class ColumnCreator : MonoBehaviour {
          * Check if any new values will force the column to update it's shape
          */
 
-        if(recreateObject == true) {
+        /* Get a new seed value if needed. Getting a new seed will re-create the object. */
+        if(newSeed) {
+            seed = (int) (Random.value*999999);
+            newSeed = false;
+            recreateObject = true;
+        }
+
+        /* Re-create the column */
+        if(recreateObject) {
+            SetColumnStats();
             CreateColumn();
             recreateObject = false;
         }
@@ -91,13 +117,15 @@ public class ColumnCreator : MonoBehaviour {
 
         /* Create the base of the column that sits on the y = 0 point and the highest point of the column */
         Vector3 bottomBase = new Vector3(0, baseHeight/2f, 0);
-        Vector3 topBase = new Vector3(0, baseHeight + fillerHeight*2 + cylinderHeight + baseHeight/2f, 0);
+        Vector3 topBase = new Vector3(0, totalHeight - baseHeight/2, 0);
         CreateBox(bottomBase, baseHeight, baseWidth, baseWidth);
         CreateBox(topBase, baseHeight, baseWidth, baseWidth);
 
         /* Create a series of filler shapes that are placed between the base and the center cylinder */
-        CreateFiller(true);
-        CreateFiller(false);
+        if(fillerHeight > 0) {
+            CreateFiller(true);
+            CreateFiller(false);
+        }
 
         /* Create the cylinder center of the column */
         CreateCenterCylinder();
@@ -116,7 +144,7 @@ public class ColumnCreator : MonoBehaviour {
         /* Create an array of points that represent the center cylinder */
         Vector3[] cylinderPoints = new Vector3[pointCount];
         for(int i = 0; i < pointCount; i++) {
-            float width = cylinderRadius + cylinderBumpRadius*Mathf.Sin(cylinderBumpOffset*2*Mathf.PI + i*2*Mathf.PI/(pointCount-1));
+            float width = cylinderRadius + cylinderBumpRadius*Mathf.Sin(cylinderBumpOffset*2*Mathf.PI + cylinderBumpStretch*i*2*Mathf.PI/(pointCount-1));
             float height = baseHeight + fillerHeight + i*(cylinderHeight/(pointCount-1));
             cylinderPoints[i] = new Vector3(width, height, 0);
         }
@@ -142,15 +170,36 @@ public class ColumnCreator : MonoBehaviour {
         currentYPos = baseHeight + fillerHeight + cylinderHeight/2f + directionAdjustment*cylinderHeight/2f;
         
         /* Create each filler object */
-        fillerPartHeight = directionAdjustment*fillerHeight/2f;
-        currentYPos += fillerPartHeight/2f;
-        CreateFillerCircularMesh(currentYPos, fillerPartHeight, 25, 0.5f*baseWidth, 0.25f*baseWidth, 0, 1f);
-        currentYPos += fillerPartHeight/2f;
+        //fillerPartHeight = directionAdjustment*fillerHeight/2f;
+        //currentYPos += fillerPartHeight/2f;
+        //CreateFillerCircularMesh(currentYPos, fillerPartHeight, 25, 0.5f*baseWidth, 0.25f*baseWidth, 0, 1f);
+        //currentYPos += fillerPartHeight/2f;
         
-        fillerPartHeight = directionAdjustment*fillerHeight/2f;
-        currentYPos += fillerPartHeight/2f;
-        CreateFillerBox(currentYPos, fillerPartHeight, baseWidth*0.9f, baseWidth*0.5f);
-        currentYPos += fillerPartHeight/2f;
+        //fillerPartHeight = directionAdjustment*fillerHeight/2f;
+        //currentYPos += fillerPartHeight/2f;
+        //CreateFillerBox(currentYPos, fillerPartHeight, baseWidth*0.9f, baseWidth*0.5f);
+        //currentYPos += fillerPartHeight/2f;
+
+
+        /* Create a filler box using the fillerStats. For now, each filler object will take up the entire fillerHeightt */
+        for(int i = 0; i < fillerStats.Length; i++) {
+            fillerPartHeight = directionAdjustment*fillerHeight;
+            currentYPos += fillerPartHeight/2f;
+
+            /* Create a circular mesh */
+            if(fillerStats[i].x == 0) {
+                float radiusRatio = fillerStats[i].y;
+                CreateFillerCircularMesh(currentYPos, fillerPartHeight, 25, radiusRatio*baseWidth, 0*baseWidth, 0, 1f);
+            }
+
+            /* Create a box */
+            else if(fillerStats[i].x == 1) {
+                float boxWidthRatio = fillerStats[i].y;
+                CreateFillerBox(currentYPos, fillerPartHeight, baseWidth*boxWidthRatio, baseWidth*boxWidthRatio);
+            }
+
+            currentYPos += fillerPartHeight/2f;
+        }
     }
 
     void CreateFillerBox(float currentYPos, float fillerSectionHeigth, float boxTopWidth, float boxBottomWidth) {
@@ -486,6 +535,37 @@ public class ColumnCreator : MonoBehaviour {
 
 
     /* ----------- Event Functions ------------------------------------------------------------- */
+
+    void SetColumnStats() {
+        /*
+         * Use the seed to set the stats of the column.
+         */
+        float remainingHeight = totalHeight - baseHeight*2f;
+
+        fillerStats = null;
+        cylinderHeight = 0.1f;
+        cylinderRadius = 0.5f;
+
+        /* Set the heights of the column */
+        fillerHeight = 0.25f;
+        cylinderHeight = totalHeight - fillerHeight*2 - baseHeight*2;
+
+        /* Set the main column's sizes */
+        cylinderRadius = baseWidth/2;
+        cylinderBumpRadius = baseWidth*0.1f;
+
+        /* Handles how often a full "bump" occurs on the column. 0 indicates none at all, 1 indicates a single sin wave. */
+        cylinderBumpStretch = 1;
+
+        /* The offset of the bump. Keep it within 0 and 1. */
+        cylinderBumpOffset = 0;
+
+
+        /* Set the stats of the filler (if it has more than 0 height) */
+        if(fillerHeight > 0) {
+            fillerStats = new Vector3[] { new Vector3(1f, 1.1f, 0)};
+        }
+    }
 
     void DeleteColliders() {
         /*
