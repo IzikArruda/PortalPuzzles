@@ -55,7 +55,10 @@ public class ColumnCreator : MonoBehaviour {
      * y = the (ratio of baseWidth) width for box, radius for circular.
      * z = nothing yet */
     public Vector3[] fillerStats;
-    public float fillerHeight;
+    
+    /* Ratio of how much of the center pillar will be combined filer (excluding base) */
+    public float fillerHeightRatio;
+    private float fillerHeight;
 
 
     /* ----------- Built-in Unity Functions ------------------------------------------------------------- */
@@ -128,7 +131,9 @@ public class ColumnCreator : MonoBehaviour {
         }
 
         /* Create the cylinder center of the column */
-        CreateCenterCylinder();
+        if(cylinderHeight > 0) {
+            CreateCenterCylinder();
+        }
     }
     
     void CreateCenterCylinder() {
@@ -540,19 +545,70 @@ public class ColumnCreator : MonoBehaviour {
         /*
          * Use the seed to set the stats of the column.
          */
-        float remainingHeight = totalHeight - baseHeight*2f;
+        
+        /* Set the seed and generate the needed values */
+        UnityEngine.Random.State previousRandomState = Random.state;
+        Random.InitState(seed);
 
-        fillerStats = null;
-        cylinderHeight = 0.1f;
-        cylinderRadius = 0.5f;
 
-        /* Set the heights of the column */
-        fillerHeight = 0.25f;
-        cylinderHeight = totalHeight - fillerHeight*2 - baseHeight*2;
+		/*
+		 * Section heights
+		 */
+        /* Set how much pillar space the filler will occupy */
+        float fillerHeightRatioMin = 0.025f;
+        float fillerHeightRatioMax = 0.25f;
+        float fillerHeightMin = baseHeight;
+        float fillerHeigthMax = baseHeight*10;
+        float fillerEmptyChance = 0.2f;
+        
+        /* Calculate the filler height. Theres a chance the filler will be empty. */
+        fillerHeight = 0;
+        if(Random.value > fillerEmptyChance) {
+        	fillerHeightRatio = Random.value*(fillerHeightRatioMax - fillerHeightRatioMin) + fillerHeightRatioMin;
 
-        /* Set the main column's sizes */
+            /* Calculate the fillerHeight and keep it within it's limits */
+            fillerHeight = (totalHeight - baseHeight*2) * fillerHeightRatio;
+            if(fillerHeight < fillerHeightMin) {
+                fillerHeight = fillerHeightMin;
+            }
+            else if(fillerHeight > fillerHeigthMax) {
+                fillerHeight = fillerHeigthMax;
+            }
+        }
+        
+        /* Get the height of the center cylinder */
+        cylinderHeight = (totalHeight - baseHeight*2) - fillerHeight*2;
+
+        /* Check if the pillar's section heights do not expand past it's limits */
+        if(cylinderHeight < 0) {
+            Debug.Log("WARNING: Pillar exceeds it's totalHeight limit");
+        }
+
+
+        /*
+		 * Center Cylinder Stats
+		 */
+        /* Set the limits for the cylinder's radius and it's bump radius */
+        float cylinderRadiusRatioMax = 1.1f;
+		float cylinderRadiusRatioMin = 0.5f;
+		float cylinderBumpRadiusRatioMax = 0.4f;
+		float cylinderBumpRadiusRatioMin = 0.1f;
+        //float cylinderBumplessChance = 0.15f;
+        float cylinderBumplessChance = 1;
+
+        /* Set the radius of the main cylinder. The radius is calculated using base radius */
+        cylinderRadius = (baseWidth/2f) * (Random.value*(cylinderRadiusRatioMax - cylinderRadiusRatioMin) + cylinderRadiusRatioMin);
+
+        /////
         cylinderRadius = baseWidth/2;
-        cylinderBumpRadius = baseWidth*0.1f;
+        ///////
+        
+        /* Set the cylinder's bump radius */
+		if(Random.value < cylinderBumplessChance){
+			cylinderBumpRadius = 0;
+		}else{
+			cylinderBumpRadius = (baseWidth/2f) * (Random.value*(cylinderBumpRadiusRatioMax - cylinderBumpRadiusRatioMin) + cylinderBumpRadiusRatioMin);
+		}
 
         /* Handles how often a full "bump" occurs on the column. 0 indicates none at all, 1 indicates a single sin wave. */
         cylinderBumpStretch = 1;
@@ -561,10 +617,18 @@ public class ColumnCreator : MonoBehaviour {
         cylinderBumpOffset = 0;
 
 
+		/*
+		 * Filler stats
+		 */
         /* Set the stats of the filler (if it has more than 0 height) */
-        if(fillerHeight > 0) {
+        fillerStats = null;
+        float remainingHeight = totalHeight - baseHeight*2f;
+		if(fillerHeight > 0) {
             fillerStats = new Vector3[] { new Vector3(1f, 1.1f, 0)};
         }
+
+        /* Reset the RNG's seed back to it's previous value */
+        Random.state = previousRandomState;
     }
 
     void DeleteColliders() {
