@@ -149,7 +149,7 @@ public class ColumnCreator : MonoBehaviour {
         /* Create an array of points that represent the center cylinder */
         Vector3[] cylinderPoints = new Vector3[pointCount];
         for(int i = 0; i < pointCount; i++) {
-            float width = cylinderRadius + cylinderBumpRadius*Mathf.Sin(cylinderBumpOffset*2*Mathf.PI + cylinderBumpStretch*i*2*Mathf.PI/(pointCount-1));
+            float width = cylinderRadius + cylinderBumpRadius*Mathf.Sin(cylinderBumpOffset + i*cylinderBumpStretch/(pointCount-1));
             float height = baseHeight + fillerHeight + i*(cylinderHeight/(pointCount-1));
             cylinderPoints[i] = new Vector3(width, height, 0);
         }
@@ -560,7 +560,7 @@ public class ColumnCreator : MonoBehaviour {
         float fillerHeightMin = baseHeight;
         float fillerHeigthMax = baseHeight*10;
         float fillerEmptyChance = 0.2f;
-        
+
         /* Calculate the filler height. Theres a chance the filler will be empty. */
         fillerHeight = 0;
         if(Random.value > fillerEmptyChance) {
@@ -589,35 +589,64 @@ public class ColumnCreator : MonoBehaviour {
 		 * Center Cylinder Stats
 		 */
         /* Set the limits for the cylinder's radius and it's bump radius */
-        float cylinderRadiusRatioMax = 1.1f;
+        float cylinderRadiusRatioMax = 1f;
 		float cylinderRadiusRatioMin = 0.5f;
-		float cylinderBumpRadiusRatioMax = 0.4f;
-		float cylinderBumpRadiusRatioMin = 0.1f;
-        //float cylinderBumplessChance = 0.15f;
-        float cylinderBumplessChance = 1;
+		float cylinderBumpRadiusRatioMax = 0.25f;
+		float cylinderBumpRadiusRatioMin = 0.05f;
+        float cylinderBumplessChance = 0.15f;
 
         /* Set the radius of the main cylinder. The radius is calculated using base radius */
         cylinderRadius = (baseWidth/2f) * (Random.value*(cylinderRadiusRatioMax - cylinderRadiusRatioMin) + cylinderRadiusRatioMin);
-
-        /////
-        cylinderRadius = baseWidth/2;
-        ///////
         
-        /* Set the cylinder's bump radius */
-		if(Random.value < cylinderBumplessChance){
-			cylinderBumpRadius = 0;
-		}else{
-			cylinderBumpRadius = (baseWidth/2f) * (Random.value*(cylinderBumpRadiusRatioMax - cylinderBumpRadiusRatioMin) + cylinderBumpRadiusRatioMin);
-		}
-
-        /* Handles how often a full "bump" occurs on the column. 0 indicates none at all, 1 indicates a single sin wave. */
-        cylinderBumpStretch = 1;
-
-        /* The offset of the bump. Keep it within 0 and 1. */
+        /* Set the cylinder's bump stats */
+        cylinderBumpRadius = 0;
+        cylinderBumpStretch = 0;
         cylinderBumpOffset = 0;
+        if(Random.value > cylinderBumplessChance) {
+			cylinderBumpRadius = (baseWidth/2f) * (Random.value*(cylinderBumpRadiusRatioMax - cylinderBumpRadiusRatioMin) + cylinderBumpRadiusRatioMin);
 
+            /* Handles how often a full "bump" occurs on the column. Mathf.PI*2 indicates a single full sin wave. */
+            cylinderBumpStretch = Random.value*2*Mathf.PI;
 
-		/*
+            /* The offset of the bump. Keep it within [0, 2*Mathf.PI]. */
+            cylinderBumpOffset = Random.value*2*Mathf.PI;
+        }
+
+        
+        /* Get the Highest point on the sin function the bump reaches to prevent the pillar's radius from passing it's limit */
+        if(cylinderBumpRadius > 0) {
+            float HighestRange = -1;
+
+            /* Get the amount of distance from the bump's start point to the sin wave's apex */
+            float distanceToApex;
+            if(cylinderBumpOffset > Mathf.PI/2) {
+                distanceToApex = Mathf.PI*2 - (cylinderBumpOffset - Mathf.PI/2f);
+            }
+            else {
+                distanceToApex = Mathf.PI/2 - cylinderBumpOffset;
+            }
+
+            /* If the cylinderBumpStretch does not reach the apex, use the edge with the highest point */
+            if(distanceToApex > cylinderBumpStretch) {
+                HighestRange = Mathf.Max(Mathf.Sin(cylinderBumpOffset), Mathf.Sin(cylinderBumpOffset + cylinderBumpStretch));
+            }
+            else {
+                HighestRange = 1;
+            }
+
+            /* Using the highestRange, Check to see if the bump will push the main radius past the pillar's width limit */
+            if(HighestRange > 0) {
+                float extraRadius = (cylinderRadius + HighestRange*cylinderBumpRadius) - (baseWidth/2f);
+
+                /* If there is any extra radius, reduce it from the column's radius */
+                if(extraRadius > 0) {
+                    cylinderRadius -= extraRadius;
+                }
+            }
+        }
+        
+
+        /*
 		 * Filler stats
 		 */
         /* Set the stats of the filler (if it has more than 0 height) */
