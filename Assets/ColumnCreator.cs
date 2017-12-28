@@ -41,24 +41,39 @@ public class ColumnCreator : MonoBehaviour {
     private float cylinderHeight;
     private float cylinderRadius;
     /* How much extra radius is applied to the cylinder by the bump */
-    public float cylinderBumpRadius;
+    private float cylinderBumpRadius;
     /* How stretched the sin function will be when applying the bump */
-    //default 1. 
-    public float cylinderBumpStretch;
+    private float cylinderBumpStretch;
     /* An Offset applied to the center cylinder's bump amount */
-    //only from 0 to 1
-    public float cylinderBumpOffset;
+    private float cylinderBumpOffset;
+    /* The top and bottom radius of the center column */
+    private float cylinderTopRadius;
+    private float cylinderBottomRadius;
 
     //Filler
     /* How the filler of the pillar is made. Each fillerStat is of the form of a vector3 where:
      * x = the form of the filler. 0 is circular, 1 is box
      * y = the (ratio of baseWidth) width for box, radius for circular.
      * z = nothing yet */
-    public Vector3[] fillerStats;
-    
+    public ArrayList fillerStats;
+
     /* Ratio of how much of the center pillar will be combined filer (excluding base) */
     public float fillerHeightRatio;
     private float fillerHeight;
+
+
+    /* --- Filler Structs ---------------------- */
+
+    struct filler {
+        /* Type of filler. 0 = square, 1 = circular */
+        public int type;
+
+        /* How much height this filler object occupies */
+        public float height;
+
+        /* Temp stats to get this working */
+        public float radiusRatio1, radiusRatio2;
+    }
 
 
     /* ----------- Built-in Unity Functions ------------------------------------------------------------- */
@@ -173,34 +188,37 @@ public class ColumnCreator : MonoBehaviour {
 
         /* Get the position to be at the start of the selected filler */
         currentYPos = baseHeight + fillerHeight + cylinderHeight/2f + directionAdjustment*cylinderHeight/2f;
-        
+
+
         /* Create each filler object */
         //fillerPartHeight = directionAdjustment*fillerHeight/2f;
         //currentYPos += fillerPartHeight/2f;
         //CreateFillerCircularMesh(currentYPos, fillerPartHeight, 25, 0.5f*baseWidth, 0.25f*baseWidth, 0, 1f);
         //currentYPos += fillerPartHeight/2f;
-        
+
         //fillerPartHeight = directionAdjustment*fillerHeight/2f;
         //currentYPos += fillerPartHeight/2f;
         //CreateFillerBox(currentYPos, fillerPartHeight, baseWidth*0.9f, baseWidth*0.5f);
         //currentYPos += fillerPartHeight/2f;
 
 
-        /* Create a filler box using the fillerStats. For now, each filler object will take up the entire fillerHeightt */
-        for(int i = 0; i < fillerStats.Length; i++) {
-            fillerPartHeight = directionAdjustment*fillerHeight;
+        /* Create a filler box using the fillerStats. For now, each filler object will take up the entire fillerHeight */
+        filler currFiller;
+        for(int i = 0; i < fillerStats.Count; i++) {
+            /* Extract the values from the current filler struct to use */
+            currFiller = (filler) fillerStats[i];
+            fillerPartHeight = directionAdjustment*currFiller.height;
             currentYPos += fillerPartHeight/2f;
 
+
             /* Create a circular mesh */
-            if(fillerStats[i].x == 0) {
-                float radiusRatio = fillerStats[i].y;
-                CreateFillerCircularMesh(currentYPos, fillerPartHeight, 25, radiusRatio*baseWidth, 0*baseWidth, 0, 1f);
+            if(currFiller.type == 0) {
+                CreateFillerCircularMesh(currentYPos, fillerPartHeight, 25, currFiller.radiusRatio1*baseWidth, 0*baseWidth, 0, 1f);
             }
 
             /* Create a box */
-            else if(fillerStats[i].x == 1) {
-                float boxWidthRatio = fillerStats[i].y;
-                CreateFillerBox(currentYPos, fillerPartHeight, baseWidth*boxWidthRatio, baseWidth*boxWidthRatio);
+            else if(currFiller.type == 1) {
+                CreateFillerBox(currentYPos, fillerPartHeight, currFiller.radiusRatio1*baseWidth, currFiller.radiusRatio2*baseWidth);
             }
 
             currentYPos += fillerPartHeight/2f;
@@ -644,17 +662,52 @@ public class ColumnCreator : MonoBehaviour {
                 }
             }
         }
-        
+
+        /* Track the radius of the cylinder at it's top and bottom points */
+        cylinderTopRadius = cylinderRadius + cylinderBumpRadius*Mathf.Sin(cylinderBumpOffset + cylinderBumpStretch);
+        cylinderBottomRadius = cylinderRadius + cylinderBumpRadius*Mathf.Sin(cylinderBumpOffset);
+
+
 
         /*
 		 * Filler stats
 		 */
-        /* Set the stats of the filler (if it has more than 0 height) */
-        fillerStats = null;
-        float remainingHeight = totalHeight - baseHeight*2f;
-		if(fillerHeight > 0) {
-            fillerStats = new Vector3[] { new Vector3(1f, 1.1f, 0)};
+        /* Get the amount of distance the filler's height will need to occupy */
+        float remainingFillerHeight = fillerHeight;
+        fillerStats = new ArrayList();
+        filler tempFiller;
+        float currentFillerHeight;
+        
+        /* For now, populate the filler with two objects */
+        while(remainingFillerHeight > 0) {
+            /* Initialize the new filler struct that will be added */
+            tempFiller = new filler();
+
+            /* Set the stats of the new filler */
+            currentFillerHeight = fillerHeight/2f;
+            tempFiller.type = 0;
+            //quick hack to force second filler to be the given type
+            if(remainingFillerHeight < fillerHeight) { tempFiller.type = 1; }
+            tempFiller.height = currentFillerHeight;
+            tempFiller.radiusRatio1 = 0.8f;
+            tempFiller.radiusRatio2 = 0.9f;
+
+            /* Add the filler to the list and reduve the remaining height quota */
+            fillerStats.Add(tempFiller);
+            remainingFillerHeight -= currentFillerHeight;
         }
+
+
+
+
+
+
+
+
+
+
+
+
 
         /* Reset the RNG's seed back to it's previous value */
         Random.state = previousRandomState;
