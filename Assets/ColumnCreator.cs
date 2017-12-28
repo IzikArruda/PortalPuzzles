@@ -433,9 +433,19 @@ public class ColumnCreator : MonoBehaviour {
         int sectionVertexCount;
         Vector3[] vertices;
         
+        /* Set the circleVertexCount to be relative to the largest radius of the circular mesh to be created */
+        float largestRadius = vertexPoints[0].x;
+        for(int i = 1; i < vertexPoints.Length; i++) {
+            largestRadius = Mathf.Min(largestRadius, vertexPoints[i].x);
+        }
+        circleVertexCount = 15 + Mathf.FloorToInt(largestRadius*10f);
+
+        /* Set the amount of vertexes needed to render the curve of the series of vertexPoints. Cannot change? */
+        sectionVertexCount = vertexPoints.Length;
+
         /* Set the vertex counts. circle is the amount when rotating a point around the center
          * while section is the amount of vertexes needed on the same y axis to define the pillar */
-        circleVertexCount = 20 +1;
+        //circleVertexCount = 20 +1;
         sectionVertexCount = vertexPoints.Length;
 
         /* Initialize the main vector array now that we know the amount of vectors to be used */
