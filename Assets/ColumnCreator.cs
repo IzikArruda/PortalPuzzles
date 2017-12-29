@@ -156,10 +156,28 @@ public class ColumnCreator : MonoBehaviour {
          * Create the center cylinder of the pillar. The amount of vertices used to define the pillar 
          * increase as the pillar's height increases.
          */
-          
+        float cylinderPointDistance = cylinderHeight;
+
+        /* If there is a bump in the center column, use more than 2 vertices to model it */
+        if(cylinderBumpRadius > 0) {
+            /* A larger bump radius will require a more defined set of vertices */
+            cylinderPointDistance /= 5*cylinderBumpRadius;
+
+            /* A stretch value that's larger will require a more defined set of vertices */
+            cylinderPointDistance /= 5*cylinderBumpStretch;
+
+            /* As the center cylinder's radius gets small, use more vertices to define it's mesh */
+            if(cylinderHeight < 3) {
+                cylinderPointDistance /= 3*(1 - (cylinderHeight/3f));
+            }
+        }
+
+
+
+
         /* How much distance is between the points that form the pillar's center cylinder */
-        float cylinderPointDistance = 0.2f;
-        int pointCount = Mathf.CeilToInt(cylinderHeight/cylinderPointDistance);
+        int pointCount = 1 + Mathf.CeilToInt(cylinderHeight/cylinderPointDistance);
+        Debug.Log(pointCount);
 
         /* Create an array of points that represent the center cylinder */
         Vector3[] cylinderPoints = new Vector3[pointCount];
