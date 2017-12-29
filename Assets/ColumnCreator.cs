@@ -161,7 +161,7 @@ public class ColumnCreator : MonoBehaviour {
         /* If there is a bump in the center column, use more than 2 vertices to model it */
         if(cylinderBumpRadius > 0) {
             /* A larger bump radius will require a more defined set of vertices */
-            cylinderPointDistance /= 5*cylinderBumpRadius;
+            cylinderPointDistance /= 5*(cylinderBumpRadius/(baseWidth/2f));
 
             /* A stretch value that's larger will require a more defined set of vertices */
             cylinderPointDistance /= 5*cylinderBumpStretch;
@@ -171,13 +171,9 @@ public class ColumnCreator : MonoBehaviour {
                 cylinderPointDistance /= 3*(1 - (cylinderHeight/3f));
             }
         }
-
-
-
-
+        
         /* How much distance is between the points that form the pillar's center cylinder */
         int pointCount = 1 + Mathf.CeilToInt(cylinderHeight/cylinderPointDistance);
-        Debug.Log(pointCount);
 
         /* Create an array of points that represent the center cylinder */
         Vector3[] cylinderPoints = new Vector3[pointCount];
@@ -231,7 +227,7 @@ public class ColumnCreator : MonoBehaviour {
 
             /* Create a circular mesh */
             if(currFiller.type == 0) {
-                CreateFillerCircularMesh(currentYPos, fillerPartHeight, 25, currFiller.radiusRatio1*baseWidth, 0*baseWidth, 0, 1f);
+                CreateFillerCircularMesh(currentYPos, fillerPartHeight, currFiller.radiusRatio1*baseWidth, 0.1f*baseWidth, 0, 2*Mathf.PI/3f);
             }
 
             /* Create a box */
@@ -262,20 +258,33 @@ public class ColumnCreator : MonoBehaviour {
         CreateBox(new Vector3(0, currentYPos, 0), Mathf.Abs(fillerSectionHeigth), boxTopWidth, boxBottomWidth);
     }
 
-    void CreateFillerCircularMesh(float currentYPos, float fillerSectionHeigth, int vertexCount,
-			float width, float maxBumpWidth, float startingRad, float radInc) {
+    void CreateFillerCircularMesh(float currentYPos, float fillerSectionHeigth,
+			float radius, float maxBumpRadius, float startingRad, float radInc) {
         /*
          * Create a circular mesh using the given parameters. Use a sine function to add an offset
          * to the radius to allow bumbs (think of the outter half of a taurus).
          * Note we use width instead of radius because the sizes will most likely be relative to baseWidth.
          *
          * radius: the starting radius of the circular mesh for each vertex. The radius changes by a sine function.
-         * maxBumpRadius: The extra width added sine function. 0 will prevent the radous from ever changing.
-         * startingRad: What rad degrees the radius starts at from a 0 to 1 scale with 1 being PI*2.
-         * radInc: How much the rad will increase over the section's height. 1 is equal to PI*2, ie the whole sine wave.
+         * maxBumpRadius: The extra width added sine function. 0 will prevent the radius from ever changing.
+         * startingRad: What rad degrees the radius starts at from a range of [0, PI*2].
+         * radInc: How much the rad will increase over the section's height. PI*2 is a whole sine wave.
          */
         float sineWaveOffset;
         currentYPos -= Mathf.Abs(fillerSectionHeigth)/2f;
+        
+        /* Calculate how many vertices will be used to define the curve of this circular mesh */
+        float fillerPointDistance = fillerSectionHeigth;
+        if(maxBumpRadius > 0) {
+            /* A larger bump radius will require a more defined set of vertices */
+            fillerPointDistance /= 5*(maxBumpRadius/(baseWidth/2f));
+
+            /* A stretch value that's larger will require a more defined set of vertices */
+            fillerPointDistance /= 5*radInc;
+        }
+        /* How much distance is between the points that form the pillar's center cylinder */
+        int vertexCount = 1 + Mathf.CeilToInt(fillerSectionHeigth/fillerPointDistance);
+        
 
         /* If fillerSectionHeigth is negative, change the rad values to flip the filler mesh */
         if(fillerSectionHeigth < 0) {
@@ -286,8 +295,8 @@ public class ColumnCreator : MonoBehaviour {
         /* Populate the vertices array for the circular filler mesh */
         Vector3[] roundedEdgeVertices = new Vector3[vertexCount];
         for(int i = 0; i < vertexCount; i++) {
-        	sineWaveOffset = Mathf.Sin(startingRad*Mathf.PI*2f + radInc*(Mathf.PI*2f)*i/(float)(vertexCount-1));
-            roundedEdgeVertices[i].x = (width + maxBumpWidth*sineWaveOffset)/2f;
+        	sineWaveOffset = Mathf.Sin(startingRad + radInc*i/(float)(vertexCount-1));
+            roundedEdgeVertices[i].x = (radius + maxBumpRadius*sineWaveOffset)/2f;
             roundedEdgeVertices[i].y = currentYPos;
             roundedEdgeVertices[i].z = 0;
             currentYPos += Mathf.Abs(fillerSectionHeigth)/(vertexCount-1);
