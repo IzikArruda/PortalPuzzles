@@ -717,38 +717,22 @@ public class ColumnCreator : MonoBehaviour {
         
         /* For now, populate the filler with two objects */
         while(remainingFillerHeight > 0) {
-            /* Initialize the new filler struct that will be added */
-            tempFiller = new filler();
 
-            /* Set the stats of the new filler */
+            /* Set the height of the new filler */
             currentFillerHeight = fillerHeight/2f;
-            tempFiller.type = 0;
-            //quick hack to force second filler to be the given type
-            if(remainingFillerHeight < fillerHeight) { tempFiller.type = 1; }
-            tempFiller.height = currentFillerHeight;
-            tempFiller.radiusRatio1 = 0.8f;
-            tempFiller.radiusRatio2 = 0.9f;
-
+            
+            /* Create the random filler object to be added */
+            tempFiller = CreateRandomFiller(currentFillerHeight);
+            
             /* Add the filler to the list and reduve the remaining height quota */
             fillerStats.Add(tempFiller);
             remainingFillerHeight -= currentFillerHeight;
         }
 
-
-
-
-
-
-
-
-
-
-
-
-
         /* Reset the RNG's seed back to it's previous value */
         Random.state = previousRandomState;
     }
+
 
     void DeleteColliders() {
         /*
@@ -760,6 +744,63 @@ public class ColumnCreator : MonoBehaviour {
             DestroyImmediate(col);
             col = gameObject.GetComponent<Collider>();
         }
+    }
+
+
+    /* ----------- Filler Creation Functions ------------------------------------------------------------- */
+
+    filler CreateRandomFiller(float fillerPieceHeight) {
+        /*
+         * Create a random filler object and return it. Use the given fillerPieceHeight
+         * 
+         * The chances of each occurence are given as such:
+         * 25% of a square filler
+         * 75% of a circular filler
+         */
+        filler newFiller;
+        float squareFillerChance = 0.25f;
+
+        /* Create a square filler */
+        if(Random.value < squareFillerChance) {
+            newFiller = CreateSquareFiller(fillerPieceHeight);
+        }
+
+        /* Create a circular filler */
+        else {
+            newFiller = CreateCircularFiller(fillerPieceHeight);
+        }
+
+        return newFiller;
+    }
+
+    filler CreateSquareFiller(float height) {
+        /*
+         * Create and return a square filler object
+         */
+        filler squareFiller = new filler();
+
+        /* Set the stats of a square filler */
+        squareFiller.type = 0;
+        squareFiller.height = height;
+        squareFiller.radiusRatio1 = 0.8f;
+        squareFiller.radiusRatio2 = 0.9f;
+
+        return squareFiller;
+    }
+
+    filler CreateCircularFiller(float height) {
+        /*
+         * Create and return a circular filler object
+         */
+        filler circularFiller = new filler();
+
+        /* Set the stats of a circular filler */
+        circularFiller.type = 1;
+        circularFiller.height = height;
+        circularFiller.radiusRatio1 = 0.8f;
+        circularFiller.radiusRatio2 = 0.9f;
+
+        return circularFiller;
     }
 
 
