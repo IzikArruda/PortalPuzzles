@@ -50,11 +50,8 @@ public class ColumnCreator : MonoBehaviour {
     private float cylinderTopRadius;
     private float cylinderBottomRadius;
 
-    //Filler
-    /* How the filler of the pillar is made. Each fillerStat is of the form of a vector3 where:
-     * x = the form of the filler. 0 is circular, 1 is box
-     * y = the (ratio of baseWidth) width for box, radius for circular.
-     * z = nothing yet */
+
+    /* An arraylist of each filler object to be used when creating this pillar's filler */
     public ArrayList fillerStats;
 
     /* Ratio of how much of the center pillar will be combined filer (excluding base) */
@@ -63,7 +60,11 @@ public class ColumnCreator : MonoBehaviour {
 
 
     /* --- Filler Structs ---------------------- */
-
+    
+    /* How the filler of the pillar is made. Each fillerStat is of the form of a vector3 where:
+     * x = the form of the filler. 0 is circular, 1 is box
+     * y = the (ratio of baseWidth) width for box, radius for circular.
+     * z = nothing yet */
     struct filler {
         /* Type of filler. 0 = square, 1 = circular */
         public int type;
@@ -71,8 +72,9 @@ public class ColumnCreator : MonoBehaviour {
         /* How much height this filler object occupies */
         public float height;
 
-        /* Temp stats to get this working */
-        public float radiusRatio1, radiusRatio2;
+        /* Radius' that are used to define the filler shape. Any negative values will be made 
+         * relative to the top or bottom main cylinder radius instead of the baseWidth. */
+        public float[] radius;
     }
 
 
@@ -193,46 +195,48 @@ public class ColumnCreator : MonoBehaviour {
          */
         float currentYPos;
         float fillerPartHeight;
+        float mainColumnEndRadius = cylinderTopRadius;
         int directionAdjustment = 1;
 
         /* Change how the position will increase/decrease depending on if the filler is added above or bellow */
         if(topBase) {
             directionAdjustment = -1;
+            mainColumnEndRadius = cylinderBottomRadius;
         }
 
         /* Get the position to be at the start of the selected filler */
         currentYPos = baseHeight + fillerHeight + cylinderHeight/2f + directionAdjustment*cylinderHeight/2f;
-
-
-        /* Create each filler object */
-        //fillerPartHeight = directionAdjustment*fillerHeight/2f;
-        //currentYPos += fillerPartHeight/2f;
-        //CreateFillerCircularMesh(currentYPos, fillerPartHeight, 25, 0.5f*baseWidth, 0.25f*baseWidth, 0, 1f);
-        //currentYPos += fillerPartHeight/2f;
-
-        //fillerPartHeight = directionAdjustment*fillerHeight/2f;
-        //currentYPos += fillerPartHeight/2f;
-        //CreateFillerBox(currentYPos, fillerPartHeight, baseWidth*0.9f, baseWidth*0.5f);
-        //currentYPos += fillerPartHeight/2f;
-
-
+        
         /* Create a filler box using the fillerStats. For now, each filler object will take up the entire fillerHeight */
         filler currFiller;
+        float[] currRad;
         for(int i = 0; i < fillerStats.Count; i++) {
             /* Extract the values from the current filler struct to use */
             currFiller = (filler) fillerStats[i];
             fillerPartHeight = directionAdjustment*currFiller.height;
             currentYPos += fillerPartHeight/2f;
+            
+            /* Get the array of radius used to define the filler */
+            currRad = new float[currFiller.radius.Length];
+            for(int ii = 0; ii < currFiller.radius.Length; ii++) {
+                if(currFiller.radius[ii] > 0) {
+                    currRad[ii] = baseWidth*currFiller.radius[ii];
+                }
+                /* relative to the main column's end radius */
+                else {
+                    currRad[ii] = -mainColumnEndRadius*2*currFiller.radius[ii];
+                }
+            }
 
-
+            
             /* Create a circular mesh */
             if(currFiller.type == 0) {
-                CreateFillerCircularMesh(currentYPos, fillerPartHeight, currFiller.radiusRatio1*baseWidth, 0.1f*baseWidth, 0, 2*Mathf.PI/3f);
+                CreateFillerCircularMesh(currentYPos, fillerPartHeight, currRad[0], currRad[1], 0, Mathf.PI);
             }
 
             /* Create a box */
             else if(currFiller.type == 1) {
-                CreateFillerBox(currentYPos, fillerPartHeight, currFiller.radiusRatio1*baseWidth, currFiller.radiusRatio2*baseWidth);
+                CreateFillerBox(currentYPos, fillerPartHeight, currRad[0], currRad[1]);
             }
 
             currentYPos += fillerPartHeight/2f;
@@ -732,8 +736,7 @@ public class ColumnCreator : MonoBehaviour {
         /* Reset the RNG's seed back to it's previous value */
         Random.state = previousRandomState;
     }
-
-
+    
     void DeleteColliders() {
         /*
          * Get each collider associated with this column and delete them.
@@ -780,10 +783,9 @@ public class ColumnCreator : MonoBehaviour {
         filler squareFiller = new filler();
 
         /* Set the stats of a square filler */
-        squareFiller.type = 0;
+        squareFiller.type = 1;
         squareFiller.height = height;
-        squareFiller.radiusRatio1 = 0.8f;
-        squareFiller.radiusRatio2 = 0.9f;
+        squareFiller.radius = new float[] { -1.15f,-1.05f };
 
         return squareFiller;
     }
@@ -795,10 +797,9 @@ public class ColumnCreator : MonoBehaviour {
         filler circularFiller = new filler();
 
         /* Set the stats of a circular filler */
-        circularFiller.type = 1;
+        circularFiller.type = 0;
         circularFiller.height = height;
-        circularFiller.radiusRatio1 = 0.8f;
-        circularFiller.radiusRatio2 = 0.9f;
+        circularFiller.radius = new float[] { -1.05f, 0.1f };
 
         return circularFiller;
     }
