@@ -72,8 +72,11 @@ public class ColumnCreator : MonoBehaviour {
         /* How much height this filler object occupies */
         public float height;
 
-        /* Radius' that are used to define the filler shape. Any negative values will be made 
-         * relative to the top or bottom main cylinder radius instead of the baseWidth. */
+        /* Radius' that are used to define the filler shape. The filler radius should not go above
+         * baseWidth and it should not go bellow the radius of the top/bottom of the main cylinder.
+         * This is enforced by keeping the radius between the range of [0, 1] where 0 is the 
+         * radius of the edge of the main cylinder and 1 is the baseWidth. 
+         * It should be allowed to allow the radius to pass the ranges if needed. */
         public float[] radius;
     }
 
@@ -722,8 +725,22 @@ public class ColumnCreator : MonoBehaviour {
         /* For now, populate the filler with two objects */
         while(remainingFillerHeight > 0) {
 
-            /* Set the height of the new filler */
-            currentFillerHeight = fillerHeight/2f;
+            /* Set the height of the new filler. Ensure each filler piece will not be smaller than baseWidth */
+            if(remainingFillerHeight <= baseHeight*2) {
+                currentFillerHeight = remainingFillerHeight;
+            }else {
+                currentFillerHeight = (Random.value*(remainingFillerHeight-baseHeight) + baseHeight);
+                /* If a small amount of fillerHeight is remaining, add the remaining amount to the current filler piece */
+                if(remainingFillerHeight - currentFillerHeight < baseHeight/2f) {
+                    currentFillerHeight = remainingFillerHeight;
+                    Debug.Log("round up");
+                }
+                /* If a small amount of fillerHeight is remaining */
+                else if(remainingFillerHeight - currentFillerHeight < baseHeight) {
+                    currentFillerHeight = remainingFillerHeight - baseHeight;
+                    Debug.Log("round down");
+                }
+            }
             
             /* Create the random filler object to be added */
             tempFiller = CreateRandomFiller(currentFillerHeight);
@@ -785,6 +802,8 @@ public class ColumnCreator : MonoBehaviour {
         /* Set the stats of a square filler */
         squareFiller.type = 1;
         squareFiller.height = height;
+
+        /* The first radius must be  */
         squareFiller.radius = new float[] { -1.15f,-1.05f };
 
         return squareFiller;
