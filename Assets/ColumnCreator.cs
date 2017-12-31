@@ -222,7 +222,7 @@ public class ColumnCreator : MonoBehaviour {
             /* Get the array of radius used to define the filler */
             currRad = new float[currFiller.radius.Length];
             for(int ii = 0; ii < currFiller.radius.Length; ii++) {
-                currRad[ii] = currFiller.radius[ii]*baseWidth + (1-currFiller.radius[ii])*mainColumnEndRadius*2;
+                currRad[ii] = currFiller.radius[ii]*baseWidth/2f + (1-currFiller.radius[ii])*mainColumnEndRadius;
             }
 
             
@@ -233,7 +233,7 @@ public class ColumnCreator : MonoBehaviour {
 
             /* Create a box */
             else if(currFiller.type == 1) {
-                CreateFillerBox(currentYPos, fillerPartHeight, currRad[0], currRad[1]);
+                CreateFillerBox(currentYPos, fillerPartHeight, currRad[0]*2, currRad[1]*2);
             }
 
             currentYPos += fillerPartHeight/2f;
@@ -247,8 +247,8 @@ public class ColumnCreator : MonoBehaviour {
          * 
          * If the fillerSectionHeight is negative, then reverse the top and bottom widths as the box will be flipped.
          */
-        float boxHeight;
 
+        /* Flip the order of the widths if the hieght is negative, indicating the creation of the bottom filler */
         if(fillerSectionHeigth < 0) {
             float temp = boxTopWidth;
             boxTopWidth = boxBottomWidth;
@@ -297,7 +297,7 @@ public class ColumnCreator : MonoBehaviour {
         Vector3[] roundedEdgeVertices = new Vector3[vertexCount];
         for(int i = 0; i < vertexCount; i++) {
         	sineWaveOffset = Mathf.Sin(startingRad + radInc*i/(float)(vertexCount-1));
-            roundedEdgeVertices[i].x = (radius + maxBumpRadius*sineWaveOffset)/2f;
+            roundedEdgeVertices[i].x = (radius + maxBumpRadius*sineWaveOffset);
             roundedEdgeVertices[i].y = currentYPos;
             roundedEdgeVertices[i].z = 0;
             currentYPos += Mathf.Abs(fillerSectionHeigth)/(vertexCount-1);
