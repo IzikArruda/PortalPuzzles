@@ -74,7 +74,7 @@ public class ColumnCreator : MonoBehaviour {
 
         /* Radius' that are used to define the filler shape. The filler radius should not go above
          * baseWidth and it should not go bellow the radius of the top/bottom of the main cylinder.
-         * This is enforced by keeping the radius between the range of [0, 1] where 0 is the 
+         * This is enforced by keeping the radius between the range of [1, 0] where 0 is the 
          * radius of the edge of the main cylinder and 1 is the baseWidth. 
          * It should be allowed to allow the radius to pass the ranges if needed. */
         public float[] radius;
@@ -222,19 +222,13 @@ public class ColumnCreator : MonoBehaviour {
             /* Get the array of radius used to define the filler */
             currRad = new float[currFiller.radius.Length];
             for(int ii = 0; ii < currFiller.radius.Length; ii++) {
-                if(currFiller.radius[ii] > 0) {
-                    currRad[ii] = baseWidth*currFiller.radius[ii];
-                }
-                /* relative to the main column's end radius */
-                else {
-                    currRad[ii] = -mainColumnEndRadius*2*currFiller.radius[ii];
-                }
+                currRad[ii] = currFiller.radius[ii]*baseWidth + (1-currFiller.radius[ii])*mainColumnEndRadius*2;
             }
 
             
             /* Create a circular mesh */
             if(currFiller.type == 0) {
-                CreateFillerCircularMesh(currentYPos, fillerPartHeight, currRad[0], currRad[1], 0, Mathf.PI);
+                CreateFillerCircularMesh(currentYPos, fillerPartHeight, currRad[0], currRad[1]-currRad[0], 0, Mathf.PI);
             }
 
             /* Create a box */
@@ -282,9 +276,9 @@ public class ColumnCreator : MonoBehaviour {
         
         /* Calculate how many vertices will be used to define the curve of this circular mesh */
         float fillerPointDistance = fillerSectionHeigth;
-        if(maxBumpRadius > 0) {
+        if(maxBumpRadius != 0) {
             /* A larger bump radius will require a more defined set of vertices */
-            fillerPointDistance /= 5*(maxBumpRadius/(baseWidth/2f));
+            fillerPointDistance /= 5*(Mathf.Abs(maxBumpRadius)/(baseWidth/2f));
 
             /* A stretch value that's larger will require a more defined set of vertices */
             fillerPointDistance /= 5*radInc;
@@ -741,7 +735,7 @@ public class ColumnCreator : MonoBehaviour {
                     Debug.Log("round down");
                 }
             }
-            
+
             /* Create the random filler object to be added */
             tempFiller = CreateRandomFiller(currentFillerHeight);
             
@@ -803,8 +797,8 @@ public class ColumnCreator : MonoBehaviour {
         squareFiller.type = 1;
         squareFiller.height = height;
 
-        /* The first radius must be  */
-        squareFiller.radius = new float[] { -1.15f,-1.05f };
+        /* Set the radius of the square filler */
+        squareFiller.radius = new float[] { 1.0f, 0f };
 
         return squareFiller;
     }
@@ -818,7 +812,7 @@ public class ColumnCreator : MonoBehaviour {
         /* Set the stats of a circular filler */
         circularFiller.type = 0;
         circularFiller.height = height;
-        circularFiller.radius = new float[] { -1.05f, 0.1f };
+        circularFiller.radius = new float[] { 0.5f, -0.2f };
 
         return circularFiller;
     }
