@@ -597,6 +597,18 @@ public class ColumnCreator : MonoBehaviour {
 
     /* ----------- Event Functions ------------------------------------------------------------- */
 
+    void DeleteColliders() {
+        /*
+         * Get each collider associated with this column and delete them.
+         */
+
+        Collider col = gameObject.GetComponent<Collider>();
+        while(col != null) {
+            DestroyImmediate(col);
+            col = gameObject.GetComponent<Collider>();
+        }
+    }
+    
     void SetColumnStats() {
         /*
          * Use the seed to set the stats of the column.
@@ -711,61 +723,21 @@ public class ColumnCreator : MonoBehaviour {
 		 * Filler stats
 		 */
         /* Get the amount of distance the filler's height will need to occupy */
-        float remainingFillerHeight = fillerHeight;
         fillerStats = new ArrayList();
-        filler tempFiller;
-        float currentFillerHeight;
-        
-        /* For now, populate the filler with two objects */
-        while(remainingFillerHeight > 0) {
 
-            /* Set the height of the new filler. Ensure each filler piece will not be smaller than baseWidth */
-            if(remainingFillerHeight <= baseHeight*2) {
-                currentFillerHeight = remainingFillerHeight;
-            }else {
-                currentFillerHeight = (Random.value*(remainingFillerHeight-baseHeight) + baseHeight);
-                /* If a small amount of fillerHeight is remaining, add the remaining amount to the current filler piece */
-                if(remainingFillerHeight - currentFillerHeight < baseHeight/2f) {
-                    currentFillerHeight = remainingFillerHeight;
-                    Debug.Log("round up");
-                }
-                /* If a small amount of fillerHeight is remaining */
-                else if(remainingFillerHeight - currentFillerHeight < baseHeight) {
-                    currentFillerHeight = remainingFillerHeight - baseHeight;
-                    Debug.Log("round down");
-                }
-            }
-
-            /* Create the random filler object to be added */
-            tempFiller = CreateRandomFiller(currentFillerHeight);
-            
-            /* Add the filler to the list and reduve the remaining height quota */
-            fillerStats.Add(tempFiller);
-            remainingFillerHeight -= currentFillerHeight;
-        }
+        /* Populate the fillerStats arrayList with enough objects to meet the filler's height */
+        CreateRandomFiller(ref fillerStats, fillerHeight);
 
         /* Reset the RNG's seed back to it's previous value */
         Random.state = previousRandomState;
-    }
-    
-    void DeleteColliders() {
-        /*
-         * Get each collider associated with this column and delete them.
-         */
-
-        Collider col = gameObject.GetComponent<Collider>();
-        while(col != null) {
-            DestroyImmediate(col);
-            col = gameObject.GetComponent<Collider>();
-        }
     }
 
 
     /* ----------- Filler Creation Functions ------------------------------------------------------------- */
 
-    filler CreateRandomFiller(float fillerPieceHeight) {
+    ArrayList CreateRandomFiller(ref ArrayList fillerStats, float remainingFillerHeight) {
         /*
-         * Create a random filler object and return it. Use the given fillerPieceHeight
+         * Create random filler objects and add them to the given fillerStats arrayList.
          * 
          * The chances of each occurence are given as such:
          * 25% of a square filler
@@ -773,18 +745,44 @@ public class ColumnCreator : MonoBehaviour {
          */
         filler newFiller;
         float squareFillerChance = 0.25f;
+        float currentFillerHeight = remainingFillerHeight;
+        
+        /* As long as there is filler height inaccounted for, continue making filler objects */
+        while(remainingFillerHeight > 0) {
 
-        /* Create a square filler */
-        if(Random.value < squareFillerChance) {
-            newFiller = CreateSquareFiller(fillerPieceHeight);
+            /* Set the height of the new filler. Ensure each filler piece will not be smaller than baseWidth */
+            if(remainingFillerHeight <= baseHeight) {
+                currentFillerHeight = remainingFillerHeight;
+            }
+            else {
+                currentFillerHeight = (Random.value*(remainingFillerHeight-baseHeight) + baseHeight);
+                if(remainingFillerHeight - currentFillerHeight < baseHeight/2f) {
+                    /* Add the remaining height to the current object */
+                    currentFillerHeight = remainingFillerHeight;
+                }
+                else if(remainingFillerHeight - currentFillerHeight < baseHeight) {
+                    /* Leave enough height for another filler object */
+                    currentFillerHeight = remainingFillerHeight - baseHeight;
+                }
+            }
+
+
+            /* Roll the dice to find out what kind of filler will be created */
+            if(Random.value < squareFillerChance) {
+                newFiller = CreateSquareFiller(currentFillerHeight);
+            }
+
+            /* Create a circular filler */
+            else {
+                newFiller = CreateCircularFiller(currentFillerHeight);
+            }
+
+            /* Add the filler to the list and reduve the remaining height quota */
+            fillerStats.Add(newFiller);
+            remainingFillerHeight -= currentFillerHeight;
         }
 
-        /* Create a circular filler */
-        else {
-            newFiller = CreateCircularFiller(fillerPieceHeight);
-        }
-
-        return newFiller;
+        return fillerStats;
     }
 
     filler CreateSquareFiller(float height) {
