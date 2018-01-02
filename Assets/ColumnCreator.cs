@@ -78,6 +78,9 @@ public class ColumnCreator : MonoBehaviour {
          * radius of the edge of the main cylinder and 1 is the baseWidth. 
          * It should be allowed to allow the radius to pass the ranges if needed. */
         public float[] radius;
+
+        /* Values that further define the filler object, such as the offset and radian stretch of a circular mesh */
+        public float[] extraValues;
     }
 
 
@@ -212,10 +215,12 @@ public class ColumnCreator : MonoBehaviour {
         
         /* Create a filler box using the fillerStats. For now, each filler object will take up the entire fillerHeight */
         filler currFiller;
+        float[] currExtra;
         float[] currRad;
         for(int i = 0; i < fillerStats.Count; i++) {
             /* Extract the values from the current filler struct to use */
             currFiller = (filler) fillerStats[i];
+            currExtra = currFiller.extraValues;
             fillerPartHeight = directionAdjustment*currFiller.height;
             currentYPos += fillerPartHeight/2f;
             
@@ -228,7 +233,7 @@ public class ColumnCreator : MonoBehaviour {
             
             /* Create a circular mesh */
             if(currFiller.type == 0) {
-                CreateFillerCircularMesh(currentYPos, fillerPartHeight, currRad[0], currRad[1]-currRad[0], 0, Mathf.PI);
+                CreateFillerCircularMesh(currentYPos, fillerPartHeight, currRad[0], currRad[1]-currRad[0], currExtra[0], currExtra[1]);
             }
 
             /* Create a box */
@@ -784,7 +789,7 @@ public class ColumnCreator : MonoBehaviour {
 
             else {
                 /* Circular filler */
-                newFiller = CreateCircularFiller(currentFillerHeight, expectedFillerWidthEnd);
+                newFiller = CreateCircularFiller(currentFillerHeight, expectedFillerWidthStart, expectedFillerWidthEnd);
             }
 
             /* Add the filler to the list and reduce the remaining height quota */
@@ -808,19 +813,27 @@ public class ColumnCreator : MonoBehaviour {
         /* Set the radius of the square filler */
         squareFiller.radius = new float[] { bottomRadius, topRadius};
 
+        /* There are no extra values that can define a square */
+        squareFiller.extraValues = new float[] {  };
+
         return squareFiller;
     }
 
-    filler CreateCircularFiller(float height, float radius) {
+    filler CreateCircularFiller(float height, float topRadius, float bottomRadius) {
         /*
-         * Create and return a circular filler object
+         * Create and return a circular filler object.
          */
         filler circularFiller = new filler();
 
         /* Set the stats of a circular filler */
         circularFiller.type = 0;
         circularFiller.height = height;
-        circularFiller.radius = new float[] { radius, radius + 0.1f };
+
+        /* Set the radius of the mesh */
+        circularFiller.radius = new float[] { topRadius, bottomRadius};
+
+        /* Set the offset and stretch of the circular mesh's radians */
+        circularFiller.extraValues = new float[] { 0, Mathf.PI/2f };
 
         return circularFiller;
     }
