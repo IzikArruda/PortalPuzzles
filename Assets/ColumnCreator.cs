@@ -735,7 +735,7 @@ public class ColumnCreator : MonoBehaviour {
 
     /* ----------- Filler Creation Functions ------------------------------------------------------------- */
 
-    ArrayList CreateRandomFiller(ref ArrayList fillerStats, float remainingFillerHeight) {
+    ArrayList CreateRandomFiller(ref ArrayList fillerStats, float fillerHeight) {
         /*
          * Create random filler objects and add them to the given fillerStats arrayList.
          * 
@@ -745,7 +745,12 @@ public class ColumnCreator : MonoBehaviour {
          */
         filler newFiller;
         float squareFillerChance = 0.25f;
+        float remainingFillerHeight = fillerHeight;
         float currentFillerHeight = remainingFillerHeight;
+        /* The expected width to use. It's value is relative to the current height of the filler: 
+         * an empty filler starts at 0. As it "fills in", it will increase towards 1. */
+        float expectedFillerWidthStart = 0;
+        float expectedFillerWidthEnd = 0;
         
         /* As long as there is filler height inaccounted for, continue making filler objects */
         while(remainingFillerHeight > 0) {
@@ -766,18 +771,23 @@ public class ColumnCreator : MonoBehaviour {
                 }
             }
 
+            /* Set the expected width of the current height */
+            expectedFillerWidthStart = expectedFillerWidthEnd;
+            expectedFillerWidthEnd = 1 - (remainingFillerHeight - currentFillerHeight) / fillerHeight;
+            Debug.Log(expectedFillerWidthStart + " _ " + expectedFillerWidthEnd);
 
             /* Roll the dice to find out what kind of filler will be created */
             if(Random.value < squareFillerChance) {
-                newFiller = CreateSquareFiller(currentFillerHeight);
+                /* Square filler */
+                newFiller = CreateSquareFiller(currentFillerHeight, expectedFillerWidthStart, expectedFillerWidthEnd);
             }
 
-            /* Create a circular filler */
             else {
-                newFiller = CreateCircularFiller(currentFillerHeight);
+                /* Circular filler */
+                newFiller = CreateCircularFiller(currentFillerHeight, expectedFillerWidthEnd);
             }
 
-            /* Add the filler to the list and reduve the remaining height quota */
+            /* Add the filler to the list and reduce the remaining height quota */
             fillerStats.Add(newFiller);
             remainingFillerHeight -= currentFillerHeight;
         }
@@ -785,7 +795,7 @@ public class ColumnCreator : MonoBehaviour {
         return fillerStats;
     }
 
-    filler CreateSquareFiller(float height) {
+    filler CreateSquareFiller(float height, float topRadius, float bottomRadius) {
         /*
          * Create and return a square filler object
          */
@@ -796,12 +806,12 @@ public class ColumnCreator : MonoBehaviour {
         squareFiller.height = height;
 
         /* Set the radius of the square filler */
-        squareFiller.radius = new float[] { 1.0f, 0f };
+        squareFiller.radius = new float[] { bottomRadius, topRadius};
 
         return squareFiller;
     }
 
-    filler CreateCircularFiller(float height) {
+    filler CreateCircularFiller(float height, float radius) {
         /*
          * Create and return a circular filler object
          */
@@ -810,7 +820,7 @@ public class ColumnCreator : MonoBehaviour {
         /* Set the stats of a circular filler */
         circularFiller.type = 0;
         circularFiller.height = height;
-        circularFiller.radius = new float[] { 0.5f, -0.2f };
+        circularFiller.radius = new float[] { radius, radius + 0.1f };
 
         return circularFiller;
     }
