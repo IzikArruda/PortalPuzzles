@@ -731,7 +731,7 @@ public class ColumnCreator : MonoBehaviour {
         fillerStats = new ArrayList();
 
         /* Populate the fillerStats arrayList with enough objects to meet the filler's height */
-        CreateRandomFiller(ref fillerStats, fillerHeight);
+        CreateFillerObjects(ref fillerStats, fillerHeight);
 
         /* Reset the RNG's seed back to it's previous value */
         Random.state = previousRandomState;
@@ -740,16 +740,10 @@ public class ColumnCreator : MonoBehaviour {
 
     /* ----------- Filler Creation Functions ------------------------------------------------------------- */
 
-    ArrayList CreateRandomFiller(ref ArrayList fillerStats, float fillerHeight) {
+    ArrayList CreateFillerObjects(ref ArrayList fillerStats, float fillerHeight) {
         /*
          * Create random filler objects and add them to the given fillerStats arrayList.
-         * 
-         * The chances of each occurence are given as such:
-         * 25% of a square filler
-         * 75% of a circular filler
          */
-        filler newFiller;
-        float squareFillerChance = 0.25f;
         float remainingFillerHeight = fillerHeight;
         float currentFillerHeight = remainingFillerHeight;
         /* The expected width to use. It's value is relative to the current height of the filler: 
@@ -779,25 +773,42 @@ public class ColumnCreator : MonoBehaviour {
             /* Set the expected width of the current height */
             expectedFillerWidthStart = expectedFillerWidthEnd;
             expectedFillerWidthEnd = 1 - (remainingFillerHeight - currentFillerHeight) / fillerHeight;
-            Debug.Log(expectedFillerWidthStart + " _ " + expectedFillerWidthEnd);
-
-            /* Roll the dice to find out what kind of filler will be created */
-            if(Random.value < squareFillerChance) {
-                /* Square filler */
-                newFiller = CreateSquareFiller(currentFillerHeight, expectedFillerWidthStart, expectedFillerWidthEnd);
-            }
-
-            else {
-                /* Circular filler */
-                newFiller = CreateCircularFiller(currentFillerHeight, expectedFillerWidthStart, expectedFillerWidthEnd);
-            }
-
-            /* Add the filler to the list and reduce the remaining height quota */
-            fillerStats.Add(newFiller);
+            
+            /* Generate some new filler for the given limits */
+            CreateRandomFiller(ref fillerStats, currentFillerHeight, expectedFillerWidthStart, expectedFillerWidthEnd);
+            
+            /* reduce the remaining height quota before starting another loop */
             remainingFillerHeight -= currentFillerHeight;
         }
 
         return fillerStats;
+    }
+    
+    void CreateRandomFiller(ref ArrayList fillerStats, float height, float startWidth, float endWidth) {
+        /*
+         * The function which will send the requests to create the filler. The chances of each createFiller
+         * command depends on varius values.
+         * 
+         * The chances of each occurence are given as such:
+         * 25% of a square filler
+         * 75% of a circular filler
+         */
+        filler newFiller;
+        float squareFillerChance = 0.25f;
+        
+        /* Roll the dice to find out what kind of filler will be created */
+        if(Random.value < squareFillerChance) {
+            /* Square filler */
+            newFiller = CreateSquareFiller(height, startWidth, endWidth);
+        }
+
+        else {
+            /* Circular filler */
+            newFiller = CreateCircularFiller(height, startWidth, endWidth);
+        }
+
+        /* Add the new filler to the array of filler objects to use */
+        fillerStats.Add(newFiller);
     }
 
     filler CreateSquareFiller(float height, float topRadius, float bottomRadius) {
