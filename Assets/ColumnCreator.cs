@@ -786,29 +786,41 @@ public class ColumnCreator : MonoBehaviour {
     
     void CreateRandomFiller(ref ArrayList fillerStats, float height, float startWidth, float endWidth) {
         /*
-         * The function which will send the requests to create the filler. The chances of each createFiller
-         * command depends on varius values.
-         * 
-         * The chances of each occurence are given as such:
-         * 25% of a square filler
-         * 75% of a circular filler
+         * The function which will send the requests to create the filler. Look at the filler stats 
+         * to determine what kind of filler to create.
          */
         filler newFiller;
         float squareFillerChance = 0.25f;
-        
+        float widthDifference = endWidth - startWidth;
+
+        /* Create two squares that sandwich a circular equal to to the center column's radius */
+        if(height > fillerHeight/1.5f && height > baseHeight*4) {
+            Debug.Log("USE COMBO");
+            //Top square
+            newFiller = CreateSquareFiller(height*0.25f, startWidth + widthDifference*0.1f, startWidth + widthDifference*0.4f);
+            fillerStats.Add(newFiller);
+
+            //Center cylinder
+            newFiller = CreateCircularFiller(height*0.5f, startWidth, startWidth);
+            fillerStats.Add(newFiller);
+
+            //Bottom square
+            newFiller = CreateSquareFiller(height*0.25f, startWidth + widthDifference*0.6f, startWidth + widthDifference*1.0f);
+            fillerStats.Add(newFiller);
+        }
+
         /* Roll the dice to find out what kind of filler will be created */
-        if(Random.value < squareFillerChance) {
+        else if(Random.value < squareFillerChance) {
             /* Square filler */
             newFiller = CreateSquareFiller(height, startWidth, endWidth);
+            fillerStats.Add(newFiller);
         }
 
         else {
             /* Circular filler */
             newFiller = CreateCircularFiller(height, startWidth, endWidth);
+            fillerStats.Add(newFiller);
         }
-
-        /* Add the new filler to the array of filler objects to use */
-        fillerStats.Add(newFiller);
     }
 
     filler CreateSquareFiller(float height, float topRadius, float bottomRadius) {
