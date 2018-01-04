@@ -57,10 +57,12 @@ public class ColumnCreator : MonoBehaviour {
     /* Ratio of how much of the center pillar will be combined filer (excluding base) */
     public float fillerHeightRatio;
     private float fillerHeight;
+    private float fillerHeightMin;
+    private float fillerHeigthMax;
 
 
     /* --- Filler Structs ---------------------- */
-    
+
     /* How the filler of the pillar is made. Each fillerStat is of the form of a vector3 where:
      * x = the form of the filler. 0 is circular, 1 is box
      * y = the (ratio of baseWidth) width for box, radius for circular.
@@ -422,15 +424,15 @@ public class ColumnCreator : MonoBehaviour {
             new Vector2(largest*2 + diffBot/2f, currentHeight),
             new Vector2(largest*2 + WB + diffBot/2f, currentHeight),
             //Y+ plane
-            new Vector2(-WT/2f, WT/2f),
-            new Vector2(WT/2f, WT/2f),
-            new Vector2(-WT/2f, -WT/2f),
-            new Vector2(WT/2f, -WT/2f),
+            new Vector2(-boxTopWidth/2f, boxTopWidth/2f),
+            new Vector2(boxTopWidth/2f, boxTopWidth/2f),
+            new Vector2(-boxTopWidth/2f, -boxTopWidth/2f),
+            new Vector2(boxTopWidth/2f, -boxTopWidth/2f),
             //Y- plane
-            new Vector2(WB/2f, WB/2f),
-            new Vector2(-WB/2f, WB/2f),
-            new Vector2(WB/2f, -WB/2f),
-            new Vector2(-WB/2f, -WB/2f),
+            new Vector2(boxBottomWidth/2f, boxBottomWidth/2f),
+            new Vector2(-boxBottomWidth/2f, boxBottomWidth/2f),
+            new Vector2(boxBottomWidth/2f, -boxBottomWidth/2f),
+            new Vector2(-boxBottomWidth/2f, -boxBottomWidth/2f),
             //Z+ plane
             new Vector2(largest + 0 + diffTop/2f, currentHeight + boxHeight),
             new Vector2(largest + WT + diffTop/2f, currentHeight + boxHeight),
@@ -446,8 +448,7 @@ public class ColumnCreator : MonoBehaviour {
         /* Add the vertices, triangles and UVs to the column's current mesh */
         AddToMesh(vertices, triangles, UVs);
 
-
-
+        
         /* Create a box collider mesh that represents this position */
         BoxCollider box1 = gameObject.AddComponent<BoxCollider>();
         box1.center = origin;
@@ -630,9 +631,9 @@ public class ColumnCreator : MonoBehaviour {
         /* Set how much pillar space the filler will occupy */
         float fillerHeightRatioMin = 0.025f;
         float fillerHeightRatioMax = 0.25f;
-        float fillerHeightMin = baseHeight;
-        float fillerHeigthMax = baseHeight*10;
         float fillerEmptyChance = 0.2f;
+        fillerHeightMin = baseHeight;
+        fillerHeigthMax = baseHeight*10;
 
         /* Calculate the filler height. Theres a chance the filler will be empty. */
         fillerHeight = 0;
@@ -793,21 +794,37 @@ public class ColumnCreator : MonoBehaviour {
         float squareFillerChance = 0.25f;
         float widthDifference = endWidth - startWidth;
 
-        /* Create two squares that sandwich a circular equal to to the center column's radius */
-        if(height > fillerHeight/1.5f && height > baseHeight*4) {
-            Debug.Log("USE COMBO");
+        /* Create two squares that sandwich a circular equal to to the center column's radius.
+         * This object must occupy 75% of the filler and be above 40% the maximum height */
+        if(height > fillerHeight*0.75f && height > fillerHeigthMax*0.4f && false) {
             //Top square
             newFiller = CreateSquareFiller(height*0.25f, startWidth + widthDifference*0.1f, startWidth + widthDifference*0.4f);
             fillerStats.Add(newFiller);
 
             //Center cylinder
-            newFiller = CreateCircularFiller(height*0.5f, startWidth, startWidth);
+            newFiller = CreateCircularFiller(height*0.5f, startWidth + widthDifference*0.1f, startWidth + widthDifference*0.1f);
             fillerStats.Add(newFiller);
 
             //Bottom square
             newFiller = CreateSquareFiller(height*0.25f, startWidth + widthDifference*0.6f, startWidth + widthDifference*1.0f);
             fillerStats.Add(newFiller);
         }
+
+
+
+        //If there is a lot of width difference, height is less than 40% the max, and its the first filler, do steps
+        else if(startWidth == 0 && widthDifference > 0.75f && height < fillerHeigthMax*0.4f) {
+            //Fit 5 boxes with equal height
+            int stepCount = 5;
+            float stepDifference = widthDifference / stepCount;
+
+            for(int i = 0; i < stepCount; i++) {
+                newFiller = CreateSquareFiller(height/stepCount, startWidth + stepDifference*i, startWidth + stepDifference*i);
+                fillerStats.Add(newFiller);
+            }
+
+        }
+
 
         /* Roll the dice to find out what kind of filler will be created */
         else if(Random.value < squareFillerChance) {
