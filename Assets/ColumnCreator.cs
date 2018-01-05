@@ -790,78 +790,74 @@ public class ColumnCreator : MonoBehaviour {
          * The function which will send the requests to create the filler. Look at the filler stats 
          * to determine what kind of filler to create.
          */
-        filler newFiller;
         float squareFillerChance = 0.25f;
         float widthDifference = endWidth - startWidth;
+        float maxColumnRadius = Mathf.Max(cylinderTopRadius, cylinderBottomRadius);
+        float minColumnRadius = Mathf.Min(cylinderTopRadius, cylinderBottomRadius);
 
-        /* Create two squares that sandwich a circular equal to to the center column's radius.
-         * This object must occupy 75% of the filler and be above 40% the maximum height */
-        if(height > fillerHeight*0.75f && height > fillerHeigthMax*0.4f && false) {
-            //Top square
-            newFiller = CreateSquareFiller(height*0.25f, startWidth + widthDifference*0.1f, startWidth + widthDifference*0.4f);
-            fillerStats.Add(newFiller);
-
-            //Center cylinder
-            newFiller = CreateCircularFiller(height*0.5f, startWidth + widthDifference*0.1f, startWidth + widthDifference*0.1f);
-            fillerStats.Add(newFiller);
-
-            //Bottom square
-            newFiller = CreateSquareFiller(height*0.25f, startWidth + widthDifference*0.6f, startWidth + widthDifference*1.0f);
-            fillerStats.Add(newFiller);
+        /* Create two filler objects that sandwich a circular equal to to the center column's radius */
+        if(startWidth == 0 && height > fillerHeight*0.5f && height > fillerHeigthMax*0.3f) {
+            CreateRibbedColumnFiller(ref fillerStats, widthDifference, height, startWidth);
         }
 
-
-
-        //If there is a lot of width difference, height is less than 40% the max, and its the first filler, do steps
-        else if(startWidth == 0 && widthDifference > 0.75f && height < fillerHeigthMax*0.4f) {
-            //Fit 5 boxes with equal height
-            int stepCount = 5;
-            float stepDifference = widthDifference / stepCount;
-
-            for(int i = 0; i < stepCount; i++) {
-                newFiller = CreateSquareFiller(height/stepCount, startWidth + stepDifference*i, startWidth + stepDifference*i);
-                fillerStats.Add(newFiller);
-            }
-
+        /* Create the stairs filler object */
+        else if(endWidth == 1 && widthDifference > 0.35f && maxColumnRadius < baseWidth/2.5f) {
+            CreateStairsFiller(ref fillerStats, widthDifference, height, startWidth);
         }
-
-
-        /* Roll the dice to find out what kind of filler will be created */
+        
+        /* Roll the dice to find out what kind of simple filler will be created */
         else if(Random.value < squareFillerChance) {
             /* Square filler */
-            newFiller = CreateSquareFiller(height, startWidth, endWidth);
-            fillerStats.Add(newFiller);
+            CreateSquareFiller(ref fillerStats, height, startWidth, endWidth);
         }
 
         else {
             /* Circular filler */
-            newFiller = CreateCircularFiller(height, startWidth, endWidth);
-            fillerStats.Add(newFiller);
+            CreateCircularFiller(ref fillerStats, height, startWidth, endWidth, 0);
         }
     }
 
-    filler CreateSquareFiller(float height, float topRadius, float bottomRadius) {
+    void CreateRibbedColumnFiller(ref ArrayList fillerStats, float widthDifference, float height, float startWidth) {
         /*
-         * Create and return a square filler object
+         * Sandwich a flat circular filler with two filler objects. The goal is to make the center column
+         * seem to extend further into the filler. These are it's requirements:
+         *  - Starts at the main column, but doesnt always end at the base
+         *  - The height must be large enough (compared to the current filler size and the maximum filler size) 
          */
-        filler squareFiller = new filler();
 
-        /* Set the stats of a square filler */
-        squareFiller.type = 1;
-        squareFiller.height = height;
+        //Top cylinder
+        CreateCircularFiller(ref fillerStats, height*0.2f, startWidth, startWidth + widthDifference*0.25f, 1);
 
-        /* Set the radius of the square filler */
-        squareFiller.radius = new float[] { bottomRadius, topRadius};
+        //Center cylinder
+        CreateCircularFiller(ref fillerStats, height*0.5f, startWidth, startWidth, 0);
 
-        /* There are no extra values that can define a square */
-        squareFiller.extraValues = new float[] {  };
+        //Bottom square
+        CreateSquareFiller(ref fillerStats, height*0.3f, startWidth + widthDifference*0.6f, startWidth + widthDifference*1.0f);
 
-        return squareFiller;
     }
 
-    filler CreateCircularFiller(float height, float topRadius, float bottomRadius) {
+    void CreateStairsFiller(ref ArrayList fillerStats, float widthDifference, float height, float startWidth) {
+        /* 
+         * Create a series of square filler that get smaller. It will form the shape of "stairs" and has these requirements:
+         *  - Ends at the base, but doesnt always start at the center column (endWidth == 1).
+         *  - The width difference must be above a certain limit or each step will be to close.
+         *  - MaxColumnRadius must be bellow a certain amount of the stairs will be too small.
+         */
+        int stepCount = 5;
+        float stepDifference = widthDifference / stepCount;
+
+        /* Create each step of the stairs */
+        for(float i = 0.5f; i < stepCount; i++) {
+            CreateSquareFiller(ref fillerStats, height/stepCount, startWidth + stepDifference*i, startWidth + stepDifference*i);
+        }
+    }
+    
+    void CreateCircularFiller(ref ArrayList fillerStats, float height, float topRadius, float bottomRadius, int bumpType) {
         /*
-         * Create and return a circular filler object.
+         * Create a circular filler object using the given parameters and add it to the given filler list.
+         * BumpType determines the radians and stretch of the object. The potential values are:
+         *  - 0: Goes from topRad to bottomRad. Uses the first quarter of the sine wave.
+         *  - 1: Starts and ends with topRad, but has a full bump. Uses half of a sine wave.
          */
         filler circularFiller = new filler();
 
@@ -873,11 +869,38 @@ public class ColumnCreator : MonoBehaviour {
         circularFiller.radius = new float[] { topRadius, bottomRadius};
 
         /* Set the offset and stretch of the circular mesh's radians */
-        circularFiller.extraValues = new float[] { 0, Mathf.PI/2f };
+        if(bumpType == 0) {
+            circularFiller.extraValues = new float[] { 0, Mathf.PI/2f };
+        }else if(bumpType == 1) {
+            circularFiller.extraValues = new float[] { 0, Mathf.PI };
+        }
+        else {
+            Debug.Log("WARNING: BumpType not handled");
+        }
 
-        return circularFiller;
+        /* Add the filler to the filler list */
+        fillerStats.Add(circularFiller);
     }
+    
+    void CreateSquareFiller(ref ArrayList fillerStats, float height, float topRadius, float bottomRadius) {
+        /*
+         * Create a square filler object using the given parameters and add it to the given arrayList
+         */
+        filler squareFiller = new filler();
 
+        /* Set the stats of a square filler */
+        squareFiller.type = 1;
+        squareFiller.height = height;
+
+        /* Set the radius of the square filler */
+        squareFiller.radius = new float[] { bottomRadius, topRadius };
+
+        /* There are no extra values that can define a square */
+        squareFiller.extraValues = new float[] { };
+
+        /* Add the filler to the filler list */
+        fillerStats.Add(squareFiller);
+    }
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
     Vector3[] GetCircularVertices(float radius, float height, int vertexCount) {
