@@ -299,29 +299,18 @@ public class ColumnCreator : MonoBehaviour {
 
         /* Handle the radians differently depending on if it's the top or bottom filler of the pillar */
         if(fillerSectionHeigth < 0) {
-            for(int i = 0; i < vertexCount; i++) {
-                sineWaveOffset = Mathf.Sin(startingRad + radInc*i/(float) (vertexCount-1));
-                roundedEdgeVertices[i].x = (radius + maxBumpRadius*sineWaveOffset);
-                roundedEdgeVertices[i].y = currentYPos;
-                roundedEdgeVertices[i].z = 0;
-                currentYPos += Mathf.Abs(fillerSectionHeigth)/(vertexCount-1);
-            }
-        }else {
-            for(int i = 0; i < vertexCount; i++) {
-                sineWaveOffset = Mathf.Sin(startingRad+radInc - radInc*i/(float) (vertexCount-1));
-                roundedEdgeVertices[i].x = (radius + maxBumpRadius*sineWaveOffset);
-                roundedEdgeVertices[i].y = currentYPos;
-                roundedEdgeVertices[i].z = 0;
-                currentYPos += Mathf.Abs(fillerSectionHeigth)/(vertexCount-1);
-            }
+            startingRad += radInc;
+            radInc *= -1f;
         }
-        /*for(int i = 0; i < vertexCount; i++) {
+
+        /* Create the circular filler object */
+        for(int i = 0; i < vertexCount; i++) {
         	sineWaveOffset = Mathf.Sin(startingRad + radInc*i/(float)(vertexCount-1));
             roundedEdgeVertices[i].x = (radius + maxBumpRadius*sineWaveOffset);
             roundedEdgeVertices[i].y = currentYPos;
             roundedEdgeVertices[i].z = 0;
             currentYPos += Mathf.Abs(fillerSectionHeigth)/(vertexCount-1);
-        }*/
+        }
 
         CreateCircularMesh(roundedEdgeVertices);
     }
@@ -809,7 +798,7 @@ public class ColumnCreator : MonoBehaviour {
         float minColumnRadius = Mathf.Min(cylinderTopRadius, cylinderBottomRadius);
 
         /* Create three circular filler that covers a large width and height */
-        if(true) {
+        if(startWidth == 0 && height > fillerHeight*0.75 && maxColumnRadius < baseWidth/2.5f) {
             CreateTripleCircularFiller(ref fillerStats, widthDifference, height, startWidth);
         }
 
@@ -837,7 +826,10 @@ public class ColumnCreator : MonoBehaviour {
 
     void CreateTripleCircularFiller(ref ArrayList fillerStats, float widthDifference, float height, float startWidth) {
         /*
-         * Use a large circular filler that covers a lot fo height and width, along with two other above and bellow it
+         * Use a large circular filler that covers a lot fo height and width, along with two other above and bellow it.
+         *  - Starts at the main column, but doesnt always end at the base
+         *  - This object must take up most of the filler
+         *  - There must be enough width between the base and the column for it to look good
          */
 
         //Top circular
@@ -909,7 +901,7 @@ public class ColumnCreator : MonoBehaviour {
             circularFiller.extraValues = new float[] { 0, Mathf.PI };
         }else if(bumpType == 2) {
             circularFiller.radius = new float[] { bottomRadius , topRadius };
-            circularFiller.extraValues = new float[] { 0, Mathf.PI/2f };
+            circularFiller.extraValues = new float[] { Mathf.PI/2f, Mathf.PI/2f };
         }
         else {
             Debug.Log("WARNING: BumpType not handled");
