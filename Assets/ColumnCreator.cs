@@ -293,22 +293,35 @@ public class ColumnCreator : MonoBehaviour {
         /* How much distance is between the points that form the pillar's center cylinder */
         int vertexCount = 1 + Mathf.CeilToInt(fillerSectionHeigth/fillerPointDistance);
         
-
-        /* If fillerSectionHeigth is negative, change the rad values to flip the filler mesh */
-        if(fillerSectionHeigth < 0) {
-            startingRad =+ radInc;
-            radInc *= -1f;
-        }
         
         /* Populate the vertices array for the circular filler mesh */
         Vector3[] roundedEdgeVertices = new Vector3[vertexCount];
-        for(int i = 0; i < vertexCount; i++) {
+
+        /* Handle the radians differently depending on if it's the top or bottom filler of the pillar */
+        if(fillerSectionHeigth < 0) {
+            for(int i = 0; i < vertexCount; i++) {
+                sineWaveOffset = Mathf.Sin(startingRad + radInc*i/(float) (vertexCount-1));
+                roundedEdgeVertices[i].x = (radius + maxBumpRadius*sineWaveOffset);
+                roundedEdgeVertices[i].y = currentYPos;
+                roundedEdgeVertices[i].z = 0;
+                currentYPos += Mathf.Abs(fillerSectionHeigth)/(vertexCount-1);
+            }
+        }else {
+            for(int i = 0; i < vertexCount; i++) {
+                sineWaveOffset = Mathf.Sin(startingRad+radInc - radInc*i/(float) (vertexCount-1));
+                roundedEdgeVertices[i].x = (radius + maxBumpRadius*sineWaveOffset);
+                roundedEdgeVertices[i].y = currentYPos;
+                roundedEdgeVertices[i].z = 0;
+                currentYPos += Mathf.Abs(fillerSectionHeigth)/(vertexCount-1);
+            }
+        }
+        /*for(int i = 0; i < vertexCount; i++) {
         	sineWaveOffset = Mathf.Sin(startingRad + radInc*i/(float)(vertexCount-1));
             roundedEdgeVertices[i].x = (radius + maxBumpRadius*sineWaveOffset);
             roundedEdgeVertices[i].y = currentYPos;
             roundedEdgeVertices[i].z = 0;
             currentYPos += Mathf.Abs(fillerSectionHeigth)/(vertexCount-1);
-        }
+        }*/
 
         CreateCircularMesh(roundedEdgeVertices);
     }
@@ -795,8 +808,13 @@ public class ColumnCreator : MonoBehaviour {
         float maxColumnRadius = Mathf.Max(cylinderTopRadius, cylinderBottomRadius);
         float minColumnRadius = Mathf.Min(cylinderTopRadius, cylinderBottomRadius);
 
+        /* Create three circular filler that covers a large width and height */
+        if(true) {
+            CreateTripleCircularFiller(ref fillerStats, widthDifference, height, startWidth);
+        }
+
         /* Create two filler objects that sandwich a circular equal to to the center column's radius */
-        if(startWidth == 0 && height > fillerHeight*0.5f && height > fillerHeigthMax*0.3f) {
+        else if(startWidth == 0 && height > fillerHeight*0.5f && height > fillerHeigthMax*0.3f) {
             CreateRibbedColumnFiller(ref fillerStats, widthDifference, height, startWidth);
         }
 
@@ -815,6 +833,21 @@ public class ColumnCreator : MonoBehaviour {
             /* Circular filler */
             CreateCircularFiller(ref fillerStats, height, startWidth, endWidth, 0);
         }
+    }
+
+    void CreateTripleCircularFiller(ref ArrayList fillerStats, float widthDifference, float height, float startWidth) {
+        /*
+         * Use a large circular filler that covers a lot fo height and width, along with two other above and bellow it
+         */
+
+        //Top circular
+        CreateCircularFiller(ref fillerStats, height*0.2f, startWidth, startWidth + widthDifference*0.2f, 1);
+
+        //Large center circular
+        CreateCircularFiller(ref fillerStats, height*0.60f, startWidth, startWidth + widthDifference*0.6f, 2);
+
+        //Bottom object
+        CreateCircularFiller(ref fillerStats, height*0.2f, startWidth + widthDifference*0.8f, startWidth + widthDifference*1, 1);
     }
 
     void CreateRibbedColumnFiller(ref ArrayList fillerStats, float widthDifference, float height, float startWidth) {
@@ -858,6 +891,7 @@ public class ColumnCreator : MonoBehaviour {
          * BumpType determines the radians and stretch of the object. The potential values are:
          *  - 0: Goes from topRad to bottomRad. Uses the first quarter of the sine wave.
          *  - 1: Starts and ends with topRad, but has a full bump. Uses half of a sine wave.
+         *  - 2: Starts at bottomRad and ends at topRad using the first quarter of a sine wave.
          */
         filler circularFiller = new filler();
 
@@ -873,6 +907,9 @@ public class ColumnCreator : MonoBehaviour {
             circularFiller.extraValues = new float[] { 0, Mathf.PI/2f };
         }else if(bumpType == 1) {
             circularFiller.extraValues = new float[] { 0, Mathf.PI };
+        }else if(bumpType == 2) {
+            circularFiller.radius = new float[] { bottomRadius , topRadius };
+            circularFiller.extraValues = new float[] { 0, Mathf.PI/2f };
         }
         else {
             Debug.Log("WARNING: BumpType not handled");
