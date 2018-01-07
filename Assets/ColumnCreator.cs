@@ -796,8 +796,9 @@ public class ColumnCreator : MonoBehaviour {
         float widthDifference = endWidth - startWidth;
         float maxColumnRadius = Mathf.Max(cylinderTopRadius, cylinderBottomRadius);
         float minColumnRadius = Mathf.Min(cylinderTopRadius, cylinderBottomRadius);
-
-        if(true) {
+        
+        /* Sandwich a random filler between two identical filler */
+        if(height > baseHeight*2 && maxColumnRadius < baseWidth/2.5f && true) {
             Debug.Log("Sandwich");
             CreateRandomSandwichFiller(ref fillerStats, widthDifference, height, startWidth);
         }
@@ -838,42 +839,13 @@ public class ColumnCreator : MonoBehaviour {
         /*
          * Generate two random filler objects and use the same object for the top and bottom of the three.
          * This will sandwich a random filler between two identical filler.
-         * 
          * The first and 3rd filler occupy 30% while the second filler uses 40%
+         * 
+         *  - The height of this set must be large enough to ensure the 3 fillers arent too small
+         *  - There must be enough width between the base and the column for it to look good
          */
         int doubleFillerSeed;
-
-        /* All possible ways to create a square */
-        //Basic
-        //CreateSquareFiller(ref fillerStats, height*0.3f, startWidth + widthDifference*0.15f, startWidth + widthDifference*0.15f);
-        //Full Stretch
-        //CreateSquareFiller(ref fillerStats, height*0.3f, startWidth + widthDifference*0.0f, startWidth + widthDifference*0.3f);
-        //half Stretch
-        //CreateSquareFiller(ref fillerStats, height*0.3f, startWidth + widthDifference*0.1f, startWidth + widthDifference*0.2f);
-        //Smallest
-        //CreateSquareFiller(ref fillerStats, height*0.3f, startWidth + widthDifference*0.0f, startWidth + widthDifference*0.0f);
-        //Largest
-        //CreateSquareFiller(ref fillerStats, height*0.3f, startWidth + widthDifference*0.3f, startWidth + widthDifference*0.3f);
-
-        /* All possible ways to create a cricle */
-        //Flat Basic
-        //CreateCircularFiller(ref fillerStats, height*0.4f, startWidth + widthDifference*0.5f, startWidth + widthDifference*0.5f, 0);
-        //Flat Smallest
-        //CreateCircularFiller(ref fillerStats, height*0.4f, startWidth + widthDifference*0.3f, startWidth + widthDifference*0.3f, 0);
-        //Flat Largest
-        //CreateCircularFiller(ref fillerStats, height*0.4f, startWidth + widthDifference*0.7f, startWidth + widthDifference*0.7f, 0);
-        //Rounded Basic
-        //CreateCircularFiller(ref fillerStats, height*0.4f, startWidth + widthDifference*0.4f, startWidth + widthDifference*0.6f, 1);
-        //Rounded smallest
-        //CreateCircularFiller(ref fillerStats, height*0.4f, startWidth + widthDifference*0.3f, startWidth + widthDifference*0.5f, 1);
-        //Rounded Largest
-        //CreateCircularFiller(ref fillerStats, height*0.4f, startWidth + widthDifference*0.5f, startWidth + widthDifference*0.7f, 1);
-
-        //Cirlcular is easy, random type and depending on type, place the width/range thing
-
-
-
-
+        
         /* Create the filler objects, giving them their proper parameters */
         //Top
         doubleFillerSeed = CreateRandomSingleFiller(ref fillerStats, widthDifference*0.3f, height*0.3f, startWidth, -1);
@@ -881,7 +853,6 @@ public class ColumnCreator : MonoBehaviour {
         CreateRandomSingleFiller(ref fillerStats, widthDifference*0.4f, height*0.4f, startWidth + widthDifference*0.3f, -1);
         //Bottom
         CreateRandomSingleFiller(ref fillerStats, widthDifference*0.3f, height*0.3f, startWidth + widthDifference*0.7f, doubleFillerSeed);
-
 
 
         /* Heres a good example. Can switch both object's bumpType and it is equally as good */
@@ -893,31 +864,65 @@ public class ColumnCreator : MonoBehaviour {
         //CreateCircularFiller(ref fillerStats, height*0.3f, startWidth + widthDifference*0.7f, startWidth + widthDifference*1.0f, 0);
     }
 
-    int CreateRandomSingleFiller(ref ArrayList fillerStats, float widthDifference, float height, float startWidth, int seed) {
+    int CreateRandomSingleFiller(ref ArrayList fillerStats, float widthDifference, float height, float startWidth, int givenSeed) {
         /*
          * Create a single random filler object using a seed for CreateRandomSandwichFiller. Can take in an seed value
          * if the same filler object wants to be created again. If seed is negative, generate a random one.
          * Return the seed value so that the filler object can be created again if needed.
          */
-
-        /* Save the state of the RNG to not mess up any outside functions */
         UnityEngine.Random.State previousRandomState = Random.state;
+        int seed = givenSeed;
 
-        /* Create a new seed if needed */
+        /* Generate a new seed if needed */
         if(seed < 0) {
             seed = (int) (Random.value*999999);
         }
 
         /* Apply the seed to the RNG */
         Random.InitState(seed);
-
+        
         /* Create the filler object */
-        //For now, just create a simple slanted box
-        CreateSquareFiller(ref fillerStats, height, startWidth + widthDifference*0.0f, startWidth + widthDifference*1.0f);
+        if(Random.value < 0.5f) {
+            if(Random.value < 0.5f) {
+                /* Average flat square */
+                CreateSquareFiller(ref fillerStats, height, startWidth + widthDifference*0.5f, startWidth + widthDifference*0.5f);
+            }
+            else {
+                /* Average inequal square */
+                CreateSquareFiller(ref fillerStats, height, startWidth + widthDifference*0.25f, startWidth + widthDifference*0.75f);
+            }
+        }
+        else {
+            int type;
+            if(Random.value < 0.5f) {
+                /* Create a circular filler that does not progress (top and bottom radius end at the same spot) */
+                if(Random.value < 0.5f) {
+                    type = 1;
+                }else {
+                    type = 3;
+                }
 
+                CreateCircularFiller(ref fillerStats, height, startWidth + widthDifference*0.5f, startWidth + widthDifference*0.75f, type);
 
-        /* Return the RNG back to it's state before this function */
-        Random.state = previousRandomState;
+            }
+            else {
+                /* Create a circular filler that progresses the width (starts at top and ends at bottom radius) */
+                if(Random.value < 0.5f) {
+                    type = 0;
+                }
+                else {
+                    type = 2;
+                }
+
+                CreateCircularFiller(ref fillerStats, height, startWidth + widthDifference*0.25f, startWidth + widthDifference*0.75f, 0);
+            }
+        }
+        
+
+        /* Return the RNG back to it's previous state before this function if needed */
+        if(givenSeed > -1) {
+            Random.state = previousRandomState;
+        }
 
         return seed;
     }
@@ -986,6 +991,7 @@ public class ColumnCreator : MonoBehaviour {
          *  - 0: Goes from topRad to bottomRad. Uses the first quarter of the sine wave.
          *  - 1: Starts and ends with topRad, but has a full bump. Uses half of a sine wave.
          *  - 2: Starts at bottomRad and ends at topRad using the first quarter of a sine wave.
+         *  - 3: Stars and ends at topRad. Does not have a bump, does nothing with the bottom rad.
          */
         filler circularFiller = new filler();
 
@@ -1004,6 +1010,10 @@ public class ColumnCreator : MonoBehaviour {
         }else if(bumpType == 2) {
             circularFiller.radius = new float[] { bottomRadius , topRadius };
             circularFiller.extraValues = new float[] { Mathf.PI/2f, Mathf.PI/2f };
+        }
+        else if(bumpType == 3) {
+            circularFiller.radius = new float[] { topRadius, topRadius };
+            circularFiller.extraValues = new float[] { 0, 0.1f };
         }
         else {
             Debug.Log("WARNING: BumpType not handled");
