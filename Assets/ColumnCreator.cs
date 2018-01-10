@@ -791,44 +791,79 @@ public class ColumnCreator : MonoBehaviour {
         /*
          * The function which will send the requests to create the filler. Look at the filler stats 
          * to determine what kind of filler to create.
+         * 
+         * To determine what filler object to use, whenever a filler object meets it's given conditions,
+         * add it's ID to the possibleFillers array. Once all objects have been checked, pick
+         * a random ID from the array and use it as the filler to be created. An object can
+         * have a higher chance to be picked if it adds more of it's ID into the array.
+         * 
+         * Here are the list of IDs to their filler objects:
+         *  - 0: CreateRandomSingleFiller
+         *  - 1: CreateRandomSandwichFiller
+         *  - 2: CreateLargeCircularFiller
+         *  - 3: CreateRibbedColumnFiller
+         *  - 4: CreateStairsFiller
          */
         float squareFillerChance = 0.25f;
         float widthDifference = endWidth - startWidth;
         float maxColumnRadius = Mathf.Max(cylinderTopRadius, cylinderBottomRadius);
         float minColumnRadius = Mathf.Min(cylinderTopRadius, cylinderBottomRadius);
+        ArrayList possibleFillers = new ArrayList();
         
         /* Sandwich a random filler between two identical filler */
         if(height > baseHeight*2 && maxColumnRadius < baseWidth/2.5f) {
-            Debug.Log("Sandwich");
-            CreateRandomSandwichFiller(ref fillerStats, widthDifference, height, startWidth);
+            possibleFillers.Add(1);
+            possibleFillers.Add(1);
         }
 
         /* Create three circular filler that covers a large width and height */
-        else if(startWidth == 0 && height > fillerHeight*0.75 && maxColumnRadius < baseWidth/2.5f) {
-            Debug.Log("Large Circular");
-            CreateLargeCircularFiller(ref fillerStats, widthDifference, height, startWidth);
+        if(startWidth == 0 && height > fillerHeight*0.75 && maxColumnRadius < baseWidth/2.5f) {
+            possibleFillers.Add(2);
+            possibleFillers.Add(2);
         }
 
         /* Create two filler objects that sandwich a circular equal to to the center column's radius */
-        else if(startWidth == 0 && height > fillerHeight*0.5f && height > fillerHeigthMax*0.3f) {
-            Debug.Log("Ribbed Column");
-            CreateRibbedColumnFiller(ref fillerStats, widthDifference, height, startWidth);
+        if(startWidth == 0 && height > fillerHeight*0.5f && height > fillerHeigthMax*0.3f) {
+            possibleFillers.Add(3);
+            possibleFillers.Add(3);
         }
 
         /* Create the stairs filler object */
-        else if(endWidth == 1 && widthDifference > 0.35f && maxColumnRadius < baseWidth/2.5f) {
+        if(endWidth == 1 && widthDifference > 0.35f && maxColumnRadius < baseWidth/2.5f) {
+            possibleFillers.Add(4);
+            possibleFillers.Add(4);
+        }
+        
+        /* Always add a random single filler to the list */
+        possibleFillers.Add(0);
+
+
+        /* Pick a random ID from the arrayList */
+        int randomFillerID = (int) possibleFillers[Mathf.CeilToInt(Random.Range(-0.99f, possibleFillers.Count-1))];
+
+        /* Create the filler object that meets the found ID */
+        if(randomFillerID == 1) {
+            Debug.Log("Sandwich");
+            CreateRandomSandwichFiller(ref fillerStats, widthDifference, height, startWidth);
+        }
+        else if(randomFillerID == 2) {
+            Debug.Log("Large Circular");
+            CreateLargeCircularFiller(ref fillerStats, widthDifference, height, startWidth);
+        }
+        else if(randomFillerID == 3) {
+            Debug.Log("Ribbed Column");
+            CreateRibbedColumnFiller(ref fillerStats, widthDifference, height, startWidth);
+        }
+        else if(randomFillerID == 4) {
             Debug.Log("Stairs");
             CreateStairsFiller(ref fillerStats, widthDifference, height, startWidth);
         }
-        
-        /* Create a random single filler */
         else {
-            /* Random single filler */
             Debug.Log("Single Random");
             CreateRandomSingleFiller(ref fillerStats, widthDifference, height, startWidth, -1);
         }
     }
-
+    
     void CreateRandomSandwichFiller(ref ArrayList fillerStats, float widthDifference, float height, float startWidth) {
         /*
          * Generate two random filler objects and use the same object for the top and bottom of the three.
