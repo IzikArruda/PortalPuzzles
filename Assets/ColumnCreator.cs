@@ -481,7 +481,6 @@ public class ColumnCreator : MonoBehaviour {
 
         /* Set the vertex counts. circle is the amount when rotating a point around the center
          * while section is the amount of vertexes needed on the same y axis to define the pillar */
-        //circleVertexCount = 20 +1;
         sectionVertexCount = vertexPoints.Length;
 
         /* Initialize the main vector array now that we know the amount of vectors to be used */
@@ -541,19 +540,32 @@ public class ColumnCreator : MonoBehaviour {
 
         AddToMesh(vertices, triangles, UVs);
 
-        /* Create the capsule collider used to define this mesh */
-        float capsuleHeight = (vertexPoints[vertexPoints.Length-1].y - vertexPoints[0].y);
-        float centerHeigth = (vertexPoints[0].y + vertexPoints[vertexPoints.Length-1].y)/2f;
-        float capsuleWidth = 0;
-        foreach(Vector3 vec in vertexPoints) { capsuleWidth+= vec.x; }
-        capsuleWidth /= vertexPoints.Length;
-        CapsuleCollider capsule = gameObject.AddComponent<CapsuleCollider>();
-        capsule.center = new Vector3(0, centerHeigth, 0);
-        capsule.radius = capsuleWidth;
-        capsule.height = capsuleHeight;
 
-        /* Add the radius amount to the height so that the capsule overlaps onto the next section */
-        capsule.height += capsule.radius;
+
+        /* Get the starting height, mesh height and average radius of the circular mesh */
+        float meshHeight = (vertexPoints[vertexPoints.Length-1].y - vertexPoints[0].y);
+        float centerHeight = (vertexPoints[0].y + vertexPoints[vertexPoints.Length-1].y)/2f;
+        float meshAverageWidth = 0;
+        foreach(Vector3 vec in vertexPoints) { meshAverageWidth += vec.x; }
+        meshAverageWidth /= vertexPoints.Length;
+        
+
+        /* The mesh's height is larger than it's avrage width, use a capsule collider to define it's mesh */
+        if(meshHeight/2f > meshAverageWidth) {
+            CapsuleCollider capsule = gameObject.AddComponent<CapsuleCollider>();
+            capsule.center = new Vector3(0, centerHeight, 0);
+            capsule.radius = meshAverageWidth;
+            capsule.height = meshHeight;
+            /* Add the radius amount to the height so that the capsule overlaps onto the next section */
+            capsule.height += capsule.radius;
+        }
+
+        /* With a small height, it's best to use a set of boxes as it's colliders */
+        else {
+            BoxCollider box1 = gameObject.AddComponent<BoxCollider>();
+            box1.center = new Vector3(0, centerHeight, 0);
+            box1.size = new Vector3(meshAverageWidth*1.5f, meshHeight, meshAverageWidth*1.5f);
+        }
     }
 
     void AddToMesh(Vector3[] addedVertices, int[] addedTriangles, Vector2[] addedUVs) {
@@ -804,7 +816,6 @@ public class ColumnCreator : MonoBehaviour {
          *  - 3: CreateRibbedColumnFiller
          *  - 4: CreateStairsFiller
          */
-        float squareFillerChance = 0.25f;
         float widthDifference = endWidth - startWidth;
         float maxColumnRadius = Mathf.Max(cylinderTopRadius, cylinderBottomRadius);
         float minColumnRadius = Mathf.Min(cylinderTopRadius, cylinderBottomRadius);
