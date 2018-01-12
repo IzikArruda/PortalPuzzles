@@ -51,14 +51,18 @@ public class ColumnCreator : MonoBehaviour {
     private float cylinderBottomRadius;
 
 
-    /* An arraylist of each filler object to be used when creating this pillar's filler */
-    public ArrayList fillerStats;
-
     /* Ratio of how much of the center pillar will be combined filer (excluding base) */
     public float fillerHeightRatio;
     private float fillerHeight;
     private float fillerHeightMin;
     private float fillerHeigthMax;
+
+    /* An arraylist of each filler object to be used when creating this pillar's filler */
+    public ArrayList fillerStats;
+    
+    /* Child object which holds all the pillar pieces */
+    public GameObject pillarChildrenContainer;
+
 
 
     /* --- Filler Structs ---------------------- */
@@ -107,6 +111,11 @@ public class ColumnCreator : MonoBehaviour {
 
         /* Set a value to indicate the column needs to be created */
         recreateObject = true;
+
+        /* Create the gameObject used to hold all the pieces of the pillar */
+        if(pillarChildrenContainer == null) {
+            RecreatePieceContainer();
+        }
     }
     
     void Update() {
@@ -140,8 +149,8 @@ public class ColumnCreator : MonoBehaviour {
         /* Remove the current mesh of the column */
         GetComponent<MeshFilter>().sharedMesh = null;
 
-        /* Remove any colliders associated with the previous column model */
-        DeleteColliders();
+        /* Delete all the objects associated with the previous column model */
+        RecreatePieceContainer();
 
         /* Create the base of the column that sits on the y = 0 point and the highest point of the column */
         Vector3 bottomBase = new Vector3(0, baseHeight/2f, 0);
@@ -447,17 +456,29 @@ public class ColumnCreator : MonoBehaviour {
             new Vector2(largest*3 + diffBot/2f, currentHeight)
         };
         
-        /* Add the vertices, triangles and UVs to the column's current mesh */
-        AddToMesh(vertices, triangles, UVs);
 
-        
-        /* Create a box collider mesh that represents this position */
-        BoxCollider box1 = gameObject.AddComponent<BoxCollider>();
+        /////
+        /* Create a new gameObject for this mesh and add it as a child to this pillar */
+        GameObject newFillerObject = new GameObject();
+        newFillerObject.transform.parent = pillarChildrenContainer.transform;
+        newFillerObject.name = "Pillar Object " + newFillerObject.GetInstanceID();
+        newFillerObject.transform.localPosition = new Vector3(0, 0, 0);
+        newFillerObject.transform.localEulerAngles = new Vector3(0, 0, 0);
+        newFillerObject.transform.localScale = new Vector3(1, 1, 1);
+
+        /* Create a box collider for this piece of the pillar */
+        BoxCollider box1 = newFillerObject.AddComponent<BoxCollider>();
         box1.center = origin;
         float averageWidth = (boxBottomWidth + boxTopWidth)/2f;
         box1.size = new Vector3(averageWidth, boxHeight, averageWidth);
+        /////
+
+
+        /* Add the calculated mesh to the newly created pillar piece */
+        AddToMesh(vertices, triangles, UVs, newFillerObject);
+
     }
-    
+
     void CreateCircularMesh(Vector3[] vertexPoints) {
         /*
          * Create a mesh that rotates around the origin using each vertex's x distance as a radius.
@@ -536,11 +557,16 @@ public class ColumnCreator : MonoBehaviour {
             UVs[i].x = vertices[i].x;
             UVs[i].y = vertices[i].z;
         }
+        
 
-
-        AddToMesh(vertices, triangles, UVs);
-
-
+        ////
+        /* Create a new gameObject for this mesh and add it as a child to this pillar */
+        GameObject newFillerObject = new GameObject();
+        newFillerObject.transform.parent = pillarChildrenContainer.transform;
+        newFillerObject.name = "Pillar Object " + newFillerObject.GetInstanceID();
+        newFillerObject.transform.localPosition = new Vector3(0, 0, 0);
+        newFillerObject.transform.localEulerAngles = new Vector3(0, 0, 0);
+        newFillerObject.transform.localScale = new Vector3(1, 1, 1);
 
         /* Get the starting height, mesh height and average radius of the circular mesh */
         float meshHeight = (vertexPoints[vertexPoints.Length-1].y - vertexPoints[0].y);
@@ -549,10 +575,9 @@ public class ColumnCreator : MonoBehaviour {
         foreach(Vector3 vec in vertexPoints) { meshAverageWidth += vec.x; }
         meshAverageWidth /= vertexPoints.Length;
         
-
         /* The mesh's height is larger than it's avrage width, use a capsule collider to define it's mesh */
         if(meshHeight/2f > meshAverageWidth) {
-            CapsuleCollider capsule = gameObject.AddComponent<CapsuleCollider>();
+            CapsuleCollider capsule = newFillerObject.AddComponent<CapsuleCollider>();
             capsule.center = new Vector3(0, centerHeight, 0);
             capsule.radius = meshAverageWidth;
             capsule.height = meshHeight;
@@ -562,31 +587,49 @@ public class ColumnCreator : MonoBehaviour {
 
         /* With a small height, it's best to use a set of boxes as it's colliders */
         else {
-            BoxCollider box1 = gameObject.AddComponent<BoxCollider>();
+            BoxCollider box1 = newFillerObject.AddComponent<BoxCollider>();
             box1.center = new Vector3(0, centerHeight, 0);
             box1.size = new Vector3(meshAverageWidth*1.5f, meshHeight, meshAverageWidth*1.5f);
         }
+        /////
+
+
+        /* Add the calculated mesh to the newly created pillar piece */
+        AddToMesh(vertices, triangles, UVs, newFillerObject);
     }
 
-    void AddToMesh(Vector3[] addedVertices, int[] addedTriangles, Vector2[] addedUVs) {
+    void AddToMesh(Vector3[] addedVertices, int[] addedTriangles, Vector2[] addedUVs, GameObject GO) {
         /*
-         * Add the given vertices, triangles and UVs to the column's current mesh.
+         * Add the given vertices, triangles and UVs to the given gameObject's current mesh.
+         * If it currently does not have a mesh, create a new one using the given parameters.
          */
         Vector3[] currentVertices, newVertices;
         int[] currentTriangles, newTriangles;
         Vector2[] currentUVs, newUVs;
         Mesh newMesh = new Mesh();
 
+        /* Create the neccesairy compoents for the given gameOjbect if it does not have them */
+        if(GO.GetComponent<MeshFilter>() == null) {
+            GO.AddComponent<MeshFilter>();
+        }
+        if(GO.GetComponent<MeshRenderer>() == null) {
+            GO.AddComponent<MeshRenderer>();
+            /* Update the material for the meshRenderer */
+            GO.GetComponent<MeshRenderer>().sharedMaterial = columnMaterial;
+        }
+
+
         /* Get the current mesh's arrays. If the mesh does not yet exist, use empty arrays */
-        if(GetComponent<MeshFilter>().sharedMesh != null) {
-            currentVertices = GetComponent<MeshFilter>().sharedMesh.vertices;
-            currentTriangles = GetComponent<MeshFilter>().sharedMesh.triangles;
-            currentUVs = GetComponent<MeshFilter>().sharedMesh.uv;
+        if(GO.GetComponent<MeshFilter>().sharedMesh != null) {
+            currentVertices = GO.GetComponent<MeshFilter>().sharedMesh.vertices;
+            currentTriangles = GO.GetComponent<MeshFilter>().sharedMesh.triangles;
+            currentUVs = GO.GetComponent<MeshFilter>().sharedMesh.uv;
         }else {
             currentVertices = new Vector3[0];
             currentTriangles = new int[0];
             currentUVs = new Vector2[0];
         }
+
 
         /* Concatenate the added vertices and UVs to the current arrays */
         newVertices = new Vector3[currentVertices.Length + addedVertices.Length];
@@ -611,22 +654,30 @@ public class ColumnCreator : MonoBehaviour {
         newMesh.triangles = newTriangles;
         newMesh.uv = newUVs;
         newMesh.RecalculateNormals();
-        GetComponent<MeshFilter>().mesh = newMesh;
+        GO.GetComponent<MeshFilter>().mesh = newMesh;
     }
 
 
     /* ----------- Event Functions ------------------------------------------------------------- */
 
-    void DeleteColliders() {
+    void RecreatePieceContainer() {
         /*
-         * Get each collider associated with this column and delete them.
+         * Delete each piece of the pillar by re-creating the container that holds each piece of the pillar
          */
 
-        Collider col = gameObject.GetComponent<Collider>();
+        /*Collider col = gameObject.GetComponent<Collider>();
         while(col != null) {
             DestroyImmediate(col);
             col = gameObject.GetComponent<Collider>();
-        }
+        }*/
+
+        DestroyImmediate(pillarChildrenContainer);
+        pillarChildrenContainer = new GameObject();
+        pillarChildrenContainer.name = "Pillar Children";
+        pillarChildrenContainer.transform.parent = gameObject.transform;
+        pillarChildrenContainer.transform.localEulerAngles = new Vector3(0, 0, 0);
+        pillarChildrenContainer.transform.localPosition = new Vector3(0, 0, 0);
+        pillarChildrenContainer.transform.localScale = new Vector3(1, 1, 1);
     }
     
     void SetColumnStats() {
@@ -1001,7 +1052,6 @@ public class ColumnCreator : MonoBehaviour {
 
         return seed;
     }
-
     
     void CreateLargeCircularFiller(ref ArrayList fillerStats, float widthDifference, float height, float startWidth) {
         /*
