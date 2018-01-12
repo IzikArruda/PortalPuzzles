@@ -456,23 +456,8 @@ public class ColumnCreator : MonoBehaviour {
             new Vector2(largest*3 + diffBot/2f, currentHeight)
         };
         
-
-        /////
-        /* Create a new gameObject for this mesh and add it as a child to this pillar */
-        GameObject newFillerObject = new GameObject();
-        newFillerObject.transform.parent = pillarChildrenContainer.transform;
-        newFillerObject.name = "Pillar Object " + newFillerObject.GetInstanceID();
-        newFillerObject.transform.localPosition = new Vector3(0, 0, 0);
-        newFillerObject.transform.localEulerAngles = new Vector3(0, 0, 0);
-        newFillerObject.transform.localScale = new Vector3(1, 1, 1);
-
-        /* Create a box collider for this piece of the pillar */
-        BoxCollider box1 = newFillerObject.AddComponent<BoxCollider>();
-        box1.center = origin;
-        float averageWidth = (boxBottomWidth + boxTopWidth)/2f;
-        box1.size = new Vector3(averageWidth, boxHeight, averageWidth);
-        /////
-
+        /* Create the gameObject and it's colliders that will use the mesh */
+        GameObject newFillerObject = CreatePillarColliders(origin.y, boxHeight, (boxBottomWidth + boxTopWidth)/2f, false);
 
         /* Add the calculated mesh to the newly created pillar piece */
         AddToMesh(vertices, triangles, UVs, newFillerObject);
@@ -558,44 +543,80 @@ public class ColumnCreator : MonoBehaviour {
             UVs[i].y = vertices[i].z;
         }
         
-
-        ////
-        /* Create a new gameObject for this mesh and add it as a child to this pillar */
-        GameObject newFillerObject = new GameObject();
-        newFillerObject.transform.parent = pillarChildrenContainer.transform;
-        newFillerObject.name = "Pillar Object " + newFillerObject.GetInstanceID();
-        newFillerObject.transform.localPosition = new Vector3(0, 0, 0);
-        newFillerObject.transform.localEulerAngles = new Vector3(0, 0, 0);
-        newFillerObject.transform.localScale = new Vector3(1, 1, 1);
-
         /* Get the starting height, mesh height and average radius of the circular mesh */
         float meshHeight = (vertexPoints[vertexPoints.Length-1].y - vertexPoints[0].y);
         float centerHeight = (vertexPoints[0].y + vertexPoints[vertexPoints.Length-1].y)/2f;
         float meshAverageWidth = 0;
         foreach(Vector3 vec in vertexPoints) { meshAverageWidth += vec.x; }
         meshAverageWidth /= vertexPoints.Length;
+
+        /* Create the gameObject and it's colliders that will use the mesh */
+        GameObject newFillerObject = CreatePillarColliders(centerHeight, meshHeight, meshAverageWidth, true);
         
-        /* The mesh's height is larger than it's avrage width, use a capsule collider to define it's mesh */
-        if(meshHeight/2f > meshAverageWidth) {
-            CapsuleCollider capsule = newFillerObject.AddComponent<CapsuleCollider>();
-            capsule.center = new Vector3(0, centerHeight, 0);
-            capsule.radius = meshAverageWidth;
-            capsule.height = meshHeight;
-            /* Add the radius amount to the height so that the capsule overlaps onto the next section */
-            capsule.height += capsule.radius;
-        }
-
-        /* With a small height, it's best to use a set of boxes as it's colliders */
-        else {
-            BoxCollider box1 = newFillerObject.AddComponent<BoxCollider>();
-            box1.center = new Vector3(0, centerHeight, 0);
-            box1.size = new Vector3(meshAverageWidth*1.5f, meshHeight, meshAverageWidth*1.5f);
-        }
-        /////
-
-
         /* Add the calculated mesh to the newly created pillar piece */
         AddToMesh(vertices, triangles, UVs, newFillerObject);
+    }
+
+    GameObject CreatePillarColliders(float startHeight, float height, float width, bool Circular) {
+        /*
+         * Use the given parameters to create colliders for the piece of the pillar that's being created.
+         * Determine whether it's a circular or box piece and return the gameObject once finished.
+         */
+
+        /* Create a new gameObject for this mesh and add it as a child to this pillar */
+        GameObject pillarPiece = new GameObject();
+        pillarPiece.transform.parent = pillarChildrenContainer.transform;
+        pillarPiece.name = "Pillar Piece " + pillarPiece.GetInstanceID();
+        pillarPiece.transform.localPosition = new Vector3(0, 0, 0);
+        pillarPiece.transform.localEulerAngles = new Vector3(0, 0, 0);
+        pillarPiece.transform.localScale = new Vector3(1, 1, 1);
+
+
+        /* Create the colliders used to define a circular mesh for the pillar */
+        if(Circular) {
+            
+            /* The mesh's height is larger than it's average width, use a capsule collider to define it's mesh */
+            if(height/2f > width) {
+                CapsuleCollider capsule = pillarPiece.AddComponent<CapsuleCollider>();
+                capsule.center = new Vector3(0, startHeight, 0);
+                capsule.radius = width;
+                capsule.height = height;
+                /* Add the radius amount to the height so that the capsule overlaps onto the next section */
+                capsule.height += capsule.radius;
+            }
+
+            /* With a small height, it's best to use a set of boxes as it's colliders */
+            else {
+                /* Create multiple box colliders to form a cylinder-like shape */
+                int boxCount = 4;
+                GameObject newColliderObject;
+                for(int i = 0; i < boxCount; i++) {
+                    /* Create the new box and apply a rotation to the local Y axis */
+                    newColliderObject = new GameObject();
+                    newColliderObject.name = "Circular Box Collider " + newColliderObject.GetInstanceID();
+                    newColliderObject.transform.parent = pillarPiece.transform;
+                    newColliderObject.transform.localPosition = new Vector3(0, 0, 0);
+                    newColliderObject.transform.localScale = new Vector3(1, 1, 1);
+                    newColliderObject.transform.localEulerAngles = new Vector3(0, i*(90/boxCount), 0);
+
+                    /* Create the box collider for this box */
+                    BoxCollider circularMeshCollider = newColliderObject.AddComponent<BoxCollider>();
+                    circularMeshCollider.center = new Vector3(0, startHeight, 0);
+                    float centerToEdge = Mathf.Sqrt(Mathf.Pow(width, 2)*2);
+                    circularMeshCollider.size = new Vector3(centerToEdge, height, centerToEdge);
+                }
+            }
+        }
+
+        /* Create a single box collider */
+        else {
+            BoxCollider boxCollider = pillarPiece.AddComponent<BoxCollider>();
+            boxCollider.center = new Vector3(0, startHeight, 0);
+            boxCollider.size = new Vector3(width, height, width);
+        }
+        
+
+        return pillarPiece;
     }
 
     void AddToMesh(Vector3[] addedVertices, int[] addedTriangles, Vector2[] addedUVs, GameObject GO) {
@@ -664,13 +685,7 @@ public class ColumnCreator : MonoBehaviour {
         /*
          * Delete each piece of the pillar by re-creating the container that holds each piece of the pillar
          */
-
-        /*Collider col = gameObject.GetComponent<Collider>();
-        while(col != null) {
-            DestroyImmediate(col);
-            col = gameObject.GetComponent<Collider>();
-        }*/
-
+         
         DestroyImmediate(pillarChildrenContainer);
         pillarChildrenContainer = new GameObject();
         pillarChildrenContainer.name = "Pillar Children";
