@@ -149,6 +149,7 @@ public class CustomPlayerController : MonoBehaviour {
          * Handle any player inputs. If they need to be redirected to a new script,
          * send the input signals to the current overriddenScript.
          */
+        Debug.Log("start update");
         inputs.UpdateInputs();
         stateTime += Time.deltaTime;
 
@@ -178,6 +179,40 @@ public class CustomPlayerController : MonoBehaviour {
         //Draw a line in the camera's forward vector
         Debug.DrawLine(playerCamera.transform.position, 
                 playerCamera.transform.position + playerCamera.transform.rotation*Vector3.forward*0.5f, Color.green);
+
+
+        /*
+         * 
+         * NEW IMPLEMENTATION: MOVE ALL PLAYER MOVEMENT TO FIXEDUPDATE.
+         * DETECT PORTAL COLISION BY SAVING POSITION BETWEEN UPDATES AND THEN CHECKING IF A PORTAL WAS BETWEEN THEM.
+         * 
+         * However, a big problem is they can walk into an object once teleported (teleported into an object).
+         * The fix for this would be to force a physics check after moving the player from a teleport, 
+         * but I do not believe that can be done. The effect of this is that the player will end up being pushed by the physics
+         * AFTER the frame renders them in  the new teleported position, which will cause the camera top jump and even
+         * potentially push the player back into the portal. By having both portals symmetrical, we can avoid many cases,
+         * but the problem still exists.
+         * 
+         */
+
+
+        Debug.Log(transform.position.z);
+        Debug.Log("end update");
+    }
+
+    void FixedUpdate() {
+        /*
+         * For now just move the player and do some tests
+         */
+        Rigidbody rigidBody = GetComponent<Rigidbody>();
+
+        Debug.Log("start Fixed");
+
+        Debug.Log(transform.position.z);
+        rigidBody.MovePosition(transform.position + transform.forward*0.5f * Time.deltaTime);
+        Debug.Log(transform.position.z);
+
+        Debug.Log("End Fixed");
     }
 
 

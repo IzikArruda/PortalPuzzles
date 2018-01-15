@@ -137,7 +137,7 @@ public class ColumnCreator : MonoBehaviour {
             recreateObject = false;
         }
     }
-
+    
 
     /* ----------- Column Creation Functions ------------------------------------------------------------- */
 
