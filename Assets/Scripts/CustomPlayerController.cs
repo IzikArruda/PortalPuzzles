@@ -33,7 +33,7 @@ public class CustomPlayerController : MonoBehaviour {
     /* How long the player has spent in the current state */
     public float stateTime;
 
-	/* --- Attached GameObjects ------------------- */
+    /* --- Attached GameObjects ------------------- */
     /* The UserInputs object linked to this player */
     private UserInputs inputs;
     /* The current position of the camera. Smoothly morphs to restingCameraTransform each frame */
@@ -42,7 +42,9 @@ public class CustomPlayerController : MonoBehaviour {
     public Camera playerCamera;
 
 
-	/* --- Player Control/Movement ----------------- */
+    /* --- Player Control/Movement ----------------- */
+    /* The position the player was in on the previous update frame */
+    private Vector3 previousPosition;
     /* The direction and magnitude of player's movement input */
     private Vector3 inputVector = Vector3.zero;
     /* How fast a player moves using player inputs */
@@ -115,7 +117,7 @@ public class CustomPlayerController : MonoBehaviour {
 
     /* Script that handles all footstep tracking */
     public FootstepTracker playerStepTracker;
-    
+
 
     /* -------------- Built-in Unity Functions ---------------------------------------------------------- */
 
@@ -142,6 +144,9 @@ public class CustomPlayerController : MonoBehaviour {
         ChangeState((int) PlayerStates.Standing);
         transform.localPosition = new Vector3(transform.localPosition.x, 
                 givenLegLength + playerBodyLength/2f, transform.localPosition.z);
+
+        /* The "previous frame" had the player starting in it's current position */
+        previousPosition = transform.position;
    }
 
     void Update() {
@@ -170,9 +175,6 @@ public class CustomPlayerController : MonoBehaviour {
         	UpdateFastFalling();
         }
 
-        /* Apply any needed effects to the camera */
-        cameraEffectsScript.UpdateCameraEffects();
-
         /* Update the player's stride progress to determine when a footstep sound effect should play */
         playerStepTracker.UpdateStride();
         
@@ -195,24 +197,92 @@ public class CustomPlayerController : MonoBehaviour {
          * 
          */
 
+        /* All movement will be moved to FixedUpdate. */
 
-        Debug.Log(transform.position.z);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        /* Get the difference in positions of the update calls. If this is 0 when hitting and object, we are good */
+        Debug.Log(transform.position.z - previousPosition.z);
+        
         Debug.Log("end update");
+
+        /* Update the player's previousPosition at the end of the Update call */
+        previousPosition = transform.position;
     }
 
     void FixedUpdate() {
         /*
-         * For now just move the player and do some tests
+         * This function will command the player's movement. 
          */
         Rigidbody rigidBody = GetComponent<Rigidbody>();
 
         Debug.Log("start Fixed");
 
         Debug.Log(transform.position.z);
-        rigidBody.MovePosition(transform.position + transform.forward*0.5f * Time.deltaTime);
+        //rigidBody.MovePosition(transform.position + transform.forward*0.5f * Time.deltaTime);
         Debug.Log(transform.position.z);
 
         Debug.Log("End Fixed");
+    }
+
+    void LateUpdate() {
+        /*
+         * Handle all camera effects after the player has finished moving/teleporting for the frame.
+         * Depending on the player's state, apply different effects to the camera.
+         * 
+         * 
+         * --------
+         * Currently, a camera can undergo an animation (fastFalling, landing) and only one animation.
+         * A common scenario of undergoing a landing followed by entering the falling state again will
+         * seem jaring due to the camera moving suddently to it's neutral position.
+         * 
+         * This can be avoided by having each animation undergo it's animation process assuming the
+         * camera has already been setup in it's default position AND by having each animation animate
+         * independent of the player's state. Each animation should have a "Stop" and "Start" command.
+         * --------
+         */
+
+
+        /* Use player inputs to rotate the player's view */
+        if(state == (int) PlayerStates.Standing ||
+                state == (int) PlayerStates.Landing ||
+                state == (int) PlayerStates.Falling ||
+                state == (int) PlayerStates.FastFalling) {
+            AdjustCameraRotation();
+        }
+
+
+        /* Reposition the camera into it's expected position. Goes through portals. */
+        if(state == (int) PlayerStates.Landing) {
+            /* Apply an animation to the camera while in the landing state */
+            AnimatedCameraLanding();
+        }
+        else if(state == (int) PlayerStates.FastFalling) {
+            /* Apply an animation to the camera while in the fastFalling state */
+            AnimateCameraFastFalling();
+        }
+        else {
+            /* Any other state simply places the camera into it's default position */
+            AdjustCameraPosition(GetCameraHeight());
+        }
+
+        
+        /* Apply any needed special effects to the camera. Runs everytime the camera renders */
+        cameraEffectsScript.UpdateCameraEffects();
     }
 
 
@@ -232,10 +302,6 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Find the footPosition of the player and check if they are falling or standing. Place the player's body position. */
         StepPlayer();
-
-        /* Adjust the camera's default transform (currentCameraTransform) now that the player has moved */
-        AdjustCameraRotation();
-        AdjustCameraPosition(GetCameraHeight());
     }
 
 	void UpdateFalling(){
@@ -249,10 +315,6 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Find the footPosition of the player and check if they are falling or standing. Place the player's body position. */
         StepPlayer();
-
-        /* Adjust the camera's default transform (currentCameraTransform) now that the player has moved */
-        AdjustCameraRotation();
-        AdjustCameraPosition(GetCameraHeight());
     }
     
     void UpdateLanding() {
@@ -267,10 +329,6 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Let the player undergo any steps that may occur */
         StepPlayer();
-
-        /* Force the camera to follow a specific path/animation, but still respond to mouse inputs */
-        AdjustCameraRotation();
-        AnimatedCameraLanding();
     }
     
     void UpdateFastFalling() {
@@ -280,13 +338,10 @@ public class CustomPlayerController : MonoBehaviour {
     	
     	/*Do everything that is done when falling normally */ 
     	UpdateFalling();
-    
-    	/* Apply a random variance to the players camera relative to their speed */
-    	AnimateCameraFastFalling();
 	}
 
     
-    /* ----------------- Secondairy Update Functions ------------------------------------------------------------- */
+    /* ----------------- Secondary Update Functions ------------------------------------------------------------- */
 
     public void StepPlayer() {
         /*
@@ -367,9 +422,8 @@ public class CustomPlayerController : MonoBehaviour {
 
     void AdjustCameraPosition(float cameraHeight) {
         /*
-         * Position and rotate the player camera according to the player's inputs.
-         * The camera is positionned headHeight above the player origin,
-         * with the cameraYOffset applying an offset.
+         * Position the player's camera according to the player's current position and rotation.
+         * The camera is positionned headHeight above the player origin with a cameraYOffset offset.
          * 
          * Properly position the camera where the player's "head" should be. The new position and rotation 
          * is calculated by firing a RayTrace command from the player origin upwards (relative to the player) 
@@ -391,7 +445,7 @@ public class CustomPlayerController : MonoBehaviour {
         toCamRotation = Quaternion.LookRotation(transform.up, transform.forward);
 
         /* If the distance is negative, have the camera's rotation go down instead of up */
-        //WE DONT KNOW IF THIS WILL PROPERLY TELEPORT.NEED TO TEST WITH THE PLAYER STEPPING THROUGH A TILTED TELEPORTER 
+        //WE DONT KNOW IF THIS WILL PROPERLY TELEPORT.NEED TO TEST WITH THE PLAYER STEPPING THROUGH A TILTED TELEPORTER
         if(cameraHeight < 0) {
             cameraHeight *= -1;
             toCamRotation = Quaternion.LookRotation(-transform.up, transform.forward);
@@ -465,8 +519,12 @@ public class CustomPlayerController : MonoBehaviour {
     	 */
     	float speedRatio = RatioWithinRange(maxYVelocity, maxYVelocity*fastFallMod, -currentYVelocity);
     	float r = speedRatio*0.2f;
-    
-    	currentCameraTransform.rotation *= Quaternion.Euler(
+
+        /* Put the camera into it's normal resting position */
+        AdjustCameraPosition(GetCameraHeight());
+
+        /* Apply a random rotation effect to the camera */
+        currentCameraTransform.rotation *= Quaternion.Euler(
 				Random.Range(-r, r), Random.Range(-r, r), Random.Range(-r, r));
     	playerCamera.transform.rotation = currentCameraTransform.rotation;
     }
