@@ -44,7 +44,7 @@ public class CustomPlayerController : MonoBehaviour {
 
     /* --- Player Control/Movement ----------------- */
     /* The position the player was in on the previous update frame */
-    private Vector3 previousPosition;
+    private Vector3 lastSavedPosition;
     /* The direction and magnitude of player's movement input */
     private Vector3 inputVector = Vector3.zero;
     /* How fast a player moves using player inputs */
@@ -69,6 +69,9 @@ public class CustomPlayerController : MonoBehaviour {
     /* The state of the jump key on the current and previous frame. true = pressed */
     private bool jumpKeyPrevious = false;
     private bool jumpKeyCurrent = false;
+
+    /* The Expected movements (in the form of Vector3) of the player for the upcomming physics update */
+    private ArrayList expectedMovements;
 
 
 	/* --- Body/Leg Sizes---------------------- */
@@ -146,35 +149,50 @@ public class CustomPlayerController : MonoBehaviour {
                 givenLegLength + playerBodyLength/2f, transform.localPosition.z);
 
         /* The "previous frame" had the player starting in it's current position */
-        previousPosition = transform.position;
+        lastSavedPosition = transform.position;
+
+        /* Create the arraylist of vector3s that track the list of movements the player is expected to undergo */
+        expectedMovements = new ArrayList();
    }
 
     void Update() {
         /*
-         * Handle any player inputs. If they need to be redirected to a new script,
-         * send the input signals to the current overriddenScript.
+         * Update the player's inputs and handle most input conditions. Player movement is handled in fixedUpdate.
+         * Jumping and steppping are handled in this function. 
+         * 
+         * This may bring up a situation where if the game fails to update a frame after a long enough time, 
+         * the player will end up moving across a gap as falling/stepping is handled in this update function.
+         * If we were to move the falling into the FixedUpdate function, the player may fall/move past a portal
+         * and not teleport. 
+         * THE FIX: after every physics update, save the player's position. Once this Update function is called,
+         * handle each movement sepratly. The written example shows this situation.
+         * 
+         * ALSO: WE CAN ADD A TELEPORT HANDLER IN THE FIXEDUPDATE FUNCTION. If we end up moving past a teleport trigger,
+         * just teleport the player normally, then maybe reset the saved position values? The idea of this is that
+         * after a physics update, we detected a teleport SHOULD have occured, but we did not update the frame yet,
+         * so by teleporting the player in that moment they will NOT render a frame of them PAST the teleport trigger.
          */
-        Debug.Log("start update");
+
+
+        //1. Update the player's inputs and stateTime
         inputs.UpdateInputs();
         stateTime += Time.deltaTime;
 
-        /* Run a given set of functions depending on the player state */
-        if(state == (int) PlayerStates.Standing){
-			UpdateStanding();
-		}
 
-        else if(state == (int) PlayerStates.Landing) {
-            UpdateLanding();
+        //2. Check if the vector between lastSavedPosition and the player's current position passes a portal.
+        //  For now, only check if this vector exists. It is expected to exist after every frame.
+        //  Portal handling will be done in fixedupdate for now, but there must be a portal catch in this function too.
+        if(!DetectMovement(lastSavedPosition, transform.position)) {
+            Debug.Log("detected in UPDATE");
         }
 
-        else if(state == (int) PlayerStates.Falling) {
-            UpdateFalling();
-        }
-        
-        else if(state == (int) PlayerStates.FastFalling) {
-        	UpdateFastFalling();
-        }
 
+        //3. Save the player's current position as the lastSavedPosition
+        lastSavedPosition = transform.position;
+
+
+
+        /* ------------- */
         /* Update the player's stride progress to determine when a footstep sound effect should play */
         playerStepTracker.UpdateStride();
         
@@ -196,47 +214,60 @@ public class CustomPlayerController : MonoBehaviour {
          * but the problem still exists.
          * 
          */
-
-        /* All movement will be moved to FixedUpdate. */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        /* Get the difference in positions of the update calls. If this is 0 when hitting and object, we are good */
-        Debug.Log(transform.position.z - previousPosition.z);
-        
-        Debug.Log("end update");
-
-        /* Update the player's previousPosition at the end of the Update call */
-        previousPosition = transform.position;
     }
 
     void FixedUpdate() {
         /*
-         * This function will command the player's movement. 
+         * Handle player movement. This includes moving the player in the inputted direction and stepping.
+         * 
+         * Also, handle a teleport check if an Update call was not made between the the last physics check.
+         * This could be due to the high amount of physics checks or possibly a drop in framerate for the player.
+         * The goal is to prevent the player from moving past if they are not updating fast enough.
          */
+
+        
+        //1. Check if from the past movement/position, the player passed a teleporter. (THIS SHOULD BE A NEW FUNCTION: CheckForTeleport)
+        //      If this is true, move the player to the proper position by tracing the vector backwards/forwards again.
+        //      Once the player is PLACED into their new position, continue.
+        if(!DetectMovement(lastSavedPosition, transform.position)) {
+            Debug.Log("Detected in FIXED");
+            //"teleport" handleded in fixed
+        }
+
+        
+        //2. Reset the past movement/position tracker
+        expectedMovements.Clear();
+
+        
+        //3. Find any movement neccesairy from user inputs, steps, and jumping speed.
+        if(state == (int) PlayerStates.Standing) {
+            UpdateStanding();
+        }
+
+        else if(state == (int) PlayerStates.Landing) {
+            UpdateLanding();
+        }
+
+        else if(state == (int) PlayerStates.Falling) {
+            UpdateFalling();
+        }
+
+        else if(state == (int) PlayerStates.FastFalling) {
+            UpdateFastFalling();
+        }
+
+        
+        //4. Apply the final tallied movement vector and use rigidBody.MovePosition.
         Rigidbody rigidBody = GetComponent<Rigidbody>();
+        Vector3 newPosition = transform.position;
+        for(int i = 0; i < expectedMovements.Count; i++) {
+            newPosition += (Vector3) expectedMovements[i];
+        }
+        rigidBody.MovePosition(newPosition);
 
-        Debug.Log("start Fixed");
 
-        Debug.Log(transform.position.z);
-        //rigidBody.MovePosition(transform.position + transform.forward*0.5f * Time.deltaTime);
-        Debug.Log(transform.position.z);
-
-        Debug.Log("End Fixed");
+        //5. Save the player's current position as the lastSavedPosition
+        lastSavedPosition = transform.position;
     }
 
     void LateUpdate() {
@@ -283,6 +314,25 @@ public class CustomPlayerController : MonoBehaviour {
         
         /* Apply any needed special effects to the camera. Runs everytime the camera renders */
         cameraEffectsScript.UpdateCameraEffects();
+    }
+
+
+
+    bool DetectMovement(Vector3 startPosition, Vector3 endPosition) {
+        /*
+         * Given two vector3 positions, return true if they are not equal. 
+         * This will be used as a temp to the CheckForTeleport function.
+         */
+        bool differentPositions = false;
+
+        /* Check if both vectors are equal */
+        if(startPosition.x == endPosition.x &&
+                startPosition.y == endPosition.y &&
+                startPosition.z == endPosition.z) {
+            differentPositions = true;
+        }
+
+        return differentPositions;
     }
 
 
@@ -824,7 +874,13 @@ public class CustomPlayerController : MonoBehaviour {
             rotationDifference = RayTrace(ref position, ref direction, ref remainingDistance, true, true);
 
             /* Update the player's transform with the updated parameters */
-            transform.position = position;
+            //transform.position = position;
+            /////NOTE: A TELEPORT REQUIRES A SET PLAYER POSITION, NOT A RIGIDBODY MOVEPOSITION
+            /////THEREFORE WE WILL NEED TO KNOW IF A TELEPORT HAS OCCURED OR NOT
+            /////HOWEVER, THIS FUNCTION SHOULD NOT ACTUALLY TELEPORT THE PLAYER
+            //Rigidbody rigidBody = GetComponent<Rigidbody>();
+            //rigidBody.MovePosition(position);
+            expectedMovements.Add(position - transform.position);
             transform.rotation = transform.rotation * rotationDifference;
         }
         
