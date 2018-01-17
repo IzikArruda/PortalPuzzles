@@ -155,6 +155,60 @@ public class CustomPlayerController : MonoBehaviour {
         expectedMovements = new ArrayList();
    }
 
+    void FixedUpdate() {
+        /*
+         * Handle player movement. This includes moving the player in the inputted direction and stepping.
+         * 
+         * Also, handle a teleport check if an Update call was not made between the the last physics check.
+         * This could be due to the high amount of physics checks or possibly a drop in framerate for the player.
+         * The goal is to prevent the player from moving past if they are not updating fast enough.
+         */
+         
+        //1. Check if from the past movement/position, the player passed a teleporter. (THIS SHOULD BE A NEW FUNCTION: CheckForTeleport)
+        //      If this is true, move the player to the proper position by tracing the vector backwards/forwards again.
+        //      Once the player is PLACED into their new position, continue.
+        /* Handle the conditions that need to be checked after the playre moves (teleport, update footstep tracker) */
+        HandlePlayerMovement();
+
+
+        //1.5 Handle a step. like check where the player is from the floor. This should not be done in Update, only here.
+
+
+        //2. Reset the past movement/position tracker
+        expectedMovements.Clear();
+
+
+        //3. Find any movement neccesairy from user inputs, steps, and jumping speed.
+        if(state == (int) PlayerStates.Standing) {
+            UpdateStanding();
+        }
+
+        else if(state == (int) PlayerStates.Landing) {
+            UpdateLanding();
+        }
+
+        else if(state == (int) PlayerStates.Falling) {
+            UpdateFalling();
+        }
+
+        else if(state == (int) PlayerStates.FastFalling) {
+            UpdateFastFalling();
+        }
+
+
+        //4. Apply the final tallied movement vector and use rigidBody.MovePosition.
+        Rigidbody rigidBody = GetComponent<Rigidbody>();
+        Vector3 newPosition = transform.position;
+        for(int i = 0; i < expectedMovements.Count; i++) {
+            newPosition += (Vector3) expectedMovements[i];
+        }
+        rigidBody.MovePosition(newPosition);
+
+
+        //5. Save the player's current position as the lastSavedPosition
+        lastSavedPosition = transform.position;
+    }
+
     void Update() {
         /*
          * Update the player's inputs and handle most input conditions. Player movement is handled in fixedUpdate.
@@ -176,15 +230,14 @@ public class CustomPlayerController : MonoBehaviour {
 
         //1. Update the player's inputs and stateTime
         inputs.UpdateInputs();
+        UpdateInputVector();
         stateTime += Time.deltaTime;
 
 
         //2. Check if the vector between lastSavedPosition and the player's current position passes a portal.
         //  For now, only check if this vector exists. It is expected to exist after every frame.
         //  Portal handling will be done in fixedupdate for now, but there must be a portal catch in this function too.
-        if(!DetectMovement(lastSavedPosition, transform.position)) {
-            Debug.Log("detected in UPDATE");
-        }
+        HandlePlayerMovement();
 
 
         //3. Save the player's current position as the lastSavedPosition
@@ -214,60 +267,6 @@ public class CustomPlayerController : MonoBehaviour {
          * but the problem still exists.
          * 
          */
-    }
-
-    void FixedUpdate() {
-        /*
-         * Handle player movement. This includes moving the player in the inputted direction and stepping.
-         * 
-         * Also, handle a teleport check if an Update call was not made between the the last physics check.
-         * This could be due to the high amount of physics checks or possibly a drop in framerate for the player.
-         * The goal is to prevent the player from moving past if they are not updating fast enough.
-         */
-
-        
-        //1. Check if from the past movement/position, the player passed a teleporter. (THIS SHOULD BE A NEW FUNCTION: CheckForTeleport)
-        //      If this is true, move the player to the proper position by tracing the vector backwards/forwards again.
-        //      Once the player is PLACED into their new position, continue.
-        if(!DetectMovement(lastSavedPosition, transform.position)) {
-            Debug.Log("Detected in FIXED");
-            //"teleport" handleded in fixed
-        }
-
-        
-        //2. Reset the past movement/position tracker
-        expectedMovements.Clear();
-
-        
-        //3. Find any movement neccesairy from user inputs, steps, and jumping speed.
-        if(state == (int) PlayerStates.Standing) {
-            UpdateStanding();
-        }
-
-        else if(state == (int) PlayerStates.Landing) {
-            UpdateLanding();
-        }
-
-        else if(state == (int) PlayerStates.Falling) {
-            UpdateFalling();
-        }
-
-        else if(state == (int) PlayerStates.FastFalling) {
-            UpdateFastFalling();
-        }
-
-        
-        //4. Apply the final tallied movement vector and use rigidBody.MovePosition.
-        Rigidbody rigidBody = GetComponent<Rigidbody>();
-        Vector3 newPosition = transform.position;
-        for(int i = 0; i < expectedMovements.Count; i++) {
-            newPosition += (Vector3) expectedMovements[i];
-        }
-        rigidBody.MovePosition(newPosition);
-
-
-        //5. Save the player's current position as the lastSavedPosition
-        lastSavedPosition = transform.position;
     }
 
     void LateUpdate() {
@@ -318,21 +317,43 @@ public class CustomPlayerController : MonoBehaviour {
 
 
 
-    bool DetectMovement(Vector3 startPosition, Vector3 endPosition) {
+    void HandlePlayerMovement() {
         /*
-         * Given two vector3 positions, return true if they are not equal. 
-         * This will be used as a temp to the CheckForTeleport function.
+         * Given the player's current position and their last known saved position, cast a vector between 
+         * the two points and use it as a movement vecotr. This means teleport the player if it
+         * collides with a teleporter and update the footstep tracker with the vector.
          */
-        bool differentPositions = false;
+        
+        /* Get the vector of the player's movement between now and the last time they were checked */
+        Vector3 movementVector = transform.position - lastSavedPosition;
 
-        /* Check if both vectors are equal */
-        if(startPosition.x == endPosition.x &&
-                startPosition.y == endPosition.y &&
-                startPosition.z == endPosition.z) {
-            differentPositions = true;
+
+        /* Check if there was any movement at all */
+        if(movementVector.x != 0 || movementVector.y != 0 || movementVector.z != 0) {
+            
+            /* Fire a ray of the player's movement that interracts with the world, including teleporters */
+            Vector3 position = lastSavedPosition;
+            Quaternion direction = Quaternion.LookRotation(movementVector.normalized, transform.up);
+            float remainingDistance = movementVector.magnitude;
+            bool teleported = false;
+            Quaternion rotationDifference = RayTrace(ref position, ref direction, ref remainingDistance, ref teleported, true, true);
+
+            /* If the player's movement passes through a teleporter, reposition their transform to reflect the teleport */
+            if(teleported) {
+                transform.position = position;
+                transform.rotation = transform.rotation * rotationDifference;
+            }
         }
 
-        return differentPositions;
+
+        /* If grounded, pass the movement vector and it's direction relative to the player into the footstep tracker */
+        if(PlayerIsGrounded()) {
+            playerStepTracker.AddHorizontalStep(Quaternion.Inverse(transform.rotation)*movementVector);
+        }
+
+
+        /* Update the player's lastSavedPosition with it's new position */
+        lastSavedPosition = transform.position;
     }
 
 
@@ -433,19 +454,11 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Calculate the gravity vector that will be applied to the player */
         Vector3 gravityVector = GetGravityVector();
-
-        /* Update the player's input vector to get the player's input direction */
-        UpdateInputVector();
-
+        
         /* Send a move command to the player using the gravity and input vectors */
         Vector3 movementVector = gravityVector + inputVector;
         movementVector -= movementVector.normalized*MovePlayer(movementVector);
-        
-        /* If grounded, pass the inputVector and how much was used in the move to the footstep tracker.
-         * Multiply it by the inverse of the player's rotation to get the input direction relative to the world. */
-		if(PlayerIsGrounded()){
-            playerStepTracker.AddHorizontalStep(Quaternion.Inverse(transform.rotation)*movementVector);
-        }
+
     }
     
     void AdjustCameraRotation() {
@@ -502,7 +515,8 @@ public class CustomPlayerController : MonoBehaviour {
         }
 
         /* RayTrace from the player's origin to the camera's position */
-        rotationDifference = RayTrace(ref cameraPosition, ref toCamRotation, ref cameraHeight, true, true);
+        bool temp = false;
+        rotationDifference = RayTrace(ref cameraPosition, ref toCamRotation, ref cameraHeight, ref temp, true, true);
 
         /* Use the new position and rotation to find the camera's final position and rotation */
         currentCameraTransform.position = cameraPosition;
@@ -871,7 +885,7 @@ public class CustomPlayerController : MonoBehaviour {
             remainingDistance = movementVector.magnitude;
 
             /* Fire the rayTrace command and retrive the rotation difference */
-            rotationDifference = RayTrace(ref position, ref direction, ref remainingDistance, true, true);
+            //rotationDifference = RayTrace(ref position, ref direction, ref remainingDistance, true, true);
 
             /* Update the player's transform with the updated parameters */
             //transform.position = position;
@@ -880,8 +894,8 @@ public class CustomPlayerController : MonoBehaviour {
             /////HOWEVER, THIS FUNCTION SHOULD NOT ACTUALLY TELEPORT THE PLAYER
             //Rigidbody rigidBody = GetComponent<Rigidbody>();
             //rigidBody.MovePosition(position);
-            expectedMovements.Add(position - transform.position);
-            transform.rotation = transform.rotation * rotationDifference;
+            expectedMovements.Add(movementVector);
+            //transform.rotation = transform.rotation * rotationDifference;
         }
         
         return remainingDistance;
@@ -908,7 +922,8 @@ public class CustomPlayerController : MonoBehaviour {
 
 		/* Use the RayTrace function */
 		float preLength = length;
-		RayTrace(ref position, ref direction, ref length, true, true);
+        bool temp = false;
+		RayTrace(ref position, ref direction, ref length, ref temp, true, true);
 		
 		/* Update the legLengths array if needed */
 		if(index != -1){
@@ -1065,8 +1080,8 @@ public class CustomPlayerController : MonoBehaviour {
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
 
-    Quaternion RayTrace(ref Vector3 position, ref Quaternion rotation,
-        ref float distance, bool detectTeleportTriggers, bool detectOtherColliders) {
+    Quaternion RayTrace(ref Vector3 position, ref Quaternion rotation, ref float distance, 
+        ref bool teleported, bool detectTeleportTriggers, bool detectOtherColliders) {
         /*
          * Fire a ray from the given position with the given rotation forwards for the given distance.
          * The quaternion returned represents the amount of rotation that the given rotation underwent.
@@ -1078,12 +1093,16 @@ public class CustomPlayerController : MonoBehaviour {
          * detect other Colliders as true will cause any collision with any other trigger to cause
          * the position to stop at the point of collision and reduce the distance amount respectively.
          * these type of collisions will be ignored if detectOtherColliders is false.
+         * 
+         * The teleported reference will be set to false if no teleporter was encountered. It will be
+         * set to true if it collides with a teleporter and moves the position and rotation.
          */
         Quaternion totalRotation = Quaternion.identity;
         Quaternion rotationDifference;
         RaycastHit hitInfo = new RaycastHit();
         bool stopRayTrace = false;
         LayerMask rayLayerMask = 0;
+        teleported = false;
 
         /* Include teleport triggers into the layerMask */
         if(detectTeleportTriggers) {rayLayerMask = rayLayerMask | (1 << LayerMask.NameToLayer("Portal Trigger"));}
@@ -1107,6 +1126,7 @@ public class CustomPlayerController : MonoBehaviour {
                     /* Teleport the parameters and apply the rotation that was underwent to the totalRotation quaternion */
                     rotationDifference = hitInfo.collider.GetComponent<TeleporterTrigger>().TeleportParameters(ref position, ref rotation);
                     totalRotation = rotationDifference*totalRotation;
+                    teleported = true;
                     //Prevent the rayTrace from hitting another trigger after teleporting
                     //rayLayerMask = 0;
                     //Debug.Log("hit tele");

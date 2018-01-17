@@ -920,23 +920,23 @@ public class ColumnCreator : MonoBehaviour {
 
         /* Create the filler object that meets the found ID */
         if(randomFillerID == 1) {
-            Debug.Log("Sandwich");
+            //Debug.Log("Sandwich");
             CreateRandomSandwichFiller(ref fillerStats, widthDifference, height, startWidth);
         }
         else if(randomFillerID == 2) {
-            Debug.Log("Large Circular");
+            //Debug.Log("Large Circular");
             CreateLargeCircularFiller(ref fillerStats, widthDifference, height, startWidth);
         }
         else if(randomFillerID == 3) {
-            Debug.Log("Ribbed Column");
+            //Debug.Log("Ribbed Column");
             CreateRibbedColumnFiller(ref fillerStats, widthDifference, height, startWidth);
         }
         else if(randomFillerID == 4) {
-            Debug.Log("Stairs");
+            //Debug.Log("Stairs");
             CreateStairsFiller(ref fillerStats, widthDifference, height, startWidth);
         }
         else {
-            Debug.Log("Single Random");
+            //Debug.Log("Single Random");
             CreateRandomSingleFiller(ref fillerStats, widthDifference, height, startWidth, -1);
         }
     }

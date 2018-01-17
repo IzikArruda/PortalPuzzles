@@ -103,12 +103,14 @@ public class FootstepTracker : MonoBehaviour {
 
         /* The player is immobile - reset the step tracking variables */
         if(horizontalInputDirection.magnitude == 0) {
-
+            
             pastDirections.Clear();
             ResetFootTiming();
             ResetStrideProgress();
 
             //Add a condition that checks if the pastDirections is full and has a faily fast avg speed. This will imdicate a hard stop
+
+            Debug.Log("immobile");
         }
 
         /* Continuously staying under a slow speed will prevent the producing of any footsteps */
@@ -123,7 +125,8 @@ public class FootstepTracker : MonoBehaviour {
         
         /* Player is moving and is above the "slow" movement condition */
         else {
-            
+            Debug.Log("moving");
+
             /* Only add to the horizontal stride progress if the player is moving above the slow speed */
             if(horizontalInputDirection.magnitude > playerMovementSpeed/2f) {
                 horiStride += CalculateStepValue(horizontalInputDirection);
