@@ -173,52 +173,38 @@ public class CustomPlayerController : MonoBehaviour {
          * The goal is to prevent the player from moving past if they are not updating fast enough.
          */
 
+
         /* Handle the conditions that need to be checked after the player moves (teleport, update footstep tracker) */
         HandlePlayerMovement(true);
-
-
+        
         /* Update the step tracker with whatever steps were made since the last FixedUpdate call */
         if(PlayerIsGrounded()) {
             playerStepTracker.AddHorizontalStep(Quaternion.Inverse(transform.rotation)*lastStepMovement);
             lastStepMovement = Vector3.zero;
         }
-
         
-        //1.5 Handle a step. like check where the player is from the floor. This should not be done in Update, only here.
-
-
-        //2. Reset the past movement/position tracker
+        /* Empty the expectedMovements array as we are about to add new movements */
         expectedMovements.Clear();
 
+        /* From the player's current position, execute a step check to see if they need to move alogn their Y axis */
+        StepPlayer();
 
-        //3. Find any movement neccesairy from user inputs, steps, and jumping speed.
-        if(state == (int) PlayerStates.Standing) {
-            UpdateStanding();
-        }
-
-        else if(state == (int) PlayerStates.Landing) {
-            UpdateLanding();
-        }
-
-        else if(state == (int) PlayerStates.Falling) {
-            UpdateFalling();
-        }
-
-        else if(state == (int) PlayerStates.FastFalling) {
-            UpdateFastFalling();
-        }
+        /* Derive a movement vector for the player using user input and the player's current state */
+        MovePlayer();
 
 
-        //4. Apply the final tallied movement vector and use rigidBody.MovePosition.
+        /* Apply the final tallied movement vector to the player's position */
         Rigidbody rigidBody = GetComponent<Rigidbody>();
         Vector3 newPosition = transform.position;
         for(int i = 0; i < expectedMovements.Count; i++) {
             newPosition += (Vector3) expectedMovements[i];
         }
         rigidBody.MovePosition(newPosition);
+        /* Freeze the player's rigidbody's velocity */
+        rigidBody.velocity = Vector3.zero;
 
 
-        //5. Save the player's current position as the lastSavedPosition
+        /* Save the player's current position as the lastSavedPosition */
         lastSavedPosition = transform.position;
     }
 
@@ -700,6 +686,12 @@ public class CustomPlayerController : MonoBehaviour {
         /*
     	 * Update the player's footingPosition along with the new
     	 * position for the body and the camera to complete a "step"
+         * 
+         * I think this is like this:
+         * The player is always trying to go back to their currentLegLength. The given value
+         * is how long their legs are currently. Therefore, the goal of this function
+         * is to find the differnce in the leg lenths, and move the player so that they go from
+         * stepLegLength to current
      	*/
         Vector3 upDirection = transform.rotation*Vector3.up;
 

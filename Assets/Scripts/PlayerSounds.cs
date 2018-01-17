@@ -211,7 +211,6 @@ public class PlayerSounds : MonoBehaviour {
         
         /* Send a request to play a footstep with the calculated parameters */
         PlayFootstep(volumeRatio, footstepToneRatio, sampleRatio, 0);
-        Debug.Log(lastStepTime);
     }
 
     public void PlayFootstep(float volumeRatio, float toneRatio, float fadeDelayRatio, float playDelay) {
