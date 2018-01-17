@@ -91,7 +91,7 @@ public class FootstepTracker : MonoBehaviour {
     public void AddHorizontalStep(Vector3 horizontalInputDirection) {
         /*
          * Update the horizontal (x, z) stride distance and the pastDirections array with a new
-         * direction. This will be run every frame whenever the player is in a grounded state.
+         * direction. This will be run every FixedUpdate whenever the player is in a grounded state.
          *
          * If the player is moving slowly, don't add to the horizontal stride progress as 
          * slow careful steps are silent. This could be changed by simply adjusting the
@@ -109,8 +109,6 @@ public class FootstepTracker : MonoBehaviour {
             ResetStrideProgress();
 
             //Add a condition that checks if the pastDirections is full and has a faily fast avg speed. This will imdicate a hard stop
-
-            Debug.Log("immobile");
         }
 
         /* Continuously staying under a slow speed will prevent the producing of any footsteps */
@@ -119,13 +117,11 @@ public class FootstepTracker : MonoBehaviour {
                 AverageStepSpeed() <= playerMovementSpeed/2f) {
             ResetFootTiming();
             ResetStrideProgress();
-            Debug.Log("Slow walking");
         }
 
         
         /* Player is moving and is above the "slow" movement condition */
         else {
-            Debug.Log("moving");
 
             /* Only add to the horizontal stride progress if the player is moving above the slow speed */
             if(horizontalInputDirection.magnitude > playerMovementSpeed/2f) {
@@ -143,9 +139,6 @@ public class FootstepTracker : MonoBehaviour {
                 pastDirections.RemoveAt(0);
             }
         }
-
-
-
     }
 
     public float CalculateStepValue(Vector3 horizontalInputDirection) {

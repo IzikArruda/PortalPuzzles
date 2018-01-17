@@ -122,6 +122,12 @@ public class CustomPlayerController : MonoBehaviour {
     public FootstepTracker playerStepTracker;
 
 
+
+
+
+    /* The amount of distance travelled since the last step tracker update */
+    public Vector3 lastStepMovement;
+
     /* -------------- Built-in Unity Functions ---------------------------------------------------------- */
 
     void Start() {
@@ -153,6 +159,9 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Create the arraylist of vector3s that track the list of movements the player is expected to undergo */
         expectedMovements = new ArrayList();
+
+        /* The player starts immobile */
+        lastStepMovement = Vector3.zero;
    }
 
     void FixedUpdate() {
@@ -163,14 +172,18 @@ public class CustomPlayerController : MonoBehaviour {
          * This could be due to the high amount of physics checks or possibly a drop in framerate for the player.
          * The goal is to prevent the player from moving past if they are not updating fast enough.
          */
-         
-        //1. Check if from the past movement/position, the player passed a teleporter. (THIS SHOULD BE A NEW FUNCTION: CheckForTeleport)
-        //      If this is true, move the player to the proper position by tracing the vector backwards/forwards again.
-        //      Once the player is PLACED into their new position, continue.
-        /* Handle the conditions that need to be checked after the playre moves (teleport, update footstep tracker) */
-        HandlePlayerMovement();
+
+        /* Handle the conditions that need to be checked after the player moves (teleport, update footstep tracker) */
+        HandlePlayerMovement(true);
 
 
+        /* Update the step tracker with whatever steps were made since the last FixedUpdate call */
+        if(PlayerIsGrounded()) {
+            playerStepTracker.AddHorizontalStep(Quaternion.Inverse(transform.rotation)*lastStepMovement);
+            lastStepMovement = Vector3.zero;
+        }
+
+        
         //1.5 Handle a step. like check where the player is from the floor. This should not be done in Update, only here.
 
 
@@ -234,10 +247,12 @@ public class CustomPlayerController : MonoBehaviour {
         stateTime += Time.deltaTime;
 
 
+
+
         //2. Check if the vector between lastSavedPosition and the player's current position passes a portal.
         //  For now, only check if this vector exists. It is expected to exist after every frame.
         //  Portal handling will be done in fixedupdate for now, but there must be a portal catch in this function too.
-        HandlePlayerMovement();
+        HandlePlayerMovement(false);
 
 
         //3. Save the player's current position as the lastSavedPosition
@@ -317,19 +332,24 @@ public class CustomPlayerController : MonoBehaviour {
 
 
 
-    void HandlePlayerMovement() {
+    void HandlePlayerMovement(bool fixedUpdate) {
         /*
          * Given the player's current position and their last known saved position, cast a vector between 
          * the two points and use it as a movement vecotr. This means teleport the player if it
          * collides with a teleporter and update the footstep tracker with the vector.
+         * 
+         * We only add to the step tracker if there was movement because this function can run multiple times 
+         * between physics updates and frame updates, meaning immobile steps could accidentally be sent.
+         * 
+         * The given update boolean indicates what function made the call: true for FixedUpdate, false for Update.
          */
-        
+
         /* Get the vector of the player's movement between now and the last time they were checked */
         Vector3 movementVector = transform.position - lastSavedPosition;
 
 
         /* Check if there was any movement at all */
-        if(movementVector.x != 0 || movementVector.y != 0 || movementVector.z != 0) {
+        if(movementVector.magnitude != 0) {
             
             /* Fire a ray of the player's movement that interracts with the world, including teleporters */
             Vector3 position = lastSavedPosition;
@@ -345,10 +365,9 @@ public class CustomPlayerController : MonoBehaviour {
             }
         }
 
-
-        /* If grounded, pass the movement vector and it's direction relative to the player into the footstep tracker */
+        /* When grounded, add any movement to the stepTracker vector */
         if(PlayerIsGrounded()) {
-            playerStepTracker.AddHorizontalStep(Quaternion.Inverse(transform.rotation)*movementVector);
+            lastStepMovement += movementVector;
         }
 
 
