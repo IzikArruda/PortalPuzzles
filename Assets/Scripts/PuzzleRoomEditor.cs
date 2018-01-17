@@ -273,7 +273,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
         /* Create and place the room's side walls that reflect the room's width */
         walls[0] = new GameObject();
         walls[0].name = "Left Wall";
-        CreateWallMesh(walls[0], roomLength, roomHeight);
+        CreateWallMesh(walls[0], roomLength, roomHeight, true);
         walls[0].transform.parent = puzzleRoomWalls.transform;
         walls[0].transform.localEulerAngles = new Vector3(90, -90, 0);
         walls[0].transform.position = new Vector3(0, 0, roomLength/2f) + 
@@ -281,7 +281,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
 
         walls[1] = new GameObject();
         walls[1].name = "Right wall";
-        CreateWallMesh(walls[1], roomLength, roomHeight);
+        CreateWallMesh(walls[1], roomLength, roomHeight, true);
         walls[1].transform.parent = puzzleRoomWalls.transform;
         walls[1].transform.localEulerAngles = new Vector3(90, 90, 0);
         walls[1].transform.position = new Vector3(0, 0, roomLength/2f) + 
@@ -290,7 +290,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
         /* Create and place the walls that are situated bellow the room's entrance/exit */
         walls[2] = new GameObject();
         walls[2].name = "Entrance wall bellow";
-        CreateWallMesh(walls[2], entrance.exitWidth, roomHeight/2f + entrancePlacement.y);
+        CreateWallMesh(walls[2], entrance.exitWidth, roomHeight/2f + entrancePlacement.y, false);
         walls[2].transform.parent = puzzleRoomWalls.transform;
         walls[2].transform.localEulerAngles = new Vector3(90, 0, 0);
         walls[2].transform.position = puzzleRoomEntrancePoint.position + 
@@ -298,7 +298,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
 
         walls[3] = new GameObject();
         walls[3].name = "Exit wall bellow";
-        CreateWallMesh(walls[3], exit.exitWidth, roomHeight/2f + exitPlacement.y);
+        CreateWallMesh(walls[3], exit.exitWidth, roomHeight/2f + exitPlacement.y, false);
         walls[3].transform.parent = puzzleRoomWalls.transform;
         walls[3].transform.localEulerAngles = new Vector3(-90, 0, 0);
         walls[3].transform.position = puzzleRoomExitPoint.position + 
@@ -307,7 +307,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
         /* Create and place the walls that are situated above the room's entrance/exit */
         walls[4] = new GameObject();
         walls[4].name = "Entrance wall above";
-        CreateWallMesh(walls[4], entrance.exitWidth, roomHeight/2f - entrance.exitHeight - entrancePlacement.y);
+        CreateWallMesh(walls[4], entrance.exitWidth, roomHeight/2f - entrance.exitHeight - entrancePlacement.y, false);
         walls[4].transform.parent = puzzleRoomWalls.transform;
         walls[4].transform.localEulerAngles = new Vector3(90, 0, 0);
         walls[4].transform.position = puzzleRoomEntrancePoint.position + 
@@ -315,7 +315,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
 
         walls[5] = new GameObject();
         walls[5].name = "Exit wall above";
-        CreateWallMesh(walls[5], exit.exitWidth, roomHeight/2f - exit.exitHeight - exitPlacement.y);
+        CreateWallMesh(walls[5], exit.exitWidth, roomHeight/2f - exit.exitHeight - exitPlacement.y, false);
         walls[5].transform.parent = puzzleRoomWalls.transform;
         walls[5].transform.localEulerAngles = new Vector3(-90, 0, 0);
         walls[5].transform.position = puzzleRoomExitPoint.position + 
@@ -324,7 +324,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
         /* Create and place the walls that are on the left and right of the entrance */
         walls[6] = new GameObject();
         walls[6].name = "Entrance left wall";
-        CreateWallMesh(walls[6], roomWidth/2f - entrance.exitWidth/2f + entrancePlacement.x, roomHeight);
+        CreateWallMesh(walls[6], roomWidth/2f - entrance.exitWidth/2f + entrancePlacement.x, roomHeight, false);
         walls[6].transform.parent = puzzleRoomWalls.transform;
         walls[6].transform.localEulerAngles = new Vector3(90, 0, 0);
         walls[6].transform.position = new Vector3(-roomWidth/4f, 0, 0) + 
@@ -332,7 +332,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
 
         walls[7] = new GameObject();
         walls[7].name = "Entrance right wall";
-        CreateWallMesh(walls[7], roomWidth/2f - entrance.exitWidth/2f - entrancePlacement.x, roomHeight);
+        CreateWallMesh(walls[7], roomWidth/2f - entrance.exitWidth/2f - entrancePlacement.x, roomHeight, false);
         walls[7].transform.parent = puzzleRoomWalls.transform;
         walls[7].transform.localEulerAngles = new Vector3(90, 0, 0);
         walls[7].transform.position = new Vector3(roomWidth/4f, 0, 0) +
@@ -341,7 +341,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
         /* Create and place the walls that are on the left and right of the exit */
         walls[8] = new GameObject();
         walls[8].name = "Exit wall left";
-        CreateWallMesh(walls[8], roomWidth/2f - exit.exitWidth/2f + exitPlacement.x, roomHeight);
+        CreateWallMesh(walls[8], roomWidth/2f - exit.exitWidth/2f + exitPlacement.x, roomHeight, false);
         walls[8].transform.parent = puzzleRoomWalls.transform;
         walls[8].transform.localEulerAngles = new Vector3(-90, 0, 0);
         walls[8].transform.position = new Vector3(-roomWidth/4f, 0, roomLength) +
@@ -349,7 +349,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
 
         walls[9] = new GameObject();
         walls[9].name = "Exit wall right";
-        CreateWallMesh(walls[9], roomWidth/2f - exit.exitWidth/2f - exitPlacement.x, roomHeight);
+        CreateWallMesh(walls[9], roomWidth/2f - exit.exitWidth/2f - exitPlacement.x, roomHeight, false);
         walls[9].transform.parent = puzzleRoomWalls.transform;
         walls[9].transform.localEulerAngles = new Vector3(-90, 0, 0);
         walls[9].transform.position = new Vector3(roomWidth/4f, 0, roomLength) +
@@ -409,9 +409,11 @@ public class PuzzleRoomEditor : MonoBehaviour {
 
     /* -------- Helper Functions ---------------------------------------------------- */
 
-    private void CreateWallMesh(GameObject wall, float xScale, float zScale) {
+    private void CreateWallMesh(GameObject wall, float xScale, float zScale, bool sideWall) {
         /*
          * Use the given parameters to create the mesh that forms a wall.
+         * 
+         * The given boolean sideWall is true if the wall being created does not have an entrence or exit attached.
          */
         Mesh wallMesh = new Mesh();
         Vector3[] vertices = null;
@@ -441,9 +443,17 @@ public class PuzzleRoomEditor : MonoBehaviour {
         wall.AddComponent<MeshRenderer>();
         wall.GetComponent<MeshRenderer>().material = wallMaterial;
 
-        /* Add a meshCollider to make the walls work as walls */
-        wall.AddComponent<MeshCollider>();
-        wall.GetComponent<MeshCollider>().sharedMesh = wallMesh;
+        /* Use a thick box collider for the wall's collisions */
+        BoxCollider wallBox = wall.AddComponent<BoxCollider>();
+        float colliderDepth = 1;
+        wallBox.center = new Vector3(0, -colliderDepth/2f, 0);
+        /* If we are creating a sidewall, extend it's xScale to cover the corners of the room */
+        if(sideWall) {
+            wallBox.size = new Vector3(xScale + colliderDepth*2, colliderDepth, zScale);
+        }
+        else {
+            wallBox.size = new Vector3(xScale, colliderDepth, zScale);
+        }
     }
     
     public void CreateCloudsMesh(GameObject clouds, float xScale, float zScale, int cloudCount, float cloudDepth){
