@@ -32,15 +32,24 @@ public class CustomPlayerCameraEffects : MonoBehaviour {
 
         if(playerCamera.GetComponent<PostProcessingBehaviour>()) {
             cameraVignette = playerCamera.GetComponent<PostProcessingBehaviour>().profile.vignette;
-            cameraVignette.enabled = false;
-
             cameraChromaticAberration = playerCamera.GetComponent<PostProcessingBehaviour>().profile.chromaticAberration;
-            cameraChromaticAberration.enabled = false;
+            ResetCameraEffects();
         }
         else {
             Debug.Log("WARNING: playerCamera is missing missing a PostProcessingBehaviour");
         }
     }
+
+    public void ResetCameraEffects() {
+        /*
+         * Reset the camera's effects
+         */
+
+        cameraVignette.enabled = false;
+        cameraChromaticAberration.enabled = false;
+    }
+
+
 
     public void StartEffectVignette() {
         /*

@@ -70,9 +70,7 @@ public class PlayerSounds : MonoBehaviour {
     /* How many samples into the clip a footstep effect needs to be before the fade begins */
 	private int[] stepFadeDelay;
 
-
-
-
+    
     public bool testMusic;
     public int testMusicIndex;
 
@@ -404,6 +402,17 @@ public class PlayerSounds : MonoBehaviour {
 
         musicFadeMuted = -fade;
         musicFadeUpgraded = fade;
+    }
+
+
+    /* ----------- Event Functions ------------------------------------------------------------- */
+
+    public void ResetAll() {
+        /*
+         * Stop and reset the tracking values for each audio source
+         */
+         
+        Debug.Log("Stop and reset all sounds");
     }
 
     /* ----------- Helper Functions ------------------------------------------------------------- */

@@ -6,18 +6,29 @@ using System.Collections;
  */
 public class UserInputs {
 
+    /* Player movement */
     public float playerMovementX;
     public float playerMovementY;
     public float playerMovementXRaw;
     public float playerMovementYRaw;
+
+    /* Mouse movement */
     public float mouseX;
     public float mouseY;
+
+    /* Mouse keys */
     public bool leftMouseButtonPressed;
     public bool leftMouseButtonHeld;
     public bool rightMouseButtonPressed;
     public bool rightMouseButtonHeld;
+
+    /* Keyboard keys */
     public bool spaceBarPressed;
     public bool spaceBarHeld;
+    public bool rKeyPressed;
+
+
+    /* ----------- Update Functions ------------------------------------------------------------- */
 
     public void UpdateInputs() {
         /*
@@ -28,7 +39,6 @@ public class UserInputs {
         playerMovementY = Input.GetAxis("Vertical");
         playerMovementXRaw = Input.GetAxisRaw("Horizontal");
         playerMovementYRaw = Input.GetAxisRaw("Vertical");
-        //playerMovementYRaw = 1;
         mouseX = Input.GetAxis("Mouse X");
         mouseY = Input.GetAxis("Mouse Y");
         leftMouseButtonPressed = Input.GetMouseButtonDown(0);
@@ -37,5 +47,6 @@ public class UserInputs {
         rightMouseButtonHeld = Input.GetMouseButton(1);
         spaceBarPressed = Input.GetKeyDown("space");
         spaceBarHeld = Input.GetKey("space");
+        rKeyPressed = Input.GetKeyDown(KeyCode.R);
     }
 }

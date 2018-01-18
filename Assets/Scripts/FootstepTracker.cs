@@ -40,7 +40,7 @@ public class FootstepTracker : MonoBehaviour {
     public float[] timeSinceStep;
 
 
-    /* ----------- Set-up Functions ------------------------------------------------------------- */
+    /* -------------- Built-in Unity Functions ---------------------------------------------------------- */
 
     public void Start() {
 
@@ -48,7 +48,10 @@ public class FootstepTracker : MonoBehaviour {
         timeSinceStep = new float[footCount];
         ResetFootTiming();
     }
-    
+
+
+    /* ----------- Set-up Functions ------------------------------------------------------------- */
+
     public void CalculateStrideDistances(float movementSpeed, float legLength) {
         /*
          * Calculate the max stride distances, which represents how far 
@@ -58,6 +61,7 @@ public class FootstepTracker : MonoBehaviour {
         playerLegLength = legLength;
         maxHoriStride = horiStrideMod*playerMovementSpeed;
         maxVertStride = vertStrideMod*playerLegLength;
+        ResetStrideProgress();
     }
 
     public void SetSoundsScript(PlayerSounds givenSoundsScript) {

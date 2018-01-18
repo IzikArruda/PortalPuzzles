@@ -120,15 +120,18 @@ public class CustomPlayerController : MonoBehaviour {
 
 	
 	/* --- Player Scripts --------------------------- */
-    /* The script that contains all the post processing effects that will be applied to the camera */
+    /* Contains all the post processing effects that will be applied to the camera */
     public CustomPlayerCameraEffects cameraEffectsScript;
 
-	/* Script that handles all sounds produced by the player */
+	/* Handles all sounds produced by the player */
 	public PlayerSounds playerSoundsScript;
 
-    /* Script that handles all footstep tracking */
+    /* Handles all footstep tracking */
     public FootstepTracker playerStepTracker;
-    
+
+    /* The last attached room the player was in. Must be set in the editor before starting. */
+    public AttachedRoom lastRoom;
+
 
     /* -------------- Built-in Unity Functions ---------------------------------------------------------- */
 
@@ -137,9 +140,11 @@ public class CustomPlayerController : MonoBehaviour {
          * Initilize required objects and set starting values for certain variables 
          */
 
+        /* Link the player's step tracker to their sound script */
+        playerStepTracker.SetSoundsScript(playerSoundsScript);
+
         /* Set up the footstep tracker */
         playerStepTracker.CalculateStrideDistances(movementSpeed, givenLegLength);
-        playerStepTracker.SetSoundsScript(playerSoundsScript);
 
         /* Set up the camera's post-processing effects */
         cameraEffectsScript.SetupPostProcessingEffects(playerCamera, this);
@@ -147,25 +152,17 @@ public class CustomPlayerController : MonoBehaviour {
         /* Create the UserInputs object linked to this player */
         inputs = new UserInputs();
 
-		/* Set up the player's body and leg values on startup */
-		SetupPlayerBody();
+        /* Initilize the player's leg lengths */
+        extraLegLenths = new float[extraLegs + 1];
 
-        /* Start the player in the standing state so they can link themselves to the floor */
-        state = -1;
-        ChangeState((int) PlayerStates.Standing);
-        transform.localPosition = new Vector3(transform.localPosition.x, 
-                givenLegLength + playerBodyLength/2f, transform.localPosition.z);
-
-        /* The "previous frame" had the player starting in it's current position */
-        lastSavedPosition = transform.position;
-
-        /* Create the arraylist of vector3s that track the list of movements the player is expected to undergo */
-        expectedMovements = new ArrayList();
-
-        /* The player starts immobile */
-        lastStepMovement = Vector3.zero;
-   }
-
+        /* Adjust the player's height and width */
+        GetComponent<CapsuleCollider>().height = playerBodyLength;
+        GetComponent<CapsuleCollider>().radius = playerBodyRadius;
+        
+        /* Reset the player's positional values and camera effects */
+        ResetPlayer();
+    }
+    
     void FixedUpdate() {
         /*
          * Handle player movement. This includes moving the player in the inputted direction and stepping.
@@ -237,6 +234,11 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Check the player's inputs to see if they prime a jump */
         PrimeJumpingValue();
+
+        /* Check if the player wants to reset their position */
+        if(inputs.rKeyPressed) {
+            ResetPlayer();
+        }
 
         /* Update the player's stride progress to determine when a footstep sound effect should play */
         playerStepTracker.UpdateStride();
@@ -634,27 +636,6 @@ public class CustomPlayerController : MonoBehaviour {
 
 
     /* ----------------- Value Updating Functions ------------------------------------------------------------- */
-
-    void SetupPlayerBody(){
-   	/*
-   	 * Set the variables that are relevent to the player's.body and legs.
-   	 * This is to ensure there is a default value on startup.
-   	 */
-   
-   	 /* Initilize the leg lengths */
-        extraLegLenths = new float[extraLegs + 1];
-
-        /* Put the starting foot position at the base of the default player model */
-        currentFootPosition = transform.TransformPoint(new Vector3(0, -GetComponent<CapsuleCollider>().height/2, 0));
-
-        /* Adjust the player's height and width */
-        GetComponent<CapsuleCollider>().height = playerBodyLength;
-        GetComponent<CapsuleCollider>().radius = playerBodyRadius;
-
-        /* Adjust the player model's position to reflect the player's leg length */
-        transform.position = currentFootPosition;
-        transform.localPosition += new Vector3(0, playerBodyLength/2f + 0, 0);
-   }
     
     void PrimeJumpingValue() {
         /*
@@ -730,6 +711,52 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Rotate the input direction to match the player's view. Only use the view's rotation along the Y axis */
         inputVector = Quaternion.AngleAxis(-cameraXRotation, transform.up)*transform.rotation*inputVector;
+    }
+
+    void ResetPlayer() {
+        /*
+         * Reset the player's sounds, camera effects and positional values.
+         */
+
+        /* Reset the player's sounds */
+        playerSoundsScript.ResetAll();
+
+        /* Reset the camera's effects */
+        cameraEffectsScript.ResetCameraEffects();
+
+        /* Start the player in the standing state so they can link themselves to the floor */
+        state = -1;
+        ChangeState((int) PlayerStates.Standing);
+
+        /* Empty the arraylist of vectors that track the player's upcomming movement */
+        if(expectedMovements != null) { expectedMovements.Clear(); }
+        expectedMovements = new ArrayList();
+
+        /* The "previous frame" had the player starting in it's current position */
+        lastSavedPosition = transform.position;
+
+        /* The player starts immobile */
+        lastStepMovement = Vector3.zero;
+
+        /* Reset the player's position depending on whether the player is given a starting room */
+        if(lastRoom != null) {
+            /* Use the lastRoom as the player's starting room by using it's reset function */
+            Transform newTransform = lastRoom.ResetPlayer();
+            gameObject.transform.position = newTransform.position;
+            gameObject.transform.rotation = newTransform.rotation;
+        }
+        else {
+            Debug.Log("Player was not linked a starting room");
+        }
+
+        /* Use the player's current position as their foot position */
+        currentFootPosition = transform.position;
+
+        /* Adjust the player model's position to reflect the player's body and leg length */
+        transform.localPosition += new Vector3(0, playerBodyLength/2f + givenLegLength, 0);
+
+        /* Set the camera's offset to it's natural default value */
+        cameraYOffset = 0;
     }
 
 
