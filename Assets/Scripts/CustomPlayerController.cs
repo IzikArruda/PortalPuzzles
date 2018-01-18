@@ -27,6 +27,12 @@ public enum PlayerStates{
 /*
  * A custom character controller that uses UserInputs to handle movement. It uses "legs" to keep
  * it's "body" above the floor, letting the player walk up and down stairs or slopes smoothly. 
+ * 
+ * Every movement request is tallied up and reset at the start of a FixedUpdate.
+ * Also, on every Update and FixedUpdate call, the script will check between their current
+ * and last position for any teleporters. If they encounter a teleporter trigger, they will
+ * teleport the player to their appropriate location by simply using a ray to represent
+ * their previous movement and allow the ray to interact with a teleport trigger.
  */
 public class CustomPlayerController : MonoBehaviour {
     public int state;
@@ -43,6 +49,8 @@ public class CustomPlayerController : MonoBehaviour {
 
 
     /* --- Player Control/Movement ----------------- */
+    /* The amount of distance travelled since the last step tracker update */
+    private Vector3 lastStepMovement;
     /* The position the player was in on the previous update frame */
     private Vector3 lastSavedPosition;
     /* The direction and magnitude of player's movement input */
@@ -120,13 +128,7 @@ public class CustomPlayerController : MonoBehaviour {
 
     /* Script that handles all footstep tracking */
     public FootstepTracker playerStepTracker;
-
-
-
-
-
-    /* The amount of distance travelled since the last step tracker update */
-    public Vector3 lastStepMovement;
+    
 
     /* -------------- Built-in Unity Functions ---------------------------------------------------------- */
 
@@ -172,8 +174,7 @@ public class CustomPlayerController : MonoBehaviour {
          * This could be due to the high amount of physics checks or possibly a drop in framerate for the player.
          * The goal is to prevent the player from moving past if they are not updating fast enough.
          */
-
-
+         
         /* Handle the conditions that need to be checked after the player moves (teleport, update footstep tracker) */
         HandlePlayerMovement(true);
         
@@ -186,11 +187,11 @@ public class CustomPlayerController : MonoBehaviour {
         /* Empty the expectedMovements array as we are about to add new movements */
         expectedMovements.Clear();
 
-        /* From the player's current position, execute a step check to see if they need to move alogn their Y axis */
+        /* From the player's current position, execute a step check to see if they need to move along their Y axis */
         StepPlayer();
-
-        /* Derive a movement vector for the player using user input and the player's current state */
-        MovePlayer();
+        
+        /* Move the player using their given input and the gravity vector */
+        MovePlayer(inputVector + GetGravityVector());
 
 
         /* Apply the final tallied movement vector to the player's position */
@@ -225,56 +226,31 @@ public class CustomPlayerController : MonoBehaviour {
          * after a physics update, we detected a teleport SHOULD have occured, but we did not update the frame yet,
          * so by teleporting the player in that moment they will NOT render a frame of them PAST the teleport trigger.
          */
-
-
-        //1. Update the player's inputs and stateTime
+         
+        /* Update the player's inputs and stateTime */
         inputs.UpdateInputs();
         UpdateInputVector();
         stateTime += Time.deltaTime;
 
-
-
-
-        //2. Check if the vector between lastSavedPosition and the player's current position passes a portal.
-        //  For now, only check if this vector exists. It is expected to exist after every frame.
-        //  Portal handling will be done in fixedupdate for now, but there must be a portal catch in this function too.
+        /* Handle the conditions that need to be checked after the player moves (teleport, update footstep tracker) */
         HandlePlayerMovement(false);
 
+        /* Check the player's inputs to see if they prime a jump */
+        PrimeJumpingValue();
 
-        //3. Save the player's current position as the lastSavedPosition
-        lastSavedPosition = transform.position;
-
-
-
-        /* ------------- */
         /* Update the player's stride progress to determine when a footstep sound effect should play */
         playerStepTracker.UpdateStride();
         
         //Draw a line in the camera's forward vector
         Debug.DrawLine(playerCamera.transform.position, 
                 playerCamera.transform.position + playerCamera.transform.rotation*Vector3.forward*0.5f, Color.green);
-
-
-        /*
-         * 
-         * NEW IMPLEMENTATION: MOVE ALL PLAYER MOVEMENT TO FIXEDUPDATE.
-         * DETECT PORTAL COLISION BY SAVING POSITION BETWEEN UPDATES AND THEN CHECKING IF A PORTAL WAS BETWEEN THEM.
-         * 
-         * However, a big problem is they can walk into an object once teleported (teleported into an object).
-         * The fix for this would be to force a physics check after moving the player from a teleport, 
-         * but I do not believe that can be done. The effect of this is that the player will end up being pushed by the physics
-         * AFTER the frame renders them in  the new teleported position, which will cause the camera top jump and even
-         * potentially push the player back into the portal. By having both portals symmetrical, we can avoid many cases,
-         * but the problem still exists.
-         * 
-         */
+        
     }
 
     void LateUpdate() {
         /*
          * Handle all camera effects after the player has finished moving/teleporting for the frame.
          * Depending on the player's state, apply different effects to the camera.
-         * 
          * 
          * --------
          * Currently, a camera can undergo an animation (fastFalling, landing) and only one animation.
@@ -316,7 +292,8 @@ public class CustomPlayerController : MonoBehaviour {
         cameraEffectsScript.UpdateCameraEffects();
     }
 
-
+    
+    /* ----------------- Main Movement Function ------------------------------------------------------------- */
 
     void HandlePlayerMovement(bool fixedUpdate) {
         /*
@@ -333,10 +310,9 @@ public class CustomPlayerController : MonoBehaviour {
         /* Get the vector of the player's movement between now and the last time they were checked */
         Vector3 movementVector = transform.position - lastSavedPosition;
 
-
         /* Check if there was any movement at all */
         if(movementVector.magnitude != 0) {
-            
+
             /* Fire a ray of the player's movement that interracts with the world, including teleporters */
             Vector3 position = lastSavedPosition;
             Quaternion direction = Quaternion.LookRotation(movementVector.normalized, transform.up);
@@ -356,69 +332,17 @@ public class CustomPlayerController : MonoBehaviour {
             lastStepMovement += movementVector;
         }
 
+        /* When jumping, if the player is pushed downward (like hits a ceiling), remove all jump velocity */
+        else {
+            if(currentYVelocity > 0 && movementVector.y < 0) {
+                currentYVelocity = 0;
+            }
+        }
 
         /* Update the player's lastSavedPosition with it's new position */
         lastSavedPosition = transform.position;
     }
-
-
-    /* ----------------- Main Update Functions ------------------------------------------------------------- */
-
-    void UpdateStanding() {
-        /*
-         * Handle the inputs of the user and the movement of the player
-         * when they are standing on an object (Enough legs hit an object)
-         */
-         
-        /* Move the player using the input vector and gravity */
-        MovePlayer();
-
-        /* Update the player's jumping conditions, letting the player prime their jump */
-        PrimeJumpingValue();
-
-        /* Find the footPosition of the player and check if they are falling or standing. Place the player's body position. */
-        StepPlayer();
-    }
-
-	void UpdateFalling(){
-        /*
-		 * Handle player input and movement when the player
-		 * Does not have any footing.
-		 */
-
-        /* Move the player using the input vector and gravity */
-        MovePlayer();
-
-        /* Find the footPosition of the player and check if they are falling or standing. Place the player's body position. */
-        StepPlayer();
-    }
     
-    void UpdateLanding() {
-        /*
-         * Handle how the player will react when recovering from a fast fall.
-         * Prevent the player from moving and force the camera into an animation.
-         * Do not let them input any movement or prime a jump.
-         */
-
-        /* Move the player using the input vector and gravity */
-        MovePlayer();
-
-        /* Let the player undergo any steps that may occur */
-        StepPlayer();
-    }
-    
-    void UpdateFastFalling() {
-    	/*
-    	 * Fast falling is similar to normal falling, but with random camera rotations
-    	 */
-    	
-    	/*Do everything that is done when falling normally */ 
-    	UpdateFalling();
-	}
-
-    
-    /* ----------------- Secondary Update Functions ------------------------------------------------------------- */
-
     public void StepPlayer() {
         /*
          * A step is when the player's body shifts along it's y axis to position the body relative to legLength.
@@ -450,152 +374,16 @@ public class CustomPlayerController : MonoBehaviour {
             Debug.Log("Warning: state " + state + " does not handle player stepping");
         }
     }
-
-    public void MovePlayer() {
-        /*
-         * Use player input to move the player along their relative X and Z axis. Gravity is activated if the player is 
-         * in the proper state, in which the player will gain momentum in their relative negative Y axis.
-         */
-
-        /* Calculate the gravity vector that will be applied to the player */
-        Vector3 gravityVector = GetGravityVector();
-        
-        /* Send a move command to the player using the gravity and input vectors */
-        Vector3 movementVector = gravityVector + inputVector;
-        movementVector -= movementVector.normalized*MovePlayer(movementVector);
-
-    }
     
-    void AdjustCameraRotation() {
+    void MovePlayer(Vector3 movementVector) {
         /*
-         * Take in user inputs to properly rotate the currentCameraTransform's facing direction.
+         * Add the given vector to the player's expectedMovements, which will be handled every FixedUpdate.
+         * Do not add the movement if it has a magnitude of 0.
          */
 
-        /* Copy the player's current rotation before rotating the camera */
-        currentCameraTransform.rotation = transform.rotation;
-
-        /* Add the X input rotation and ensure it does not overflow */
-        cameraXRotation -= inputs.mouseX;
-        if(cameraXRotation < 0) { cameraXRotation += 360; }
-        else if(cameraXRotation > 360) { cameraXRotation -= 360; }
-
-        /* Add the Y input rotation and ensure it does not overflow */
-        cameraYRotation += inputs.mouseY;
-        cameraYRotation = Mathf.Clamp(cameraYRotation, -75, 75);
-
-        /* Apply the rotations to the camera's default transform */
-        currentCameraTransform.rotation *= Quaternion.Euler(-cameraYRotation, -cameraXRotation, 0);
-        playerCamera.transform.rotation = currentCameraTransform.rotation;
-    }
-
-    void AdjustCameraPosition(float cameraHeight) {
-        /*
-         * Position the player's camera according to the player's current position and rotation.
-         * The camera is positionned headHeight above the player origin with a cameraYOffset offset.
-         * 
-         * Properly position the camera where the player's "head" should be. The new position and rotation 
-         * is calculated by firing a RayTrace command from the player origin upwards (relative to the player) 
-         * to the expected view position. The RayTrace will collide with walls and will teleport from triggers, 
-         * letting the player's "head" pass through portals without their "body".
-         * 
-         * The cameraHeight value should be "GetCameraHeight()" as default 
-         * unless a function wants to set the camera's offset on it's own.
-         */
-        Quaternion toCamRotation;
-        Quaternion rotationDifference;
-        Vector3 cameraPosition;
-
-        /* Place the camera onto the player origin before firing the rayTrace */
-        currentCameraTransform.position = transform.position;
-        
-        /* Prepare the values used with the rayTrace */
-        cameraPosition = transform.position;
-        toCamRotation = Quaternion.LookRotation(transform.up, transform.forward);
-
-        /* If the distance is negative, have the camera's rotation go down instead of up */
-        //WE DONT KNOW IF THIS WILL PROPERLY TELEPORT.NEED TO TEST WITH THE PLAYER STEPPING THROUGH A TILTED TELEPORTER
-        if(cameraHeight < 0) {
-            cameraHeight *= -1;
-            toCamRotation = Quaternion.LookRotation(-transform.up, transform.forward);
+        if(movementVector.magnitude != 0) {
+            expectedMovements.Add(movementVector);
         }
-
-        /* RayTrace from the player's origin to the camera's position */
-        bool temp = false;
-        rotationDifference = RayTrace(ref cameraPosition, ref toCamRotation, ref cameraHeight, ref temp, true, true);
-
-        /* Use the new position and rotation to find the camera's final position and rotation */
-        currentCameraTransform.position = cameraPosition;
-        currentCameraTransform.rotation = rotationDifference*currentCameraTransform.rotation;
-        playerCamera.transform.position = currentCameraTransform.position;
-        playerCamera.transform.rotation = currentCameraTransform.rotation;
-    }
-    
-    void AnimatedCameraLanding() {
-        /*
-         * Apply an offset to the camera by setting it to a specific position.
-         * 
-         * The animation that the camera undergoes can be defined by these stages, sepperated by stateTime:
-         * state1: Animate the camera from the player's headHeight to their body base
-         * state2: Move the camera upwards from the player's.body base to the default head height.
-         
-         * Once the final state ends, change the state back to standing.
-         * Note that the player can still walk off into the falling state mid-animation.
-         */
-        float xRot = 0;
-        float yRot = 0;
-        float cameraHeightOffset = 0;
-        float angleRotation = 10;
-        float posState1 = 0.05f;
-        float posState2 = 0.75f;
-        float rotState1 = 0.15f;
-        float rotState2 = 0.65f;
-
-        /* Camera's Y rotation will follow the sine graph of [0, PI] with x axis being time spent in thos state */
-        xRot = cameraXRotation;
-		if(stateTime < rotState1) {
-			yRot = cameraYRotation - angleRotation*Mathf.Sin(0 + (Mathf.PI/2f)*RatioWithinRange(0, rotState1, stateTime));
-		}else if (stateTime < rotState2) {
-			yRot = cameraYRotation - angleRotation*Mathf.Sin((Mathf.PI/2f) + (Mathf.PI/2f)*RatioWithinRange(rotState1, rotState2, stateTime));
-		}else {
-            yRot = cameraYRotation;
-        }
-
-        /* Camera's y position offset also follows a trig function relative to time spent in this state */
-        if(stateTime < posState1) {
-            cameraHeightOffset -= (headHeight + playerBodyLength/2f) * Mathf.Sin((Mathf.PI/2f)*RatioWithinRange(0, posState1, stateTime));
-        } else if(stateTime < posState2) {
-            cameraHeightOffset -= (headHeight + playerBodyLength/2f) * (Mathf.Cos(Mathf.PI*RatioWithinRange(posState1, posState2, stateTime))+1)/2f;
-        }
-
-        /* Switch to the standing state if the camera animation is complete */
-        if(stateTime > posState2 && stateTime > rotState2) {
-            cameraHeightOffset = 0;
-            ChangeState((int) PlayerStates.Standing);
-        }
-
-        /* Set the rotation of the camera on it's own */
-        currentCameraTransform.rotation = transform.rotation;
-        currentCameraTransform.rotation *= Quaternion.Euler(-yRot, -xRot, 0);
-
-        /* Set the position of the camera using te expected height + the calculated offset */
-        AdjustCameraPosition(GetCameraHeight() + cameraHeightOffset);
-    }
-    
-    void AnimateCameraFastFalling(){
-    	/*
-    	 * Apply a slight random rotation to the camera depending on
-    	 * the player speed ti signify how fast they are falling.
-    	 */
-    	float speedRatio = RatioWithinRange(maxYVelocity, maxYVelocity*fastFallMod, -currentYVelocity);
-    	float r = speedRatio*0.2f;
-
-        /* Put the camera into it's normal resting position */
-        AdjustCameraPosition(GetCameraHeight());
-
-        /* Apply a random rotation effect to the camera */
-        currentCameraTransform.rotation *= Quaternion.Euler(
-				Random.Range(-r, r), Random.Range(-r, r), Random.Range(-r, r));
-    	playerCamera.transform.rotation = currentCameraTransform.rotation;
     }
 
 
@@ -707,8 +495,146 @@ public class CustomPlayerController : MonoBehaviour {
     }
     
 
+    /* ----------------- Camera Update Functions ------------------------------------------------------------- */
+
+    void AdjustCameraRotation() {
+        /*
+         * Take in user inputs to properly rotate the currentCameraTransform's facing direction.
+         */
+
+        /* Copy the player's current rotation before rotating the camera */
+        currentCameraTransform.rotation = transform.rotation;
+
+        /* Add the X input rotation and ensure it does not overflow */
+        cameraXRotation -= inputs.mouseX;
+        if(cameraXRotation < 0) { cameraXRotation += 360; }
+        else if(cameraXRotation > 360) { cameraXRotation -= 360; }
+
+        /* Add the Y input rotation and ensure it does not overflow */
+        cameraYRotation += inputs.mouseY;
+        cameraYRotation = Mathf.Clamp(cameraYRotation, -75, 75);
+
+        /* Apply the rotations to the camera's default transform */
+        currentCameraTransform.rotation *= Quaternion.Euler(-cameraYRotation, -cameraXRotation, 0);
+        playerCamera.transform.rotation = currentCameraTransform.rotation;
+    }
+
+    void AdjustCameraPosition(float cameraHeight) {
+        /*
+         * Position the player's camera according to the player's current position and rotation.
+         * The camera is positionned headHeight above the player origin with a cameraYOffset offset.
+         * 
+         * Properly position the camera where the player's "head" should be. The new position and rotation 
+         * is calculated by firing a RayTrace command from the player origin upwards (relative to the player) 
+         * to the expected view position. The RayTrace will collide with walls and will teleport from triggers, 
+         * letting the player's "head" pass through portals without their "body".
+         * 
+         * The cameraHeight value should be "GetCameraHeight()" as default 
+         * unless a function wants to set the camera's offset on it's own.
+         */
+        Quaternion toCamRotation;
+        Quaternion rotationDifference;
+        Vector3 cameraPosition;
+
+        /* Place the camera onto the player origin before firing the rayTrace */
+        currentCameraTransform.position = transform.position;
+
+        /* Prepare the values used with the rayTrace */
+        cameraPosition = transform.position;
+        toCamRotation = Quaternion.LookRotation(transform.up, transform.forward);
+
+        /* If the distance is negative, have the camera's rotation go down instead of up */
+        //WE DONT KNOW IF THIS WILL PROPERLY TELEPORT.NEED TO TEST WITH THE PLAYER STEPPING THROUGH A TILTED TELEPORTER
+        if(cameraHeight < 0) {
+            cameraHeight *= -1;
+            toCamRotation = Quaternion.LookRotation(-transform.up, transform.forward);
+        }
+
+        /* RayTrace from the player's origin to the camera's position */
+        bool temp = false;
+        rotationDifference = RayTrace(ref cameraPosition, ref toCamRotation, ref cameraHeight, ref temp, true, true);
+
+        /* Use the new position and rotation to find the camera's final position and rotation */
+        currentCameraTransform.position = cameraPosition;
+        currentCameraTransform.rotation = rotationDifference*currentCameraTransform.rotation;
+        playerCamera.transform.position = currentCameraTransform.position;
+        playerCamera.transform.rotation = currentCameraTransform.rotation;
+    }
+
+    void AnimatedCameraLanding() {
+        /*
+         * Apply an offset to the camera by setting it to a specific position.
+         * 
+         * The animation that the camera undergoes can be defined by these stages, sepperated by stateTime:
+         * state1: Animate the camera from the player's headHeight to their body base
+         * state2: Move the camera upwards from the player's.body base to the default head height.
+         
+         * Once the final state ends, change the state back to standing.
+         * Note that the player can still walk off into the falling state mid-animation.
+         */
+        float xRot = 0;
+        float yRot = 0;
+        float cameraHeightOffset = 0;
+        float angleRotation = 10;
+        float posState1 = 0.05f;
+        float posState2 = 0.75f;
+        float rotState1 = 0.15f;
+        float rotState2 = 0.65f;
+
+        /* Camera's Y rotation will follow the sine graph of [0, PI] with x axis being time spent in thos state */
+        xRot = cameraXRotation;
+        if(stateTime < rotState1) {
+            yRot = cameraYRotation - angleRotation*Mathf.Sin(0 + (Mathf.PI/2f)*RatioWithinRange(0, rotState1, stateTime));
+        }
+        else if(stateTime < rotState2) {
+            yRot = cameraYRotation - angleRotation*Mathf.Sin((Mathf.PI/2f) + (Mathf.PI/2f)*RatioWithinRange(rotState1, rotState2, stateTime));
+        }
+        else {
+            yRot = cameraYRotation;
+        }
+
+        /* Camera's y position offset also follows a trig function relative to time spent in this state */
+        if(stateTime < posState1) {
+            cameraHeightOffset -= (headHeight + playerBodyLength/2f) * Mathf.Sin((Mathf.PI/2f)*RatioWithinRange(0, posState1, stateTime));
+        }
+        else if(stateTime < posState2) {
+            cameraHeightOffset -= (headHeight + playerBodyLength/2f) * (Mathf.Cos(Mathf.PI*RatioWithinRange(posState1, posState2, stateTime))+1)/2f;
+        }
+
+        /* Switch to the standing state if the camera animation is complete */
+        if(stateTime > posState2 && stateTime > rotState2) {
+            cameraHeightOffset = 0;
+            ChangeState((int) PlayerStates.Standing);
+        }
+
+        /* Set the rotation of the camera on it's own */
+        currentCameraTransform.rotation = transform.rotation;
+        currentCameraTransform.rotation *= Quaternion.Euler(-yRot, -xRot, 0);
+
+        /* Set the position of the camera using te expected height + the calculated offset */
+        AdjustCameraPosition(GetCameraHeight() + cameraHeightOffset);
+    }
+
+    void AnimateCameraFastFalling() {
+        /*
+    	 * Apply a slight random rotation to the camera depending on
+    	 * the player speed ti signify how fast they are falling.
+    	 */
+        float speedRatio = RatioWithinRange(maxYVelocity, maxYVelocity*fastFallMod, -currentYVelocity);
+        float r = speedRatio*0.2f;
+
+        /* Put the camera into it's normal resting position */
+        AdjustCameraPosition(GetCameraHeight());
+
+        /* Apply a random rotation effect to the camera */
+        currentCameraTransform.rotation *= Quaternion.Euler(
+                Random.Range(-r, r), Random.Range(-r, r), Random.Range(-r, r));
+        playerCamera.transform.rotation = currentCameraTransform.rotation;
+    }
+
+
     /* ----------------- Value Updating Functions ------------------------------------------------------------- */
-    
+
     void SetupPlayerBody(){
    	/*
    	 * Set the variables that are relevent to the player's.body and legs.
@@ -875,41 +801,6 @@ public class CustomPlayerController : MonoBehaviour {
             stateTime = 0;
             state = newState;
         }
-    }
-
-    float MovePlayer(Vector3 movementVector) {
-        /*
-         * Move the player by the given movementVector. To move the player, run a rayTrace command using the
-         * given movementVector as a direction and distance. The position used will be the player's origin,
-         * i.e. the transform this script is attached to. This means for the player to be teleported, their
-         * origin point must collide with a teleporterTrigger when using a rayTrace command.
-         * 
-         * Return the amount of distance from the movementVector that was not covered.
-         */
-        Quaternion rotationDifference;
-        float remainingDistance = 0;
-
-        if(movementVector.magnitude != 0) {
-            /* Set values to be used with the rayTrace call */
-            Vector3 position = transform.position;
-            Quaternion direction = Quaternion.LookRotation(movementVector.normalized, transform.up);
-            remainingDistance = movementVector.magnitude;
-
-            /* Fire the rayTrace command and retrive the rotation difference */
-            //rotationDifference = RayTrace(ref position, ref direction, ref remainingDistance, true, true);
-
-            /* Update the player's transform with the updated parameters */
-            //transform.position = position;
-            /////NOTE: A TELEPORT REQUIRES A SET PLAYER POSITION, NOT A RIGIDBODY MOVEPOSITION
-            /////THEREFORE WE WILL NEED TO KNOW IF A TELEPORT HAS OCCURED OR NOT
-            /////HOWEVER, THIS FUNCTION SHOULD NOT ACTUALLY TELEPORT THE PLAYER
-            //Rigidbody rigidBody = GetComponent<Rigidbody>();
-            //rigidBody.MovePosition(position);
-            expectedMovements.Add(movementVector);
-            //transform.rotation = transform.rotation * rotationDifference;
-        }
-        
-        return remainingDistance;
     }
 
     void JumpAttempt() {
