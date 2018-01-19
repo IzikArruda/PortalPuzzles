@@ -723,7 +723,9 @@ public class CustomPlayerController : MonoBehaviour {
     void ResetPlayer(bool resetSounds) {
         /*
          * Reset the player's sounds, camera effects and positional values. 
-         * Only reset the sounds if the given boolean is true
+         * Only reset the sounds if the given boolean is true. This is to allow
+         * the playerSounds script to handle it's creation itself as the player resets
+         * themselves on startup and the playerSounds script has not yet initialized.
          */
 
         /* Reset the player's sounds */
@@ -789,8 +791,11 @@ public class CustomPlayerController : MonoBehaviour {
     void UpdateResetAnimation() {
         /*
          * Update the reset timer and animate the camera's vignette and lower the volume of the player sounds.
-         * If the user inputs any movement inputs (directional, jump)
+         * If the user inputs any movement inputs (directional, jump). 
+         * 
+         * currentResetProgress tracked the start (1) to the end (0) of the animation, finishing with a reset.
          */
+        float currentResetProgress = (1 - (resetTime - currentResetTime)/resetTime);
 
         /* Check if the user inputted any movement inputs */
         if(inputs.spaceBarHeld == true || inputs.playerMovementXRaw != 0 || inputs.playerMovementYRaw != 0) {
@@ -802,8 +807,11 @@ public class CustomPlayerController : MonoBehaviour {
         else {
             currentResetTime -= Time.deltaTime;
 
-            /* Update the volume of the audio mixer */
-
+            /* Update the volume of the audio mixer. Delay the time until the audio starts changing */
+            float delayAudioChange = 0.35f;
+            if((1 - currentResetProgress) > delayAudioChange) {
+                playerSoundsScript.TemporaryMixerAdjustment((currentResetProgress)/(1-delayAudioChange));
+            }
             /////////////
 
             /* Update the vignette effect for the camera */
@@ -827,6 +835,9 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Reset the vignette effect for the camera */
         cameraEffectsScript.StopPlayerReset();
+
+        /* Reset the audio levels of the audio mixer */
+        playerSoundsScript.ResetAudioMixerVolume();
     }
 
     /* ----------- Event Functions ------------------------------------------------------------- */

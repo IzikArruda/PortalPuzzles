@@ -130,9 +130,7 @@ public class PlayerSounds : MonoBehaviour {
 		fallingSource.volume = maxVolume;
 
         /* Set the volume for the audio mixer */
-        audioMixer.SetFloat("masterVolume", masterMixerVolume);
-        audioMixer.SetFloat("musicVolume", musicMixerVolume);
-        audioMixer.SetFloat("footstepsVolume", footstepsMixerVolume);
+        ResetAudioMixerVolume();
     }
 
     void Update(){
@@ -442,6 +440,9 @@ public class PlayerSounds : MonoBehaviour {
         musicFadeMuted = 0;
         musicFadeUpgraded = 0;
 
+        /* Reset the audioMixer volumes */
+        ResetAudioMixerVolume();
+
         /* Stop and mute all audio sources */
         StopAllAudioSources();
 
@@ -451,6 +452,15 @@ public class PlayerSounds : MonoBehaviour {
             /* Fade in the non-upgraded music */
             musicFadeMuted = 0.1f;
         }
+    }
+
+    public void ResetAudioMixerVolume() {
+        /*
+         * Reset the volume of the audio mixer and it's groups
+         */
+        audioMixer.SetFloat("masterVolume", masterMixerVolume);
+        audioMixer.SetFloat("musicVolume", musicMixerVolume);
+        audioMixer.SetFloat("footstepsVolume", footstepsMixerVolume);
     }
 
     public void StopAllAudioSources() {
@@ -475,6 +485,18 @@ public class PlayerSounds : MonoBehaviour {
         fallingSource.Stop();
         fallingSource.volume = 0;
 }
+
+    public void TemporaryMixerAdjustment(float masterVolumeRatio) {
+        /*
+         * Apply a volume change to the audio mixer. This change is temporary as a call to 
+         * StopAllAudioSources() will reset these changes. The given float will set the volume
+         * of the master channel/group by treating it as a range (0 is near-muted, 1 is normal)
+         */
+        Debug.Log(masterVolumeRatio);
+
+        /* Set the volume of the master audio group */
+        audioMixer.SetFloat("masterVolume", -50 + (50+masterMixerVolume)*masterVolumeRatio);
+    }
 
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
