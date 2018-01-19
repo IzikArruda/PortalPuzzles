@@ -160,7 +160,7 @@ public class CustomPlayerController : MonoBehaviour {
         GetComponent<CapsuleCollider>().radius = playerBodyRadius;
         
         /* Reset the player's positional values and camera effects */
-        ResetPlayer();
+        ResetPlayer(false);
     }
     
     void FixedUpdate() {
@@ -237,7 +237,7 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Check if the player wants to reset their position */
         if(inputs.rKeyPressed) {
-            ResetPlayer();
+            ResetPlayer(true);
         }
 
         /* Update the player's stride progress to determine when a footstep sound effect should play */
@@ -713,16 +713,24 @@ public class CustomPlayerController : MonoBehaviour {
         inputVector = Quaternion.AngleAxis(-cameraXRotation, transform.up)*transform.rotation*inputVector;
     }
 
-    void ResetPlayer() {
+    void ResetPlayer(bool resetSounds) {
         /*
-         * Reset the player's sounds, camera effects and positional values.
+         * Reset the player's sounds, camera effects and positional values. 
+         * Only reset the sounds if the given boolean is true
          */
 
         /* Reset the player's sounds */
-        playerSoundsScript.ResetAll();
+        if(resetSounds) {
+            playerSoundsScript.ResetAll(false);
+        }
 
         /* Reset the camera's effects */
         cameraEffectsScript.ResetCameraEffects();
+
+        /* Reset the step tracker */
+        playerStepTracker.ResetFootTiming(); 
+        playerStepTracker.ResetStrideProgress();
+        playerStepTracker.ResetStepBuffer();
 
         /* Start the player in the standing state so they can link themselves to the floor */
         state = -1;
@@ -731,12 +739,6 @@ public class CustomPlayerController : MonoBehaviour {
         /* Empty the arraylist of vectors that track the player's upcomming movement */
         if(expectedMovements != null) { expectedMovements.Clear(); }
         expectedMovements = new ArrayList();
-
-        /* The "previous frame" had the player starting in it's current position */
-        lastSavedPosition = transform.position;
-
-        /* The player starts immobile */
-        lastStepMovement = Vector3.zero;
 
         /* Reset the player's position depending on whether the player is given a starting room */
         if(lastRoom != null) {
@@ -757,6 +759,13 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Set the camera's offset to it's natural default value */
         cameraYOffset = 0;
+
+        /* The "previous frame" had the player starting in it's current position */
+        lastSavedPosition = transform.position;
+
+        /* The player starts immobile */
+        lastStepMovement = Vector3.zero;
+
     }
 
 

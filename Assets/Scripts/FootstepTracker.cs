@@ -107,8 +107,8 @@ public class FootstepTracker : MonoBehaviour {
 
         /* The player is immobile - reset the step tracking variables */
         if(horizontalInputDirection.magnitude == 0) {
-            
-            pastDirections.Clear();
+
+            ResetStepBuffer();
             ResetFootTiming();
             ResetStrideProgress();
 
@@ -253,7 +253,7 @@ public class FootstepTracker : MonoBehaviour {
         /* Reset the player momentum (current stride and pastDirections) */
         ResetStrideProgress();
         ResetFootTiming();
-        pastDirections.Clear();
+        ResetStepBuffer();
     }
     
     public void PlayHardLanding(){
@@ -267,7 +267,7 @@ public class FootstepTracker : MonoBehaviour {
         /* Reset the player momentum (current stride and pastDirections) */
         ResetStrideProgress();
         ResetFootTiming();
-        pastDirections.Clear();
+        ResetStepBuffer();
     }
 
 	public void PlayJump(){
@@ -372,5 +372,13 @@ public class FootstepTracker : MonoBehaviour {
 
         horiStride = 0;
         vertStride = 0;
+    }
+
+    public void ResetStepBuffer() {
+        /*
+         * Empty the array that contains previous steps
+         */
+
+        pastDirections.Clear();
     }
 }
