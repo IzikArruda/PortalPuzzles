@@ -49,6 +49,8 @@ public class CustomPlayerController : MonoBehaviour {
 
 
     /* --- Player Control/Movement ----------------- */
+    /* The Expected movements (in the form of Vector3) of the player for the upcomming physics update */
+    private ArrayList expectedMovements;
     /* The amount of distance travelled since the last step tracker update */
     private Vector3 lastStepMovement;
     /* The position the player was in on the previous update frame */
@@ -78,9 +80,9 @@ public class CustomPlayerController : MonoBehaviour {
     private bool jumpKeyPrevious = false;
     private bool jumpKeyCurrent = false;
 
-    /* The Expected movements (in the form of Vector3) of the player for the upcomming physics update */
-    private ArrayList expectedMovements;
-
+    /* The amount of time needed for the player to reset upon pressing the R key */
+    private float currentResetTime;
+    public float resetTime;
 
 	/* --- Body/Leg Sizes---------------------- */
     /* The sizes of the player's capsule collider */
@@ -237,7 +239,12 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Check if the player wants to reset their position */
         if(inputs.rKeyPressed) {
-            ResetPlayer(true);
+            StartPlayerReset();
+        }
+
+        /* Update and animated the resetTimer if the player wants to reset */
+        if(currentResetTime > -1) {
+            UpdateResetAnimation();
         }
 
         /* Update the player's stride progress to determine when a footstep sound effect should play */
@@ -724,8 +731,9 @@ public class CustomPlayerController : MonoBehaviour {
             playerSoundsScript.ResetAll(false);
         }
 
-        /* Reset the camera's effects */
+        /* Reset the camera's effects and any extra animations it has */
         cameraEffectsScript.ResetCameraEffects();
+        currentResetTime = -1;
 
         /* Reset the step tracker */
         playerStepTracker.ResetFootTiming(); 
@@ -768,6 +776,44 @@ public class CustomPlayerController : MonoBehaviour {
 
     }
 
+    void StartPlayerReset() {
+        /*
+         * Start the animation for the player being reset
+         */
+
+        /* Start the player reset vignette effect */
+        currentResetTime = resetTime;
+        cameraEffectsScript.StartPlayerReset(resetTime);
+    }
+
+    void UpdateResetAnimation() {
+        /*
+         * Update the reset timer and animate the camera's vignette and lower the volume of the player sounds
+         */
+
+        currentResetTime -= Time.deltaTime;
+        
+        /* Update the vignette effect for the camera */
+        cameraEffectsScript.UpdatePlayerReset(currentResetTime);
+
+        /* Reset the player once the reset animation is finished */
+        if(currentResetTime <= 0) {
+            ResetPlayer(true);
+        }
+    }
+
+    void StopResetAnimation() {
+        /*
+         * Stop the reset animation for the player and the camera before it finishes
+         */
+
+        currentResetTime = -1;
+
+        /* Reset the vignette effect for the camera */
+        cameraEffectsScript.StopPlayerReset();
+
+        /* Stop the vignette effect IF THE PLAYER SHOULD NTO HAVE IT ACTIVE */
+    }
 
     /* ----------- Event Functions ------------------------------------------------------------- */
 

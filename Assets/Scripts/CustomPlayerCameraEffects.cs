@@ -19,6 +19,10 @@ public class CustomPlayerCameraEffects : MonoBehaviour {
     private VignetteModel cameraVignette;
     private ChromaticAberrationModel cameraChromaticAberration;
 
+    /* Camera effect overriding values */
+    private float playerResetVignetteCurrent = -1;
+    private float playerResetVignetteMax = -1;
+
 
     /* ----------- Set-up Functions ------------------------------------------------------------- */
 
@@ -42,15 +46,17 @@ public class CustomPlayerCameraEffects : MonoBehaviour {
 
     public void ResetCameraEffects() {
         /*
-         * Reset the camera's effects
+         * Reset the camera's effects and stop any effect animations it can be undergoing
          */
+         
+        /* Stop the playerReset animation */
+        StopPlayerReset();
 
+        /* Disable the camera effects. This is because there are no effects when standing in a legal position */
         cameraVignette.enabled = false;
         cameraChromaticAberration.enabled = false;
     }
-
-
-
+    
     public void StartEffectVignette() {
         /*
     	 * Enable the vignetting effect on the player camera
@@ -93,7 +99,8 @@ public class CustomPlayerCameraEffects : MonoBehaviour {
     	 * Current playerState controls what effects are used.
     	 */
 
-        /* The vignette is effected by the speed of a fastFall and duration of a landing */
+        /* The vignette is effected by the speed of a fastFall and duration of a landing.
+         * If the player is currently being reset, have the reset animation take control of the vignette */
         if(cameraVignette.enabled) {
             UpdateEffectVignette(playerControllerScript.state, playerControllerScript.stateTime, playerControllerScript.GetYVelocityFastFallRatio());
         }
@@ -107,6 +114,7 @@ public class CustomPlayerCameraEffects : MonoBehaviour {
     public void UpdateEffectVignette(int playerState, float playerStateTime, float velocityRatio) {
         /*
     	 * The vignette effect adds a border around the camera's view.
+         * When the player is resetting, have a sharp, closing vignette.
     	 * When in fastfall, the player speed directly effects the intensity.
     	 * The start frames of landing will have a large amount of intensity.
     	 * When outside the previously mentionned states, a duration value
@@ -115,8 +123,27 @@ public class CustomPlayerCameraEffects : MonoBehaviour {
         float intensity = 0;
         float minTime = 0.1f;
 
+        /* Set the intensity relative to the current player reset time */
+        if(playerResetVignetteCurrent > -1) {
+
+            /* Have it animate in two states */
+            float currentRatio = (playerResetVignetteMax - playerResetVignetteCurrent)/playerResetVignetteMax;
+            Debug.Log(Mathf.Log10(20 + 500*currentRatio)-1);
+
+            float firstHalf = 0.6f;
+            if(currentRatio < firstHalf) {
+                /* First half is slow */
+                intensity = Mathf.Log10(20 + 500*currentRatio)-1;
+            }
+            else {
+                /* Second half is fast */
+                intensity = (Mathf.Log10(20 + 500*firstHalf)-1) + Mathf.Pow(15*(currentRatio-firstHalf), 6);
+                //intensity = (Mathf.Log10(20 + 500*currentRatio)-1) + 0;
+            }
+        }
+
         /* Set the intensity relative to the player speed */
-        if(playerState == (int) PlayerStates.FastFalling) {
+        else if(playerState == (int) PlayerStates.FastFalling) {
             intensity = 0.15f*velocityRatio;
         }
 
@@ -171,5 +198,48 @@ public class CustomPlayerCameraEffects : MonoBehaviour {
         ChromaticAberrationModel.Settings chromaticAberrationSettings = cameraChromaticAberration.settings;
         chromaticAberrationSettings.intensity = intensity;
         cameraChromaticAberration.settings = chromaticAberrationSettings;
+    }
+
+
+    /* ----------- Event Functions ------------------------------------------------------------- */
+    
+    public void StartPlayerReset(float resetTime) {
+        /*
+         * The player wants to reset themselves and needs a vignette effect to mask the teleport.
+         * The given float is how much time is required for the reset to complete.
+         */
+
+        /* Enable the vignette effect */
+        StartEffectVignette();
+
+        /* Set the timing used to measure the intensity of the vignette */
+        playerResetVignetteMax = resetTime;
+        playerResetVignetteCurrent = resetTime;
+
+        /* Set the smootheness of the vignette effect for the reset animation */
+        VignetteModel.Settings vignetteSettings = cameraVignette.settings;
+        vignetteSettings.smoothness = 0;
+        cameraVignette.settings = vignetteSettings;
+    }
+
+    public void UpdatePlayerReset(float currentResetTime) {
+        /*
+         * Update the vignette intesity with the new given time
+         */
+
+        playerResetVignetteCurrent = currentResetTime;
+    }
+
+    public void StopPlayerReset() {
+        /*
+         * Stop the player reset animation effects for this script
+         */
+
+        playerResetVignetteCurrent = -1;
+
+        /* Set the smoothness of the vignette back to it's default for falling */
+        VignetteModel.Settings vignetteSettings = cameraVignette.settings;
+        vignetteSettings.smoothness = 0;
+        cameraVignette.settings = vignetteSettings;
     }
 }
