@@ -788,31 +788,41 @@ public class CustomPlayerController : MonoBehaviour {
 
     void UpdateResetAnimation() {
         /*
-         * Update the reset timer and animate the camera's vignette and lower the volume of the player sounds
+         * Update the reset timer and animate the camera's vignette and lower the volume of the player sounds.
+         * If the user inputs any movement inputs (directional, jump)
          */
 
-        currentResetTime -= Time.deltaTime;
+        /* Check if the user inputted any moveemnt inputs */
+        if(inputs.spaceBarHeld == true || inputs.playerMovementXRaw != 0 || inputs.playerMovementYRaw != 0) {
+            /* Stop the animation */
+            StopResetAnimation();
+        }
         
-        /* Update the vignette effect for the camera */
-        cameraEffectsScript.UpdatePlayerReset(currentResetTime);
+        /* Continue updating the animation */
+        else {
+            currentResetTime -= Time.deltaTime;
 
-        /* Reset the player once the reset animation is finished */
-        if(currentResetTime <= 0) {
-            ResetPlayer(true);
+            /* Update the vignette effect for the camera */
+            cameraEffectsScript.UpdatePlayerReset(currentResetTime);
+
+            /* Reset the player once the reset animation is finished */
+            if(currentResetTime <= 0) {
+                ResetPlayer(true);
+            }
         }
     }
 
     void StopResetAnimation() {
         /*
-         * Stop the reset animation for the player and the camera before it finishes
+         * Stop the reset animation for the player and the camera before it finishes.
+         * Do not run .DisableVignette() as the camera will disable the vignette itself
+         * if it is not currently being used.
          */
 
         currentResetTime = -1;
 
         /* Reset the vignette effect for the camera */
         cameraEffectsScript.StopPlayerReset();
-
-        /* Stop the vignette effect IF THE PLAYER SHOULD NTO HAVE IT ACTIVE */
     }
 
     /* ----------- Event Functions ------------------------------------------------------------- */

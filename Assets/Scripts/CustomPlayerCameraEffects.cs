@@ -128,7 +128,6 @@ public class CustomPlayerCameraEffects : MonoBehaviour {
 
             /* Have it animate in two states */
             float currentRatio = (playerResetVignetteMax - playerResetVignetteCurrent)/playerResetVignetteMax;
-            Debug.Log(Mathf.Log10(20 + 500*currentRatio)-1);
 
             float firstHalf = 0.6f;
             if(currentRatio < firstHalf) {
@@ -137,8 +136,7 @@ public class CustomPlayerCameraEffects : MonoBehaviour {
             }
             else {
                 /* Second half is fast */
-                intensity = (Mathf.Log10(20 + 500*firstHalf)-1) + Mathf.Pow(15*(currentRatio-firstHalf), 6);
-                //intensity = (Mathf.Log10(20 + 500*currentRatio)-1) + 0;
+                intensity = (Mathf.Log10(20 + 500*currentRatio)-1) + Mathf.Pow(15*(currentRatio-firstHalf), 6);
             }
         }
 
@@ -240,6 +238,7 @@ public class CustomPlayerCameraEffects : MonoBehaviour {
         /* Set the smoothness of the vignette back to it's default for falling */
         VignetteModel.Settings vignetteSettings = cameraVignette.settings;
         vignetteSettings.smoothness = 0;
+        vignetteSettings.intensity = 0;
         cameraVignette.settings = vignetteSettings;
     }
 }
