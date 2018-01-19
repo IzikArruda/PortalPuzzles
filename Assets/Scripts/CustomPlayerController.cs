@@ -792,7 +792,7 @@ public class CustomPlayerController : MonoBehaviour {
          * If the user inputs any movement inputs (directional, jump)
          */
 
-        /* Check if the user inputted any moveemnt inputs */
+        /* Check if the user inputted any movement inputs */
         if(inputs.spaceBarHeld == true || inputs.playerMovementXRaw != 0 || inputs.playerMovementYRaw != 0) {
             /* Stop the animation */
             StopResetAnimation();
@@ -801,6 +801,10 @@ public class CustomPlayerController : MonoBehaviour {
         /* Continue updating the animation */
         else {
             currentResetTime -= Time.deltaTime;
+
+            /* Update the volume of the audio mixer */
+
+            /////////////
 
             /* Update the vignette effect for the camera */
             cameraEffectsScript.UpdatePlayerReset(currentResetTime);

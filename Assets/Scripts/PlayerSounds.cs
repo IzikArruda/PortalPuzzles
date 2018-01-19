@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.Audio;
 using System.Collections;
 
 /*
@@ -11,10 +12,19 @@ using System.Collections;
  */
 public class PlayerSounds : MonoBehaviour {
 
+
+    /* -- AudioMixer groups ------------------- */
+    public AudioMixer audioMixer;
+    public AudioMixerGroup audioMixerMaster;
+    public AudioMixerGroup audioMixerMusic;
+    public AudioMixerGroup audioMixerFootsteps;
+
+
     /* --- Source Container Containers ------------------- */
     public GameObject stepTransformContainer;
     public GameObject musicTransformContainer;
     public GameObject effectsTransformContainer;
+
 
     /* --- Source Containers ------------------- */
     private GameObject[] upperStepContainers;
@@ -25,7 +35,7 @@ public class PlayerSounds : MonoBehaviour {
     private GameObject fallingContainer;
 	/* The main soundEffect container that contains all the source's containers */
 	public GameObject sourceContainer;
-
+    
 
     /* --- Audio Sources ------------------- */
     private AudioSource[] upperStepSources;
@@ -49,9 +59,13 @@ public class PlayerSounds : MonoBehaviour {
 	public AudioClip hardLandingClip;
 	//fastfall audio : bus and jet engine?
 	public AudioClip fallingClip;
-	
-	
-	/* --- User Input Values ------------------- */
+
+
+    /* --- User Input Values ------------------- */
+    /* Audio volumes directly linked to the audio mixer */
+    public float masterMixerVolume;
+    public float musicMixerVolume;
+    public float footstepsMixerVolume;
     /* How loud the volume of the audio is at max */
     public float maxVolume = 1;
     /* How fast the audio fades universally. Rate is relative to maxVolume  */
@@ -85,10 +99,10 @@ public class PlayerSounds : MonoBehaviour {
         /* Create the appropriate amount of audioSources and put them in their corresponding containers*/
         InitializeStepArray(ref upperStepSources, ref lowerStepSources, ref upperStepContainers, ref lowerStepContainers,
                     ref stepHighPass, ref stepLowPass, maxSimultaniousStepEffects);
-        InitializeAudioObject(ref musicSourceMuted, ref musicContainerMuted, "Music(muted)", musicTransformContainer.transform);
-        InitializeAudioObject(ref musicSourceUpgraded, ref musicContainerUpgraded, "Music(upgraded)", musicTransformContainer.transform);
-        InitializeAudioObject(ref fallingSource, ref fallingContainer, "Falling", effectsTransformContainer.transform);
-		InitializeAudioArray(ref landingSources, ref landingContainers, 3, "Landing", effectsTransformContainer.transform);
+        InitializeAudioObject(ref musicSourceMuted, ref musicContainerMuted, "Music(muted)", musicTransformContainer.transform, audioMixerMusic);
+        InitializeAudioObject(ref musicSourceUpgraded, ref musicContainerUpgraded, "Music(upgraded)", musicTransformContainer.transform, audioMixerMusic);
+        InitializeAudioObject(ref fallingSource, ref fallingContainer, "Falling", effectsTransformContainer.transform, audioMixerMusic);
+		InitializeAudioArray(ref landingSources, ref landingContainers, 3, "Landing", effectsTransformContainer.transform, audioMixerFootsteps);
 
         /* Initialize the fade values for the steps */
         stepFade = new float[maxSimultaniousStepEffects];
@@ -114,6 +128,11 @@ public class PlayerSounds : MonoBehaviour {
         musicSourceMuted.volume = maxVolume;
         musicSourceUpgraded.volume = maxVolume;
 		fallingSource.volume = maxVolume;
+
+        /* Set the volume for the audio mixer */
+        audioMixer.SetFloat("masterVolume", masterMixerVolume);
+        audioMixer.SetFloat("musicVolume", musicMixerVolume);
+        audioMixer.SetFloat("footstepsVolume", footstepsMixerVolume);
     }
 
     void Update(){
@@ -523,8 +542,8 @@ public class PlayerSounds : MonoBehaviour {
         lowerPassFilter = new AudioLowPassFilter[sourceSize];
 
         for(int i = 0; i < sourceSize; i++) {
-            InitializeAudioObject(ref upperSource[i], ref upperContainerArray[i], "Footstep(high) " + i, stepTransformContainer.transform);
-            InitializeAudioObject(ref lowerSource[i], ref lowerContainerArray[i], "Footstep(low) " + i, stepTransformContainer.transform);
+            InitializeAudioObject(ref upperSource[i], ref upperContainerArray[i], "Footstep(high) " + i, stepTransformContainer.transform, audioMixerFootsteps);
+            InitializeAudioObject(ref lowerSource[i], ref lowerContainerArray[i], "Footstep(low) " + i, stepTransformContainer.transform, audioMixerFootsteps);
 
             highPassFilter[i] = upperContainerArray[i].AddComponent<AudioHighPassFilter>();
             lowerPassFilter[i] = lowerContainerArray[i].AddComponent<AudioLowPassFilter>();
@@ -535,7 +554,8 @@ public class PlayerSounds : MonoBehaviour {
     }
 
 
-    void InitializeAudioArray(ref AudioSource[] sourceArray, ref GameObject[] containerArray, int sourceSize, string name, Transform parent){
+    void InitializeAudioArray(ref AudioSource[] sourceArray, ref GameObject[] containerArray, int sourceSize, 
+            string name, Transform parent, AudioMixerGroup mixerGroup){
 		/*
 		 * Initialize the given arrays with audioSources and their containers
 		 */
@@ -543,11 +563,12 @@ public class PlayerSounds : MonoBehaviour {
 		sourceArray = new AudioSource[sourceSize];
         containerArray = new GameObject[sourceSize];
         for(int i = 0; i < sourceArray.Length; i++){
-        	InitializeAudioObject(ref sourceArray[i], ref containerArray[i], name + " " + i, parent);
+        	InitializeAudioObject(ref sourceArray[i], ref containerArray[i], name + " " + i, parent, mixerGroup);
         }
 	}
 	
-	void InitializeAudioObject(ref AudioSource source, ref GameObject container, string name, Transform parent) {
+	void InitializeAudioObject(ref AudioSource source, ref GameObject container, 
+            string name, Transform parent, AudioMixerGroup mixerGroup) {
 		/*
 		 * Initialize the given container and add the given source
          * Create the given container, place it in the main audio container and add it's audioSource
@@ -557,5 +578,6 @@ public class PlayerSounds : MonoBehaviour {
         container.transform.parent = parent;
         container.name = name;
         source = container.AddComponent<AudioSource>();
+        source.outputAudioMixerGroup = mixerGroup;
     }
 }
