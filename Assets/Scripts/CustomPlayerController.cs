@@ -756,6 +756,8 @@ public class CustomPlayerController : MonoBehaviour {
             Transform newTransform = lastRoom.ResetPlayer();
             gameObject.transform.position = newTransform.position;
             gameObject.transform.rotation = newTransform.rotation;
+            cameraXRotation = 0;
+            cameraYRotation = 0;
         }
         else {
             Debug.Log("Player was not linked a starting room");
@@ -1086,6 +1088,13 @@ public class CustomPlayerController : MonoBehaviour {
         return RatioWithinRange(maxYVelocity, maxYVelocity*fastFallMod, -currentYVelocity);
     }
 
+    public void ChangeLastRoom(AttachedRoom newRoom) {
+        /*
+         * Called by an attachedRoom when the player enters, it changes the player's last room to the given one.
+         */
+
+        lastRoom = newRoom;
+    }
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
 

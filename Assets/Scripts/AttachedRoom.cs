@@ -6,6 +6,7 @@ using System.Collections;
  * need to be tracked so that it can properly connect the two rooms, such as the exit sizes.
  * This room always uses 4 flat planes as it's walls and is created procedurally using the exit points.
  */
+[ExecuteInEditMode]
 public class AttachedRoom : MonoBehaviour {
 
     /* The two exit points of the room's two exits. Used to connect rooms. */
@@ -33,6 +34,9 @@ public class AttachedRoom : MonoBehaviour {
     public float exitWidth;
     public float exitHeight;
 
+    /* The trigger that encompasses the entire room. Used to detect when the player enters it */
+    public BoxCollider roomCollider;
+
 
     /* -------- Built-In Functions ---------------------------------------------------- */
     
@@ -44,6 +48,17 @@ public class AttachedRoom : MonoBehaviour {
         UpdateWalls();
     }
 
+    void OnTriggerEnter(Collider player) {
+        /*
+         * When the player enters the room's trigger, change their linked attachedRoom.
+         */
+
+        /* Ensure the collider entering the trigger is a player */
+        if(player.GetComponent<CustomPlayerController>() != null) {
+            /* Tell the CustomPlayerController to change their linked attachedRoom */
+            player.GetComponent<CustomPlayerController>().ChangeLastRoom(this);
+        }
+    }
 
     /* -------- Event Functions ---------------------------------------------------- */
 
@@ -65,11 +80,19 @@ public class AttachedRoom : MonoBehaviour {
         /* Get the center position of the room's floor */
         Vector3 roomCenter = (exitPointFront.position + exitPointBack.position)/2f;
 
+        /* Re-create the main trigger for the room with the new sizes */
+        if(roomCollider != null) { DestroyImmediate(roomCollider); }
+        roomCollider = gameObject.AddComponent<BoxCollider>();
+        roomCollider.isTrigger = true;
+        roomCollider.center = -transform.localPosition + roomCenter + new Vector3(0, exitHeight/2f, 0);
+        roomCollider.size = new Vector3(exitWidth, exitHeight, depth);
+
         /* Delete the current parts of the room if they exist */
         DeleteRoom();
 
         /* Create the floor */
         floor = new GameObject();
+        floor.name = "Floor";
         CreatePlane(floor, exitWidth, depth);
         floor.transform.parent = roomObjectsContainer;
         floor.transform.position = roomCenter;
@@ -79,6 +102,7 @@ public class AttachedRoom : MonoBehaviour {
 
         /* Create the left wall */
         leftWall = new GameObject();
+        leftWall.name = "Left wall";
         CreatePlane(leftWall, exitHeight, depth);
         leftWall.transform.parent = roomObjectsContainer;
         leftWall.transform.position = roomCenter + new Vector3(-exitWidth/2f, exitHeight/2f, 0);
@@ -88,6 +112,7 @@ public class AttachedRoom : MonoBehaviour {
 
         /* Create the right wall */
         rightWall = new GameObject();
+        rightWall.name = "Right wall";
         CreatePlane(rightWall, exitHeight, depth);
         rightWall.transform.parent = roomObjectsContainer;
         rightWall.transform.position = roomCenter + new Vector3(exitWidth/2f, exitHeight/2f, 0);
@@ -97,6 +122,7 @@ public class AttachedRoom : MonoBehaviour {
 
         /* Create the ceiling */
         ceiling = new GameObject();
+        ceiling.name = "Ceiling";
         CreatePlane(ceiling, exitWidth, depth);
         ceiling.transform.parent = roomObjectsContainer;
         ceiling.transform.position = roomCenter + new Vector3(0, exitHeight, 0);
