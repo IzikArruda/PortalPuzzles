@@ -52,6 +52,7 @@ public class AttachedRoom : MonoBehaviour {
         /*
          * When the player enters the room's trigger, change their linked attachedRoom.
          */
+        Debug.Log("test");
 
         /* Ensure the collider entering the trigger is a player */
         if(player.GetComponent<CustomPlayerController>() != null) {
@@ -59,6 +60,7 @@ public class AttachedRoom : MonoBehaviour {
             player.GetComponent<CustomPlayerController>().ChangeLastRoom(this);
         }
     }
+
 
     /* -------- Event Functions ---------------------------------------------------- */
 
