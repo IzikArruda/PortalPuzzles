@@ -95,42 +95,38 @@ public class AttachedRoom : MonoBehaviour {
         /* Create the floor */
         floor = new GameObject();
         floor.name = "Floor";
-        CreatePlane(floor, exitWidth, depth);
         floor.transform.parent = roomObjectsContainer;
         floor.transform.position = roomCenter;
         floor.transform.localEulerAngles = new Vector3(0, 0, 0);
         floor.transform.localScale = new Vector3(1, 1, 1);
-        floor.GetComponent<MeshRenderer>().sharedMaterial = floorMaterial;
+        CreatePlane(floor, exitWidth, depth, 8, floorMaterial);
 
         /* Create the left wall */
         leftWall = new GameObject();
         leftWall.name = "Left wall";
-        CreatePlane(leftWall, exitHeight, depth);
         leftWall.transform.parent = roomObjectsContainer;
         leftWall.transform.position = roomCenter + new Vector3(-exitWidth/2f, exitHeight/2f, 0);
         leftWall.transform.localEulerAngles = new Vector3(0, 0, -90);
         leftWall.transform.localScale = new Vector3(1, 1, 1);
-        leftWall.GetComponent<MeshRenderer>().sharedMaterial = wallMaterial;
+        CreatePlane(leftWall, exitHeight, depth, 8, wallMaterial);
 
         /* Create the right wall */
         rightWall = new GameObject();
         rightWall.name = "Right wall";
-        CreatePlane(rightWall, exitHeight, depth);
         rightWall.transform.parent = roomObjectsContainer;
         rightWall.transform.position = roomCenter + new Vector3(exitWidth/2f, exitHeight/2f, 0);
         rightWall.transform.localEulerAngles = new Vector3(0, 0, 90);
         rightWall.transform.localScale = new Vector3(1, 1, 1);
-        rightWall.GetComponent<MeshRenderer>().sharedMaterial = wallMaterial;
+        CreatePlane(rightWall, exitHeight, depth, 8, wallMaterial);
 
         /* Create the ceiling */
         ceiling = new GameObject();
         ceiling.name = "Ceiling";
-        CreatePlane(ceiling, exitWidth, depth);
         ceiling.transform.parent = roomObjectsContainer;
         ceiling.transform.position = roomCenter + new Vector3(0, exitHeight, 0);
         ceiling.transform.localEulerAngles = new Vector3(0, 0, 180);
         ceiling.transform.localScale = new Vector3(1, 1, 1);
-        ceiling.GetComponent<MeshRenderer>().sharedMaterial = ceilingMaterial;
+        CreatePlane(ceiling, exitWidth, depth, 8, ceilingMaterial);
 
     }
     
@@ -164,7 +160,7 @@ public class AttachedRoom : MonoBehaviour {
     
     /* -------- Helper Functions ---------------------------------------------------- */
 
-    public void CreatePlane(GameObject wall, float xScale, float zScale) {
+    public void CreatePlane(GameObject wall, float xScale, float zScale, float UVScale, Material material) {
         /*
          * Create a plane onto the given gameObject
          */
@@ -178,10 +174,10 @@ public class AttachedRoom : MonoBehaviour {
 
         /* Set the UVs of the plane */
         UV = new Vector2[] {
-            new Vector2(0, 0),
-            new Vector2(xScale/8f, 0),
-            new Vector2(xScale/8f, zScale/8f),
-            new Vector2(0, zScale/8f)
+            (new Vector2(wall.transform.position.x, wall.transform.position.z) + new Vector2(vertices[0].x, vertices[0].z))/UVScale,
+            (new Vector2(wall.transform.position.x, wall.transform.position.z) + new Vector2(vertices[1].x, vertices[1].z))/UVScale,
+            (new Vector2(wall.transform.position.x, wall.transform.position.z) + new Vector2(vertices[2].x, vertices[2].z))/UVScale,
+            (new Vector2(wall.transform.position.x, wall.transform.position.z) + new Vector2(vertices[3].x, vertices[3].z))/UVScale
         };
 
         /* Assign the parameters to the mesh */
@@ -194,6 +190,7 @@ public class AttachedRoom : MonoBehaviour {
         wall.AddComponent<MeshFilter>();
         wall.GetComponent<MeshFilter>().mesh = wallMesh;
         wall.AddComponent<MeshRenderer>();
+        wall.GetComponent<MeshRenderer>().sharedMaterial = material;
 
         /* Use a thick box collider for the wall's collisions */
         BoxCollider wallBox = wall.AddComponent<BoxCollider>();

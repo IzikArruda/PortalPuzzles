@@ -6,6 +6,7 @@ using System.Collections;
  * and serves to put more distance between each puzzle room. A waiting room
  * has the shape of a Z tetromino to ensure the player will not see more than 2 puzzle rooms at once.
  */
+[ExecuteInEditMode]
 public class WaitingRoom : MonoBehaviour {
 
     /* The two connected AttachedRooms */
@@ -74,82 +75,74 @@ public class WaitingRoom : MonoBehaviour {
         /* Create the floor */
         floor = new GameObject();
         floor.name = "Floor";
-        CreatePlane(floor, width, lengthDifference);
         floor.transform.parent = roomObjectsContainer;
         floor.transform.position = center;
         floor.transform.localEulerAngles = new Vector3(0, 0, 0);
         floor.transform.localScale = new Vector3(1, 1, 1);
-        floor.GetComponent<MeshRenderer>().sharedMaterial = floorMaterial;
+        CreatePlane(floor, width, lengthDifference, 8, floorMaterial);
 
         /* Create the left wall */
         leftWall = new GameObject();
         leftWall.name = "Left wall";
-        CreatePlane(leftWall, height, length);
         leftWall.transform.parent = roomObjectsContainer;
         leftWall.transform.position = center + new Vector3(-width/2f, height/2f, 0);
         leftWall.transform.localEulerAngles = new Vector3(0, 0, -90);
         leftWall.transform.localScale = new Vector3(1, 1, 1);
-        leftWall.GetComponent<MeshRenderer>().sharedMaterial = wallMaterial;
+        CreatePlane(leftWall, height, length, 8, wallMaterial);
 
         /* Create the right wall */
         rightWall = new GameObject();
         rightWall.name = "Right wall";
-        CreatePlane(rightWall, height, length);
         rightWall.transform.parent = roomObjectsContainer;
         rightWall.transform.position = center + new Vector3(width/2f, height/2f, 0);
         rightWall.transform.localEulerAngles = new Vector3(0, 0, 90);
         rightWall.transform.localScale = new Vector3(1, 1, 1);
-        rightWall.GetComponent<MeshRenderer>().sharedMaterial = wallMaterial;
+        CreatePlane(rightWall, height, length, 8, wallMaterial);
 
         /* Create the ceiling */
         ceiling = new GameObject();
         ceiling.name = "Ceiling";
-        CreatePlane(ceiling, width, lengthDifference);
         ceiling.transform.parent = roomObjectsContainer;
         ceiling.transform.position = center + new Vector3(0, height, 0);
         ceiling.transform.localEulerAngles = new Vector3(0, 0, 180);
         ceiling.transform.localScale = new Vector3(1, 1, 1);
-        ceiling.GetComponent<MeshRenderer>().sharedMaterial = ceilingMaterial;
+        CreatePlane(ceiling, width, lengthDifference, 8, ceilingMaterial);
 
         /* Create the Entrance side wall */
         entranceWall = new GameObject();
-        entranceWall.name = "Entrance wall";
-        CreatePlane(entranceWall, width - entranceWidth, height);
+        entranceWall.name = "Entrance side wall";
         entranceWall.transform.parent = roomObjectsContainer;
         entranceWall.transform.position = center + new Vector3(entranceWidth/2f, height/2f, -length/2f);
         entranceWall.transform.localEulerAngles = new Vector3(90, 0, 0);
         entranceWall.transform.localScale = new Vector3(1, 1, 1);
-        entranceWall.GetComponent<MeshRenderer>().sharedMaterial = wallMaterial;
+        CreatePlane(entranceWall, width - entranceWidth, height, 8, wallMaterial);
 
         /* Create the Exit side wall */
         exitWall = new GameObject();
-        exitWall.name = "Entrance wall";
-        CreatePlane(exitWall, width - exitWidth, height);
+        exitWall.name = "Exit side wall";
         exitWall.transform.parent = roomObjectsContainer;
         exitWall.transform.position = center + new Vector3(-exitWidth/2f, height/2f, length/2f);
         exitWall.transform.localEulerAngles = new Vector3(-90, 0, 0);
         exitWall.transform.localScale = new Vector3(1, 1, 1);
-        exitWall.GetComponent<MeshRenderer>().sharedMaterial = wallMaterial;
+        CreatePlane(exitWall, width - exitWidth, height, 8, wallMaterial);
 
         /* Create the Above Entrance wall */
         aboveEntranceWall = new GameObject();
         aboveEntranceWall.name = "Above Entrance wall";
-        CreatePlane(aboveEntranceWall, entranceWidth, height - entranceHeight);
         aboveEntranceWall.transform.parent = roomObjectsContainer;
         aboveEntranceWall.transform.position = center + new Vector3(-width/2f + entranceWidth/2f, height - (height - entranceHeight)/2f, -length/2f);
         aboveEntranceWall.transform.localEulerAngles = new Vector3(90, 0, 0);
         aboveEntranceWall.transform.localScale = new Vector3(1, 1, 1);
-        aboveEntranceWall.GetComponent<MeshRenderer>().sharedMaterial = wallMaterial;
+        CreatePlane(aboveEntranceWall, entranceWidth, height - entranceHeight, 8, wallMaterial);
 
         /* Create the Above Exit wall */
         aboveExitWall = new GameObject();
         aboveExitWall.name = "Above Exit wall";
-        CreatePlane(aboveExitWall, exitWidth, height - exitHeight);
         aboveExitWall.transform.parent = roomObjectsContainer;
         aboveExitWall.transform.position = center + new Vector3(width/2f - exitWidth/2f, height - (height - exitHeight)/2f, length/2f);
         aboveExitWall.transform.localEulerAngles = new Vector3(-90, 0, 0);
         aboveExitWall.transform.localScale = new Vector3(1, 1, 1);
-        aboveExitWall.GetComponent<MeshRenderer>().sharedMaterial = wallMaterial;
+        CreatePlane(aboveExitWall, exitWidth, height - exitHeight, 8, wallMaterial);
     }
 
     public void DeleteRoom() {
@@ -160,14 +153,36 @@ public class WaitingRoom : MonoBehaviour {
         if(floor != null) {
             DestroyImmediate(floor);
         }
-    }
+        if(leftWall != null) {
+            DestroyImmediate(leftWall);
+        }
+        if(rightWall != null) {
+            DestroyImmediate(rightWall);
+        }
+        if(entranceWall != null) {
+            DestroyImmediate(entranceWall);
+        }
+        if(exitWall != null) {
+            DestroyImmediate(exitWall);
+        }
+        if(aboveEntranceWall != null) {
+            DestroyImmediate(aboveEntranceWall);
+        }
+        if(aboveExitWall != null) {
+            DestroyImmediate(aboveExitWall);
+        }
+        if(ceiling != null) {
+            DestroyImmediate(ceiling);
+        }
+}
 
 
     /* -------- Helper Functions ---------------------------------------------------- */
 
-    public void CreatePlane(GameObject wall, float xScale, float zScale) {
+    public void CreatePlane(GameObject wall, float xScale, float zScale, float UVScale, Material material) {
         /*
-         * Create a plane onto the given gameObject
+         * Create a plane onto the given gameObject. The position of the vertex in the world
+         * determines how the UVs will be placed. 
          */
         Mesh wallMesh = new Mesh();
         Vector3[] vertices = null;
@@ -179,10 +194,10 @@ public class WaitingRoom : MonoBehaviour {
 
         /* Set the UVs of the plane */
         UV = new Vector2[] {
-            new Vector2(0, 0),
-            new Vector2(xScale/8f, 0),
-            new Vector2(xScale/8f, zScale/8f),
-            new Vector2(0, zScale/8f)
+            (new Vector2(wall.transform.position.x, wall.transform.position.z) + new Vector2(vertices[0].x, vertices[0].z))/UVScale,
+            (new Vector2(wall.transform.position.x, wall.transform.position.z) + new Vector2(vertices[1].x, vertices[1].z))/UVScale,
+            (new Vector2(wall.transform.position.x, wall.transform.position.z) + new Vector2(vertices[2].x, vertices[2].z))/UVScale,
+            (new Vector2(wall.transform.position.x, wall.transform.position.z) + new Vector2(vertices[3].x, vertices[3].z))/UVScale
         };
 
         /* Assign the parameters to the mesh */
@@ -195,6 +210,7 @@ public class WaitingRoom : MonoBehaviour {
         wall.AddComponent<MeshFilter>();
         wall.GetComponent<MeshFilter>().mesh = wallMesh;
         wall.AddComponent<MeshRenderer>();
+        wall.GetComponent<MeshRenderer>().sharedMaterial = material;
 
         /* Use a thick box collider for the wall's collisions */
         BoxCollider wallBox = wall.AddComponent<BoxCollider>();
