@@ -163,7 +163,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
 	     */
 
         /* Get the distance between the room's exit points's along the Z axis for the room length */
-        roomLength = Mathf.Abs((entrance.exitPoint.position - exit.exitPoint.position).z);
+        roomLength = Mathf.Abs((entrance.exitPointFront.position - exit.exitPointBack.position).z);
         
         /* Calculate the distance needed for the player to teleport, which is the distance needed for the clouds to completely cover the level */
         minYTeleport = maxYPlayArea + cloudHeight + cloudDensity;
@@ -181,11 +181,11 @@ public class PuzzleRoomEditor : MonoBehaviour {
         Vector3 distanceToExit;
 
         /* Reposition the entrance room */
-        distanceToExit = entrance.exitPoint.position - puzzleRoomEntrancePoint.transform.position;
+        distanceToExit = entrance.exitPointFront.position - puzzleRoomEntrancePoint.transform.position;
         entrance.transform.position -= distanceToExit;
 
         /* Reposition the exit room */
-        distanceToExit = exit.exitPoint.position - puzzleRoomExitPoint.transform.position;
+        distanceToExit = exit.exitPointBack.position - puzzleRoomExitPoint.transform.position;
         exit.transform.position -= distanceToExit;
     }
     
