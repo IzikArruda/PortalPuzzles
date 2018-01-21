@@ -99,34 +99,34 @@ public class AttachedRoom : MonoBehaviour {
         floor.transform.position = roomCenter;
         floor.transform.localEulerAngles = new Vector3(0, 0, 0);
         floor.transform.localScale = new Vector3(1, 1, 1);
-        CreatePlane(floor, exitWidth, depth, 8, floorMaterial);
+        CreatePlane(floor, exitWidth, depth, 8, floorMaterial, 0, false);
 
         /* Create the left wall */
         leftWall = new GameObject();
         leftWall.name = "Left wall";
         leftWall.transform.parent = roomObjectsContainer;
         leftWall.transform.position = roomCenter + new Vector3(-exitWidth/2f, exitHeight/2f, 0);
-        leftWall.transform.localEulerAngles = new Vector3(0, 0, -90);
+        leftWall.transform.localEulerAngles = new Vector3(0, 0, 0);
         leftWall.transform.localScale = new Vector3(1, 1, 1);
-        CreatePlane(leftWall, exitHeight, depth, 8, wallMaterial);
+        CreatePlane(leftWall, exitHeight, depth, 8, wallMaterial, 1, true);
 
         /* Create the right wall */
         rightWall = new GameObject();
         rightWall.name = "Right wall";
         rightWall.transform.parent = roomObjectsContainer;
         rightWall.transform.position = roomCenter + new Vector3(exitWidth/2f, exitHeight/2f, 0);
-        rightWall.transform.localEulerAngles = new Vector3(0, 0, 90);
+        rightWall.transform.localEulerAngles = new Vector3(0, 0, 0);
         rightWall.transform.localScale = new Vector3(1, 1, 1);
-        CreatePlane(rightWall, exitHeight, depth, 8, wallMaterial);
+        CreatePlane(rightWall, exitHeight, depth, 8, wallMaterial, 1, false);
 
         /* Create the ceiling */
         ceiling = new GameObject();
         ceiling.name = "Ceiling";
         ceiling.transform.parent = roomObjectsContainer;
         ceiling.transform.position = roomCenter + new Vector3(0, exitHeight, 0);
-        ceiling.transform.localEulerAngles = new Vector3(0, 0, 180);
+        ceiling.transform.localEulerAngles = new Vector3(0, 0, 0);
         ceiling.transform.localScale = new Vector3(1, 1, 1);
-        CreatePlane(ceiling, exitWidth, depth, 8, ceilingMaterial);
+        CreatePlane(ceiling, exitWidth, depth, 8, ceilingMaterial, 0, true);
 
     }
     
@@ -157,28 +157,54 @@ public class AttachedRoom : MonoBehaviour {
         return resetPoint;
     }
 
-    
+
     /* -------- Helper Functions ---------------------------------------------------- */
 
-    public void CreatePlane(GameObject wall, float xScale, float zScale, float UVScale, Material material) {
+    public void CreatePlane(GameObject wall, float xScale, float zScale, float UVScale, Material material, int wallType, bool flip) {
         /*
-         * Create a plane onto the given gameObject
+         * Create a plane onto the given gameObject. The position of the vertex in the world
+         * determines how the UVs will be placed. The given boolean sets whether the mesh should be flipped.
+         * 
+         * The given wallType determines how the UVs are set:
+         *  - 0 : Floor, using [x, z]
+         *  - 1 : X Wall, using [y, z]
+         *  - 2 : Y Wall, using [x, z]
          */
         Mesh wallMesh = new Mesh();
         Vector3[] vertices = null;
-        Vector2[] UV;
+        Vector2[] UV = null;
         int[] triangles = null;
 
         /* Use the meshCreator function to create the basics of the wall */
-        CreateMesh(xScale, zScale, ref vertices, ref triangles);
+        CreateMesh(xScale, zScale, ref vertices, ref triangles, wallType, flip);
 
         /* Set the UVs of the plane */
-        UV = new Vector2[] {
-            (new Vector2(wall.transform.position.x, wall.transform.position.z) + new Vector2(vertices[0].x, vertices[0].z))/UVScale,
-            (new Vector2(wall.transform.position.x, wall.transform.position.z) + new Vector2(vertices[1].x, vertices[1].z))/UVScale,
-            (new Vector2(wall.transform.position.x, wall.transform.position.z) + new Vector2(vertices[2].x, vertices[2].z))/UVScale,
-            (new Vector2(wall.transform.position.x, wall.transform.position.z) + new Vector2(vertices[3].x, vertices[3].z))/UVScale
-        };
+        Vector3 properCenter = wall.transform.rotation * wall.transform.position;
+        if(wallType == 0) {
+            UV = new Vector2[] {
+                (new Vector2(properCenter.x, properCenter.z) + new Vector2(vertices[0].x, vertices[0].z))/UVScale,
+                (new Vector2(properCenter.x, properCenter.z) + new Vector2(vertices[1].x, vertices[1].z))/UVScale,
+                (new Vector2(properCenter.x, properCenter.z) + new Vector2(vertices[2].x, vertices[2].z))/UVScale,
+                (new Vector2(properCenter.x, properCenter.z) + new Vector2(vertices[3].x, vertices[3].z))/UVScale
+            };
+        }
+        else if(wallType == 1) {
+            UV = new Vector2[] {
+                (new Vector2(properCenter.z, properCenter.y) + new Vector2(vertices[0].z, vertices[0].y))/UVScale,
+                (new Vector2(properCenter.z, properCenter.y) + new Vector2(vertices[1].z, vertices[1].y))/UVScale,
+                (new Vector2(properCenter.z, properCenter.y) + new Vector2(vertices[2].z, vertices[2].y))/UVScale,
+                (new Vector2(properCenter.z, properCenter.y) + new Vector2(vertices[3].z, vertices[3].y))/UVScale
+            };
+        }
+        else if(wallType == 2) {
+            UV = new Vector2[] {
+                (new Vector2(properCenter.x, properCenter.y) + new Vector2(vertices[0].x, vertices[0].y))/UVScale,
+                (new Vector2(properCenter.x, properCenter.y) + new Vector2(vertices[1].x, vertices[1].y))/UVScale,
+                (new Vector2(properCenter.x, properCenter.y) + new Vector2(vertices[2].x, vertices[2].y))/UVScale,
+                (new Vector2(properCenter.x, properCenter.y) + new Vector2(vertices[3].x, vertices[3].y))/UVScale
+            };
+        }
+
 
         /* Assign the parameters to the mesh */
         wallMesh.vertices = vertices;
@@ -199,22 +225,55 @@ public class AttachedRoom : MonoBehaviour {
         wallBox.size = new Vector3(xScale, colliderDepth, zScale);
     }
 
-    public void CreateMesh(float xScale, float zScale, ref Vector3[] vertices, ref int[] triangles) {
+    public void CreateMesh(float xScale, float zScale, ref Vector3[] vertices, ref int[] triangles, int wallType, bool flip) {
         /*
     	 * Create a mesh using the given scale values and save it's verts and triangles into the given references.
-    	 *
-    	 * It expects the given arrays to not yet be initialized.
+    	 * It expects the given arrays to not yet be initialized. The given boolean determines the order of the triangles.
+         * 
+         * Depending on the given wallType, place the vectors in their appropriate position
     	 */
 
         vertices = new Vector3[4];
-        vertices[0] = new Vector3(0.5f*xScale, 0, 0.5f*zScale);
-        vertices[1] = new Vector3(-0.5f*xScale, 0, 0.5f*zScale);
-        vertices[2] = new Vector3(-0.5f*xScale, 0, -0.5f*zScale);
-        vertices[3] = new Vector3(0.5f*xScale, 0, -0.5f*zScale);
 
-        triangles = new int[]{
-            2, 1, 0,
-            3, 2, 0
-        };
+        /* Floor using [x, z]*/
+        if(wallType == 0) {
+            vertices[0] = new Vector3(0.5f*xScale, 0, 0.5f*zScale);
+            vertices[1] = new Vector3(-0.5f*xScale, 0, 0.5f*zScale);
+            vertices[2] = new Vector3(-0.5f*xScale, 0, -0.5f*zScale);
+            vertices[3] = new Vector3(0.5f*xScale, 0, -0.5f*zScale);
+        }
+
+        /* Wall parallel to X axis using [z, y] */
+        else if(wallType == 1) {
+            vertices[0] = new Vector3(0, 0.5f*xScale, 0.5f*zScale);
+            vertices[1] = new Vector3(0, -0.5f*xScale, 0.5f*zScale);
+            vertices[2] = new Vector3(0, -0.5f*xScale, -0.5f*zScale);
+            vertices[3] = new Vector3(0, 0.5f*xScale, -0.5f*zScale);
+        }
+
+        /* Wall parallel to Z axis using [x, y] */
+        else {
+            vertices[0] = new Vector3(0.5f*xScale, 0.5f*zScale, 0);
+            vertices[1] = new Vector3(-0.5f*xScale, 0.5f*zScale, 0);
+            vertices[2] = new Vector3(-0.5f*xScale, -0.5f*zScale, 0);
+            vertices[3] = new Vector3(0.5f*xScale, -0.5f*zScale, 0);
+        }
+
+
+        /* Determine the facing direction of the mesh */
+        if(flip) {
+            triangles = new int[]{
+                0, 1, 2,
+                0, 2, 3
+            };
+        }
+        else {
+            triangles = new int[]{
+                2, 1, 0,
+                3, 2, 0
+            };
+        }
+
     }
+
 }
