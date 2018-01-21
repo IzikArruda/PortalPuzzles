@@ -7,7 +7,7 @@ using System.Collections;
  * This room always uses 4 flat planes as it's walls and is created procedurally using the exit points.
  */
 [ExecuteInEditMode]
-public class AttachedRoom : MonoBehaviour {
+public class AttachedRoom : ConnectedRoom {
 
     /* The two exit points of the room's two exits. Used to connect rooms. */
     public Transform exitPointFront;
@@ -22,13 +22,7 @@ public class AttachedRoom : MonoBehaviour {
     public GameObject rightWall;
     public GameObject ceiling;
 
-    /* The container to hold all the objects in the room */
-    public Transform roomObjectsContainer;
-
-    /* The materials used for the room */
-    public Material floorMaterial;
-    public Material wallMaterial;
-    public Material ceilingMaterial;
+    
 
     /* The size of the exit of this room. Used by outside functions and requires user input to set. */
     public float exitWidth;
@@ -77,75 +71,35 @@ public class AttachedRoom : MonoBehaviour {
         }else {
             depth = pointDifference.z;
         }
-
+        
         /* Get the center position of the room's floor */
         Vector3 roomCenter = (exitPointFront.position + exitPointBack.position)/2f;
-
+        
         /* Re-create the main trigger for the room with the new sizes */
         if(roomCollider != null) { DestroyImmediate(roomCollider); }
         roomCollider = gameObject.AddComponent<BoxCollider>();
         roomCollider.isTrigger = true;
         roomCollider.center = -transform.localPosition + roomCenter + new Vector3(0, exitHeight/2f, 0);
         roomCollider.size = new Vector3(exitWidth, exitHeight, depth);
+        
+        /* Re-create each wall for the room */
+        CreateObjects(ref roomWalls, 4, roomCenter);
 
-        /* Delete the current parts of the room if they exist */
-        DeleteRoom();
+        /* Set unique values for each individual wall */
+        roomWalls[0].name = "Floor";
+        CreatePlane(roomWalls[0], exitWidth, depth, 8, floorMaterial, 0, false);
 
-        /* Create the floor */
-        floor = new GameObject();
-        floor.name = "Floor";
-        floor.transform.parent = roomObjectsContainer;
-        floor.transform.position = roomCenter;
-        floor.transform.localEulerAngles = new Vector3(0, 0, 0);
-        floor.transform.localScale = new Vector3(1, 1, 1);
-        CreatePlane(floor, exitWidth, depth, 8, floorMaterial, 0, false);
+        roomWalls[1].name = "Left wall";
+        roomWalls[1].transform.position += new Vector3(-exitWidth/2f, exitHeight/2f, 0);
+        CreatePlane(roomWalls[1], exitHeight, depth, 8, wallMaterial, 1, true);
 
-        /* Create the left wall */
-        leftWall = new GameObject();
-        leftWall.name = "Left wall";
-        leftWall.transform.parent = roomObjectsContainer;
-        leftWall.transform.position = roomCenter + new Vector3(-exitWidth/2f, exitHeight/2f, 0);
-        leftWall.transform.localEulerAngles = new Vector3(0, 0, 0);
-        leftWall.transform.localScale = new Vector3(1, 1, 1);
-        CreatePlane(leftWall, exitHeight, depth, 8, wallMaterial, 1, true);
+        roomWalls[2].name = "Right wall";
+        roomWalls[2].transform.position = roomCenter + new Vector3(exitWidth/2f, exitHeight/2f, 0);
+        CreatePlane(roomWalls[2], exitHeight, depth, 8, wallMaterial, 1, false);
 
-        /* Create the right wall */
-        rightWall = new GameObject();
-        rightWall.name = "Right wall";
-        rightWall.transform.parent = roomObjectsContainer;
-        rightWall.transform.position = roomCenter + new Vector3(exitWidth/2f, exitHeight/2f, 0);
-        rightWall.transform.localEulerAngles = new Vector3(0, 0, 0);
-        rightWall.transform.localScale = new Vector3(1, 1, 1);
-        CreatePlane(rightWall, exitHeight, depth, 8, wallMaterial, 1, false);
-
-        /* Create the ceiling */
-        ceiling = new GameObject();
-        ceiling.name = "Ceiling";
-        ceiling.transform.parent = roomObjectsContainer;
-        ceiling.transform.position = roomCenter + new Vector3(0, exitHeight, 0);
-        ceiling.transform.localEulerAngles = new Vector3(0, 0, 0);
-        ceiling.transform.localScale = new Vector3(1, 1, 1);
-        CreatePlane(ceiling, exitWidth, depth, 8, ceilingMaterial, 0, true);
-
-    }
-    
-    public void DeleteRoom() {
-        /*
-         * Delete each renderable gameObject used to make up the room
-         */
-
-        if(floor != null) {
-            DestroyImmediate(floor);
-        }
-        if(leftWall != null) {
-            DestroyImmediate(leftWall);
-        }
-        if(rightWall != null) {
-            DestroyImmediate(rightWall);
-        }
-        if(ceiling != null) {
-            DestroyImmediate(ceiling);
-        }
+        roomWalls[3].name = "Ceiling";
+        roomWalls[3].transform.position = roomCenter + new Vector3(0, exitHeight, 0);
+        CreatePlane(roomWalls[3], exitWidth, depth, 8, ceilingMaterial, 0, true);
     }
     
     public Transform ResetPlayer() {
@@ -155,124 +109,5 @@ public class AttachedRoom : MonoBehaviour {
 
         return resetPoint;
     }
-
-
-    /* -------- Helper Functions ---------------------------------------------------- */
-
-    public void CreatePlane(GameObject wall, float xScale, float zScale, float UVScale, Material material, int wallType, bool flip) {
-        /*
-         * Create a plane onto the given gameObject. The position of the vertex in the world
-         * determines how the UVs will be placed. The given boolean sets whether the mesh should be flipped.
-         * 
-         * The given wallType determines how the UVs are set:
-         *  - 0 : Floor, using [x, z]
-         *  - 1 : X Wall, using [y, z]
-         *  - 2 : Y Wall, using [x, z]
-         */
-        Mesh wallMesh = new Mesh();
-        Vector3[] vertices = null;
-        Vector2[] UV = null;
-        int[] triangles = null;
-
-        /* Use the meshCreator function to create the basics of the wall */
-        CreateMesh(xScale, zScale, ref vertices, ref triangles, wallType, flip);
-
-        /* Set the UVs of the plane */
-        Vector3 properCenter = wall.transform.rotation * wall.transform.position;
-        if(wallType == 0) {
-            UV = new Vector2[] {
-                (new Vector2(properCenter.x, properCenter.z) + new Vector2(vertices[0].x, vertices[0].z))/UVScale,
-                (new Vector2(properCenter.x, properCenter.z) + new Vector2(vertices[1].x, vertices[1].z))/UVScale,
-                (new Vector2(properCenter.x, properCenter.z) + new Vector2(vertices[2].x, vertices[2].z))/UVScale,
-                (new Vector2(properCenter.x, properCenter.z) + new Vector2(vertices[3].x, vertices[3].z))/UVScale
-            };
-        }
-        else if(wallType == 1) {
-            UV = new Vector2[] {
-                (new Vector2(properCenter.z, properCenter.y) + new Vector2(vertices[0].z, vertices[0].y))/UVScale,
-                (new Vector2(properCenter.z, properCenter.y) + new Vector2(vertices[1].z, vertices[1].y))/UVScale,
-                (new Vector2(properCenter.z, properCenter.y) + new Vector2(vertices[2].z, vertices[2].y))/UVScale,
-                (new Vector2(properCenter.z, properCenter.y) + new Vector2(vertices[3].z, vertices[3].y))/UVScale
-            };
-        }
-        else if(wallType == 2) {
-            UV = new Vector2[] {
-                (new Vector2(properCenter.x, properCenter.y) + new Vector2(vertices[0].x, vertices[0].y))/UVScale,
-                (new Vector2(properCenter.x, properCenter.y) + new Vector2(vertices[1].x, vertices[1].y))/UVScale,
-                (new Vector2(properCenter.x, properCenter.y) + new Vector2(vertices[2].x, vertices[2].y))/UVScale,
-                (new Vector2(properCenter.x, properCenter.y) + new Vector2(vertices[3].x, vertices[3].y))/UVScale
-            };
-        }
-
-
-        /* Assign the parameters to the mesh */
-        wallMesh.vertices = vertices;
-        wallMesh.triangles = triangles;
-        wallMesh.uv = UV;
-        wallMesh.RecalculateNormals();
-
-        /* Add a meshFilter and a meshRenderer to be able to draw the wall */
-        wall.AddComponent<MeshFilter>();
-        wall.GetComponent<MeshFilter>().mesh = wallMesh;
-        wall.AddComponent<MeshRenderer>();
-        wall.GetComponent<MeshRenderer>().sharedMaterial = material;
-
-        /* Use a thick box collider for the wall's collisions */
-        BoxCollider wallBox = wall.AddComponent<BoxCollider>();
-        float colliderDepth = 1;
-        wallBox.center = new Vector3(0, -colliderDepth/2f, 0);
-        wallBox.size = new Vector3(xScale, colliderDepth, zScale);
-    }
-
-    public void CreateMesh(float xScale, float zScale, ref Vector3[] vertices, ref int[] triangles, int wallType, bool flip) {
-        /*
-    	 * Create a mesh using the given scale values and save it's verts and triangles into the given references.
-    	 * It expects the given arrays to not yet be initialized. The given boolean determines the order of the triangles.
-         * 
-         * Depending on the given wallType, place the vectors in their appropriate position
-    	 */
-
-        vertices = new Vector3[4];
-
-        /* Floor using [x, z]*/
-        if(wallType == 0) {
-            vertices[0] = new Vector3(0.5f*xScale, 0, 0.5f*zScale);
-            vertices[1] = new Vector3(-0.5f*xScale, 0, 0.5f*zScale);
-            vertices[2] = new Vector3(-0.5f*xScale, 0, -0.5f*zScale);
-            vertices[3] = new Vector3(0.5f*xScale, 0, -0.5f*zScale);
-        }
-
-        /* Wall parallel to X axis using [z, y] */
-        else if(wallType == 1) {
-            vertices[0] = new Vector3(0, 0.5f*xScale, 0.5f*zScale);
-            vertices[1] = new Vector3(0, -0.5f*xScale, 0.5f*zScale);
-            vertices[2] = new Vector3(0, -0.5f*xScale, -0.5f*zScale);
-            vertices[3] = new Vector3(0, 0.5f*xScale, -0.5f*zScale);
-        }
-
-        /* Wall parallel to Z axis using [x, y] */
-        else {
-            vertices[0] = new Vector3(0.5f*xScale, 0.5f*zScale, 0);
-            vertices[1] = new Vector3(-0.5f*xScale, 0.5f*zScale, 0);
-            vertices[2] = new Vector3(-0.5f*xScale, -0.5f*zScale, 0);
-            vertices[3] = new Vector3(0.5f*xScale, -0.5f*zScale, 0);
-        }
-
-
-        /* Determine the facing direction of the mesh */
-        if(flip) {
-            triangles = new int[]{
-                0, 1, 2,
-                0, 2, 3
-            };
-        }
-        else {
-            triangles = new int[]{
-                2, 1, 0,
-                3, 2, 0
-            };
-        }
-
-    }
-
+    
 }
