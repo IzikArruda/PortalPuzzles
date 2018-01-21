@@ -179,13 +179,13 @@ public class PuzzleRoomEditor : MonoBehaviour {
          * the corresponding puzzleRoomPoint.
          */
         Vector3 distanceToExit;
-
+        
         /* Reposition the entrance room */
-        distanceToExit = entrance.exitPointFront.position - puzzleRoomEntrancePoint.transform.position;
+        distanceToExit = entrance.exitPointFront.position - puzzleRoomEntrancePoint.position;
         entrance.transform.position -= distanceToExit;
 
         /* Reposition the exit room */
-        distanceToExit = exit.exitPointBack.position - puzzleRoomExitPoint.transform.position;
+        distanceToExit = exit.exitPointBack.position - puzzleRoomExitPoint.position;
         exit.transform.position -= distanceToExit;
     }
     
@@ -194,7 +194,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
 		 * Set the position of the cloud's container to move them all relative to the player's position
 		 */
 
-        puzzleRoomClouds.transform.position = new Vector3(0, cloudOffset, 0);
+        puzzleRoomClouds.transform.localPosition = new Vector3(0, cloudOffset, 0);
       
       
 		/* Checkif the clouds have UVs, and increment them if so */
@@ -258,6 +258,9 @@ public class PuzzleRoomEditor : MonoBehaviour {
         Vector3 entrancePlacement = puzzleRoomEntrancePoint.position - transform.position;
         Vector3 exitPlacement = puzzleRoomExitPoint.position - transform.position;
 
+        /* Reposition the attached rooms to fit the puzzle room's exit and entrance points */
+        UpdateAttachedRooms();
+
         /* Ensure the walls array is emptied before creating new ones */
         if(walls != null) {
             for(int i = 0; i < walls.Length; i++) {
@@ -269,14 +272,15 @@ public class PuzzleRoomEditor : MonoBehaviour {
 
         /* Create the new walls array for the 10 walls that form the puzzle room */
         walls = new GameObject[10];
-        
+        puzzleRoomWalls.transform.localPosition = new Vector3(0, 0, 0);
+
         /* Create and place the room's side walls that reflect the room's width */
         walls[0] = new GameObject();
         walls[0].name = "Left Wall";
         CreateWallMesh(walls[0], roomLength, roomHeight, true);
         walls[0].transform.parent = puzzleRoomWalls.transform;
         walls[0].transform.localEulerAngles = new Vector3(90, -90, 0);
-        walls[0].transform.position = new Vector3(0, 0, roomLength/2f) + 
+        walls[0].transform.localPosition = new Vector3(0, 0, roomLength/2f) + 
                 new Vector3(roomWidth/2f, 0, 0);
 
         walls[1] = new GameObject();
@@ -284,7 +288,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
         CreateWallMesh(walls[1], roomLength, roomHeight, true);
         walls[1].transform.parent = puzzleRoomWalls.transform;
         walls[1].transform.localEulerAngles = new Vector3(90, 90, 0);
-        walls[1].transform.position = new Vector3(0, 0, roomLength/2f) + 
+        walls[1].transform.localPosition = new Vector3(0, 0, roomLength/2f) + 
                 new Vector3(-roomWidth/2f, 0, 0);
 
         /* Create and place the walls that are situated bellow the room's entrance/exit */
@@ -327,7 +331,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
         CreateWallMesh(walls[6], roomWidth/2f - entrance.exitWidth/2f + entrancePlacement.x, roomHeight, false);
         walls[6].transform.parent = puzzleRoomWalls.transform;
         walls[6].transform.localEulerAngles = new Vector3(90, 0, 0);
-        walls[6].transform.position = new Vector3(-roomWidth/4f, 0, 0) + 
+        walls[6].transform.localPosition = new Vector3(-roomWidth/4f, 0, 0) + 
                 new Vector3(-entrance.exitWidth/4 + entrancePlacement.x/2f, 0, 0);
 
         walls[7] = new GameObject();
@@ -335,7 +339,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
         CreateWallMesh(walls[7], roomWidth/2f - entrance.exitWidth/2f - entrancePlacement.x, roomHeight, false);
         walls[7].transform.parent = puzzleRoomWalls.transform;
         walls[7].transform.localEulerAngles = new Vector3(90, 0, 0);
-        walls[7].transform.position = new Vector3(roomWidth/4f, 0, 0) +
+        walls[7].transform.localPosition = new Vector3(roomWidth/4f, 0, 0) +
                 new Vector3(entrance.exitWidth/4f + entrancePlacement.x/2f, 0, 0);
         
         /* Create and place the walls that are on the left and right of the exit */
@@ -344,7 +348,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
         CreateWallMesh(walls[8], roomWidth/2f - exit.exitWidth/2f + exitPlacement.x, roomHeight, false);
         walls[8].transform.parent = puzzleRoomWalls.transform;
         walls[8].transform.localEulerAngles = new Vector3(-90, 0, 0);
-        walls[8].transform.position = new Vector3(-roomWidth/4f, 0, roomLength) +
+        walls[8].transform.localPosition = new Vector3(-roomWidth/4f, 0, roomLength) +
                 new Vector3(-exit.exitWidth/4f + exitPlacement.x/2f, 0, 0);
 
         walls[9] = new GameObject();
@@ -352,7 +356,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
         CreateWallMesh(walls[9], roomWidth/2f - exit.exitWidth/2f - exitPlacement.x, roomHeight, false);
         walls[9].transform.parent = puzzleRoomWalls.transform;
         walls[9].transform.localEulerAngles = new Vector3(-90, 0, 0);
-        walls[9].transform.position = new Vector3(roomWidth/4f, 0, roomLength) +
+        walls[9].transform.localPosition = new Vector3(roomWidth/4f, 0, roomLength) +
                 new Vector3(exit.exitWidth/4f + exitPlacement.x/2f, 0, 0);
     }
 
@@ -376,7 +380,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
         CreateCloudsMesh(upperClouds, roomWidth, roomLength, cloudAmount, cloudDensity);
         upperClouds.name = "Upper Clouds";
         upperClouds.transform.parent = puzzleRoomClouds.transform;
-        upperClouds.transform.position = new Vector3(0, cloudHeight, roomLength/2f);
+        upperClouds.transform.localPosition = new Vector3(0, cloudHeight, roomLength/2f);
         upperClouds.transform.localEulerAngles = new Vector3(180, 0, 0);
 
         /* Create and position new lowerclouds */
@@ -384,7 +388,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
         CreateCloudsMesh(lowerClouds, roomWidth, roomLength, cloudAmount, cloudDensity);
         lowerClouds.name = "Lower Clouds";
         lowerClouds.transform.parent = puzzleRoomClouds.transform;
-        lowerClouds.transform.position = new Vector3(0, -cloudHeight, roomLength/2f);
+        lowerClouds.transform.localPosition = new Vector3(0, -cloudHeight, roomLength/2f);
     }
 
     private void CreatePlayerDetector() {
