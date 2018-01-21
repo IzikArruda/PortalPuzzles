@@ -18,20 +18,48 @@ public class WaitingRoom : ConnectedRoom {
 
     void Start () {
         /*
-         * On start-up, recreate the room's skeleton
+         * On start-up, recreate the room's skeleton any puzzle rooms from the AttachedRooms
          */
 
         UpdateRoom();
-	}
+
+        entranceRoom.DisablePuzzleRoom();
+        exitRoom.DisablePuzzleRoom();
+    }
 
     void OnTriggerEnter(Collider player) {
         /*
-         * When the player enters the room's trigger, do something
+         * When the player enters the room's trigger, enable both connected puzzle rooms
          */
 
         /* Ensure the collider entering the trigger is a player */
         if(player.GetComponent<CustomPlayerController>() != null) {
-            Debug.Log("test");
+            entranceRoom.EnablePuzzleRoom();
+            exitRoom.EnablePuzzleRoom();
+        }
+    }
+
+    void OnTriggerExit(Collider player) {
+        /*
+         * When the player leaves the room's trigger, Check which side of the room
+         * the player left to determine which puzzle room to disable
+         */
+         
+        /* Ensure the collider entering the trigger is a player */
+        if(player.GetComponent<CustomPlayerController>() != null) {
+            Vector3 center = (entranceRoom.exitPointFront.position + exitRoom.exitPointBack.position)/2f;
+
+            /* Player progressed forward */
+            if(player.transform.position.z > center.z) {
+                entranceRoom.DisablePuzzleRoom();
+                exitRoom.EnablePuzzleRoom();
+            }
+
+            /* Player moved backwards through the puzzles */
+            else {
+                entranceRoom.EnablePuzzleRoom();
+                exitRoom.DisablePuzzleRoom();
+            }
         }
     }
 

@@ -68,10 +68,10 @@ public class PuzzleRoomEditor : MonoBehaviour {
     public bool updateWalls;
 
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
-
+    
     void Start() {
         /*
-		 * force the walls to update on startup
+		 * force the walls to update on startup. 
 		 */
 		
 		/* Make sure the blocker material is properly created */
@@ -93,8 +93,8 @@ public class PuzzleRoomEditor : MonoBehaviour {
 
 			/* Calculate the new positionnal stats of this puzzleRoom */
 			UpdateSizes();
-
-            /* Move the attached rooms into their given positions */
+            
+            /* Move the attached rooms into their given positions and link them to this room */
             UpdateAttachedRooms();
 
             /* Ensure the walls and clouds that form the room are properly created and positioned */
@@ -103,8 +103,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
 
             /* Create and place the playerDetector collider */
             CreatePlayerDetector();
-
-            Debug.Log("Updated walls");
+            
             updateWalls = false;
         }
 
@@ -174,12 +173,16 @@ public class PuzzleRoomEditor : MonoBehaviour {
 
     private void UpdateAttachedRooms() {
         /*
-         * Move the linked attached rooms to the givenpoints defined by the two puzzleRoomPoint transforms.
+         * Link and move the attached rooms to the givenpoints defined by the two puzzleRoomPoint transforms.
          * The attached rooms will be moved so their exit point shares the same transform as
          * the corresponding puzzleRoomPoint.
          */
         Vector3 distanceToExit;
-        
+
+        /* Link the two attached rooms to this puzzle room */
+        entrance.UpdateAttachedPuzzleRoom(transform.parent.gameObject);
+        exit.UpdateAttachedPuzzleRoom(transform.parent.gameObject);
+
         /* Reposition the entrance room */
         distanceToExit = entrance.exitPointFront.position - puzzleRoomEntrancePoint.position;
         entrance.transform.position -= distanceToExit;

@@ -19,7 +19,10 @@ public class AttachedRoom : ConnectedRoom {
     /* The size of the exit of this room. Used by outside functions and requires user input to set. */
     public float exitWidth;
     public float exitHeight;
-    
+
+    /* The gameObject of the puzzleRoom that this room is attached to */
+    public GameObject puzzleRoomParent;
+
 
     /* -------- Built-In Functions ---------------------------------------------------- */
     
@@ -41,6 +44,16 @@ public class AttachedRoom : ConnectedRoom {
             /* Tell the CustomPlayerController to change their linked attachedRoom */
             player.GetComponent<CustomPlayerController>().ChangeLastRoom(this);
         }
+    }
+
+    public void UpdateAttachedPuzzleRoom(GameObject parent) {
+        /*
+         * Called when a puzzle room updates itself, this function gives this room a link to
+         * the main container for the puzzle room that is connected to it.
+         * This will allow this room the capability to completely disable a puzzle room.
+         */
+
+        puzzleRoomParent = parent;
     }
 
 
@@ -99,4 +112,19 @@ public class AttachedRoom : ConnectedRoom {
         return resetPoint;
     }
     
+    public void DisablePuzzleRoom() {
+        /*
+         * Disable the attached puzzle room
+         */
+
+        if(puzzleRoomParent != null) { puzzleRoomParent.SetActive(false); }
+    }
+
+    public void EnablePuzzleRoom() {
+        /*
+         * Enable the attached puzzle room
+         */
+         
+        if(puzzleRoomParent != null) { puzzleRoomParent.SetActive(true); }
+    }
 }
