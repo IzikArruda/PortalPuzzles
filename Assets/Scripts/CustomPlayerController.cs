@@ -1152,13 +1152,15 @@ public class CustomPlayerController : MonoBehaviour {
 
                 /* Hitting a solid collider will stop the rayTrace where it currently is */
                 else if(!hitInfo.collider.isTrigger) {
-                    stopRayTrace = true;
                     //Debug.Log("hit wall");
+                    stopRayTrace = true;
                 }
 
                 /* non-teleport triggers will be ignored */
                 else if(hitInfo.collider.isTrigger) {
                     //Debug.Log("hit something?");
+                    position += rotation * Vector3.forward * hitInfo.distance;
+                    distance -= hitInfo.distance;
                 }
             }
 

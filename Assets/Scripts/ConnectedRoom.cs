@@ -17,6 +17,9 @@ public class ConnectedRoom : MonoBehaviour {
     /* The main walls that form the room */
     public GameObject[] roomWalls = null;
 
+    /* A trigger used for this room */
+    public BoxCollider roomTrigger;
+
 
     /* -------- Helper Functions ---------------------------------------------------- */
 

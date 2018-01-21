@@ -12,19 +12,7 @@ public class WaitingRoom : ConnectedRoom {
     /* The two AttachedRooms that will be connected  */
     public AttachedRoom entranceRoom;
     public AttachedRoom exitRoom;
-
-    /* The main objects that form the room */
-    public GameObject floor;
-    public GameObject leftWall;
-    public GameObject rightWall;
-    public GameObject entranceWall;
-    public GameObject exitWall;
-    public GameObject aboveEntranceWall;
-    public GameObject aboveExitWall;
-    public GameObject ceiling;
     
-
-
 
     /* -------- Built-In Functions ---------------------------------------------------- */
 
@@ -35,6 +23,17 @@ public class WaitingRoom : ConnectedRoom {
 
         UpdateRoom();
 	}
+
+    void OnTriggerEnter(Collider player) {
+        /*
+         * When the player enters the room's trigger, do something
+         */
+
+        /* Ensure the collider entering the trigger is a player */
+        if(player.GetComponent<CustomPlayerController>() != null) {
+            Debug.Log("test");
+        }
+    }
 
 
     /* -------- Event Functions ---------------------------------------------------- */
@@ -51,6 +50,7 @@ public class WaitingRoom : ConnectedRoom {
         float exitHeight = exitRoom.exitHeight;
         float widthDifference = Mathf.Abs(entranceRoom.exitPointFront.position.x - exitRoom.exitPointBack.position.x);
         float lengthDifference = Mathf.Abs(entranceRoom.exitPointFront.position.z - exitRoom.exitPointBack.position.z);
+        float fullLength = Mathf.Abs(entranceRoom.exitPointBack.position.z - exitRoom.exitPointFront.position.z);
 
         /* Re-position the room to the center position between the two attachedRooms */
         Vector3 center = (entranceRoom.exitPointFront.position + exitRoom.exitPointBack.position)/2f;
@@ -60,7 +60,10 @@ public class WaitingRoom : ConnectedRoom {
         float width = widthDifference + entranceWidth/2f + exitWidth/2f;
         float length = lengthDifference;
         float height = Mathf.Max(entranceHeight, exitHeight);
-        
+
+        /* Re-create the trigger that is used to determine if the player has entered either AttachedRooms */
+        CreateTrigger(height);
+
         /* Re-create each wall for the room */
         CreateObjects(ref roomWalls, 8, center);
 
@@ -96,4 +99,27 @@ public class WaitingRoom : ConnectedRoom {
         roomWalls[7].transform.position += new Vector3(width/2f - exitWidth/2f, height - (height - exitHeight)/2f, length/2f);
         CreatePlane(roomWalls[7], exitWidth, height - exitHeight, 8, wallMaterial, 2, false);
     }
+
+    void CreateTrigger(float height) {
+        /*
+         * Create the trigger that encompasses both this WaitingRoom and both the connected AttachedRooms
+         */
+        Vector3 back = entranceRoom.exitPointBack.transform.position;
+        Vector3 front = exitRoom.exitPointFront.transform.position;
+        Vector3 center = (front + back)/2f;
+
+        /* Get the proper width of the collider */
+        float properWidth = Mathf.Abs(back.x - front.x) + entranceRoom.exitWidth/2f + exitRoom.exitWidth/2f;
+        float widthDiff = entranceRoom.exitWidth - exitRoom.exitWidth;
+
+        /* Get the proper length. Make it slightly shorter so the player hits it a few steps into the room */
+        float properLength = Mathf.Abs(back.z - front.z)*0.9f;
+
+        if(roomTrigger != null) { DestroyImmediate(roomTrigger); }
+        roomTrigger = gameObject.AddComponent<BoxCollider>();
+        roomTrigger.isTrigger = true;
+        roomTrigger.center = center + new Vector3(-widthDiff/4f, height/2f, 0);
+        roomTrigger.size = new Vector3(properWidth, height, properLength);
+    }
+
 }

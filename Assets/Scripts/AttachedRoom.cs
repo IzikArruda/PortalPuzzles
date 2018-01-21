@@ -15,22 +15,11 @@ public class AttachedRoom : ConnectedRoom {
 
     /* The reset point of the room. Determines where the player will spawn when they restart using this room */
     public Transform resetPoint;
-
-    /* The objects that comprise this room */
-    public GameObject floor;
-    public GameObject leftWall;
-    public GameObject rightWall;
-    public GameObject ceiling;
-
     
-
     /* The size of the exit of this room. Used by outside functions and requires user input to set. */
     public float exitWidth;
     public float exitHeight;
-
-    /* The trigger that encompasses the entire room. Used to detect when the player enters it */
-    public BoxCollider roomCollider;
-
+    
 
     /* -------- Built-In Functions ---------------------------------------------------- */
     
@@ -75,12 +64,12 @@ public class AttachedRoom : ConnectedRoom {
         /* Get the center position of the room's floor */
         Vector3 roomCenter = (exitPointFront.position + exitPointBack.position)/2f;
         
-        /* Re-create the main trigger for the room with the new sizes */
-        if(roomCollider != null) { DestroyImmediate(roomCollider); }
-        roomCollider = gameObject.AddComponent<BoxCollider>();
-        roomCollider.isTrigger = true;
-        roomCollider.center = -transform.localPosition + roomCenter + new Vector3(0, exitHeight/2f, 0);
-        roomCollider.size = new Vector3(exitWidth, exitHeight, depth);
+        /* Re-create the trigger used to determine if the player entered this AttachedRoom */
+        if(roomTrigger != null) { DestroyImmediate(roomTrigger); }
+        roomTrigger = gameObject.AddComponent<BoxCollider>();
+        roomTrigger.isTrigger = true;
+        roomTrigger.center = -transform.localPosition + roomCenter + new Vector3(0, exitHeight/2f, 0);
+        roomTrigger.size = new Vector3(exitWidth, exitHeight, depth);
         
         /* Re-create each wall for the room */
         CreateObjects(ref roomWalls, 4, roomCenter);
