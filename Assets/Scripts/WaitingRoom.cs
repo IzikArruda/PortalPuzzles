@@ -12,33 +12,45 @@ public class WaitingRoom : ConnectedRoom {
     /* The two AttachedRooms that will be connected  */
     public AttachedRoom entranceRoom;
     public AttachedRoom exitRoom;
-    
+
+    /* The previous and upcomming WaitingRooms, if applicable */
+    public WaitingRoom previousRoom;
+    public WaitingRoom nextRoom;
+
 
     /* -------- Built-In Functions ---------------------------------------------------- */
+
+    void Awake() {
+        /*
+         * Ensure every room is disabled before the Start() functions start running to allow 
+         * only the bare minimum required rooms being active once the player finishes loading.
+         */
+
+        entranceRoom.DisablePuzzleRoom();
+        exitRoom.DisablePuzzleRoom();
+        DisableRoom();
+    }
 
     void Start () {
         /*
          * On start-up, recreate the room's skeleton any puzzle rooms from the AttachedRooms.
-         * Disable any connected rooms along with this room's contents.
          */
 
         UpdateRoom();
-
-        entranceRoom.DisablePuzzleRoom();
-        exitRoom.DisablePuzzleRoom();
-        Debug.Log("disable room");
-        DisableRoom();
     }
 
     void OnTriggerEnter(Collider player) {
         /*
          * When the player enters the room's trigger, enable both connected puzzle rooms
+         * and their connected rooms
          */
 
         /* Ensure the collider entering the trigger is a player */
         if(player.GetComponent<CustomPlayerController>() != null) {
             entranceRoom.EnablePuzzleRoom();
             exitRoom.EnablePuzzleRoom();
+            if(previousRoom != null) { previousRoom.SoftEnable(); }
+            if(nextRoom != null) { nextRoom.SoftEnable(); }
         }
     }
 
@@ -56,12 +68,16 @@ public class WaitingRoom : ConnectedRoom {
             if(player.transform.position.z > center.z) {
                 entranceRoom.DisablePuzzleRoom();
                 exitRoom.EnablePuzzleRoom();
+                if(nextRoom != null) { nextRoom.SoftEnable(); }
+                if(previousRoom != null) { previousRoom.DisableRoom(); }
             }
 
             /* Player moved backwards through the puzzles */
             else {
-                entranceRoom.EnablePuzzleRoom();
                 exitRoom.DisablePuzzleRoom();
+                entranceRoom.EnablePuzzleRoom();
+                if(previousRoom != null) { previousRoom.SoftEnable(); }
+                if(nextRoom != null) { nextRoom.DisableRoom(); }
             }
         }
     }
@@ -162,16 +178,37 @@ public class WaitingRoom : ConnectedRoom {
         roomObjectsContainer.gameObject.SetActive(false);
         entranceRoom.DisablePuzzleRoom();
         exitRoom.DisablePuzzleRoom();
+        entranceRoom.DisableRoom();
+        exitRoom.DisableRoom();
     }
 
     public void EnableRoom() {
         /*
-         * Enable the trigger, the objects that make this room and the connected rooms.
+         * Enable this WaitingRoom, it's AttachedRooms and their corresponding puzzleRooms 
+         * and the two potential WaitingRooms that are behind and ahead of this room.
          */
-
+         
         roomTrigger.enabled = true;
         roomObjectsContainer.gameObject.SetActive(true);
         entranceRoom.EnablePuzzleRoom();
         exitRoom.EnablePuzzleRoom();
+        entranceRoom.EnableRoom();
+        exitRoom.EnableRoom();
+
+        /* Soft enable the other nearby WaitingRooms (if applicable) */
+        if(previousRoom != null) { previousRoom.SoftEnable(); }
+        if(nextRoom != null) { nextRoom.SoftEnable(); }
+    }
+
+    public void SoftEnable() {
+        /*
+         * Only enable this waitingRoom and it's AttachedRooms. Do not change any other
+         * puzzle rooms and other waiting rooms.
+         */
+
+        roomTrigger.enabled = true;
+        roomObjectsContainer.gameObject.SetActive(true);
+        entranceRoom.EnableRoom();
+        exitRoom.EnableRoom();
     }
 }

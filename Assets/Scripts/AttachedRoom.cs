@@ -26,7 +26,7 @@ public class AttachedRoom : ConnectedRoom {
 
 
     /* -------- Built-In Functions ---------------------------------------------------- */
-    
+ 
     public void Start() {
         /*
          * On startup, update the walls for now
@@ -70,9 +70,7 @@ public class AttachedRoom : ConnectedRoom {
         exitPointFront.transform.localPosition = new Vector3(0, 0, roomLength);
         exitPointBack.transform.localPosition = new Vector3(0, 0, -roomLength);
 
-
-
-
+        
         /* Get the depth of the room using the exit points. */
         Vector3 pointDifference = exitPointFront.localPosition - exitPointBack.localPosition;
         /* Using localPosition means we are only expecting positive values in Z */
@@ -122,19 +120,33 @@ public class AttachedRoom : ConnectedRoom {
     
     public void DisablePuzzleRoom() {
         /*
-         * Disable the attached puzzle room and this room
+         * Disable the attached puzzle room
          */
-
-        gameObject.SetActive(false);
+         
         if(puzzleRoomParent != null) { puzzleRoomParent.SetActive(false); }
     }
 
     public void EnablePuzzleRoom() {
         /*
-         * Enable the attached puzzle room and this room
+         * Enable the attached puzzle room
+         */
+         
+        if(puzzleRoomParent != null) { puzzleRoomParent.SetActive(true); }
+    }
+
+    public void DisableRoom() {
+        /*
+         * Disable only this room
+         */
+
+        gameObject.SetActive(false);
+    }
+
+    public void EnableRoom() {
+        /*
+         * Enable only this room
          */
 
         gameObject.SetActive(true);
-        if(puzzleRoomParent != null) { puzzleRoomParent.SetActive(true); }
     }
 }

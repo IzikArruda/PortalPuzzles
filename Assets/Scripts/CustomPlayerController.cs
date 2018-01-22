@@ -165,7 +165,6 @@ public class CustomPlayerController : MonoBehaviour {
         GetComponent<CapsuleCollider>().radius = playerBodyRadius;
 
         /* Enable the starting waiting room */
-        Debug.Log("enable room");
         startingRoom.EnableRoom();
 
         /* Reset the player's positional values and camera effects */
