@@ -564,10 +564,24 @@ public class CustomPlayerController : MonoBehaviour {
             cameraHeight *= -1;
             toCamRotation = Quaternion.LookRotation(-transform.up, transform.forward);
         }
+        
 
-        /* RayTrace from the player's origin to the camera's position */
+        /* Fire two rayTraces: The first is used to "scout" ahead. The second is used to ensure the camera does not 
+         * end up close to an object, so it will always move nearly the same distance as the first trace. */
+        Vector3 scoutPos = cameraPosition;
+        Quaternion scoutRot = toCamRotation;
+        float scoutDist = cameraHeight;
         bool temp = false;
+
+        /* Fire the scouting ray */
+        rotationDifference = RayTrace(ref scoutPos, ref scoutRot, ref scoutDist, ref temp, true, true);
+
+        /* Reduce the cameraHeight if the scout ray collided with anything */
+        cameraHeight = (cameraHeight - scoutDist) - cameraHeight*0.05f;
+
+        /* fire the actual ray for the camera */
         rotationDifference = RayTrace(ref cameraPosition, ref toCamRotation, ref cameraHeight, ref temp, true, true);
+
 
         /* Use the new position and rotation to find the camera's final position and rotation */
         currentCameraTransform.position = cameraPosition;
