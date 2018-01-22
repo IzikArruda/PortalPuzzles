@@ -19,6 +19,7 @@ public class AttachedRoom : ConnectedRoom {
     /* The size of the exit of this room. Used by outside functions and requires user input to set. */
     public float exitWidth;
     public float exitHeight;
+    public float roomLength;
 
     /* The gameObject of the puzzleRoom that this room is attached to */
     public GameObject puzzleRoomParent;
@@ -64,6 +65,13 @@ public class AttachedRoom : ConnectedRoom {
          * Look at the position of the exit points and create the walls for the room
          */
         float depth = 0;
+
+        /* Place the exitPoints using the new roomLength */
+        exitPointFront.transform.localPosition = new Vector3(0, 0, roomLength);
+        exitPointBack.transform.localPosition = new Vector3(0, 0, -roomLength);
+
+
+
 
         /* Get the depth of the room using the exit points. */
         Vector3 pointDifference = exitPointFront.localPosition - exitPointBack.localPosition;
@@ -114,17 +122,19 @@ public class AttachedRoom : ConnectedRoom {
     
     public void DisablePuzzleRoom() {
         /*
-         * Disable the attached puzzle room
+         * Disable the attached puzzle room and this room
          */
 
+        gameObject.SetActive(false);
         if(puzzleRoomParent != null) { puzzleRoomParent.SetActive(false); }
     }
 
     public void EnablePuzzleRoom() {
         /*
-         * Enable the attached puzzle room
+         * Enable the attached puzzle room and this room
          */
-         
+
+        gameObject.SetActive(true);
         if(puzzleRoomParent != null) { puzzleRoomParent.SetActive(true); }
     }
 }

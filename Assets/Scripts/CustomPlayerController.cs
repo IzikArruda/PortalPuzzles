@@ -134,6 +134,9 @@ public class CustomPlayerController : MonoBehaviour {
     /* The last attached room the player was in. Must be set in the editor before starting. */
     public AttachedRoom lastRoom;
 
+    /* The WaitingRoom the player will first encounter/start in. This room will be enabled on startup. */
+    public WaitingRoom startingRoom;
+
 
     /* -------------- Built-in Unity Functions ---------------------------------------------------------- */
 
@@ -160,7 +163,11 @@ public class CustomPlayerController : MonoBehaviour {
         /* Adjust the player's height and width */
         GetComponent<CapsuleCollider>().height = playerBodyLength;
         GetComponent<CapsuleCollider>().radius = playerBodyRadius;
-        
+
+        /* Enable the starting waiting room */
+        Debug.Log("enable room");
+        startingRoom.EnableRoom();
+
         /* Reset the player's positional values and camera effects */
         ResetPlayer(false);
     }

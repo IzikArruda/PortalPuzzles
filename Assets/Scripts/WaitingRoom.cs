@@ -18,13 +18,16 @@ public class WaitingRoom : ConnectedRoom {
 
     void Start () {
         /*
-         * On start-up, recreate the room's skeleton any puzzle rooms from the AttachedRooms
+         * On start-up, recreate the room's skeleton any puzzle rooms from the AttachedRooms.
+         * Disable any connected rooms along with this room's contents.
          */
 
         UpdateRoom();
 
         entranceRoom.DisablePuzzleRoom();
         exitRoom.DisablePuzzleRoom();
+        Debug.Log("disable room");
+        DisableRoom();
     }
 
     void OnTriggerEnter(Collider player) {
@@ -150,4 +153,25 @@ public class WaitingRoom : ConnectedRoom {
         roomTrigger.size = new Vector3(properWidth, height, properLength);
     }
 
+    public void DisableRoom() {
+        /*
+         * Disable the trigger, the objects that make this room and the connected rooms.
+         */
+
+        roomTrigger.enabled = false;
+        roomObjectsContainer.gameObject.SetActive(false);
+        entranceRoom.DisablePuzzleRoom();
+        exitRoom.DisablePuzzleRoom();
+    }
+
+    public void EnableRoom() {
+        /*
+         * Enable the trigger, the objects that make this room and the connected rooms.
+         */
+
+        roomTrigger.enabled = true;
+        roomObjectsContainer.gameObject.SetActive(true);
+        entranceRoom.EnablePuzzleRoom();
+        exitRoom.EnablePuzzleRoom();
+    }
 }

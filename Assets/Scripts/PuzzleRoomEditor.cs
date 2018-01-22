@@ -67,8 +67,9 @@ public class PuzzleRoomEditor : MonoBehaviour {
     /* Set this value to true to update the walls */
     public bool updateWalls;
 
+
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
-    
+
     void Start() {
         /*
 		 * force the walls to update on startup. 
