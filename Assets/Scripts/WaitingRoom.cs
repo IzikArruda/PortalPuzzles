@@ -17,6 +17,12 @@ public class WaitingRoom : ConnectedRoom {
     public WaitingRoom previousRoom;
     public WaitingRoom nextRoom;
 
+    /* Place a window in each WaitingRoom */
+    public Window window;
+
+
+
+
 
     /* -------- Built-In Functions ---------------------------------------------------- */
 
@@ -36,7 +42,11 @@ public class WaitingRoom : ConnectedRoom {
          * On start-up, recreate the room's skeleton any puzzle rooms from the AttachedRooms.
          */
 
+        /* Update the walls of the room */
         UpdateRoom();
+
+        /* Place the window in a good position in the room */
+        UpdateWindow();
     }
 
     void OnTriggerEnter(Collider player) {
@@ -147,6 +157,30 @@ public class WaitingRoom : ConnectedRoom {
         CreatePlane(roomWalls[7], exitWidth, height - exitHeight, 8, wallMaterial, 2, false);
     }
 
+    void UpdateWindow() {
+        /*
+         * Update the values of the window and position it in an appropriate spot in the room
+         */
+
+        /* Get the center of the room */
+        float entranceHeight = entranceRoom.exitHeight;
+        float exitHeight = exitRoom.exitHeight;
+        float entranceWidth = entranceRoom.exitWidth;
+        float exitWidth = exitRoom.exitWidth;
+        float widthDifference = Mathf.Abs(entranceRoom.exitPointFront.position.x - exitRoom.exitPointBack.position.x);
+        float width = widthDifference + entranceWidth/2f + exitWidth/2f;
+        float height = Mathf.Max(entranceHeight, exitHeight);
+        Vector3 center = (entranceRoom.exitPointFront.position + exitRoom.exitPointBack.position)/2f;
+        center += new Vector3(Mathf.Abs(entranceWidth/2f - exitWidth/2f)/2f, 0, 0);
+
+        /* Place the inside window/entrance portal on the left wall, halfway up the wall */
+        window.insidePosition = center + new Vector3(-width/2f, height/2f - window.windowHeight/2f, 0);
+
+
+        /* Send a command to update the windows with the new given parameters */
+        window.UpdateWindow();
+    }
+
     void CreateTrigger(float height) {
         /*
          * Create the trigger that encompasses both this WaitingRoom and both the connected AttachedRooms
@@ -175,6 +209,7 @@ public class WaitingRoom : ConnectedRoom {
          */
 
         roomTrigger.enabled = false;
+        window.gameObject.SetActive(false);
         roomObjectsContainer.gameObject.SetActive(false);
         entranceRoom.DisablePuzzleRoom();
         exitRoom.DisablePuzzleRoom();
@@ -189,6 +224,7 @@ public class WaitingRoom : ConnectedRoom {
          */
          
         roomTrigger.enabled = true;
+        window.gameObject.SetActive(true);
         roomObjectsContainer.gameObject.SetActive(true);
         entranceRoom.EnablePuzzleRoom();
         exitRoom.EnablePuzzleRoom();
