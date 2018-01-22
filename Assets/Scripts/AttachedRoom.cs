@@ -102,11 +102,11 @@ public class AttachedRoom : ConnectedRoom {
         CreatePlane(roomWalls[1], exitHeight, depth, 8, wallMaterial, 1, true);
 
         roomWalls[2].name = "Right wall";
-        roomWalls[2].transform.position = roomCenter + new Vector3(exitWidth/2f, exitHeight/2f, 0);
+        roomWalls[2].transform.position += new Vector3(exitWidth/2f, exitHeight/2f, 0);
         CreatePlane(roomWalls[2], exitHeight, depth, 8, wallMaterial, 1, false);
 
         roomWalls[3].name = "Ceiling";
-        roomWalls[3].transform.position = roomCenter + new Vector3(0, exitHeight, 0);
+        roomWalls[3].transform.position += new Vector3(0, exitHeight, 0);
         CreatePlane(roomWalls[3], exitWidth, depth, 8, ceilingMaterial, 0, true);
     }
     
