@@ -7,9 +7,14 @@ using System.Collections;
 [ExecuteInEditMode]
 public class CubeCreator : MonoBehaviour {
 
-    public float width;
-    public float height;
-    public float length;
+    /* The desired sizes of the cube */
+    public float x;
+    public float y;
+    public float z;
+    /* The last saved sizes of the cube */
+    private float previousX;
+    private float previousY;
+    private float previousZ;
 
     /* Offset the position of the UV coordinates on the given face of the cube */
     public Vector2 XPositiveOffset;
@@ -20,19 +25,40 @@ public class CubeCreator : MonoBehaviour {
     public Vector2 ZNegativeOffset;
 
 
-    void Update () {
+    void Start() {
         /*
-         * Create the mesh of the cube using it's set parameters
+         * Ensure the object that has this script has the required components
          */
+
+        if(GetComponent<MeshFilter>() == null) { gameObject.AddComponent<MeshFilter>(); }
+        if(GetComponent<MeshRenderer>() == null) { gameObject.AddComponent<MeshRenderer>(); }
+        if(GetComponent<BoxCollider>() == null) { gameObject.AddComponent<BoxCollider>(); }
+    }
+
+    void Update() {
+        /*
+         * On every frame, check if there is a change with the box's size
+         */
+         
+        if(x != previousX || y != previousY || z != previousZ) {
+            UpdateBox();
+        }
+    }
+
+    void UpdateBox() {
+        /*
+         * Create the mesh of the cube using it's set parameters.
+         */
+
         Mesh cubeMesh = new Mesh();
         Vector3[] vertices;
         Vector2[] UV;
         int[] triangles;
 
         /* Get the distance each vertex of the cube will be from it's center */
-        float L = length/2f;
-        float H = height/2f;
-        float W = width/2f;
+        float L = x/2f;
+        float H = y/2f;
+        float W = z/2f;
 
         /* Get the vertices that make up the cube */
         vertices = new Vector3[] {
@@ -125,6 +151,11 @@ public class CubeCreator : MonoBehaviour {
         cubeMesh.uv = UV;
         cubeMesh.RecalculateNormals();
         GetComponent<MeshFilter>().mesh = cubeMesh;
-        GetComponent<BoxCollider>().size = new Vector3(length, height, width);
+        GetComponent<BoxCollider>().size = new Vector3(x, y, z);
+
+        /* Update the values of the box */
+        previousX = x;
+        previousY = y;
+        previousZ = z;
     }
 }

@@ -21,9 +21,15 @@ public class Window : MonoBehaviour {
 
     /* The main container that will contain the window's meshes */
     public Transform WindowContainer;
+    public Transform insideWindow;
+    public Transform outsideWindow;
 
     /* The gameObjects that will be used to make up the windows */
     public GameObject[] windowPieces;
+
+    /* The sizes of the window frame */
+    public float frameThickness;
+    public float frameDepth;
 
 
     /* -------- Built-In Functions ---------------------------------------------------- */
@@ -43,27 +49,77 @@ public class Window : MonoBehaviour {
         /*
          * Create the window mesh and place the portal relative to the window
          */
+        float windowHeight = portalSet.portalHeight;
+        float windowWidth = portalSet.portalWidth;
 
         /* Place the portals at their proper locations */
         portalSet.EntrancePortal.transform.position = insidePosition;
         portalSet.ExitPortal.transform.position = outsidePosition;
 
         /* Place a box where the two windows will be */
-        CreateObjects(ref windowPieces, 2, Vector3.zero);
+        CreateObjects(ref windowPieces, 8, Vector3.zero);
 
+        /* Create the main 4 farme pieces for each window frame */
+        CreateFrame(insideWindow, insidePosition, 0, windowHeight, windowWidth);
+        CreateFrame(outsideWindow, outsidePosition, 4, windowHeight, windowWidth);
+
+
+
+
+        /*
         windowPieces[0].name = "inside window";
         windowPieces[0].AddComponent<BoxCollider>();
         windowPieces[0].transform.position = insidePosition;
 
         windowPieces[1].name = "outside window";
         windowPieces[1].AddComponent<BoxCollider>();
-        windowPieces[1].transform.position = outsidePosition;
+        windowPieces[1].transform.position = outsidePosition;*/
     }
 
 
     /* -------- Event Functions ---------------------------------------------------- */
 
+    void CreateFrame(Transform windowParent, Vector3 windowPos, int index, float windowHeight, float windowWidth) {
+        /*
+         * Create the 4 main boxes that form the frame of a window.
+         */
+        CubeCreator cubeScript = null;
 
+        windowPieces[index].name = "Top frame";
+        windowPieces[index].transform.position = windowPos + new Vector3(0, windowHeight + frameThickness/2f, 0);
+        windowPieces[index].transform.parent = windowParent;
+        cubeScript = windowPieces[index].AddComponent<CubeCreator>();
+        cubeScript.x = windowWidth + frameThickness*2;
+        cubeScript.y = frameThickness;
+        cubeScript.z = frameDepth;
+        index++;
+
+        windowPieces[index].name = "Bottom frame";
+        windowPieces[index].transform.position = windowPos + new Vector3(0, -frameThickness/2f, 0);
+        windowPieces[index].transform.parent = windowParent;
+        cubeScript = windowPieces[index].AddComponent<CubeCreator>();
+        cubeScript.x = windowWidth + frameThickness*2;
+        cubeScript.y = frameThickness;
+        cubeScript.z = frameDepth;
+        index++;
+
+        windowPieces[index].name = "Left frame";
+        windowPieces[index].transform.position = windowPos + new Vector3(-windowWidth/2f - frameThickness/2f, windowHeight/2f, 0);
+        windowPieces[index].transform.parent = windowParent;
+        cubeScript = windowPieces[index].AddComponent<CubeCreator>();
+        cubeScript.x = frameThickness;
+        cubeScript.y = windowHeight;
+        cubeScript.z = frameDepth;
+        index++;
+
+        windowPieces[index].name = "Right frame";
+        windowPieces[index].transform.position = windowPos + new Vector3(windowWidth/2f + frameThickness/2f, windowHeight/2f, 0);
+        windowPieces[index].transform.parent = windowParent;
+        cubeScript = windowPieces[index].AddComponent<CubeCreator>();
+        cubeScript.x = frameThickness;
+        cubeScript.y = windowHeight;
+        cubeScript.z = frameDepth;
+    }
 
     /* -------- Helper Functions ---------------------------------------------------- */
 
