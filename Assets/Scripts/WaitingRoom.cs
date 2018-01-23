@@ -51,7 +51,7 @@ public class WaitingRoom : ConnectedRoom {
         DisableRoom();
     }
 
-    void Start () {
+    void Start() {
         /*
          * On start-up, recreate the room's skeleton any puzzle rooms from the AttachedRooms.
          */
@@ -83,7 +83,7 @@ public class WaitingRoom : ConnectedRoom {
          * When the player leaves the room's trigger, Check which side of the room
          * the player left to determine which puzzle room to disable
          */
-         
+
         /* Ensure the collider entering the trigger is a player */
         if(player.GetComponent<CustomPlayerController>() != null) {
             Vector3 center = (entranceRoom.exitPointFront.position + exitRoom.exitPointBack.position)/2f;
@@ -106,6 +106,21 @@ public class WaitingRoom : ConnectedRoom {
         }
     }
 
+    void OnTriggerStay(Collider player) {
+        /*
+         * Whenever the player is inside the waitingRoom, move the window's sky sphere
+         * relative to the player's camera to this room's center.
+         */
+        Vector3 playerCameraPosition;
+        Vector3 centerDifference;
+         
+        /* Ensure the collider entering the trigger is a player */
+        if(player.GetComponent<CustomPlayerController>() != null) {
+            playerCameraPosition = player.GetComponent<CustomPlayerController>().playerCamera.transform.position;
+            centerDifference = playerCameraPosition - roomCenter;
+            window.OffsetSkySphere(centerDifference);
+        }
+    }
 
     /* -------- Event Functions ---------------------------------------------------- */
 
@@ -206,8 +221,8 @@ public class WaitingRoom : ConnectedRoom {
         Vector3 frontPoint = exitRoom.exitPointFront.transform.position;
 
         /* Get the proper width of the collider to encompass both AttachedRooms */
-        float xFull = Mathf.Abs(backPoint.x - backPoint.x) + entranceRoom.exitWidth/2f + exitRoom.exitWidth/2f;
-        float zFull = Mathf.Abs(frontPoint.z - frontPoint.z)*1f;
+        float xFull = Mathf.Abs(frontPoint.x - backPoint.x) + entranceRoom.exitWidth/2f + exitRoom.exitWidth/2f;
+        float zFull = Mathf.Abs(frontPoint.z - backPoint.z);
         
         /* Get the Z axis offset of the room center due to inequal exit/entrance z sizes */
         float zDiff = entranceRoom.roomLength - exitRoom.roomLength;
@@ -217,6 +232,7 @@ public class WaitingRoom : ConnectedRoom {
         roomTrigger.isTrigger = true;
         roomTrigger.center = roomCenter + new Vector3(0, yDist/2f, -zDiff);
         roomTrigger.size = new Vector3(xFull, yDist, zFull);
+        Debug.Log(zFull);
     }
 
     public void DisableRoom() {

@@ -130,7 +130,7 @@ public class Window : MonoBehaviour {
         skySphere.name = "Sky sphere";
 
         /* Adjust the components */
-        Destroy(skySphere.GetComponent<SphereCollider>());
+        DestroyImmediate(skySphere.GetComponent<SphereCollider>());
 
         /* Flip all the triangles of the sphere to have it inside-out */
         int[] triangles = skySphere.GetComponent<MeshFilter>().mesh.triangles;
@@ -149,6 +149,19 @@ public class Window : MonoBehaviour {
 
     /* -------- Event Functions ---------------------------------------------------- */
 
+    public void OffsetSkySphere(Vector3 offset) {
+        /*
+         * Apply an offset to the skySphere of the outside window. This is called by the WaitingRoom
+         * to ensure the sky sphere does not seem like a small sphere but a proper large environment.
+         */
+
+        /* Get the difference in the angles of both portals */
+        Quaternion portalRotDiff =Quaternion.Inverse(portalSet.EntrancePortal.transform.rotation)*portalSet.ExitPortal.transform.rotation;
+        
+        /* Reposition the sky sphere with the offset */
+        skySphere.transform.localPosition = new Vector3(0, 0, 0);
+        skySphere.transform.position += portalRotDiff*offset;
+    }
 
 
     /* -------- Helper Functions ---------------------------------------------------- */
