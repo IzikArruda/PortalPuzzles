@@ -100,11 +100,12 @@ public class Window : MonoBehaviour {
         outsideWindowContainer.transform.eulerAngles = outsideRot;
 
         /* Initialize the array of GameObjects that make up the windows */
+        int index = 0;
         CreateObjectsArray(ref windowPieces, 10, Vector3.zero);
 
         /* Create the main 4 frame pieces for each window frame */
-        CreateFrame(insideWindowContainer.transform, 0, windowHeight, windowWidth);
-        CreateFrame(outsideWindowContainer.transform, 5, windowHeight, windowWidth);
+        CreateFrame(insideWindowContainer.transform, ref index, windowHeight, windowWidth);
+        CreateFrame(outsideWindowContainer.transform, ref index, windowHeight, windowWidth);
     }
 
     /* -------- Event Functions ---------------------------------------------------- */
@@ -113,7 +114,7 @@ public class Window : MonoBehaviour {
 
     /* -------- Helper Functions ---------------------------------------------------- */
 
-    void CreateFrame(Transform windowParent, int index, float windowHeight, float windowWidth) {
+    void CreateFrame(Transform windowParent, ref int index, float windowHeight, float windowWidth) {
         /*
          * Create the 4 main boxes that form the frame of a window and the pane of glass in the center.
          */
@@ -158,6 +159,7 @@ public class Window : MonoBehaviour {
         cubeScript.z = frameDepth;
         cubeScript.UpdateBox();
         windowPieces[index].GetComponent<MeshRenderer>().material = frameMaterial;
+        index++;
 
         CreateEmptyObject(ref windowPieces[index], "Glass", windowParent);
         windowPieces[index].transform.localPosition = new Vector3(0, windowHeight/2f, 0);
@@ -167,6 +169,7 @@ public class Window : MonoBehaviour {
         cubeScript.z = frameDepth/1.5f;
         cubeScript.UpdateBox();
         windowPieces[index].GetComponent<MeshRenderer>().material = glassMaterial;
+        index++;
     }
 
     public void CreateObjectsArray(ref GameObject[] objects, int size, Vector3 position) {
