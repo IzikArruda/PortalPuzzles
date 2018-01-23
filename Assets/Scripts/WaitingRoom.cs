@@ -17,11 +17,20 @@ public class WaitingRoom : ConnectedRoom {
     public WaitingRoom previousRoom;
     public WaitingRoom nextRoom;
 
-    /* Place a window in each WaitingRoom */
+    /* The window used in this WaitingRoom along with it's stats */
     public Window window;
+    public float frameThickness;
+    public float frameDepth;
+    public float windowHeight;
+    public float windowWidth;
+    //Where the outside window will be placed. Use the "Window Exit" object in it's Points of Interest container
+    public Transform windowExit;
 
-
-
+    /* Values set by this room upon it's creation. Used as a reference. */
+    private float xDist;
+    private float yDist;
+    private float zDist;
+    private Vector3 roomCenter;
 
 
     /* -------- Built-In Functions ---------------------------------------------------- */
@@ -99,62 +108,59 @@ public class WaitingRoom : ConnectedRoom {
         /*
          * Given the position of the attached rooms, re-create this room's bounderies
          */
-
-        /* Get the sizes of the two attached room */
-        float entranceWidth = entranceRoom.exitWidth;
-        float entranceHeight = entranceRoom.exitHeight;
-        float exitWidth = exitRoom.exitWidth;
-        float exitHeight = exitRoom.exitHeight;
-        float widthDifference = Mathf.Abs(entranceRoom.exitPointFront.position.x - exitRoom.exitPointBack.position.x);
-        float lengthDifference = Mathf.Abs(entranceRoom.exitPointFront.position.z - exitRoom.exitPointBack.position.z);
-        float fullLength = Mathf.Abs(entranceRoom.exitPointBack.position.z - exitRoom.exitPointFront.position.z);
+         
+        /* Extract the needed values from the two AttachedRooms */
+        float xEntranceDist = entranceRoom.exitWidth;
+        float yEntranceDist = entranceRoom.exitHeight;
+        float xExitDist = exitRoom.exitWidth;
+        float yExitDist = exitRoom.exitHeight;
 
         /* Re-position the room to the center position between the two attachedRooms */
-        Vector3 center = (entranceRoom.exitPointFront.position + exitRoom.exitPointBack.position)/2f;
-        center += new Vector3(Mathf.Abs(entranceWidth/2f - exitWidth/2f)/2f, 0, 0);
+        roomCenter = (entranceRoom.exitPointFront.position + exitRoom.exitPointBack.position)/2f;
+        roomCenter += new Vector3(Mathf.Abs(xEntranceDist/2f - xExitDist/2f)/2f, 0, 0);
 
         /* Calculate the sizes of this waitingRoom */
-        float width = widthDifference + entranceWidth/2f + exitWidth/2f;
-        float length = lengthDifference;
-        float height = Mathf.Max(entranceHeight, exitHeight);
+        xDist = Mathf.Abs(entranceRoom.exitPointFront.position.x - exitRoom.exitPointBack.position.x) + xEntranceDist/2f + xExitDist/2f;
+        yDist = Mathf.Max(yEntranceDist, yExitDist);
+        zDist = Mathf.Abs(entranceRoom.exitPointFront.position.z - exitRoom.exitPointBack.position.z);
 
         /* Re-create the trigger that is used to determine if the player has entered either AttachedRooms */
-        CreateTrigger(height);
-
-        /* Re-create each wall for the room */
-        CreateObjects(ref roomWalls, 8, center);
+        CreateTrigger();
+        
+        /* Re-create each wall for the room as a default, centered, empty object */
+        CreateObjects(ref roomWalls, 8, roomCenter);
 
         /* Set unique values for each individual wall */
         roomWalls[0].name = "Floor";
-        CreatePlane(roomWalls[0], width, lengthDifference, 8, floorMaterial, 0, false);
+        CreatePlane(roomWalls[0], xDist, zDist, 8, floorMaterial, 0, false);
 
         roomWalls[1].name = "Left wall";
-        roomWalls[1].transform.position += new Vector3(-width/2f, height/2f, 0);
-        CreatePlane(roomWalls[1], height, length, 8, wallMaterial, 1, true);
+        roomWalls[1].transform.position += new Vector3(-xDist/2f, yDist/2f, 0);
+        CreatePlane(roomWalls[1], yDist, zDist, 8, wallMaterial, 1, true);
 
         roomWalls[2].name = "Right wall";
-        roomWalls[2].transform.position += new Vector3(width/2f, height/2f, 0);
-        CreatePlane(roomWalls[2], height, length, 8, wallMaterial, 1, false);
+        roomWalls[2].transform.position += new Vector3(xDist/2f, yDist/2f, 0);
+        CreatePlane(roomWalls[2], yDist, zDist, 8, wallMaterial, 1, false);
 
         roomWalls[3].name = "Ceiling";
-        roomWalls[3].transform.position += new Vector3(0, height, 0);
-        CreatePlane(roomWalls[3], width, lengthDifference, 8, ceilingMaterial, 0, true);
+        roomWalls[3].transform.position += new Vector3(0, yDist, 0);
+        CreatePlane(roomWalls[3], xDist, zDist, 8, ceilingMaterial, 0, true);
 
         roomWalls[4].name = "Entrance side wall";
-        roomWalls[4].transform.position += new Vector3(entranceWidth/2f, height/2f, -length/2f);
-        CreatePlane(roomWalls[4], width - entranceWidth, height, 8, wallMaterial, 2, true);
+        roomWalls[4].transform.position += new Vector3(xEntranceDist/2f, yDist/2f, -zDist/2f);
+        CreatePlane(roomWalls[4], xDist - xEntranceDist, yDist, 8, wallMaterial, 2, true);
 
         roomWalls[5].name = "Exit side wall";
-        roomWalls[5].transform.position += new Vector3(-exitWidth/2f, height/2f, length/2f);
-        CreatePlane(roomWalls[5], width - exitWidth, height, 8, wallMaterial, 2, false);
+        roomWalls[5].transform.position += new Vector3(-xExitDist/2f, yDist/2f, zDist/2f);
+        CreatePlane(roomWalls[5], xDist - xExitDist, yDist, 8, wallMaterial, 2, false);
 
         roomWalls[6].name = "Above Entrance wall";
-        roomWalls[6].transform.position += new Vector3(-width/2f + entranceWidth/2f, height - (height - entranceHeight)/2f, -length/2f);
-        CreatePlane(roomWalls[6], entranceWidth, height - entranceHeight, 8, wallMaterial, 2, true);
+        roomWalls[6].transform.position += new Vector3(-xDist/2f + xEntranceDist/2f, yDist - (yDist - yEntranceDist)/2f, -zDist/2f);
+        CreatePlane(roomWalls[6], xEntranceDist, yDist - yEntranceDist, 8, wallMaterial, 2, true);
 
         roomWalls[7].name = "Above Exit wall";
-        roomWalls[7].transform.position += new Vector3(width/2f - exitWidth/2f, height - (height - exitHeight)/2f, length/2f);
-        CreatePlane(roomWalls[7], exitWidth, height - exitHeight, 8, wallMaterial, 2, false);
+        roomWalls[7].transform.position += new Vector3(xDist/2f - xExitDist/2f, yDist - (yDist - yExitDist)/2f, zDist/2f);
+        CreatePlane(roomWalls[7], xExitDist, yDist - yExitDist, 8, wallMaterial, 2, false);
     }
 
     void UpdateWindow() {
@@ -162,45 +168,45 @@ public class WaitingRoom : ConnectedRoom {
          * Update the values of the window and position it in an appropriate spot in the room
          */
 
-        /* Get the center of the room */
-        float entranceHeight = entranceRoom.exitHeight;
-        float exitHeight = exitRoom.exitHeight;
-        float entranceWidth = entranceRoom.exitWidth;
-        float exitWidth = exitRoom.exitWidth;
-        float widthDifference = Mathf.Abs(entranceRoom.exitPointFront.position.x - exitRoom.exitPointBack.position.x);
-        float width = widthDifference + entranceWidth/2f + exitWidth/2f;
-        float height = Mathf.Max(entranceHeight, exitHeight);
-        Vector3 center = (entranceRoom.exitPointFront.position + exitRoom.exitPointBack.position)/2f;
-        center += new Vector3(Mathf.Abs(entranceWidth/2f - exitWidth/2f)/2f, 0, 0);
-
+        /* Set the size stats of the Window script */
+        window.frameThickness = frameThickness;
+        window.frameDepth = frameDepth;
+        window.windowHeight = windowHeight;
+        window.windowWidth = windowWidth;
+        
+        /* --- Maybe add more options: place the window on the right wall, entrance wall, etc --- */
         /* Place the inside window/entrance portal on the left wall, halfway up the wall */
-        window.insidePosition = center + new Vector3(-width/2f, height/2f - window.windowHeight/2f, 0);
+        window.insidePos = roomCenter + new Vector3(-xDist/2f, yDist/2f - window.windowHeight/2f, 0);
+        window.insideRot = new Vector3(0, -90, 0);
 
+
+        /* Place the outside window/exit portal using the windowExit transform given to this script  */
+        window.outsidePos = windowExit.position;
+        window.outsideRot = windowExit.eulerAngles;
 
         /* Send a command to update the windows with the new given parameters */
         window.UpdateWindow();
     }
 
-    void CreateTrigger(float height) {
+    void CreateTrigger() {
         /*
          * Create the trigger that encompasses both this WaitingRoom and both the connected AttachedRooms
          */
-        Vector3 back = entranceRoom.exitPointBack.transform.position;
-        Vector3 front = exitRoom.exitPointFront.transform.position;
-        Vector3 center = (front + back)/2f;
+        Vector3 backPoint = entranceRoom.exitPointBack.transform.position;
+        Vector3 frontPoint = exitRoom.exitPointFront.transform.position;
 
-        /* Get the proper width of the collider */
-        float properWidth = Mathf.Abs(back.x - front.x) + entranceRoom.exitWidth/2f + exitRoom.exitWidth/2f;
-        float widthDiff = entranceRoom.exitWidth - exitRoom.exitWidth;
-
-        /* Get the proper length. Make it slightly shorter so the player hits it a few steps into the room */
-        float properLength = Mathf.Abs(back.z - front.z)*0.9f;
-
-        if(roomTrigger != null) { DestroyImmediate(roomTrigger); }
-        roomTrigger = gameObject.AddComponent<BoxCollider>();
+        /* Get the proper width of the collider to encompass both AttachedRooms */
+        float xFull = Mathf.Abs(backPoint.x - backPoint.x) + entranceRoom.exitWidth/2f + exitRoom.exitWidth/2f;
+        float zFull = Mathf.Abs(frontPoint.z - frontPoint.z)*1f;
+        
+        /* Get the Z axis offset of the room center due to inequal exit/entrance z sizes */
+        float zDiff = entranceRoom.roomLength - exitRoom.roomLength;
+        
+        /* Update the collider with it's new stats */
+        if(roomTrigger == null) { roomTrigger = gameObject.AddComponent<BoxCollider>(); }
         roomTrigger.isTrigger = true;
-        roomTrigger.center = center + new Vector3(-widthDiff/4f, height/2f, 0);
-        roomTrigger.size = new Vector3(properWidth, height, properLength);
+        roomTrigger.center = roomCenter + new Vector3(0, yDist/2f, -zDiff);
+        roomTrigger.size = new Vector3(xFull, yDist, zFull);
     }
 
     public void DisableRoom() {
