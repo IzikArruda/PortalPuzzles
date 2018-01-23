@@ -223,19 +223,22 @@ public class PortalView : MonoBehaviour {
         Matrix4x4 projection = viewingCamera.CalculateObliqueMatrix(clipPlane);
         scoutCamera.projectionMatrix = projection;
         
-        /* Cut out the scoutCamera's edges so it does not render anything outside the portal's view */
+        /* Cut out the scoutCamera's edges so it does not render anything outside the portal's view.
+         * If the rect of the portal from the camera's view is very small, do not bother rendering it. */
         Rect boundingEdges = CalculateViewingRect(viewingCamera);
-        SetScissorRect(scoutCamera, boundingEdges);
+        if(boundingEdges.width * boundingEdges.height > 0.001f) {
+            SetScissorRect(scoutCamera, boundingEdges);
 
-        /* Render the scoutCamera's view with it's new projection matrix */
-        scoutCamera.Render();
+            /* Render the scoutCamera's view with it's new projection matrix */
+            scoutCamera.Render();
 
-        /* Extract the scoutingCamera's view after rendering as a static texture */
-        Material[] materials = rend.sharedMaterials;
-        foreach(Material mat in materials) {
-            if(mat.HasProperty("_PortalTex")) {
-                mat.SetTexture("_PortalTex", cameraScript.renderTexture);
-                extractedView = mat.GetTexture("_PortalTex");
+            /* Extract the scoutingCamera's view after rendering as a static texture */
+            Material[] materials = rend.sharedMaterials;
+            foreach(Material mat in materials) {
+                if(mat.HasProperty("_PortalTex")) {
+                    mat.SetTexture("_PortalTex", cameraScript.renderTexture);
+                    extractedView = mat.GetTexture("_PortalTex");
+                }
             }
         }
     }
@@ -272,7 +275,7 @@ public class PortalView : MonoBehaviour {
         }
         r.width = Mathf.Min(1 - r.x, r.width);
         r.height = Mathf.Min(1 - r.y, r.height);
-
+        
 
         //cam.rect = new Rect(0, 0, 1, 1);
         //cam.ResetProjectionMatrix();

@@ -74,6 +74,10 @@ public class Window : MonoBehaviour {
         portalSet.ExitPortal.transform.position = outsidePos;
         portalSet.ExitPortal.transform.eulerAngles = outsideRot;
         portalSet.ExitPortal.transform.localPosition -= portalSet.ExitPortal.transform.rotation*portalOffset;
+
+        /* Update the portal's meshCollider with these new values */
+        portalSet.updatePortal = true;
+        portalSet.Update();
     }
 
     public void UpdateWindowMesh() {

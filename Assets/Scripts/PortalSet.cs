@@ -148,9 +148,9 @@ public class PortalSet : MonoBehaviour {
         }
     }
 
-    void Update() {
+    public void Update() {
         /*
-         * Ensure the portal is up-to date with any changes made in the editor
+         * If any changes to the portal's size occurs, force the portal to update
          */
 
         /* If there is a change in the portal's size, force it to update */
@@ -160,16 +160,27 @@ public class PortalSet : MonoBehaviour {
 
         /* Reinitilize the portal's pieces */
         if(updatePortal) {
-            CreateMesh();
-            CreateBorder();
-            UpdatePortalObjectsTransforms();
-
-            updatePortal = false;
+            UpdatePortal();
         }
     }
     
 
     /* -------- Update Functions ---------------------------------------------------- */
+
+    public void UpdatePortal() {
+        /*
+         * Update the portal to reflect any size changes
+         */
+         
+        CreateMesh();
+        CreateBorder();
+        UpdatePortalObjectsTransforms();
+        
+        /* Update the saved previous sizes */
+        previousWidth = portalWidth;
+        previousHeight = portalHeight;
+        updatePortal = false;
+    }
 
     void UpdatePortalObjectsTransforms() {
         /*
