@@ -34,6 +34,9 @@ public class WaitingRoom : ConnectedRoom {
     private float zDist;
     private Vector3 roomCenter;
 
+    /* The material used for the skySphere of the window */
+    public Material skySphereMaterial;
+
 
     /* -------- Built-In Functions ---------------------------------------------------- */
 
@@ -186,9 +189,10 @@ public class WaitingRoom : ConnectedRoom {
         window.outsidePos = windowExit.position;
         window.outsideRot = windowExit.eulerAngles;
 
-        /* Set the material used for the window's frame */
+        /* Set the materials that the window will use */
         window.frameMaterial = windowFrameMaterial;
         window.glassMaterial = windowGlassMaterial;
+        window.skySphereMaterial = skySphereMaterial;
 
         /* Send a command to update the windows with the new given parameters */
         window.UpdateWindow();

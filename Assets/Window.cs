@@ -19,6 +19,7 @@ public class Window : MonoBehaviour {
     /* The materials used by the window frame */
     public Material frameMaterial;
     public Material glassMaterial;
+    public Material skySphereMaterial;
 
     /* The windows' position and angle */
     public Vector3 insidePos;
@@ -39,6 +40,9 @@ public class Window : MonoBehaviour {
     public float windowHeight;
     public float windowWidth;
 
+    /* The sphere object used as the skysphere for the outside window */
+    public GameObject skySphere;
+
     
     /* -------- Update Functions ---------------------------------------------------- */
 
@@ -53,6 +57,9 @@ public class Window : MonoBehaviour {
 
         /* Create the window */
         UpdateWindowMesh();
+
+        /* Create the skysphere for the outside window */
+        UpdateSkySphere();
     }
 
     public void UpdatePortalStats() {
@@ -107,6 +114,38 @@ public class Window : MonoBehaviour {
         CreateFrame(insideWindowContainer.transform, ref index, windowHeight, windowWidth);
         CreateFrame(outsideWindowContainer.transform, ref index, windowHeight, windowWidth);
     }
+
+    public void UpdateSkySphere() {
+        /*
+         * Create a sky sphere to place around the outside window to simulate a new environment
+         */
+
+        /* Create a sphere primitive */
+        if(skySphere != null) { DestroyImmediate(skySphere); }
+        skySphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        skySphere.transform.parent = outsideWindowContainer.transform;
+        skySphere.transform.localPosition = new Vector3(0, 0, 0);
+        skySphere.transform.localEulerAngles = new Vector3(0, 0, 0);
+        skySphere.transform.localScale = new Vector3(100, 100, 100);
+        skySphere.name = "Sky sphere";
+
+        /* Adjust the components */
+        Destroy(skySphere.GetComponent<SphereCollider>());
+
+        /* Flip all the triangles of the sphere to have it inside-out */
+        int[] triangles = skySphere.GetComponent<MeshFilter>().mesh.triangles;
+        int tempInt;
+        for(int i = 0; i < triangles.Length; i += 3) {
+            tempInt = triangles[i + 0];
+            triangles[i + 0] = triangles[i + 2];
+            triangles[i + 2] = tempInt;
+        }
+        skySphere.GetComponent<MeshFilter>().mesh.triangles = triangles;
+
+        /* Apply the skySphere texture to the sphere */
+        skySphere.GetComponent<MeshRenderer>().sharedMaterial = skySphereMaterial;
+    }
+
 
     /* -------- Event Functions ---------------------------------------------------- */
 
