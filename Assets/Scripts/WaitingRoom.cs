@@ -23,6 +23,8 @@ public class WaitingRoom : ConnectedRoom {
     public float frameDepth;
     public float windowHeight;
     public float windowWidth;
+    public Material windowFrameMaterial;
+    public Material windowGlassMaterial;
     //Where the outside window will be placed. Use the "Window Exit" object in it's Points of Interest container
     public Transform windowExit;
 
@@ -183,6 +185,10 @@ public class WaitingRoom : ConnectedRoom {
         /* Place the outside window/exit portal using the windowExit transform given to this script  */
         window.outsidePos = windowExit.position;
         window.outsideRot = windowExit.eulerAngles;
+
+        /* Set the material used for the window's frame */
+        window.frameMaterial = windowFrameMaterial;
+        window.glassMaterial = windowGlassMaterial;
 
         /* Send a command to update the windows with the new given parameters */
         window.UpdateWindow();

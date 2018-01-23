@@ -30,9 +30,7 @@ public class CubeCreator : MonoBehaviour {
          * Ensure the object that has this script has the required components
          */
 
-        if(GetComponent<MeshFilter>() == null) { gameObject.AddComponent<MeshFilter>(); }
-        if(GetComponent<MeshRenderer>() == null) { gameObject.AddComponent<MeshRenderer>(); }
-        if(GetComponent<BoxCollider>() == null) { gameObject.AddComponent<BoxCollider>(); }
+        InitializeComponents();
     }
 
     void Update() {
@@ -45,7 +43,17 @@ public class CubeCreator : MonoBehaviour {
         }
     }
 
-    void UpdateBox() {
+    void InitializeComponents() {
+        /*
+         * Add the required components if they are not already added.
+         */
+
+        if(GetComponent<MeshFilter>() == null) { gameObject.AddComponent<MeshFilter>(); }
+        if(GetComponent<MeshRenderer>() == null) { gameObject.AddComponent<MeshRenderer>(); }
+        if(GetComponent<BoxCollider>() == null) { gameObject.AddComponent<BoxCollider>(); }
+    }
+
+    public void UpdateBox() {
         /*
          * Create the mesh of the cube using it's set parameters.
          */
@@ -150,6 +158,7 @@ public class CubeCreator : MonoBehaviour {
         cubeMesh.triangles = triangles;
         cubeMesh.uv = UV;
         cubeMesh.RecalculateNormals();
+        InitializeComponents();
         GetComponent<MeshFilter>().mesh = cubeMesh;
         GetComponent<BoxCollider>().size = new Vector3(x, y, z);
 
