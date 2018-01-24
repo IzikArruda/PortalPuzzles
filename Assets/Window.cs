@@ -19,7 +19,6 @@ public class Window : MonoBehaviour {
     /* The materials used by the window frame */
     public Material frameMaterial;
     public Material glassMaterial;
-    public Material skySphereMaterial;
 
     /* The windows' position and angle */
     public Vector3 insidePos;
@@ -40,8 +39,10 @@ public class Window : MonoBehaviour {
     public float windowHeight;
     public float windowWidth;
 
-    /* The sphere object used as the skysphere for the outside window */
+    /* The GameObject object used as the skysphere for the outside window */
     public GameObject skySphere;
+    /* The texture to use for the sky sphere */
+    public Texture skySphereTexture;
 
     
     /* -------- Update Functions ---------------------------------------------------- */
@@ -141,8 +142,11 @@ public class Window : MonoBehaviour {
             triangles[i + 2] = tempInt;
         }
         skySphere.GetComponent<MeshFilter>().mesh.triangles = triangles;
+        
+        /* Use the given texture and apply it to a material to use for the sky sphere */
+        Material skySphereMaterial = new Material(Shader.Find("Unlit/Texture"));
+        skySphereMaterial.SetTexture("_MainTex", skySphereTexture);
 
-        /* Apply the skySphere texture to the sphere */
         skySphere.GetComponent<MeshRenderer>().sharedMaterial = skySphereMaterial;
     }
 

@@ -35,7 +35,9 @@ public class WaitingRoom : ConnectedRoom {
     private Vector3 roomCenter;
 
     /* The material used for the skySphere of the window */
-    public Material skySphereMaterial;
+    //public Material skySphereMaterial;
+    /* The texture to use for the sky sphere */
+    public Texture skySphereTexture;
 
 
     /* -------- Built-In Functions ---------------------------------------------------- */
@@ -207,7 +209,7 @@ public class WaitingRoom : ConnectedRoom {
         /* Set the materials that the window will use */
         window.frameMaterial = windowFrameMaterial;
         window.glassMaterial = windowGlassMaterial;
-        window.skySphereMaterial = skySphereMaterial;
+        window.skySphereTexture = skySphereTexture;
 
         /* Send a command to update the windows with the new given parameters */
         window.UpdateWindow();
