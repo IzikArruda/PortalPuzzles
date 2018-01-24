@@ -23,8 +23,6 @@ public class WaitingRoom : ConnectedRoom {
     public float frameDepth;
     public float windowHeight;
     public float windowWidth;
-    public Material windowFrameMaterial;
-    public Material windowGlassMaterial;
     //Where the outside window will be placed. Use the "Window Exit" object in it's Points of Interest container
     public Transform windowExit;
 
@@ -33,12 +31,11 @@ public class WaitingRoom : ConnectedRoom {
     private float yDist;
     private float zDist;
     private Vector3 roomCenter;
-
-    /* The material used for the skySphere of the window */
-    //public Material skySphereMaterial;
-    /* The texture to use for the sky sphere */
+    
+    /* The materials and textures used by this room */
+    public Material windowFrameMaterial;
+    public Material windowGlassMaterial;
     public Texture skySphereTexture;
-
 
     /* -------- Built-In Functions ---------------------------------------------------- */
 
@@ -234,7 +231,6 @@ public class WaitingRoom : ConnectedRoom {
         roomTrigger.isTrigger = true;
         roomTrigger.center = roomCenter + new Vector3(0, yDist/2f, -zDiff);
         roomTrigger.size = new Vector3(xFull, yDist, zFull);
-        Debug.Log(zFull);
     }
 
     public void DisableRoom() {

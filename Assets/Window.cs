@@ -16,10 +16,6 @@ public class Window : MonoBehaviour {
     /* The portalSet that the window will be using */
     public PortalSet portalSet;
 
-    /* The materials used by the window frame */
-    public Material frameMaterial;
-    public Material glassMaterial;
-
     /* The windows' position and angle */
     public Vector3 insidePos;
     public Vector3 insideRot;
@@ -41,10 +37,14 @@ public class Window : MonoBehaviour {
 
     /* The GameObject object used as the skysphere for the outside window */
     public GameObject skySphere;
-    /* The texture to use for the sky sphere */
-    public Texture skySphereTexture;
 
-    
+    /* The materials and textures used by the window frame */
+    public Material frameMaterial;
+    public Material glassMaterial;
+    public Texture skySphereTexture;
+    private Material skySphereMaterial;
+
+
     /* -------- Update Functions ---------------------------------------------------- */
 
     public void UpdateWindow() {
@@ -52,6 +52,9 @@ public class Window : MonoBehaviour {
          * Create the window mesh and place the portal relative to the window. This is called by an 
          * outside function after it sets the desired values for this window.
          */
+
+        /* Create the required materials */
+        UpdateMaterials();
 
         /* Place the portal */
         UpdatePortalStats();
@@ -61,6 +64,20 @@ public class Window : MonoBehaviour {
 
         /* Create the skysphere for the outside window */
         UpdateSkySphere();
+    }
+
+    void UpdateMaterials() {
+        /*
+         * Apply any required changes to the materials before creating the window
+         */
+         
+        /* Adjust the glass material's scale to reflect the window's size */
+        glassMaterial.SetTextureOffset("_MainTex", new Vector2(0.5f, 0.5f));
+        glassMaterial.SetTextureScale("_MainTex", new Vector2(1f/windowWidth, 1f/windowHeight));
+
+        /* Create the sky sphere material */
+        skySphereMaterial = new Material(Shader.Find("Unlit/Texture"));
+        skySphereMaterial.SetTexture("_MainTex", skySphereTexture);
     }
 
     public void UpdatePortalStats() {
@@ -142,11 +159,8 @@ public class Window : MonoBehaviour {
             triangles[i + 2] = tempInt;
         }
         skySphere.GetComponent<MeshFilter>().mesh.triangles = triangles;
-        
-        /* Use the given texture and apply it to a material to use for the sky sphere */
-        Material skySphereMaterial = new Material(Shader.Find("Unlit/Texture"));
-        skySphereMaterial.SetTexture("_MainTex", skySphereTexture);
 
+        /* Apply the sky sphere material */
         skySphere.GetComponent<MeshRenderer>().sharedMaterial = skySphereMaterial;
     }
 
