@@ -160,7 +160,15 @@ public class Window : MonoBehaviour {
         
         /* Reposition the sky sphere with the offset */
         skySphere.transform.localPosition = new Vector3(0, 0, 0);
-        skySphere.transform.position += portalRotDiff*offset;
+
+        /* Rotate the material with the same rotation of the outside window */
+        skySphere.transform.rotation = portalSet.ExitPortal.transform.rotation;
+        
+        /* Make sure the window's exit is facing the center of the material/texture */
+        skySphere.transform.rotation *= Quaternion.Euler(new Vector3(0, -90, 0));
+
+        /* Apply the offset relative to the sphere's rotation */
+        skySphere.transform.localPosition -= skySphere.transform.localRotation*offset;
     }
 
 
