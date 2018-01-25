@@ -95,9 +95,35 @@ public class StairsCreator : MonoBehaviour {
 
 
 
+        //OK NOW THE FIRST STEP CAN BE FOIND BY DOING THIS PATH:
+        //STARTPOINT - STAIRANGLEPOINT - TEMPTESTPOINT
+        //these are directions: not point to point. The first direction will be a given set amount i think.
+        //The next direction (stairAngle to tempTest) will continue on until it hits the plane that makes up the stairs.
+        //I believe this might be calculatable and not require a raytrace, as we know two directions(2 angles) and 1 distance. Trig can solve that
 
 
+        Vector3 stairAngleUpDirection = (stairAnglePoint.transform.position - startPoint.transform.position).normalized;
+        Vector3 stairAngleSideDirection = (tempTestPoint.transform.position - stairAnglePoint.transform.position).normalized;
 
+        //Draw the first step
+
+        float stepLength = distance;
+        float angle1 = Vector3.Angle(direction, stairAngleUpDirection);
+        float angle2 = 90;
+        float angle3 = 180 - angle1 - angle2;
+        Debug.Log(angle1 + " _ " + angle3);
+        //Get the distance for the two other lengths
+        // stepup / Sin(angle1) = stepLength 
+        // stepSide / Sin(angle3)
+        //
+        float stepUp = stepLength * Mathf.Sin(Mathf.PI*angle1/180f);
+        float stepSide = stepLength * Mathf.Sin(Mathf.PI*angle3/180f);
+
+        //Draw a ray using these values
+        Vector3 topStairPoint = startPoint.transform.position + stairAngleUpDirection*stepSide;
+        Vector3 nextStairStartPoint = topStairPoint + stairAngleSideDirection*stepUp;
+        Debug.DrawLine(startPoint.transform.position, topStairPoint);
+        Debug.DrawLine(topStairPoint, nextStairStartPoint);
 
 
 
