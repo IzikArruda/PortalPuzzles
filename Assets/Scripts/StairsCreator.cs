@@ -11,6 +11,8 @@ public class StairsCreator : MonoBehaviour {
     public GameObject startPoint;
     public GameObject endPoint;
     public GameObject sideStartPoint;
+    public GameObject stairAnglePoint;
+    public GameObject tempTestPoint;
 
     /* The parent that holds all stair pieces */
     public GameObject stairsContainer;
@@ -25,7 +27,9 @@ public class StairsCreator : MonoBehaviour {
     public Material stairsMaterial;
 
     /* Angles that define how the stairs are rotated. Ranges between [0, 1] */
+    [Range(0, 1)]
     public float sideAngle;
+    [Range(0, 180)]
     public float stairsAngle;
 
 
@@ -62,11 +66,40 @@ public class StairsCreator : MonoBehaviour {
 
         /* Make the start point face the end point and re-position the sideStart point to reflect the given sideAngle */
         startPoint.transform.rotation = Quaternion.LookRotation(difference);
-        Vector2 sideRotation = new Vector2(Mathf.Sin(sideAngle*Mathf.PI*2), Mathf.Cos(sideAngle*Mathf.PI*2));
+        Vector2 sideRotation = new Vector2(Mathf.Cos(sideAngle*Mathf.PI*2), Mathf.Sin(sideAngle*Mathf.PI*2));
         sideStartPoint.transform.localPosition = new Vector3(sideRotation.x, sideRotation.y, 0);
         
         /* Get the sideDirection defined by the new position of the sideStart */
-        Vector3 sideDirection = sideStartPoint.transform.position - startPoint.transform.position;
+        Vector3 sideDirection = (sideStartPoint.transform.position - startPoint.transform.position).normalized;
+
+
+
+
+
+
+
+        
+        
+        /* Position the StairAngle to be in it's default position, 1 unit from the plane's normal */
+        stairAnglePoint.transform.localPosition = new Vector3(-Mathf.Sin(sideAngle*Mathf.PI*2), Mathf.Cos(sideAngle*Mathf.PI*2), 0);
+
+        /* Rotate the stairAngle point relative to the given angle. It's new position marks how steep each step will be */
+        stairAnglePoint.transform.RotateAround(startPoint.transform.position, sideDirection, stairsAngle);
+
+        //NOTE: stairAnglePoint cannot have the value of 0 or 180 as thats too sharp
+
+        //The first step goes from start to stairAnglePoint. Then, the direction needs to hit a 90 degree turn.
+        //This 90 degree turn can be done by doing another RotateAround, but from the start point.
+        tempTestPoint.transform.position = startPoint.transform.position;
+        tempTestPoint.transform.RotateAround(stairAnglePoint.transform.position, sideDirection, -90);
+
+
+
+
+
+
+
+
 
 
 
