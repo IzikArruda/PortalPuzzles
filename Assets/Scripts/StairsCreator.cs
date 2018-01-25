@@ -2,14 +2,16 @@
 using System.Collections;
 
 /*
- * Create a set of stairs that connect the two points
+ * Create a set of stairs that connect a set of points. Each set contains two points.
  */
 [ExecuteInEditMode]
 public class StairsCreator : MonoBehaviour {
 
-    /* The two points to connect witha set of stairs */
-    public GameObject point1;
-    public GameObject point2;
+    /* The two points to connect witha set of stairs. Each point has  */
+    public GameObject set1point1;
+    public GameObject set1point2;
+    public GameObject set2point1;
+    public GameObject set2point2;
 
     /* The parent that holds all stair pieces */
     public GameObject stairsContainer;
@@ -38,7 +40,7 @@ public class StairsCreator : MonoBehaviour {
 
     void UpdateStairs() {
         /*
-         * Re-create the stairs
+         * Re-create the stairs using the 4 points of the stairs
          */
 
         /* Create the stairs container if needed */
@@ -46,35 +48,45 @@ public class StairsCreator : MonoBehaviour {
             CreateEmptyObject(ref stairsContainer, "Stairs", transform);
         }
 
-        /* Get the rotation that directs a vector from point 1 to 2 */
-        /* Get the distance and direction that goes from point 1 to point 2 */
-        Vector3 direction = (point2.transform.position - point1.transform.position).normalized;
-        float distance = (point2.transform.position - point1.transform.position).magnitude;
+        /* Get the direction for both sets to form the stairs */
+        Vector3 difference1 = set2point1.transform.position - set1point1.transform.position;
+        Vector3 difference2 = set2point2.transform.position - set1point2.transform.position;
+        Vector3 direction1 = (difference1).normalized;
+        Vector3 direction2 = (difference2).normalized;
+        float distance1 = (difference1).magnitude;
+        float distance2 = (difference2).magnitude;
         
 
         
         /* Re-create the array for the stairs */
-        CreateObjectsArray(ref stairs, 4, new Vector3(0, 0, 0));
+        CreateObjectsArray(ref stairs, 6, new Vector3(0, 0, 0));
         int index = 0;
 
-        /* Top of the stairs */
-        CreateEmptyObject(ref stairs[index], "Point1 Circle", stairsContainer.transform);
-        stairs[index].transform.position = point1.transform.position;
+        /* Top of the stairs set1 */
+        CreateEmptyObject(ref stairs[index], "S1P1 Circle", stairsContainer.transform);
+        stairs[index].transform.position = set1point1.transform.position;
+        index++;
+        /* Top of the stairs set2 */
+        CreateEmptyObject(ref stairs[index], "S1P2 Circle", stairsContainer.transform);
+        stairs[index].transform.position = set1point2.transform.position;
         index++;
 
-        /* 1st third of the stairs */
-        CreateEmptyObject(ref stairs[index], "First 3rd Circle", stairsContainer.transform);
-        stairs[index].transform.position = point1.transform.position + direction*distance*0.33f;
+        /* Middle of the stairs set1 */
+        CreateEmptyObject(ref stairs[index], "P1 midway Circle", stairsContainer.transform);
+        stairs[index].transform.position = set1point1.transform.position + direction1*distance1*0.5f;
+        index++;
+        /* Middle of the stairs set2 */
+        CreateEmptyObject(ref stairs[index], "P2 midway Circle", stairsContainer.transform);
+        stairs[index].transform.position = set1point2.transform.position + direction2*distance2*0.5f;
         index++;
 
-        /* 2nd third of the stairs */
-        CreateEmptyObject(ref stairs[index], "Second 3rd Circle", stairsContainer.transform);
-        stairs[index].transform.position = point2.transform.position - direction*distance*0.33f;
-        index++;
-
-        /* Bottom of the stairs */
+        /* Bottom of the stairs set1 */
         CreateEmptyObject(ref stairs[index], "Point2 Circle", stairsContainer.transform);
-        stairs[index].transform.position = point2.transform.position;
+        stairs[index].transform.position = set2point1.transform.position;
+        index++;
+        /* Bottom of the stairs set2 */
+        CreateEmptyObject(ref stairs[index], "Point2 Circle", stairsContainer.transform);
+        stairs[index].transform.position = set2point2.transform.position;
         index++;
     }
 
