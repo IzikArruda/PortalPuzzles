@@ -276,6 +276,6 @@ public class Window : MonoBehaviour {
         gameObject.transform.parent = parent;
         gameObject.transform.localPosition = new Vector3(0, 0, 0);
         gameObject.transform.localEulerAngles = new Vector3(0, 0, 0);
-        gameObject.transform.localScale = new Vector3(1f, 1, 1);
+        gameObject.transform.localScale = new Vector3(1, 1, 1);
     }
 }

@@ -2,16 +2,15 @@
 using System.Collections;
 
 /*
- * Create a set of stairs that connect a set of points. Each set contains two points.
+ * Create a set of stairs that connect a set of points.
  */
 [ExecuteInEditMode]
 public class StairsCreator : MonoBehaviour {
 
-    /* The two points to connect witha set of stairs. Each point has  */
-    public GameObject set1point1;
-    public GameObject set1point2;
-    public GameObject set2point1;
-    public GameObject set2point2;
+    /* The three points that define the stairs */
+    public GameObject startPoint;
+    public GameObject endPoint;
+    public GameObject sideStartPoint;
 
     /* The parent that holds all stair pieces */
     public GameObject stairsContainer;
@@ -19,7 +18,15 @@ public class StairsCreator : MonoBehaviour {
     /* The GameObjects that make up the stairs */
     public GameObject[] stairs;
 
+    /* Whether to update the stair's model on next frame or not */
     public bool updateStairs;
+
+    /* The material used by the stairs */
+    public Material stairsMaterial;
+
+    /* Angles that define how the stairs are rotated. Ranges between [0, 1] */
+    public float sideAngle;
+    public float stairsAngle;
 
 
     /* -------- Built-in Unity Functions ---------------------------------------------------- */
@@ -29,10 +36,10 @@ public class StairsCreator : MonoBehaviour {
          * Update the stairs if told to do so
          */
 
-        if(updateStairs) {
+        //if(updateStairs) {
             UpdateStairs();
             updateStairs = false;
-        }
+        //}
     }
 
 
@@ -40,7 +47,7 @@ public class StairsCreator : MonoBehaviour {
 
     void UpdateStairs() {
         /*
-         * Re-create the stairs using the 4 points of the stairs
+         * Re-create the stairs using the the set of points given to this script
          */
 
         /* Create the stairs container if needed */
@@ -48,46 +55,63 @@ public class StairsCreator : MonoBehaviour {
             CreateEmptyObject(ref stairsContainer, "Stairs", transform);
         }
 
-        /* Get the direction for both sets to form the stairs */
-        Vector3 difference1 = set2point1.transform.position - set1point1.transform.position;
-        Vector3 difference2 = set2point2.transform.position - set1point2.transform.position;
-        Vector3 direction1 = (difference1).normalized;
-        Vector3 direction2 = (difference2).normalized;
-        float distance1 = (difference1).magnitude;
-        float distance2 = (difference2).magnitude;
-        
+        /* Get the direction and distance between the start and end point */
+        Vector3 difference = endPoint.transform.position - startPoint.transform.position;
+        Vector3 direction = (difference).normalized;
+        float distance = (difference).magnitude;
 
+        /* Make the start point face the end point and re-position the sideStart point to reflect the given sideAngle */
+        startPoint.transform.rotation = Quaternion.LookRotation(difference);
+        Vector2 sideRotation = new Vector2(Mathf.Sin(sideAngle*Mathf.PI*2), Mathf.Cos(sideAngle*Mathf.PI*2));
+        sideStartPoint.transform.localPosition = new Vector3(sideRotation.x, sideRotation.y, 0);
         
+        /* Get the sideDirection defined by the new position of the sideStart */
+        Vector3 sideDirection = sideStartPoint.transform.position - startPoint.transform.position;
+
+
+
         /* Re-create the array for the stairs */
-        CreateObjectsArray(ref stairs, 6, new Vector3(0, 0, 0));
+        CreateObjectsArray(ref stairs, 1, new Vector3(0, 0, 0));
         int index = 0;
 
-        /* Top of the stairs set1 */
-        CreateEmptyObject(ref stairs[index], "S1P1 Circle", stairsContainer.transform);
-        stairs[index].transform.position = set1point1.transform.position;
-        index++;
-        /* Top of the stairs set2 */
-        CreateEmptyObject(ref stairs[index], "S1P2 Circle", stairsContainer.transform);
-        stairs[index].transform.position = set1point2.transform.position;
-        index++;
+        /* Top of the stairs */
+        //CreateEmptyObject(ref stairs[index], "Start Circle", stairsContainer.transform);
+        //stairs[index].transform.position = startPoint.transform.position;
+        //index++;
+        /* Top of the stairs */
+        //CreateEmptyObject(ref stairs[index], "Start Circle", stairsContainer.transform);
+        //stairs[index].transform.position = startPoint.transform.position;
+        //index++;
 
-        /* Middle of the stairs set1 */
-        CreateEmptyObject(ref stairs[index], "P1 midway Circle", stairsContainer.transform);
-        stairs[index].transform.position = set1point1.transform.position + direction1*distance1*0.5f;
-        index++;
-        /* Middle of the stairs set2 */
-        CreateEmptyObject(ref stairs[index], "P2 midway Circle", stairsContainer.transform);
-        stairs[index].transform.position = set1point2.transform.position + direction2*distance2*0.5f;
-        index++;
+        /* Middle of the stairs */
+        //CreateEmptyObject(ref stairs[index], "Midway Circle", stairsContainer.transform);
+        //stairs[index].transform.position = startPoint.transform.position + direction*distance*0.5f;
+        //index++;
+        /* Middle of the stairs */
+        //CreateEmptyObject(ref stairs[index], "Midway Circle", stairsContainer.transform);
+        //stairs[index].transform.position = startPoint.transform.position + direction*distance*0.5f;
+        //index++;
 
-        /* Bottom of the stairs set1 */
-        CreateEmptyObject(ref stairs[index], "Point2 Circle", stairsContainer.transform);
-        stairs[index].transform.position = set2point1.transform.position;
-        index++;
+        /* Bottom of the stairs */
+        //CreateEmptyObject(ref stairs[index], "End Circle", stairsContainer.transform);
+        //stairs[index].transform.position = endPoint.transform.position;
+        //index++;
         /* Bottom of the stairs set2 */
-        CreateEmptyObject(ref stairs[index], "Point2 Circle", stairsContainer.transform);
-        stairs[index].transform.position = set2point2.transform.position;
+        //CreateEmptyObject(ref stairs[index], "End Circle", stairsContainer.transform);
+        //stairs[index].transform.position = endPoint.transform.position;
+        //index++;
+
+
+        /* Create the plane of the stairs */
+        Vector3 top1 = startPoint.transform.position + sideDirection*1;
+        Vector3 top2 = startPoint.transform.position - sideDirection*1;
+        Vector3 bot1 = endPoint.transform.position + sideDirection*1;
+        Vector3 bot2 = endPoint.transform.position - sideDirection*1;
+        CreateEmptyObject(ref stairs[index], "Main plane", stairsContainer.transform);
+        stairs[index].transform.position = Vector3.zero;
+        CreatePlane(top1, top2, bot1, bot2, stairs[index], 1);
         index++;
+
     }
 
 
@@ -115,7 +139,7 @@ public class StairsCreator : MonoBehaviour {
          */
 
         //gameObject = new GameObject();
-        gameObject = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        gameObject = new GameObject();
         gameObject.name = name;
         gameObject.transform.parent = parent;
         gameObject.transform.localPosition = new Vector3(0, 0, 0);
@@ -123,4 +147,61 @@ public class StairsCreator : MonoBehaviour {
         gameObject.transform.localScale = new Vector3(1, 1, 1);
     }
 
+    
+    public void CreatePlane(Vector3 top1, Vector3 top2, Vector3 bot1, Vector3 bot2, GameObject wall, float UVScale) {
+        /*
+         * Create a plane onto the given gameObject using the 4 given vector positions. 
+         * The position of the vertex in the world determines how the UVs will be placed. 
+         */
+        Mesh planeMesh = new Mesh();
+        Vector3[] vertices = null;
+        Vector2[] UV = null;
+        int[] triangles = null;
+        
+        /* Get the vertices and triangles that will form the mesh of the plane */
+        CreateMesh(top1, top2, bot1, bot2, ref vertices, ref triangles);
+
+        /* Set the UVs of the plane */
+        Vector3 properCenter = wall.transform.rotation * wall.transform.position;
+        UV = new Vector2[] {
+            (new Vector2(properCenter.x, properCenter.z) + new Vector2(vertices[0].x, vertices[0].z))/UVScale,
+            (new Vector2(properCenter.x, properCenter.z) + new Vector2(vertices[1].x, vertices[1].z))/UVScale,
+            (new Vector2(properCenter.x, properCenter.z) + new Vector2(vertices[2].x, vertices[2].z))/UVScale,
+            (new Vector2(properCenter.x, properCenter.z) + new Vector2(vertices[3].x, vertices[3].z))/UVScale
+        };
+
+        /* Assign the parameters to the mesh */
+        planeMesh.vertices = vertices;
+        planeMesh.triangles = triangles;
+        planeMesh.uv = UV;
+        planeMesh.RecalculateNormals();
+
+        /* Add a meshFilter and a meshRenderer to be able to draw the wall */
+        wall.AddComponent<MeshFilter>();
+        wall.GetComponent<MeshFilter>().mesh = planeMesh;
+        wall.AddComponent<MeshRenderer>();
+        wall.GetComponent<MeshRenderer>().sharedMaterial = stairsMaterial;
+    }
+    
+    public void CreateMesh(Vector3 top1, Vector3 top2, Vector3 bot1, Vector3 bot2, ref Vector3[] vertices, ref int[] triangles) {
+        /*
+    	 * Create a mesh using the given scale values and save it's verts and triangles into the given references.
+    	 * It expects the given arrays to not yet be initialized. The given boolean determines the order of the triangles.
+         * 
+         * Depending on the given wallType, place the vectors in their appropriate position
+    	 */
+
+        /* Create the vertices that form the plane given by the 4 vertices */
+        vertices = new Vector3[4];
+        vertices[0] = top1;
+        vertices[1] = top2;
+        vertices[2] = bot1;
+        vertices[3] = bot2;
+        
+        /* Create the triangles for the plane */
+        triangles = new int[]{
+            0, 1, 2,
+            3, 2, 1
+        };
+    }
 }
