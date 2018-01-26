@@ -37,9 +37,6 @@ public class StairsCreator : MonoBehaviour {
     /* How many steps the stairs will have */
     public int stepCount;
     
-    /* Used to determine whether the steps will be above or bellow the plane. changes the type of step to start with */
-    public bool bellowPlane;
-
     /* how wide the stairs are */
     public float stairsWidth;
 
@@ -94,21 +91,12 @@ public class StairsCreator : MonoBehaviour {
         float stepDistance = (startEndDif).magnitude/(float) stepCount;
         float stepUpDistance = stepDistance * Mathf.Sin(Mathf.PI*stepUpAngle/180f);
         float stepForwardDistance = stepDistance * Mathf.Sin(Mathf.PI*stepForwardAngle/180f);
-        
-        /* If we want to start with a forward and not upward step, switch the directions and distances */
-        if(bellowPlane) {
-            Vector3 tempDir = stepUpwardDirection;
-            float tempDist = stepUpDistance;
-            stepUpwardDirection = stepForwardDirection;
-            stepForwardDirection = tempDir;
-            stepUpDistance = stepForwardDistance;
-            stepForwardDistance = tempDist;
-        }
 
         /* Create the parts of the mesh with enough room for each step */
-        Vector3[] vertices = new Vector3[stepCount*12];
-        Vector2[] UVs = new Vector2[stepCount*12];
-        int[] triangles = new int[stepCount*12];
+        int vertCount = 18;
+        Vector3[] vertices = new Vector3[stepCount*vertCount];
+        Vector2[] UVs = new Vector2[stepCount*vertCount];
+        int[] triangles = new int[stepCount*vertCount];
         /* Initialize required positions for each step */
         Vector3 start;
         Vector3 midway;
@@ -120,20 +108,8 @@ public class StairsCreator : MonoBehaviour {
             midway = start + stepUpwardDirection*stepForwardDistance;
             end = midway + stepForwardDirection*stepUpDistance;
             
-            /* Make the "upwards" part of the step */
-            //CreateEmptyObject(ref stairs[index], "Step " + (i+1) + "(Up)", stairsContainer.transform);
-            //stairs[index].transform.position = Vector3.zero;
-            //CreatePlane(midway - sideDif, midway + sideDif, start - sideDif, start + sideDif, stairs[index], 1);
-            //index++;
-            
-            /* Make the "forward" part of the step */
-            //CreateEmptyObject(ref stairs[index], "Step " + (i+1) + "(Forward)", stairsContainer.transform);
-            //stairs[index].transform.position = Vector3.zero;
-            //CreatePlane(end - sideDif, end + sideDif, midway - sideDif, midway + sideDif, stairs[index], 1);
-            //index++;
-
             /* Add to the mesh components with this new step and it's positions */
-            AddStep(start, midway, end, sideDif, i, ref vertices, ref UVs, ref triangles);
+            AddStep(start, midway, end, sideDif, i*vertCount, ref vertices, ref UVs, ref triangles);
         }
 
         /* Add the required components to the stairs object and apply the mesh */
@@ -144,11 +120,7 @@ public class StairsCreator : MonoBehaviour {
         stairsMesh.uv = UVs;
         stairsObject.AddComponent<MeshFilter>().sharedMesh = stairsMesh;
         stairsObject.AddComponent<MeshRenderer>().sharedMaterial = stairsMaterial;
-
-
-
-
-
+        
         /* Create the plane of the stairs */
         Vector3 top1 = startPoint.position + sideDif;
         Vector3 top2 = startPoint.position - sideDif;
@@ -156,7 +128,7 @@ public class StairsCreator : MonoBehaviour {
         Vector3 bot2 = endPoint.position - sideDif;
         CreateEmptyObject(ref stairs[index], "Main plane", stairsContainer.transform);
         stairs[index].transform.position = Vector3.zero;
-        CreatePlane(top1, top2, bot1, bot2, stairs[index], 1);
+        CreatePlane(top2, top1, bot2, bot1, stairs[index], 1);
         index++;
 
     }
@@ -275,41 +247,75 @@ public class StairsCreator : MonoBehaviour {
     }
     
     public void AddStep(Vector3 start, Vector3 midway, Vector3 end, Vector3 sideDirection, 
-            int currentStep, ref Vector3[] vertices, ref Vector2[] UVs, ref int[] triangles) {
+            int index, ref Vector3[] vertices, ref Vector2[] UVs, ref int[] triangles) {
         /*
          * Given the positions of the next step, add it to the mesh's components.
          */
 
         /* Add the step's vertices to the array */
         //First plane
-        vertices[currentStep*12 + 0] = start - sideDirection;
-        vertices[currentStep*12 + 1] = start + sideDirection;
-        vertices[currentStep*12 + 2] = midway - sideDirection;
-        vertices[currentStep*12 + 3] = start + sideDirection;
-        vertices[currentStep*12 + 4] = midway + sideDirection;
-        vertices[currentStep*12 + 5] = midway - sideDirection;
+        vertices[index + 0] = start - sideDirection;
+        vertices[index + 1] = start + sideDirection;
+        vertices[index + 2] = midway - sideDirection;
+        vertices[index + 3] = start + sideDirection;
+        vertices[index + 4] = midway + sideDirection;
+        vertices[index + 5] = midway - sideDirection;
         //Second plane
-        vertices[currentStep*12 + 6] = midway - sideDirection;
-        vertices[currentStep*12 + 7] = midway + sideDirection;
-        vertices[currentStep*12 + 8] = end - sideDirection;
-        vertices[currentStep*12 + 9] = midway + sideDirection;
-        vertices[currentStep*12 + 10] = end + sideDirection;
-        vertices[currentStep*12 + 11] = end - sideDirection;
+        vertices[index + 6] = midway - sideDirection;
+        vertices[index + 7] = midway + sideDirection;
+        vertices[index + 8] = end - sideDirection;
+        vertices[index + 9] = midway + sideDirection;
+        vertices[index + 10] = end + sideDirection;
+        vertices[index + 11] = end - sideDirection;
+        //Sides of the steps
+        vertices[index + 12] = start - sideDirection;
+        vertices[index + 13] = midway - sideDirection;
+        vertices[index + 14] = end - sideDirection;
+        vertices[index + 15] = start + sideDirection;
+        vertices[index + 16] = midway + sideDirection;
+        vertices[index + 17] = end + sideDirection;
         
         /* Add the proper triangles for the step */
         //First plane
-        triangles[currentStep*12 + 0] = currentStep*12 + 2;
-        triangles[currentStep*12 + 1] = currentStep*12 + 1;
-        triangles[currentStep*12 + 2] = currentStep*12 + 0;
-        triangles[currentStep*12 + 3] = currentStep*12 + 5;
-        triangles[currentStep*12 + 4] = currentStep*12 + 4;
-        triangles[currentStep*12 + 5] = currentStep*12 + 3;
+        triangles[index + 0] = index + 2;
+        triangles[index + 1] = index + 1;
+        triangles[index + 2] = index + 0;
+        triangles[index + 3] = index + 5;
+        triangles[index + 4] = index + 4;
+        triangles[index + 5] = index + 3;
         //Second plane
-        triangles[currentStep*12 + 6] = currentStep*12 + 8;
-        triangles[currentStep*12 + 7] = currentStep*12 + 7;
-        triangles[currentStep*12 + 8] = currentStep*12 + 6;
-        triangles[currentStep*12 + 9] = currentStep*12 + 11;
-        triangles[currentStep*12 + 10] = currentStep*12 + 10;
-        triangles[currentStep*12 + 11] = currentStep*12 + 9;
+        triangles[index + 6] = index + 8;
+        triangles[index + 7] = index + 7;
+        triangles[index + 8] = index + 6;
+        triangles[index + 9] = index + 11;
+        triangles[index + 10] = index + 10;
+        triangles[index + 11] = index + 9;
+        //Sides of the steps
+        triangles[index + 12] = index + 14;
+        triangles[index + 13] = index + 13;
+        triangles[index + 14] = index + 12;
+        triangles[index + 15] = index + 15;
+        triangles[index + 16] = index + 16;
+        triangles[index + 17] = index + 17;
+
+        /* Add the proper UVs for each vertex */
+        UVs[index + 0] = vertices[index + 0];
+        UVs[index + 1] = vertices[index + 1];
+        UVs[index + 2] = vertices[index + 2];
+        UVs[index + 3] = vertices[index + 3];
+        UVs[index + 4] = vertices[index + 4];
+        UVs[index + 5] = vertices[index + 5];
+        UVs[index + 6] = vertices[index + 6];
+        UVs[index + 7] = vertices[index + 7];
+        UVs[index + 8] = vertices[index + 8];
+        UVs[index + 9] = vertices[index + 9];
+        UVs[index + 10] = vertices[index + 10];
+        UVs[index + 11] = vertices[index + 11];
+        UVs[index + 12] = vertices[index + 12];
+        UVs[index + 13] = vertices[index + 13];
+        UVs[index + 14] = vertices[index + 14];
+        UVs[index + 15] = vertices[index + 15];
+        UVs[index + 16] = vertices[index + 16];
+        UVs[index + 17] = vertices[index + 17];
     }
 }
