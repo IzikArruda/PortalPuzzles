@@ -2,22 +2,23 @@
 using System.Collections;
 
 /*
- * Create a set of stairs that connect a set of points.
+ * Create a set of stairs using the given parameters. The set of Transforms required are used
+ * to get positions relevent to building the stairs procedurally.
  */
 [ExecuteInEditMode]
 public class StairsCreator : MonoBehaviour {
 
-    /* The three points that define the stairs */
-    public GameObject startPoint;
-    public GameObject endPoint;
-    public GameObject sideStartPoint;
-    public GameObject stairAnglePoint;
-    public GameObject tempTestPoint;
+    /* Transforms that are placed in key positons that are used to define the skeleton of the stairs */
+    public Transform startPoint;
+    public Transform endPoint;
+    public Transform sideEdgePoint;
+    public Transform stairsUpwards;
+    public Transform stairsForwards;
 
     /* The parent that holds all stair pieces */
     public GameObject stairsContainer;
 
-    /* The GameObjects that make up the stairs */
+    /* Each individual GameObject that will make up the stairs */
     public GameObject[] stairs;
 
     /* Whether to update the stair's model on next frame or not */
@@ -26,7 +27,7 @@ public class StairsCreator : MonoBehaviour {
     /* The material used by the stairs */
     public Material stairsMaterial;
 
-    /* Angles that define how the stairs are rotated. Ranges between [0, 1] */
+    /* Angles that define how the stairs are rotated */
     [Range(0, 1)]
     public float sideAngle;
     [Range(0, 180)]
@@ -35,9 +36,11 @@ public class StairsCreator : MonoBehaviour {
     /* How many steps the stairs will have */
     public int stepCount;
     
-    /* Used to determine whether the steps will be above or bellow the plane, 
-     * which also changes the type of step to start with */
+    /* Used to determine whether the steps will be above or bellow the plane. changes the type of step to start with */
     public bool bellowPlane;
+
+    /* how wide the stairs are */
+    public float stairsWidth;
 
     /* -------- Built-in Unity Functions ---------------------------------------------------- */
 
@@ -59,132 +62,98 @@ public class StairsCreator : MonoBehaviour {
         /*
          * Re-create the stairs using the the set of points given to this script
          */
-
+         
         /* Create the stairs container if needed */
         if(stairsContainer == null) {
             CreateEmptyObject(ref stairsContainer, "Stairs", transform);
         }
 
-        /* Get the direction and distance between the start and end point */
-        Vector3 difference = endPoint.transform.position - startPoint.transform.position;
-        Vector3 direction = (difference).normalized;
-        float distance = (difference).magnitude;
-
-        /* Make the start point face the end point and re-position the sideStart point to reflect the given sideAngle */
-        startPoint.transform.rotation = Quaternion.LookRotation(difference);
-        Vector2 sideRotation = new Vector2(Mathf.Cos(sideAngle*Mathf.PI*2), Mathf.Sin(sideAngle*Mathf.PI*2));
-        sideStartPoint.transform.localPosition = new Vector3(sideRotation.x, sideRotation.y, 0);
-        
-        /* Get the sideDirection defined by the new position of the sideStart */
-        Vector3 sideDirection = (sideStartPoint.transform.position - startPoint.transform.position).normalized;
-
-
-
-
-
-
-
-        
-        
-        /* Position the StairAngle to be in it's default position, 1 unit from the plane's normal */
-        stairAnglePoint.transform.localPosition = new Vector3(-Mathf.Sin(sideAngle*Mathf.PI*2), Mathf.Cos(sideAngle*Mathf.PI*2), 0);
-
-        /* Rotate the stairAngle point relative to the given angle. It's new position marks how steep each step will be */
-        stairAnglePoint.transform.RotateAround(startPoint.transform.position, sideDirection, stairsAngle);
-
-        //NOTE: stairAnglePoint cannot have the value of 0 or 180 as thats too sharp
-
-        //The first step goes from start to stairAnglePoint. Then, the direction needs to hit a 90 degree turn.
-        //This 90 degree turn can be done by doing another RotateAround, but from the start point.
-        tempTestPoint.transform.position = startPoint.transform.position;
-        tempTestPoint.transform.RotateAround(stairAnglePoint.transform.position, sideDirection, -90);
-
-
-
-        //OK NOW THE FIRST STEP CAN BE FOIND BY DOING THIS PATH:
-        //STARTPOINT - STAIRANGLEPOINT - TEMPTESTPOINT
-        //these are directions: not point to point. The first direction will be a given set amount i think.
-        //The next direction (stairAngle to tempTest) will continue on until it hits the plane that makes up the stairs.
-        //I believe this might be calculatable and not require a raytrace, as we know two directions(2 angles) and 1 distance. Trig can solve that
-
-
-        Vector3 stairAngleUpDirection = (stairAnglePoint.transform.position - startPoint.transform.position).normalized;
-        Vector3 stairAngleSideDirection = (tempTestPoint.transform.position - stairAnglePoint.transform.position).normalized;
-
-        //Draw the first step
-
-        float stepLength = distance/(float) stepCount;
-        float angle1 = Vector3.Angle(direction, stairAngleUpDirection);
-        float angle2 = 90;
-        float angle3 = 180 - angle1 - angle2;
-        Debug.Log(angle1 + " _ " + angle3);
-        //Get the distance for the two other lengths
-        // stepup / Sin(angle1) = stepLength 
-        // stepSide / Sin(angle3)
-        //
-        float stepUp = stepLength * Mathf.Sin(Mathf.PI*angle1/180f);
-        float stepSide = stepLength * Mathf.Sin(Mathf.PI*angle3/180f);
-
-        //Draw a ray using these values
-        Vector3 topStairPoint = startPoint.transform.position + stairAngleUpDirection*stepSide;
-        Vector3 nextStairStartPoint = topStairPoint + stairAngleSideDirection*stepUp;
-        Debug.DrawLine(startPoint.transform.position, topStairPoint);
-        Debug.DrawLine(topStairPoint, nextStairStartPoint);
-
-
-
-
-
-
-
         /* Re-create the array for the stairs. Make sure the array is big enough for all the steps */
         CreateObjectsArray(ref stairs, stepCount*2 + 1, new Vector3(0, 0, 0));
         int index = 0;
 
+        /* Properly position and rotate the transforms that represent the important points of the stairs */
+        RepositionGivenTransforms();
+
+        /* Extract the desired directions */
+        Vector3 startEndDif = endPoint.transform.position - startPoint.transform.position;
+        Vector3 sideDif = stairsWidth*0.5f*(sideEdgePoint.transform.position - startPoint.transform.position).normalized;
+        Vector3 stepUpwardDirection = (stairsUpwards.transform.position - startPoint.transform.position).normalized;
+        Vector3 stepForwardDirection = (stairsForwards.transform.position - stairsUpwards.transform.position).normalized;
+
+        /* Extract the desired distances */
+        float stepUpAngle = Vector3.Angle((startEndDif).normalized, stepUpwardDirection);
+        float stepForwardAngle = 90 - stepUpAngle;
+        float stepDistance = (startEndDif).magnitude/(float) stepCount;
+        float stepUpDistance = stepDistance * Mathf.Sin(Mathf.PI*stepUpAngle/180f);
+        float stepForwardDistance = stepDistance * Mathf.Sin(Mathf.PI*stepForwardAngle/180f);
+        
+        /* If we want to start with a forward and not upward step, switch the directions and distances */
+        if(bellowPlane) {
+            Vector3 tempDir = stepUpwardDirection;
+            float tempDist = stepUpDistance;
+            stepUpwardDirection = stepForwardDirection;
+            stepForwardDirection = tempDir;
+            stepUpDistance = stepForwardDistance;
+            stepForwardDistance = tempDist;
+        }
 
         /*  Create each step for the stairs through a loop */
         Vector3 end = startPoint.transform.position;
         Vector3 start;
-        Vector3 sideDir = sideDirection * 1f;
-        Vector3 upProgress = stairAngleUpDirection;
-        Vector3 forwardProgress = stairAngleSideDirection;
-        if(bellowPlane) {
-            upProgress = stairAngleSideDirection;
-            forwardProgress = stairAngleUpDirection;
-            float temp = stepSide;
-            stepSide = stepUp;
-            stepUp = temp;
-        }
         for(int i = 0; i < stepCount; i++) {
             /* Update the position values by moving up to the next step */
             start = end;
-            end += upProgress*stepSide;
+            end += stepUpwardDirection*stepForwardDistance;
             /* Make the "upwards" part of the step */
             CreateEmptyObject(ref stairs[index], "Step " + (i+1) + "(Up)", stairsContainer.transform);
             stairs[index].transform.position = Vector3.zero;
-            CreatePlane(end - sideDir, end + sideDir, start - sideDir, start + sideDir, stairs[index], 1);
+            CreatePlane(end - sideDif, end + sideDif, start - sideDif, start + sideDif, stairs[index], 1);
             index++;
 
             /* Move forward to finish the current step */
             start = end;
-            end += forwardProgress*stepUp;
+            end += stepForwardDirection*stepUpDistance;
             /* Make the "forward" part of the step */
             CreateEmptyObject(ref stairs[index], "Step " + (i+1) + "(Forward)", stairsContainer.transform);
             stairs[index].transform.position = Vector3.zero;
-            CreatePlane(end - sideDir, end + sideDir, start - sideDir, start + sideDir, stairs[index], 1);
+            CreatePlane(end - sideDif, end + sideDif, start - sideDif, start + sideDif, stairs[index], 1);
             index++;
         }
 
         /* Create the plane of the stairs */
-        Vector3 top1 = startPoint.transform.position + sideDirection*1;
-        Vector3 top2 = startPoint.transform.position - sideDirection*1;
-        Vector3 bot1 = endPoint.transform.position + sideDirection*1;
-        Vector3 bot2 = endPoint.transform.position - sideDirection*1;
+        Vector3 top1 = startPoint.transform.position + sideDif;
+        Vector3 top2 = startPoint.transform.position - sideDif;
+        Vector3 bot1 = endPoint.transform.position + sideDif;
+        Vector3 bot2 = endPoint.transform.position - sideDif;
         CreateEmptyObject(ref stairs[index], "Main plane", stairsContainer.transform);
         stairs[index].transform.position = Vector3.zero;
         CreatePlane(top1, top2, bot1, bot2, stairs[index], 1);
         index++;
 
+    }
+
+    void RepositionGivenTransforms() {
+        /*
+         * Reposition the list of transforms that are used to define key positions of the stairs
+         */
+
+        /* Make the start point face the end point and re-position the sideStart point to reflect the given sideAngle */
+        startPoint.transform.rotation = Quaternion.LookRotation(endPoint.transform.position - startPoint.transform.position);
+        sideEdgePoint.transform.localPosition = new Vector3(Mathf.Cos(sideAngle*Mathf.PI*2), Mathf.Sin(sideAngle*Mathf.PI*2), 0);
+
+        /* Get the sideDirection defined by the new position of the sideStart */
+        Vector3 sideDirection = (sideEdgePoint.transform.position - startPoint.transform.position).normalized;
+
+        /* Position the StairAngle to be in it's default position, 1 unit along the plane's normal */
+        stairsUpwards.transform.localPosition = new Vector3(-Mathf.Sin(sideAngle*Mathf.PI*2), Mathf.Cos(sideAngle*Mathf.PI*2), 0);
+
+        /* Rotate the stairAngle point relative to the given angle. It's new position marks how steep each step will be */
+        stairsUpwards.transform.RotateAround(startPoint.transform.position, sideDirection, stairsAngle);
+
+        /* The first step goes from start to stairAnglePoint. Then, the direction needs to hit a 90 degree turn. */
+        stairsForwards.transform.position = startPoint.transform.position;
+        stairsForwards.transform.RotateAround(stairsUpwards.transform.position, sideDirection, -90);
     }
 
 
