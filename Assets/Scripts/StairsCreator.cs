@@ -20,6 +20,7 @@ public class StairsCreator : MonoBehaviour {
 
     /* Each individual GameObject that will make up the stairs */
     public GameObject[] stairs;
+    public GameObject stairsObject;
 
     /* Whether to update the stair's model on next frame or not */
     public bool updateStairs;
@@ -104,28 +105,49 @@ public class StairsCreator : MonoBehaviour {
             stepForwardDistance = tempDist;
         }
 
-        /*  Create each step for the stairs through a loop */
-        Vector3 end = startPoint.position;
+        /* Create the parts of the mesh with enough room for each step */
+        Vector3[] vertices = new Vector3[stepCount*12];
+        Vector2[] UVs = new Vector2[stepCount*12];
+        int[] triangles = new int[stepCount*12];
+        /* Initialize required positions for each step */
         Vector3 start;
+        Vector3 midway;
+        Vector3 end = startPoint.position;
+        /* Create each step for the stairs through a loop */
         for(int i = 0; i < stepCount; i++) {
-            /* Update the position values by moving up to the next step */
+            /* Get the position values for each part of this step */
             start = end;
-            end += stepUpwardDirection*stepForwardDistance;
+            midway = start + stepUpwardDirection*stepForwardDistance;
+            end = midway + stepForwardDirection*stepUpDistance;
+            
             /* Make the "upwards" part of the step */
-            CreateEmptyObject(ref stairs[index], "Step " + (i+1) + "(Up)", stairsContainer.transform);
-            stairs[index].transform.position = Vector3.zero;
-            CreatePlane(end - sideDif, end + sideDif, start - sideDif, start + sideDif, stairs[index], 1);
-            index++;
-
-            /* Move forward to finish the current step */
-            start = end;
-            end += stepForwardDirection*stepUpDistance;
+            //CreateEmptyObject(ref stairs[index], "Step " + (i+1) + "(Up)", stairsContainer.transform);
+            //stairs[index].transform.position = Vector3.zero;
+            //CreatePlane(midway - sideDif, midway + sideDif, start - sideDif, start + sideDif, stairs[index], 1);
+            //index++;
+            
             /* Make the "forward" part of the step */
-            CreateEmptyObject(ref stairs[index], "Step " + (i+1) + "(Forward)", stairsContainer.transform);
-            stairs[index].transform.position = Vector3.zero;
-            CreatePlane(end - sideDif, end + sideDif, start - sideDif, start + sideDif, stairs[index], 1);
-            index++;
+            //CreateEmptyObject(ref stairs[index], "Step " + (i+1) + "(Forward)", stairsContainer.transform);
+            //stairs[index].transform.position = Vector3.zero;
+            //CreatePlane(end - sideDif, end + sideDif, midway - sideDif, midway + sideDif, stairs[index], 1);
+            //index++;
+
+            /* Add to the mesh components with this new step and it's positions */
+            AddStep(start, midway, end, sideDif, i, ref vertices, ref UVs, ref triangles);
         }
+
+        /* Add the required components to the stairs object and apply the mesh */
+        CreateEmptyObject(ref stairsObject, "Stairs object", stairsContainer.transform);
+        Mesh stairsMesh = new Mesh();
+        stairsMesh.vertices = vertices;
+        stairsMesh.triangles = triangles;
+        stairsMesh.uv = UVs;
+        stairsObject.AddComponent<MeshFilter>().sharedMesh = stairsMesh;
+        stairsObject.AddComponent<MeshRenderer>().sharedMaterial = stairsMaterial;
+
+
+
+
 
         /* Create the plane of the stairs */
         Vector3 top1 = startPoint.position + sideDif;
@@ -236,8 +258,6 @@ public class StairsCreator : MonoBehaviour {
         /*
     	 * Create a mesh using the given scale values and save it's verts and triangles into the given references.
     	 * It expects the given arrays to not yet be initialized. The given boolean determines the order of the triangles.
-         * 
-         * Depending on the given wallType, place the vectors in their appropriate position
     	 */
 
         /* Create the vertices that form the plane given by the 4 vertices */
@@ -252,5 +272,44 @@ public class StairsCreator : MonoBehaviour {
             0, 1, 2,
             3, 2, 1
         };
+    }
+    
+    public void AddStep(Vector3 start, Vector3 midway, Vector3 end, Vector3 sideDirection, 
+            int currentStep, ref Vector3[] vertices, ref Vector2[] UVs, ref int[] triangles) {
+        /*
+         * Given the positions of the next step, add it to the mesh's components.
+         */
+
+        /* Add the step's vertices to the array */
+        //First plane
+        vertices[currentStep*12 + 0] = start - sideDirection;
+        vertices[currentStep*12 + 1] = start + sideDirection;
+        vertices[currentStep*12 + 2] = midway - sideDirection;
+        vertices[currentStep*12 + 3] = start + sideDirection;
+        vertices[currentStep*12 + 4] = midway + sideDirection;
+        vertices[currentStep*12 + 5] = midway - sideDirection;
+        //Second plane
+        vertices[currentStep*12 + 6] = midway - sideDirection;
+        vertices[currentStep*12 + 7] = midway + sideDirection;
+        vertices[currentStep*12 + 8] = end - sideDirection;
+        vertices[currentStep*12 + 9] = midway + sideDirection;
+        vertices[currentStep*12 + 10] = end + sideDirection;
+        vertices[currentStep*12 + 11] = end - sideDirection;
+        
+        /* Add the proper triangles for the step */
+        //First plane
+        triangles[currentStep*12 + 0] = currentStep*12 + 2;
+        triangles[currentStep*12 + 1] = currentStep*12 + 1;
+        triangles[currentStep*12 + 2] = currentStep*12 + 0;
+        triangles[currentStep*12 + 3] = currentStep*12 + 5;
+        triangles[currentStep*12 + 4] = currentStep*12 + 4;
+        triangles[currentStep*12 + 5] = currentStep*12 + 3;
+        //Second plane
+        triangles[currentStep*12 + 6] = currentStep*12 + 8;
+        triangles[currentStep*12 + 7] = currentStep*12 + 7;
+        triangles[currentStep*12 + 8] = currentStep*12 + 6;
+        triangles[currentStep*12 + 9] = currentStep*12 + 11;
+        triangles[currentStep*12 + 10] = currentStep*12 + 10;
+        triangles[currentStep*12 + 11] = currentStep*12 + 9;
     }
 }
