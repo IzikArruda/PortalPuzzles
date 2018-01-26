@@ -11,9 +11,9 @@ public class StairsCreator : MonoBehaviour {
     /* Transforms that are placed in key positons that are used to define the skeleton of the stairs */
     public Transform startPoint;
     public Transform endPoint;
-    public Transform sideEdgePoint;
-    public Transform stairsUpwards;
-    public Transform stairsForwards;
+    private GameObject sideEdgePoint;
+    private GameObject stairsUpwards;
+    private GameObject stairsForwards;
 
     /* The parent that holds all stair pieces */
     public GameObject stairsContainer;
@@ -42,6 +42,7 @@ public class StairsCreator : MonoBehaviour {
     /* how wide the stairs are */
     public float stairsWidth;
 
+
     /* -------- Built-in Unity Functions ---------------------------------------------------- */
 
     void Update() {
@@ -63,6 +64,11 @@ public class StairsCreator : MonoBehaviour {
          * Re-create the stairs using the the set of points given to this script
          */
          
+        /* Create the three positionnal gameObjects */
+        CreateEmptyObject(ref sideEdgePoint, "Side point", startPoint);
+        CreateEmptyObject(ref stairsUpwards, "Step Up point", startPoint);
+        CreateEmptyObject(ref stairsForwards, "Step Forward point", startPoint);
+        
         /* Create the stairs container if needed */
         if(stairsContainer == null) {
             CreateEmptyObject(ref stairsContainer, "Stairs", transform);
@@ -76,9 +82,9 @@ public class StairsCreator : MonoBehaviour {
         RepositionGivenTransforms();
 
         /* Extract the desired directions */
-        Vector3 startEndDif = endPoint.transform.position - startPoint.transform.position;
-        Vector3 sideDif = stairsWidth*0.5f*(sideEdgePoint.transform.position - startPoint.transform.position).normalized;
-        Vector3 stepUpwardDirection = (stairsUpwards.transform.position - startPoint.transform.position).normalized;
+        Vector3 startEndDif = endPoint.position - startPoint.position;
+        Vector3 sideDif = stairsWidth*0.5f*(sideEdgePoint.transform.position - startPoint.position).normalized;
+        Vector3 stepUpwardDirection = (stairsUpwards.transform.position - startPoint.position).normalized;
         Vector3 stepForwardDirection = (stairsForwards.transform.position - stairsUpwards.transform.position).normalized;
 
         /* Extract the desired distances */
@@ -99,7 +105,7 @@ public class StairsCreator : MonoBehaviour {
         }
 
         /*  Create each step for the stairs through a loop */
-        Vector3 end = startPoint.transform.position;
+        Vector3 end = startPoint.position;
         Vector3 start;
         for(int i = 0; i < stepCount; i++) {
             /* Update the position values by moving up to the next step */
@@ -122,10 +128,10 @@ public class StairsCreator : MonoBehaviour {
         }
 
         /* Create the plane of the stairs */
-        Vector3 top1 = startPoint.transform.position + sideDif;
-        Vector3 top2 = startPoint.transform.position - sideDif;
-        Vector3 bot1 = endPoint.transform.position + sideDif;
-        Vector3 bot2 = endPoint.transform.position - sideDif;
+        Vector3 top1 = startPoint.position + sideDif;
+        Vector3 top2 = startPoint.position - sideDif;
+        Vector3 bot1 = endPoint.position + sideDif;
+        Vector3 bot2 = endPoint.position - sideDif;
         CreateEmptyObject(ref stairs[index], "Main plane", stairsContainer.transform);
         stairs[index].transform.position = Vector3.zero;
         CreatePlane(top1, top2, bot1, bot2, stairs[index], 1);
@@ -139,20 +145,20 @@ public class StairsCreator : MonoBehaviour {
          */
 
         /* Make the start point face the end point and re-position the sideStart point to reflect the given sideAngle */
-        startPoint.transform.rotation = Quaternion.LookRotation(endPoint.transform.position - startPoint.transform.position);
+        startPoint.rotation = Quaternion.LookRotation(endPoint.transform.position - startPoint.position);
         sideEdgePoint.transform.localPosition = new Vector3(Mathf.Cos(sideAngle*Mathf.PI*2), Mathf.Sin(sideAngle*Mathf.PI*2), 0);
 
         /* Get the sideDirection defined by the new position of the sideStart */
-        Vector3 sideDirection = (sideEdgePoint.transform.position - startPoint.transform.position).normalized;
+        Vector3 sideDirection = (sideEdgePoint.transform.position - startPoint.position).normalized;
 
         /* Position the StairAngle to be in it's default position, 1 unit along the plane's normal */
         stairsUpwards.transform.localPosition = new Vector3(-Mathf.Sin(sideAngle*Mathf.PI*2), Mathf.Cos(sideAngle*Mathf.PI*2), 0);
 
         /* Rotate the stairAngle point relative to the given angle. It's new position marks how steep each step will be */
-        stairsUpwards.transform.RotateAround(startPoint.transform.position, sideDirection, stairsAngle);
+        stairsUpwards.transform.RotateAround(startPoint.position, sideDirection, stairsAngle);
 
         /* The first step goes from start to stairAnglePoint. Then, the direction needs to hit a 90 degree turn. */
-        stairsForwards.transform.position = startPoint.transform.position;
+        stairsForwards.transform.position = startPoint.position;
         stairsForwards.transform.RotateAround(stairsUpwards.transform.position, sideDirection, -90);
     }
 
@@ -180,7 +186,9 @@ public class StairsCreator : MonoBehaviour {
          * Create an empty object, resetting their local position.
          */
 
-        //gameObject = new GameObject();
+        /* Delete the previous object if it exists */
+        if(gameObject != null) { DestroyImmediate(gameObject); }
+
         gameObject = new GameObject();
         gameObject.name = name;
         gameObject.transform.parent = parent;
@@ -188,7 +196,6 @@ public class StairsCreator : MonoBehaviour {
         gameObject.transform.localEulerAngles = new Vector3(0, 0, 0);
         gameObject.transform.localScale = new Vector3(1, 1, 1);
     }
-
     
     public void CreatePlane(Vector3 top1, Vector3 top2, Vector3 bot1, Vector3 bot2, GameObject wall, float UVScale) {
         /*
