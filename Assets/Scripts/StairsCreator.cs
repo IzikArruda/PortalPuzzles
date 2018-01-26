@@ -32,6 +32,9 @@ public class StairsCreator : MonoBehaviour {
     [Range(0, 180)]
     public float stairsAngle;
 
+    /* How many steps the stairs will have */
+    public int stepCount;
+
 
     /* -------- Built-in Unity Functions ---------------------------------------------------- */
     
@@ -107,7 +110,7 @@ public class StairsCreator : MonoBehaviour {
 
         //Draw the first step
 
-        float stepLength = distance;
+        float stepLength = distance/(float) stepCount;
         float angle1 = Vector3.Angle(direction, stairAngleUpDirection);
         float angle2 = 90;
         float angle3 = 180 - angle1 - angle2;
@@ -129,9 +132,30 @@ public class StairsCreator : MonoBehaviour {
 
 
 
+
+
         /* Re-create the array for the stairs */
-        CreateObjectsArray(ref stairs, 1, new Vector3(0, 0, 0));
+        CreateObjectsArray(ref stairs, stepCount*2 + 1, new Vector3(0, 0, 0));
         int index = 0;
+        
+        /* Make the first step of the stairs */
+        Vector3 start = startPoint.transform.position;
+        Vector3 end = topStairPoint;
+        Vector3 sideDir = sideDirection * 1f;
+        CreateEmptyObject(ref stairs[index], "First step Up", stairsContainer.transform);
+        stairs[index].transform.position = Vector3.zero;
+        CreatePlane(end - sideDir, end + sideDir, start - sideDir, start + sideDir, stairs[index], 1);
+        index++;
+
+        start = end;
+        end = nextStairStartPoint;
+        CreateEmptyObject(ref stairs[index], "First step Side", stairsContainer.transform);
+        stairs[index].transform.position = Vector3.zero;
+        CreatePlane(end - sideDir, end + sideDir, start - sideDir, start + sideDir, stairs[index], 1);
+        index++;
+
+
+
 
         /* Top of the stairs */
         //CreateEmptyObject(ref stairs[index], "Start Circle", stairsContainer.transform);
