@@ -34,10 +34,13 @@ public class StairsCreator : MonoBehaviour {
 
     /* How many steps the stairs will have */
     public int stepCount;
-
+    
+    /* Used to determine whether the steps will be above or bellow the plane, 
+     * which also changes the type of step to start with */
+    public bool bellowPlane;
 
     /* -------- Built-in Unity Functions ---------------------------------------------------- */
-    
+
     void Update() {
         /*
          * Update the stairs if told to do so
@@ -134,56 +137,43 @@ public class StairsCreator : MonoBehaviour {
 
 
 
-        /* Re-create the array for the stairs */
+        /* Re-create the array for the stairs. Make sure the array is big enough for all the steps */
         CreateObjectsArray(ref stairs, stepCount*2 + 1, new Vector3(0, 0, 0));
         int index = 0;
-        
-        /* Make the first step of the stairs */
-        Vector3 start = startPoint.transform.position;
-        Vector3 end = topStairPoint;
+
+
+        /*  Create each step for the stairs through a loop */
+        Vector3 end = startPoint.transform.position;
+        Vector3 start;
         Vector3 sideDir = sideDirection * 1f;
-        CreateEmptyObject(ref stairs[index], "First step Up", stairsContainer.transform);
-        stairs[index].transform.position = Vector3.zero;
-        CreatePlane(end - sideDir, end + sideDir, start - sideDir, start + sideDir, stairs[index], 1);
-        index++;
+        Vector3 upProgress = stairAngleUpDirection;
+        Vector3 forwardProgress = stairAngleSideDirection;
+        if(bellowPlane) {
+            upProgress = stairAngleSideDirection;
+            forwardProgress = stairAngleUpDirection;
+            float temp = stepSide;
+            stepSide = stepUp;
+            stepUp = temp;
+        }
+        for(int i = 0; i < stepCount; i++) {
+            /* Update the position values by moving up to the next step */
+            start = end;
+            end += upProgress*stepSide;
+            /* Make the "upwards" part of the step */
+            CreateEmptyObject(ref stairs[index], "Step " + (i+1) + "(Up)", stairsContainer.transform);
+            stairs[index].transform.position = Vector3.zero;
+            CreatePlane(end - sideDir, end + sideDir, start - sideDir, start + sideDir, stairs[index], 1);
+            index++;
 
-        start = end;
-        end = nextStairStartPoint;
-        CreateEmptyObject(ref stairs[index], "First step Side", stairsContainer.transform);
-        stairs[index].transform.position = Vector3.zero;
-        CreatePlane(end - sideDir, end + sideDir, start - sideDir, start + sideDir, stairs[index], 1);
-        index++;
-
-
-
-
-        /* Top of the stairs */
-        //CreateEmptyObject(ref stairs[index], "Start Circle", stairsContainer.transform);
-        //stairs[index].transform.position = startPoint.transform.position;
-        //index++;
-        /* Top of the stairs */
-        //CreateEmptyObject(ref stairs[index], "Start Circle", stairsContainer.transform);
-        //stairs[index].transform.position = startPoint.transform.position;
-        //index++;
-
-        /* Middle of the stairs */
-        //CreateEmptyObject(ref stairs[index], "Midway Circle", stairsContainer.transform);
-        //stairs[index].transform.position = startPoint.transform.position + direction*distance*0.5f;
-        //index++;
-        /* Middle of the stairs */
-        //CreateEmptyObject(ref stairs[index], "Midway Circle", stairsContainer.transform);
-        //stairs[index].transform.position = startPoint.transform.position + direction*distance*0.5f;
-        //index++;
-
-        /* Bottom of the stairs */
-        //CreateEmptyObject(ref stairs[index], "End Circle", stairsContainer.transform);
-        //stairs[index].transform.position = endPoint.transform.position;
-        //index++;
-        /* Bottom of the stairs set2 */
-        //CreateEmptyObject(ref stairs[index], "End Circle", stairsContainer.transform);
-        //stairs[index].transform.position = endPoint.transform.position;
-        //index++;
-
+            /* Move forward to finish the current step */
+            start = end;
+            end += forwardProgress*stepUp;
+            /* Make the "forward" part of the step */
+            CreateEmptyObject(ref stairs[index], "Step " + (i+1) + "(Forward)", stairsContainer.transform);
+            stairs[index].transform.position = Vector3.zero;
+            CreatePlane(end - sideDir, end + sideDir, start - sideDir, start + sideDir, stairs[index], 1);
+            index++;
+        }
 
         /* Create the plane of the stairs */
         Vector3 top1 = startPoint.transform.position + sideDirection*1;
