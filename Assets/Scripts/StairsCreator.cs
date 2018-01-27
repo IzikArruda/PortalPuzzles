@@ -79,8 +79,10 @@ public class StairsCreator : MonoBehaviour {
         }
 
         /* Update the stairs  */
-        UpdateStairs();
-        updateStairs = false;
+        if(updateStairs) {
+            UpdateStairs();
+            updateStairs = false;
+        }
     }
 
 
@@ -192,7 +194,13 @@ public class StairsCreator : MonoBehaviour {
         stairsBase[index].transform.position = Vector3.zero;
         CreatePlane(top2, top1, bot2, bot1, stairsBase[index], 1);
         index++;
-
+        
+        /* Create a mesh collider of the stairs. The steps part will be a slope. */
+        Mesh roughStairsMesh = RoughStairsMesh(stepUpwardDirection*stepForwardDistance,
+                stepForwardDirection*stepUpDistance, oldStart, oldEnd, newStart, newEnd, sideDif);
+        if(stairsContainer.GetComponent<MeshCollider>() == null) { stairsContainer.AddComponent<MeshCollider>(); }
+        stairsContainer.GetComponent<MeshCollider>().sharedMesh = roughStairsMesh;
+        stairsContainer.GetComponent<MeshCollider>().convex = true;
     }
 
     void RepositionGivenTransforms() {
@@ -379,5 +387,53 @@ public class StairsCreator : MonoBehaviour {
         UVs[index + 15] = vertices[index + 15];
         UVs[index + 16] = vertices[index + 16];
         UVs[index + 17] = vertices[index + 17];
+    }
+
+    public Mesh RoughStairsMesh(Vector3 stepUpVector, Vector3 stepForwardVector,
+            Vector3 start, Vector3 end, Vector3 baseStart, Vector3 baseEnd, Vector3 sideDif) {
+        /*
+         * Create a rough estimate of the stairs as a mesh. The base will be accurate, but the
+         * steps part will be a slope. Use the given positions and directions to return the mesh.
+         */
+        Mesh mesh = new Mesh();
+
+        /* Use the step vectors to create a more accurate plane for the steps */
+        start += stepUpVector/2f;
+        Vector3[] vertices = new Vector3[] {
+            start - sideDif,
+            baseStart - sideDif,
+            start + sideDif,
+            baseStart + sideDif,
+            end + sideDif,
+            baseEnd + sideDif,
+            end - sideDif,
+            baseEnd - sideDif,
+            end - stepForwardVector/2f + sideDif,
+            end - stepForwardVector/2f - sideDif
+        };
+
+        int[] triangles = new int[] {
+            0, 2, 1,
+            2, 3, 1,
+            2, 4, 3,
+            4, 5, 3,
+            4, 6, 5,
+            6, 7, 5,
+            6, 0, 7,
+            0, 1, 7,
+            5, 7, 1,
+            5, 1, 3,
+            0, 9, 8,
+            0, 8, 2,
+            4, 9, 6,
+            4, 8, 9,
+            0, 6, 9,
+            8, 4, 2
+        };
+
+        mesh.vertices = vertices;
+        mesh.triangles = triangles;
+
+        return mesh;
     }
 }
