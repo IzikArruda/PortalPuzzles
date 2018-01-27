@@ -128,8 +128,8 @@ public class StairsCreator : MonoBehaviour {
         int vertCount = 18;
         Vector3[] vertices = new Vector3[stepCount*vertCount];
         Vector2[] UVs = new Vector2[stepCount*vertCount];
-        int[] triangles = new int[stepCount*(vertCount-6)];
-        int[] trianglesAlt = new int[stepCount*6];
+        int[] triangles = new int[stepCount*(vertCount-12)];
+        int[] trianglesAlt = new int[stepCount*12];
         /* Initialize required positions for each step */
         Vector3 start;
         Vector3 midway;
@@ -143,7 +143,7 @@ public class StairsCreator : MonoBehaviour {
             end = midway + stepForwardDirection*stepUpDistance;
             
             /* Add to the mesh components with this new step and it's positions */
-            AddStep(start, midway, end, sideDif, i, vertCount, ref vertices, ref UVs, ref triangles, ref trianglesAlt, ref UVPos, stairsWidth, stepDistance);
+            AddStep(start, midway, end, sideDif, i, vertCount, ref vertices, ref UVs, ref triangles, ref trianglesAlt, ref UVPos, stairsWidth, stepDistance, stepForwardDistance, stepUpDistance);
         }
 
         /* Add the required components to the stairs object and apply the mesh */
@@ -172,22 +172,22 @@ public class StairsCreator : MonoBehaviour {
             /* Create planes that connect the stairs to it's base */
             CreateEmptyObject(ref stairsBase[index], "Start base", stairsContainer.transform);
             stairsBase[index].transform.position = Vector3.zero;
-            CreatePlane(newStart + sideDif, newStart - sideDif, oldStart + sideDif, oldStart - sideDif, stairsBase[index], 1);
+            CreatePlane(newStart + sideDif, newStart - sideDif, oldStart + sideDif, oldStart - sideDif, stairsBase[index], otherMaterial, stairsWidth, 0.2f, baseDepth);
             index++;
 
             CreateEmptyObject(ref stairsBase[index], "Left base", stairsContainer.transform);
             stairsBase[index].transform.position = Vector3.zero;
-            CreatePlane(oldStart - sideDif, newStart - sideDif, oldEnd - sideDif, newEnd - sideDif, stairsBase[index], 1);
+            CreatePlane(newStart - sideDif, newEnd - sideDif, oldStart - sideDif, oldEnd - sideDif, stairsBase[index], otherMaterial, 1, 0.2f, baseDepth);
             index++;
             
             CreateEmptyObject(ref stairsBase[index], "Right base", stairsContainer.transform);
             stairsBase[index].transform.position = Vector3.zero;
-            CreatePlane(newStart + sideDif, oldStart + sideDif, newEnd + sideDif, oldEnd + sideDif, stairsBase[index], 1);
+            CreatePlane(newEnd + sideDif, newStart + sideDif, oldEnd + sideDif, oldStart + sideDif, stairsBase[index], otherMaterial, 1, 0.2f, baseDepth);
             index++;
 
             CreateEmptyObject(ref stairsBase[index], "End base", stairsContainer.transform);
             stairsBase[index].transform.position = Vector3.zero;
-            CreatePlane(newEnd - sideDif, newEnd + sideDif, oldEnd - sideDif, oldEnd + sideDif, stairsBase[index], 1);
+            CreatePlane(newEnd - sideDif, newEnd + sideDif, oldEnd - sideDif, oldEnd + sideDif, stairsBase[index], otherMaterial, stairsWidth, 0.2f, baseDepth);
             index++;
         }
 
@@ -198,7 +198,7 @@ public class StairsCreator : MonoBehaviour {
         Vector3 bot2 = newEnd - sideDif;
         CreateEmptyObject(ref stairsBase[index], "Main base", stairsContainer.transform);
         stairsBase[index].transform.position = Vector3.zero;
-        CreatePlane(top2, top1, bot2, bot1, stairsBase[index], 1);
+        CreatePlane(top2, top1, bot2, bot1, stairsBase[index], stairsMaterial, stairsWidth, 1, totalStepDistance);
         index++;
         
         /* Create a mesh collider of the stairs. The steps part will be a slope. */
@@ -267,7 +267,8 @@ public class StairsCreator : MonoBehaviour {
         gameObject.transform.localScale = new Vector3(1, 1, 1);
     }
     
-    public void CreatePlane(Vector3 top1, Vector3 top2, Vector3 bot1, Vector3 bot2, GameObject wall, float UVScale) {
+    public void CreatePlane(Vector3 top1, Vector3 top2, Vector3 bot1, Vector3 bot2, GameObject wall, 
+            Material material, float UVScaleX, float UVScaleY, float stepDistance) {
         /*
          * Create a plane onto the given gameObject using the 4 given vector positions. 
          * The position of the vertex in the world determines how the UVs will be placed. 
@@ -282,11 +283,17 @@ public class StairsCreator : MonoBehaviour {
 
         /* Set the UVs of the plane */
         Vector3 properCenter = wall.transform.rotation * wall.transform.position;
+        /*UV = new Vector2[] {
+            (new Vector2(properCenter.x, properCenter.z) + new Vector2(vertices[0].x, vertices[0].z))/UVScaleX,
+            (new Vector2(properCenter.x, properCenter.z) + new Vector2(vertices[1].x, vertices[1].z))/UVScaleX,
+            (new Vector2(properCenter.x, properCenter.z) + new Vector2(vertices[2].x, vertices[2].z))/UVScaleX,
+            (new Vector2(properCenter.x, properCenter.z) + new Vector2(vertices[3].x, vertices[3].z))/UVScaleX
+        };*/
         UV = new Vector2[] {
-            (new Vector2(properCenter.x, properCenter.z) + new Vector2(vertices[0].x, vertices[0].z))/UVScale,
-            (new Vector2(properCenter.x, properCenter.z) + new Vector2(vertices[1].x, vertices[1].z))/UVScale,
-            (new Vector2(properCenter.x, properCenter.z) + new Vector2(vertices[2].x, vertices[2].z))/UVScale,
-            (new Vector2(properCenter.x, properCenter.z) + new Vector2(vertices[3].x, vertices[3].z))/UVScale
+            new Vector2(+UVScaleX/2f, -stepDistance*UVScaleY),
+            new Vector2(-UVScaleX/2f, -stepDistance*UVScaleY),
+            new Vector2(+UVScaleX/2f, 0),
+            new Vector2(-UVScaleX/2f, 0),
         };
 
         /* Assign the parameters to the mesh */
@@ -299,7 +306,7 @@ public class StairsCreator : MonoBehaviour {
         wall.AddComponent<MeshFilter>();
         wall.GetComponent<MeshFilter>().mesh = planeMesh;
         wall.AddComponent<MeshRenderer>();
-        wall.GetComponent<MeshRenderer>().sharedMaterial = stairsMaterial;
+        wall.GetComponent<MeshRenderer>().sharedMaterial = material;
     }
     
     public void CreateMesh(Vector3 top1, Vector3 top2, Vector3 bot1, Vector3 bot2, ref Vector3[] vertices, ref int[] triangles) {
@@ -324,7 +331,7 @@ public class StairsCreator : MonoBehaviour {
     
     public void AddStep(Vector3 start, Vector3 midway, Vector3 end, Vector3 sideDirection, 
             int i, int vertCount, ref Vector3[] vertices, ref Vector2[] UVs, ref int[] triangles,
-            ref int[] trianglesAlt, ref float UVPos, float stairWidth, float stepDist) {
+            ref int[] trianglesAlt, ref float UVPos, float stairWidth, float stepDist, float stepUpDistance, float stepForwardDistance) {
         /*
          * Given the positions of the next step, add it to the mesh's components.
          */
@@ -354,47 +361,47 @@ public class StairsCreator : MonoBehaviour {
 
         /* Add the proper triangles for the step */
         //Upwards plane
-        triangles[i*(vertCount-6) + 0] = i*vertCount + 8;
-        triangles[i*(vertCount-6) + 1] = i*vertCount + 7;
-        triangles[i*(vertCount-6) + 2] = i*vertCount + 6;
-        triangles[i*(vertCount-6) + 3] = i*vertCount + 11;
-        triangles[i*(vertCount-6) + 4] = i*vertCount + 10;
-        triangles[i*(vertCount-6) + 5] = i*vertCount + 9;
-        //Sides of the steps
-        triangles[i*(vertCount-6) + 6] = i*vertCount + 14;
-        triangles[i*(vertCount-6) + 7] = i*vertCount + 13;
-        triangles[i*(vertCount-6) + 8] = i*vertCount + 12;
-        triangles[i*(vertCount-6) + 9] = i*vertCount + 15;
-        triangles[i*(vertCount-6) + 10] = i*vertCount + 16;
-        triangles[i*(vertCount-6) + 11] = i*vertCount + 17;
+        triangles[i*(vertCount-12) + 0] = i*vertCount + 8;
+        triangles[i*(vertCount-12) + 1] = i*vertCount + 7;
+        triangles[i*(vertCount-12) + 2] = i*vertCount + 6;
+        triangles[i*(vertCount-12) + 3] = i*vertCount + 11;
+        triangles[i*(vertCount-12) + 4] = i*vertCount + 10;
+        triangles[i*(vertCount-12) + 5] = i*vertCount + 9;
         //Forwards plane
-        trianglesAlt[i*6 + 0] = i*vertCount + 2;
-        trianglesAlt[i*6 + 1] = i*vertCount + 1;
-        trianglesAlt[i*6 + 2] = i*vertCount + 0;
-        trianglesAlt[i*6 + 3] = i*vertCount + 5;
-        trianglesAlt[i*6 + 4] = i*vertCount + 4;
-        trianglesAlt[i*6 + 5] = i*vertCount + 3;
+        trianglesAlt[i*12 + 0] = i*vertCount + 2;
+        trianglesAlt[i*12 + 1] = i*vertCount + 1;
+        trianglesAlt[i*12 + 2] = i*vertCount + 0;
+        trianglesAlt[i*12 + 3] = i*vertCount + 5;
+        trianglesAlt[i*12 + 4] = i*vertCount + 4;
+        trianglesAlt[i*12 + 5] = i*vertCount + 3;
+        //Sides of the steps
+        trianglesAlt[i*12 + 6] = i*vertCount + 14;
+        trianglesAlt[i*12 + 7] = i*vertCount + 13;
+        trianglesAlt[i*12 + 8] = i*vertCount + 12;
+        trianglesAlt[i*12 + 9] = i*vertCount + 15;
+        trianglesAlt[i*12 + 10] = i*vertCount + 16;
+        trianglesAlt[i*12 + 11] = i*vertCount + 17;
 
         /* Add the proper UVs for each vertex */
         UVs[i*vertCount + 0] = new Vector2(-stairsWidth/2f, UVPos);
         UVs[i*vertCount + 1] = new Vector2(+stairsWidth/2f, UVPos);
-        UVs[i*vertCount + 2] = new Vector2(-stairsWidth/2f, UVPos + stepDist/10f);
+        UVs[i*vertCount + 2] = new Vector2(-stairsWidth/2f, UVPos + stepUpDistance/5f);
         UVs[i*vertCount + 3] = new Vector2(+stairsWidth/2f, UVPos);
-        UVs[i*vertCount + 4] = new Vector2(+stairsWidth/2f, UVPos + stepDist/10f);
-        UVs[i*vertCount + 5] = new Vector2(-stairsWidth/2f, UVPos + stepDist/10f);
-        UVs[i*vertCount + 6] = new Vector2(-stairsWidth/2f, UVPos + stepDist/10f);
-        UVs[i*vertCount + 7] = new Vector2(+stairsWidth/2f, UVPos + stepDist/10f);
-        UVs[i*vertCount + 8] = new Vector2(-stairsWidth/2f, UVPos + stepDist);
-        UVs[i*vertCount + 9] = new Vector2(+stairsWidth/2f, UVPos + stepDist/10f);
-        UVs[i*vertCount + 10] = new Vector2(+stairsWidth/2f, UVPos + stepDist);
-        UVs[i*vertCount + 11] = new Vector2(-stairsWidth/2f, UVPos + stepDist);
-        UVs[i*vertCount + 12] = vertices[i*vertCount + 12];
-        UVs[i*vertCount + 13] = vertices[i*vertCount + 13];
-        UVs[i*vertCount + 14] = vertices[i*vertCount + 14];
-        UVs[i*vertCount + 15] = vertices[i*vertCount + 15];
-        UVs[i*vertCount + 16] = vertices[i*vertCount + 16];
-        UVs[i*vertCount + 17] = vertices[i*vertCount + 17];
-        UVPos += stepDist;
+        UVs[i*vertCount + 4] = new Vector2(+stairsWidth/2f, UVPos + stepUpDistance/5f);
+        UVs[i*vertCount + 5] = new Vector2(-stairsWidth/2f, UVPos + stepUpDistance/5f);
+        UVs[i*vertCount + 6] = new Vector2(-stairsWidth/2f, UVPos + stepUpDistance/5f);
+        UVs[i*vertCount + 7] = new Vector2(+stairsWidth/2f, UVPos + stepUpDistance/5f);
+        UVs[i*vertCount + 8] = new Vector2(-stairsWidth/2f, UVPos + stepUpDistance/5f + stepForwardDistance);
+        UVs[i*vertCount + 9] = new Vector2(+stairsWidth/2f, UVPos + stepUpDistance/5f);
+        UVs[i*vertCount + 10] = new Vector2(+stairsWidth/2f, UVPos + stepUpDistance/5f + stepForwardDistance);
+        UVs[i*vertCount + 11] = new Vector2(-stairsWidth/2f, UVPos + stepUpDistance/5f + stepForwardDistance);
+        UVs[i*vertCount + 12] = new Vector2(-stairsWidth/2f, UVPos);
+        UVs[i*vertCount + 13] = new Vector2(-stairsWidth/2f, UVPos + stepUpDistance/5f);
+        UVs[i*vertCount + 14] = new Vector2(-stairsWidth/2f - stepForwardDistance, UVPos + stepUpDistance/5f);
+        UVs[i*vertCount + 15] = new Vector2(+stairsWidth/2f, UVPos);
+        UVs[i*vertCount + 16] = new Vector2(+stairsWidth/2f, UVPos + stepUpDistance/5f);
+        UVs[i*vertCount + 17] = new Vector2(+stairsWidth/2f + stepForwardDistance, UVPos + stepUpDistance/5f);
+        UVPos += stepForwardDistance + stepUpDistance/5f;
     }
 
     public Mesh RoughStairsMesh(Vector3 stepUpVector, Vector3 stepForwardVector,
