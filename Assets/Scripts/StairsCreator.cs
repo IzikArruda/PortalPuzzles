@@ -79,10 +79,10 @@ public class StairsCreator : MonoBehaviour {
         }
 
         /* Update the stairs  */
-        if(updateStairs) {
+        //if(updateStairs) {
             UpdateStairs();
             updateStairs = false;
-        }
+        //}
     }
 
 
@@ -132,6 +132,7 @@ public class StairsCreator : MonoBehaviour {
         Vector3 start;
         Vector3 midway;
         Vector3 end = startPoint.position;
+        float UVPos = 0;
         /* Create each step for the stairs through a loop */
         for(int i = 0; i < stepCount; i++) {
             /* Get the position values for each part of this step */
@@ -140,7 +141,7 @@ public class StairsCreator : MonoBehaviour {
             end = midway + stepForwardDirection*stepUpDistance;
             
             /* Add to the mesh components with this new step and it's positions */
-            AddStep(start, midway, end, sideDif, i*vertCount, ref vertices, ref UVs, ref triangles);
+            AddStep(start, midway, end, sideDif, i*vertCount, ref vertices, ref UVs, ref triangles, ref UVPos, stairsWidth);
         }
 
         /* Add the required components to the stairs object and apply the mesh */
@@ -317,7 +318,8 @@ public class StairsCreator : MonoBehaviour {
     }
     
     public void AddStep(Vector3 start, Vector3 midway, Vector3 end, Vector3 sideDirection, 
-            int index, ref Vector3[] vertices, ref Vector2[] UVs, ref int[] triangles) {
+            int index, ref Vector3[] vertices, ref Vector2[] UVs, ref int[] triangles,
+            ref float UVPos, float stairWidth) {
         /*
          * Given the positions of the next step, add it to the mesh's components.
          */
@@ -369,24 +371,26 @@ public class StairsCreator : MonoBehaviour {
         triangles[index + 17] = index + 17;
 
         /* Add the proper UVs for each vertex */
-        UVs[index + 0] = vertices[index + 0];
-        UVs[index + 1] = vertices[index + 1];
-        UVs[index + 2] = vertices[index + 2];
-        UVs[index + 3] = vertices[index + 3];
-        UVs[index + 4] = vertices[index + 4];
-        UVs[index + 5] = vertices[index + 5];
-        UVs[index + 6] = vertices[index + 6];
-        UVs[index + 7] = vertices[index + 7];
-        UVs[index + 8] = vertices[index + 8];
-        UVs[index + 9] = vertices[index + 9];
-        UVs[index + 10] = vertices[index + 10];
-        UVs[index + 11] = vertices[index + 11];
+        float dist = Vector3.Distance(midway, end);
+        UVs[index + 0] = new Vector2(-stairsWidth/2f, UVPos);
+        UVs[index + 1] = new Vector2(+stairsWidth/2f, UVPos);
+        UVs[index + 2] = new Vector2(-stairsWidth/2f, UVPos + dist);
+        UVs[index + 3] = new Vector2(+stairsWidth/2f, UVPos);
+        UVs[index + 4] = new Vector2(+stairsWidth/2f, UVPos + dist);
+        UVs[index + 5] = new Vector2(-stairsWidth/2f, UVPos + dist);
+        UVs[index + 6] = new Vector2(-stairsWidth/2f, UVPos + dist);
+        UVs[index + 7] = new Vector2(+stairsWidth/2f, UVPos + dist);
+        UVs[index + 8] = new Vector2(-stairsWidth/2f, UVPos + dist + dist/10f);
+        UVs[index + 9] = new Vector2(+stairsWidth/2f, UVPos + dist);
+        UVs[index + 10] = new Vector2(+stairsWidth/2f, UVPos + dist + dist/10f);
+        UVs[index + 11] = new Vector2(-stairsWidth/2f, UVPos + dist + dist/10f);
         UVs[index + 12] = vertices[index + 12];
         UVs[index + 13] = vertices[index + 13];
         UVs[index + 14] = vertices[index + 14];
         UVs[index + 15] = vertices[index + 15];
         UVs[index + 16] = vertices[index + 16];
         UVs[index + 17] = vertices[index + 17];
+        UVPos += dist;
     }
 
     public Mesh RoughStairsMesh(Vector3 stepUpVector, Vector3 stepForwardVector,
