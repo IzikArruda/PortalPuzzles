@@ -21,6 +21,7 @@ public class StairsCreator : MonoBehaviour {
     /* Each individual GameObject that will make up the stairs */
     public GameObject[] stairs;
     public GameObject stairsObject;
+    public GameObject[] stairsBase;
 
     /* Whether to update the stair's model on next frame or not */
     public bool updateStairs;
@@ -39,6 +40,14 @@ public class StairsCreator : MonoBehaviour {
     
     /* how wide the stairs are */
     public float stairsWidth;
+
+
+
+    /* How far down the base goes from the steps */
+    public float baseDepth;
+
+
+
 
 
     /* -------- Built-in Unity Functions ---------------------------------------------------- */
@@ -71,10 +80,6 @@ public class StairsCreator : MonoBehaviour {
         if(stairsContainer == null) {
             CreateEmptyObject(ref stairsContainer, "Stairs", transform);
         }
-
-        /* Re-create the array for the stairs. Make sure the array is big enough for all the steps */
-        CreateObjectsArray(ref stairs, stepCount*2 + 1, new Vector3(0, 0, 0));
-        int index = 0;
 
         /* Properly position and rotate the transforms that represent the important points of the stairs */
         RepositionGivenTransforms();
@@ -120,15 +125,49 @@ public class StairsCreator : MonoBehaviour {
         stairsMesh.uv = UVs;
         stairsObject.AddComponent<MeshFilter>().sharedMesh = stairsMesh;
         stairsObject.AddComponent<MeshRenderer>().sharedMaterial = stairsMaterial;
+
         
-        /* Create the plane of the stairs */
-        Vector3 top1 = startPoint.position + sideDif;
-        Vector3 top2 = startPoint.position - sideDif;
-        Vector3 bot1 = endPoint.position + sideDif;
-        Vector3 bot2 = endPoint.position - sideDif;
-        CreateEmptyObject(ref stairs[index], "Main plane", stairsContainer.transform);
-        stairs[index].transform.position = Vector3.zero;
-        CreatePlane(top2, top1, bot2, bot1, stairs[index], 1);
+        /* Create a new object used for the base of the stairs */
+        CreateObjectsArray(ref stairsBase, 10, new Vector3(0, 0, 0));
+        int index = 0;
+        Vector3 oldStart = startPoint.position;
+        Vector3 newStart = oldStart;
+        Vector3 oldEnd = endPoint.position;
+        Vector3 newEnd = oldEnd;
+        if(baseDepth > 0) {
+            newStart -= baseDepth*stepUpwardDirection;
+            newEnd -= baseDepth*stepUpwardDirection;
+
+            /* Create planes that connect the stairs to it's base */
+            CreateEmptyObject(ref stairsBase[index], "Start base", stairsContainer.transform);
+            stairsBase[index].transform.position = Vector3.zero;
+            CreatePlane(newStart + sideDif, newStart - sideDif, oldStart + sideDif, oldStart - sideDif, stairsBase[index], 1);
+            index++;
+
+            CreateEmptyObject(ref stairsBase[index], "Left base", stairsContainer.transform);
+            stairsBase[index].transform.position = Vector3.zero;
+            CreatePlane(oldStart - sideDif, newStart - sideDif, oldEnd - sideDif, newEnd - sideDif, stairsBase[index], 1);
+            index++;
+            
+            CreateEmptyObject(ref stairsBase[index], "Right base", stairsContainer.transform);
+            stairsBase[index].transform.position = Vector3.zero;
+            CreatePlane(newStart + sideDif, oldStart + sideDif, newEnd + sideDif, oldEnd + sideDif, stairsBase[index], 1);
+            index++;
+
+            CreateEmptyObject(ref stairsBase[index], "End base", stairsContainer.transform);
+            stairsBase[index].transform.position = Vector3.zero;
+            CreatePlane(newEnd - sideDif, newEnd + sideDif, oldEnd - sideDif, oldEnd + sideDif, stairsBase[index], 1);
+            index++;
+        }
+
+        /* Create the base directly bellow the stairs */
+        Vector3 top1 = newStart + sideDif;
+        Vector3 top2 = newStart - sideDif;
+        Vector3 bot1 = newEnd + sideDif;
+        Vector3 bot2 = newEnd - sideDif;
+        CreateEmptyObject(ref stairsBase[index], "Main base", stairsContainer.transform);
+        stairsBase[index].transform.position = Vector3.zero;
+        CreatePlane(top2, top1, bot2, bot1, stairsBase[index], 1);
         index++;
 
     }
