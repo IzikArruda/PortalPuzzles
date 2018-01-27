@@ -34,21 +34,16 @@ public class StairsCreator : MonoBehaviour {
     public float sideAngle;
     [Range(0, 180)]
     public float stairsAngle;
-
-    /* How many steps the stairs will have */
-    public int stepCount;
+    
+    /* How long each step is expected to be */
+    public float stepSize;
     
     /* how wide the stairs are */
     public float stairsWidth;
-
-
-
+    
     /* How far down the base goes from the steps */
     public float baseDepth;
-
-
-
-
+    
 
     /* -------- Built-in Unity Functions ---------------------------------------------------- */
 
@@ -57,10 +52,15 @@ public class StairsCreator : MonoBehaviour {
          * Update the stairs if told to do so
          */
 
-        //if(updateStairs) {
-            UpdateStairs();
-            updateStairs = false;
-        //}
+        /* Prevent the stepSize from being too small */
+        float minStepSize = 0.001f;
+        if(stepSize < minStepSize) {
+            stepSize = minStepSize;
+        }
+        
+        /* Update the stairs  */
+        UpdateStairs();
+        updateStairs = false;
     }
 
 
@@ -90,10 +90,15 @@ public class StairsCreator : MonoBehaviour {
         Vector3 stepUpwardDirection = (stairsUpwards.transform.position - startPoint.position).normalized;
         Vector3 stepForwardDirection = (stairsForwards.transform.position - stairsUpwards.transform.position).normalized;
 
+        /* Find the distance the steps will cover and using the given stepLength, find how many steps to create */
+        float totalStepDistance = (startEndDif).magnitude;
+        int stepCount = Mathf.CeilToInt(totalStepDistance / stepSize);
+        Debug.Log(stepCount);
+        
         /* Extract the desired distances */
         float stepUpAngle = Vector3.Angle((startEndDif).normalized, stepUpwardDirection);
         float stepForwardAngle = 90 - stepUpAngle;
-        float stepDistance = (startEndDif).magnitude/(float) stepCount;
+        float stepDistance = totalStepDistance/(float) stepCount;
         float stepUpDistance = stepDistance * Mathf.Sin(Mathf.PI*stepUpAngle/180f);
         float stepForwardDistance = stepDistance * Mathf.Sin(Mathf.PI*stepForwardAngle/180f);
 
