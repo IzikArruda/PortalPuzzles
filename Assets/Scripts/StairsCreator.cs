@@ -28,6 +28,7 @@ public class StairsCreator : MonoBehaviour {
 
     /* The material used by the stairs */
     public Material stairsMaterial;
+    public Material otherMaterial;
 
     /* Angles that define how the stairs are rotated */
     [Range(0, 1)]
@@ -127,7 +128,8 @@ public class StairsCreator : MonoBehaviour {
         int vertCount = 18;
         Vector3[] vertices = new Vector3[stepCount*vertCount];
         Vector2[] UVs = new Vector2[stepCount*vertCount];
-        int[] triangles = new int[stepCount*vertCount];
+        int[] triangles = new int[stepCount*(vertCount-6)];
+        int[] trianglesAlt = new int[stepCount*6];
         /* Initialize required positions for each step */
         Vector3 start;
         Vector3 midway;
@@ -141,17 +143,20 @@ public class StairsCreator : MonoBehaviour {
             end = midway + stepForwardDirection*stepUpDistance;
             
             /* Add to the mesh components with this new step and it's positions */
-            AddStep(start, midway, end, sideDif, i*vertCount, ref vertices, ref UVs, ref triangles, ref UVPos, stairsWidth);
+            AddStep(start, midway, end, sideDif, i, vertCount, ref vertices, ref UVs, ref triangles, ref trianglesAlt, ref UVPos, stairsWidth, stepDistance);
         }
 
         /* Add the required components to the stairs object and apply the mesh */
         CreateEmptyObject(ref stairsObject, "Stairs object", stairsContainer.transform);
         Mesh stairsMesh = new Mesh();
+        stairsMesh.name = "Accurate Stairs mesh";
+        stairsMesh.subMeshCount = 2;
         stairsMesh.vertices = vertices;
-        stairsMesh.triangles = triangles;
+        stairsMesh.SetTriangles(triangles, 0);
+        stairsMesh.SetTriangles(trianglesAlt, 1);
         stairsMesh.uv = UVs;
         stairsObject.AddComponent<MeshFilter>().sharedMesh = stairsMesh;
-        stairsObject.AddComponent<MeshRenderer>().sharedMaterial = stairsMaterial;
+        stairsObject.AddComponent<MeshRenderer>().sharedMaterials = new Material[] { stairsMaterial, otherMaterial };
         
         /* Create a new object used for the base of the stairs */
         CreateObjectsArray(ref stairsBase, 10, new Vector3(0, 0, 0));
@@ -318,79 +323,78 @@ public class StairsCreator : MonoBehaviour {
     }
     
     public void AddStep(Vector3 start, Vector3 midway, Vector3 end, Vector3 sideDirection, 
-            int index, ref Vector3[] vertices, ref Vector2[] UVs, ref int[] triangles,
-            ref float UVPos, float stairWidth) {
+            int i, int vertCount, ref Vector3[] vertices, ref Vector2[] UVs, ref int[] triangles,
+            ref int[] trianglesAlt, ref float UVPos, float stairWidth, float stepDist) {
         /*
          * Given the positions of the next step, add it to the mesh's components.
          */
 
         /* Add the step's vertices to the array */
         //First plane
-        vertices[index + 0] = start - sideDirection;
-        vertices[index + 1] = start + sideDirection;
-        vertices[index + 2] = midway - sideDirection;
-        vertices[index + 3] = start + sideDirection;
-        vertices[index + 4] = midway + sideDirection;
-        vertices[index + 5] = midway - sideDirection;
+        vertices[i*vertCount + 0] = start - sideDirection;
+        vertices[i*vertCount + 1] = start + sideDirection;
+        vertices[i*vertCount + 2] = midway - sideDirection;
+        vertices[i*vertCount + 3] = start + sideDirection;
+        vertices[i*vertCount + 4] = midway + sideDirection;
+        vertices[i*vertCount + 5] = midway - sideDirection;
         //Second plane
-        vertices[index + 6] = midway - sideDirection;
-        vertices[index + 7] = midway + sideDirection;
-        vertices[index + 8] = end - sideDirection;
-        vertices[index + 9] = midway + sideDirection;
-        vertices[index + 10] = end + sideDirection;
-        vertices[index + 11] = end - sideDirection;
+        vertices[i*vertCount + 6] = midway - sideDirection;
+        vertices[i*vertCount + 7] = midway + sideDirection;
+        vertices[i*vertCount + 8] = end - sideDirection;
+        vertices[i*vertCount + 9] = midway + sideDirection;
+        vertices[i*vertCount + 10] = end + sideDirection;
+        vertices[i*vertCount + 11] = end - sideDirection;
         //Sides of the steps
-        vertices[index + 12] = start - sideDirection;
-        vertices[index + 13] = midway - sideDirection;
-        vertices[index + 14] = end - sideDirection;
-        vertices[index + 15] = start + sideDirection;
-        vertices[index + 16] = midway + sideDirection;
-        vertices[index + 17] = end + sideDirection;
-        
+        vertices[i*vertCount + 12] = start - sideDirection;
+        vertices[i*vertCount + 13] = midway - sideDirection;
+        vertices[i*vertCount + 14] = end - sideDirection;
+        vertices[i*vertCount + 15] = start + sideDirection;
+        vertices[i*vertCount + 16] = midway + sideDirection;
+        vertices[i*vertCount + 17] = end + sideDirection;
+
         /* Add the proper triangles for the step */
-        //First plane
-        triangles[index + 0] = index + 2;
-        triangles[index + 1] = index + 1;
-        triangles[index + 2] = index + 0;
-        triangles[index + 3] = index + 5;
-        triangles[index + 4] = index + 4;
-        triangles[index + 5] = index + 3;
-        //Second plane
-        triangles[index + 6] = index + 8;
-        triangles[index + 7] = index + 7;
-        triangles[index + 8] = index + 6;
-        triangles[index + 9] = index + 11;
-        triangles[index + 10] = index + 10;
-        triangles[index + 11] = index + 9;
+        //Upwards plane
+        triangles[i*(vertCount-6) + 0] = i*vertCount + 8;
+        triangles[i*(vertCount-6) + 1] = i*vertCount + 7;
+        triangles[i*(vertCount-6) + 2] = i*vertCount + 6;
+        triangles[i*(vertCount-6) + 3] = i*vertCount + 11;
+        triangles[i*(vertCount-6) + 4] = i*vertCount + 10;
+        triangles[i*(vertCount-6) + 5] = i*vertCount + 9;
         //Sides of the steps
-        triangles[index + 12] = index + 14;
-        triangles[index + 13] = index + 13;
-        triangles[index + 14] = index + 12;
-        triangles[index + 15] = index + 15;
-        triangles[index + 16] = index + 16;
-        triangles[index + 17] = index + 17;
+        triangles[i*(vertCount-6) + 6] = i*vertCount + 14;
+        triangles[i*(vertCount-6) + 7] = i*vertCount + 13;
+        triangles[i*(vertCount-6) + 8] = i*vertCount + 12;
+        triangles[i*(vertCount-6) + 9] = i*vertCount + 15;
+        triangles[i*(vertCount-6) + 10] = i*vertCount + 16;
+        triangles[i*(vertCount-6) + 11] = i*vertCount + 17;
+        //Forwards plane
+        trianglesAlt[i*6 + 0] = i*vertCount + 2;
+        trianglesAlt[i*6 + 1] = i*vertCount + 1;
+        trianglesAlt[i*6 + 2] = i*vertCount + 0;
+        trianglesAlt[i*6 + 3] = i*vertCount + 5;
+        trianglesAlt[i*6 + 4] = i*vertCount + 4;
+        trianglesAlt[i*6 + 5] = i*vertCount + 3;
 
         /* Add the proper UVs for each vertex */
-        float dist = Vector3.Distance(midway, end);
-        UVs[index + 0] = new Vector2(-stairsWidth/2f, UVPos);
-        UVs[index + 1] = new Vector2(+stairsWidth/2f, UVPos);
-        UVs[index + 2] = new Vector2(-stairsWidth/2f, UVPos + dist);
-        UVs[index + 3] = new Vector2(+stairsWidth/2f, UVPos);
-        UVs[index + 4] = new Vector2(+stairsWidth/2f, UVPos + dist);
-        UVs[index + 5] = new Vector2(-stairsWidth/2f, UVPos + dist);
-        UVs[index + 6] = new Vector2(-stairsWidth/2f, UVPos + dist);
-        UVs[index + 7] = new Vector2(+stairsWidth/2f, UVPos + dist);
-        UVs[index + 8] = new Vector2(-stairsWidth/2f, UVPos + dist + dist/10f);
-        UVs[index + 9] = new Vector2(+stairsWidth/2f, UVPos + dist);
-        UVs[index + 10] = new Vector2(+stairsWidth/2f, UVPos + dist + dist/10f);
-        UVs[index + 11] = new Vector2(-stairsWidth/2f, UVPos + dist + dist/10f);
-        UVs[index + 12] = vertices[index + 12];
-        UVs[index + 13] = vertices[index + 13];
-        UVs[index + 14] = vertices[index + 14];
-        UVs[index + 15] = vertices[index + 15];
-        UVs[index + 16] = vertices[index + 16];
-        UVs[index + 17] = vertices[index + 17];
-        UVPos += dist;
+        UVs[i*vertCount + 0] = new Vector2(-stairsWidth/2f, UVPos);
+        UVs[i*vertCount + 1] = new Vector2(+stairsWidth/2f, UVPos);
+        UVs[i*vertCount + 2] = new Vector2(-stairsWidth/2f, UVPos + stepDist/10f);
+        UVs[i*vertCount + 3] = new Vector2(+stairsWidth/2f, UVPos);
+        UVs[i*vertCount + 4] = new Vector2(+stairsWidth/2f, UVPos + stepDist/10f);
+        UVs[i*vertCount + 5] = new Vector2(-stairsWidth/2f, UVPos + stepDist/10f);
+        UVs[i*vertCount + 6] = new Vector2(-stairsWidth/2f, UVPos + stepDist/10f);
+        UVs[i*vertCount + 7] = new Vector2(+stairsWidth/2f, UVPos + stepDist/10f);
+        UVs[i*vertCount + 8] = new Vector2(-stairsWidth/2f, UVPos + stepDist);
+        UVs[i*vertCount + 9] = new Vector2(+stairsWidth/2f, UVPos + stepDist/10f);
+        UVs[i*vertCount + 10] = new Vector2(+stairsWidth/2f, UVPos + stepDist);
+        UVs[i*vertCount + 11] = new Vector2(-stairsWidth/2f, UVPos + stepDist);
+        UVs[i*vertCount + 12] = vertices[i*vertCount + 12];
+        UVs[i*vertCount + 13] = vertices[i*vertCount + 13];
+        UVs[i*vertCount + 14] = vertices[i*vertCount + 14];
+        UVs[i*vertCount + 15] = vertices[i*vertCount + 15];
+        UVs[i*vertCount + 16] = vertices[i*vertCount + 16];
+        UVs[i*vertCount + 17] = vertices[i*vertCount + 17];
+        UVPos += stepDist;
     }
 
     public Mesh RoughStairsMesh(Vector3 stepUpVector, Vector3 stepForwardVector,
