@@ -34,7 +34,10 @@ public class StairsCreator : MonoBehaviour {
     public float sideAngle;
     [Range(0, 180)]
     public float stairsAngle;
-    
+
+    /* Set to true if you want to reset the angle */
+    public bool resetAngle;
+
     /* How long each step is expected to be */
     public float stepSize;
     
@@ -43,6 +46,7 @@ public class StairsCreator : MonoBehaviour {
     
     /* How far down the base goes from the steps */
     public float baseDepth;
+
     
 
     /* -------- Built-in Unity Functions ---------------------------------------------------- */
@@ -57,7 +61,23 @@ public class StairsCreator : MonoBehaviour {
         if(stepSize < minStepSize) {
             stepSize = minStepSize;
         }
-        
+
+        /* Reset the angle so the stairs are flat relative to the stair's transform's axis */
+        if(resetAngle) {
+            resetAngle = false;
+            Vector3 currentAngle = (endPoint.transform.position - startPoint.transform.position).normalized;
+            Vector3 neutralAngle = transform.rotation*Vector3.up;
+            stairsAngle = 90 - Vector3.Angle(currentAngle, neutralAngle);
+
+            /* Prevent the angle from going out of it's range */
+            while(stairsAngle < 0) {
+                stairsAngle += 90;
+            }
+            while(stairsAngle > 90) {
+                stairsAngle -= 90;
+            }
+        }
+
         /* Update the stairs  */
         UpdateStairs();
         updateStairs = false;
@@ -93,7 +113,6 @@ public class StairsCreator : MonoBehaviour {
         /* Find the distance the steps will cover and using the given stepLength, find how many steps to create */
         float totalStepDistance = (startEndDif).magnitude;
         int stepCount = Mathf.CeilToInt(totalStepDistance / stepSize);
-        Debug.Log(stepCount);
         
         /* Extract the desired distances */
         float stepUpAngle = Vector3.Angle((startEndDif).normalized, stepUpwardDirection);
@@ -130,7 +149,6 @@ public class StairsCreator : MonoBehaviour {
         stairsMesh.uv = UVs;
         stairsObject.AddComponent<MeshFilter>().sharedMesh = stairsMesh;
         stairsObject.AddComponent<MeshRenderer>().sharedMaterial = stairsMaterial;
-
         
         /* Create a new object used for the base of the stairs */
         CreateObjectsArray(ref stairsBase, 10, new Vector3(0, 0, 0));
