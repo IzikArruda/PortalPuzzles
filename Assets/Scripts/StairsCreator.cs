@@ -171,22 +171,22 @@ public class StairsCreator : MonoBehaviour {
 
             /* Create planes that connect the stairs to it's base */
             CreateEmptyObject(ref stairsBase[index], "Start base", stairsContainer.transform);
-            stairsBase[index].transform.position = Vector3.zero;
+            stairsBase[index].transform.localPosition = Vector3.zero;
             CreatePlane(newStart + sideDif, newStart - sideDif, oldStart + sideDif, oldStart - sideDif, stairsBase[index], otherMaterial, stairsWidth, 0.2f, baseDepth);
             index++;
 
             CreateEmptyObject(ref stairsBase[index], "Left base", stairsContainer.transform);
-            stairsBase[index].transform.position = Vector3.zero;
+            stairsBase[index].transform.localPosition = Vector3.zero;
             CreatePlane(newStart - sideDif, newEnd - sideDif, oldStart - sideDif, oldEnd - sideDif, stairsBase[index], otherMaterial, 1, 0.2f, baseDepth);
             index++;
             
             CreateEmptyObject(ref stairsBase[index], "Right base", stairsContainer.transform);
-            stairsBase[index].transform.position = Vector3.zero;
+            stairsBase[index].transform.localPosition = Vector3.zero;
             CreatePlane(newEnd + sideDif, newStart + sideDif, oldEnd + sideDif, oldStart + sideDif, stairsBase[index], otherMaterial, 1, 0.2f, baseDepth);
             index++;
 
             CreateEmptyObject(ref stairsBase[index], "End base", stairsContainer.transform);
-            stairsBase[index].transform.position = Vector3.zero;
+            stairsBase[index].transform.localPosition = Vector3.zero;
             CreatePlane(newEnd - sideDif, newEnd + sideDif, oldEnd - sideDif, oldEnd + sideDif, stairsBase[index], otherMaterial, stairsWidth, 0.2f, baseDepth);
             index++;
         }
@@ -197,7 +197,7 @@ public class StairsCreator : MonoBehaviour {
         Vector3 bot1 = newEnd + sideDif;
         Vector3 bot2 = newEnd - sideDif;
         CreateEmptyObject(ref stairsBase[index], "Main base", stairsContainer.transform);
-        stairsBase[index].transform.position = Vector3.zero;
+        stairsBase[index].transform.localPosition = Vector3.zero;
         CreatePlane(top2, top1, bot2, bot1, stairsBase[index], stairsMaterial, stairsWidth, 1, totalStepDistance);
         index++;
         
@@ -207,6 +207,10 @@ public class StairsCreator : MonoBehaviour {
         if(stairsContainer.GetComponent<MeshCollider>() == null) { stairsContainer.AddComponent<MeshCollider>(); }
         stairsContainer.GetComponent<MeshCollider>().sharedMesh = roughStairsMesh;
         stairsContainer.GetComponent<MeshCollider>().convex = true;
+
+        /* Move the stair container so the stairs are properly placed in the world relative to this transform */
+        stairsContainer.transform.position = new Vector3(0, 0, 0);
+        stairsContainer.transform.eulerAngles = new Vector3(0, 0, 0);
     }
 
     void RepositionGivenTransforms() {

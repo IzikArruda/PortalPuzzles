@@ -45,9 +45,12 @@ public class WaitingRoom : ConnectedRoom {
          * only the bare minimum required rooms being active once the player finishes loading.
          */
 
-        entranceRoom.DisablePuzzleRoom();
-        exitRoom.DisablePuzzleRoom();
-        DisableRoom();
+        /* do not disable the rooms if it is in the editor */
+        if(!Application.isEditor) {
+            entranceRoom.DisablePuzzleRoom();
+            exitRoom.DisablePuzzleRoom();
+            DisableRoom();
+        }
     }
 
     void Start() {
