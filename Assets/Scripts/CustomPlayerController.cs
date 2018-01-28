@@ -231,7 +231,7 @@ public class CustomPlayerController : MonoBehaviour {
          * after a physics update, we detected a teleport SHOULD have occured, but we did not update the frame yet,
          * so by teleporting the player in that moment they will NOT render a frame of them PAST the teleport trigger.
          */
-         
+
         /* Update the player's inputs and stateTime */
         inputs.UpdateInputs();
         UpdateInputVector();
@@ -259,7 +259,6 @@ public class CustomPlayerController : MonoBehaviour {
         //Draw a line in the camera's forward vector
         Debug.DrawLine(playerCamera.transform.position, 
                 playerCamera.transform.position + playerCamera.transform.rotation*Vector3.forward*0.5f, Color.green);
-        
     }
 
     void LateUpdate() {
