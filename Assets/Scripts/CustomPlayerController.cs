@@ -345,14 +345,7 @@ public class CustomPlayerController : MonoBehaviour {
         if(PlayerIsGrounded()) {
             lastStepMovement += movementVector;
         }
-
-        /* When jumping, if the player is pushed downward (like hits a ceiling), remove all jump velocity */
-        else {
-            if(currentYVelocity > 0 && movementVector.y < 0) {
-                //currentYVelocity = 0;
-            }
-        }
-
+        
         /* Update the player's lastSavedPosition with it's new position */
         lastSavedPosition = transform.position;
     }

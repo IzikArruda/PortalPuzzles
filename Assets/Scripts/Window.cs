@@ -204,8 +204,8 @@ public class Window : MonoBehaviour {
         cubeScript.x = windowWidth + frameThickness*2;
         cubeScript.y = frameThickness;
         cubeScript.z = frameDepth;
+        cubeScript.mainMaterial = frameMaterial;
         cubeScript.UpdateBox();
-        windowPieces[index].GetComponent<MeshRenderer>().material = frameMaterial;
         index++;
 
         CreateEmptyObject(ref windowPieces[index], "Bottom frame", windowParent);
@@ -214,9 +214,8 @@ public class Window : MonoBehaviour {
         cubeScript.x = windowWidth + frameThickness*2;
         cubeScript.y = frameThickness;
         cubeScript.z = frameDepth;
+        cubeScript.mainMaterial = frameMaterial;
         cubeScript.UpdateBox();
-        cubeScript.UpdateBox();
-        windowPieces[index].GetComponent<MeshRenderer>().material = frameMaterial;
         index++;
 
         CreateEmptyObject(ref windowPieces[index], "Left frame", windowParent);
@@ -225,8 +224,8 @@ public class Window : MonoBehaviour {
         cubeScript.x = frameThickness;
         cubeScript.y = windowHeight;
         cubeScript.z = frameDepth;
+        cubeScript.mainMaterial = frameMaterial;
         cubeScript.UpdateBox();
-        windowPieces[index].GetComponent<MeshRenderer>().material = frameMaterial;
         index++;
 
         CreateEmptyObject(ref windowPieces[index], "Right frame", windowParent);
@@ -235,8 +234,8 @@ public class Window : MonoBehaviour {
         cubeScript.x = frameThickness;
         cubeScript.y = windowHeight;
         cubeScript.z = frameDepth;
+        cubeScript.mainMaterial = frameMaterial;
         cubeScript.UpdateBox();
-        windowPieces[index].GetComponent<MeshRenderer>().material = frameMaterial;
         index++;
 
         CreateEmptyObject(ref windowPieces[index], "Glass", windowParent);
@@ -245,8 +244,8 @@ public class Window : MonoBehaviour {
         cubeScript.x = windowWidth;
         cubeScript.y = windowHeight;
         cubeScript.z = frameDepth/1.5f;
+        cubeScript.mainMaterial = glassMaterial;
         cubeScript.UpdateBox();
-        windowPieces[index].GetComponent<MeshRenderer>().material = glassMaterial;
         index++;
     }
 
