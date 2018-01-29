@@ -349,7 +349,7 @@ public class CustomPlayerController : MonoBehaviour {
         /* When jumping, if the player is pushed downward (like hits a ceiling), remove all jump velocity */
         else {
             if(currentYVelocity > 0 && movementVector.y < 0) {
-                currentYVelocity = 0;
+                //currentYVelocity = 0;
             }
         }
 
