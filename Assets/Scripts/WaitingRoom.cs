@@ -139,7 +139,7 @@ public class WaitingRoom : ConnectedRoom {
 
         /* Re-position the room to the center position between the two attachedRooms */
         roomCenter = (entranceRoom.exitPointFront.position + exitRoom.exitPointBack.position)/2f;
-        roomCenter += new Vector3(Mathf.Abs(xEntranceDist/2f - xExitDist/2f)/2f, 0, 0);
+        roomCenter -= new Vector3((xEntranceDist/2f - xExitDist/2f)/2f, 0, 0);
 
         /* Calculate the sizes of this waitingRoom */
         xDist = Mathf.Abs(entranceRoom.exitPointFront.position.x - exitRoom.exitPointBack.position.x) + xEntranceDist/2f + xExitDist/2f;
