@@ -48,6 +48,9 @@ public class StairsCreator : MonoBehaviour {
     /* How far down the base goes from the steps */
     public float baseDepth;
 
+    /* The direction that is considered "Up" for the stairs. Used to reset the stairs angle. */
+    public Vector3 upVector;
+
     
 
     /* -------- Built-in Unity Functions ---------------------------------------------------- */
@@ -67,7 +70,14 @@ public class StairsCreator : MonoBehaviour {
         if(resetAngle) {
             resetAngle = false;
             Vector3 currentAngle = (endPoint.transform.position - startPoint.transform.position).normalized;
-            Vector3 neutralAngle = transform.rotation*Vector3.up;
+            Vector3 neutralAngle = Vector3.zero;
+            /* Use the given upVector if it's not 0 */
+            if(upVector.magnitude != 0) {
+              neutralAngle = transform.rotation*upVector.normalized;
+            }
+            else {
+                neutralAngle = transform.rotation*Vector3.up;
+            }
             stairsAngle = 90 - Vector3.Angle(currentAngle, neutralAngle);
 
             /* Prevent the angle from going out of it's range */
@@ -94,6 +104,7 @@ public class StairsCreator : MonoBehaviour {
          * Re-create the stairs using the the set of points given to this script
          */
          
+
         /* Create the three positionnal gameObjects */
         CreateEmptyObject(ref sideEdgePoint, "Side point", startPoint);
         CreateEmptyObject(ref stairsUpwards, "Step Up point", startPoint);

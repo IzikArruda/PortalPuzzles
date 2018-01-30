@@ -36,6 +36,15 @@ public class CubeCreator : MonoBehaviour {
     public bool left;
     public bool right;
 
+    public bool updateCube;
+
+    void OnValidate() {
+        /*
+         * Update the box if any values in the script change
+         */
+
+        updateCube = true;
+    }
 
     void Start() {
         /*
@@ -50,8 +59,10 @@ public class CubeCreator : MonoBehaviour {
          * On every frame, check if there is a change with the box's size
          */
          
-        if(x != previousX || y != previousY || z != previousZ) {
+        if(updateCube) {
+            Debug.Log("test");
             UpdateBox();
+            updateCube = false;
         }
     }
 
@@ -127,21 +138,6 @@ public class CubeCreator : MonoBehaviour {
         if(usesSecondMat) {
             CreateTriangles(ref altTriangles, false);
         }
-        /*triangles = new int[] {
-            //X+ plane
-            2, 1, 0, 2, 3, 1,
-            //X- plane
-            4, 5, 6, 5, 7, 6,
-            //Y+ plane
-            10, 9, 8, 10, 11, 9,
-            //Y- plane
-            12, 13, 14, 13, 15, 14,
-            //Z+ plane
-            16, 17, 18, 17, 19, 18,
-            //Z- plane
-            22, 21, 20, 22, 23, 21
-        };*/
-
 
         /* Set the UVs of the cube */
         UV = new Vector2[] {
