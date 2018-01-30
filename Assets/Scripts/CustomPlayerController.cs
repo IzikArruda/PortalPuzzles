@@ -138,12 +138,15 @@ public class CustomPlayerController : MonoBehaviour {
     public WaitingRoom startingRoom;
 
 
+    bool tempBool;
+
     /* -------------- Built-in Unity Functions ---------------------------------------------------------- */
 
     void Start() {
         /*
          * Initilize required objects and set starting values for certain variables 
          */
+        tempBool = true;
 
         /* Link the player's step tracker to their sound script */
         playerStepTracker.SetSoundsScript(playerSoundsScript);
@@ -188,16 +191,22 @@ public class CustomPlayerController : MonoBehaviour {
             playerStepTracker.AddHorizontalStep(Quaternion.Inverse(transform.rotation)*lastStepMovement);
             lastStepMovement = Vector3.zero;
         }
-        
-        /* Empty the expectedMovements array as we are about to add new movements */
-        expectedMovements.Clear();
 
         /* From the player's current position, execute a step check to see if they need to move along their Y axis */
         StepPlayer();
-        
+
         /* Move the player using their given input and the gravity vector */
+        Debug.Log("move");
         MovePlayer(inputVector + GetGravityVector());
 
+
+        //////
+        /* This will stop the step from occuring, indicating upon teleport a certain movement needs to not occur. */
+        if(tempBool == false) {
+            expectedMovements.Clear();
+            tempBool = true;
+        }
+        //////
 
         /* Apply the final tallied movement vector to the player's position */
         Rigidbody rigidBody = GetComponent<Rigidbody>();
@@ -205,10 +214,24 @@ public class CustomPlayerController : MonoBehaviour {
         for(int i = 0; i < expectedMovements.Count; i++) {
             newPosition += (Vector3) expectedMovements[i];
         }
-        rigidBody.MovePosition(newPosition);
+        /*
+         * 
+         * 
+         * 
+         * 
+         * 
+         * 
+         * 
+         * 
+         */
+        //SO WHAT HAPPENS HERE IS IT STILL HAS ONE EXTRA MOVEMENT WHEN IT SHOULDNT
+        Debug.Log(transform.position - newPosition);
+        rigidBody.position = newPosition;
         /* Freeze the player's rigidbody's velocity */
         rigidBody.velocity = Vector3.zero;
 
+        /* Empty the expectedMovements array as we are about to add new movements */
+        expectedMovements.Clear();
 
         /* Save the player's current position as the lastSavedPosition */
         lastSavedPosition = transform.position;
@@ -234,6 +257,10 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Update the player's inputs and stateTime */
         inputs.UpdateInputs();
+        if(tempBool) {
+            inputs.playerMovementY = 1;
+            inputs.playerMovementYRaw = 1;
+        }
         UpdateInputVector();
         stateTime += Time.deltaTime;
 
@@ -321,21 +348,34 @@ public class CustomPlayerController : MonoBehaviour {
          * The given update boolean indicates what function made the call: true for FixedUpdate, false for Update.
          */
 
+
+
+
+        /*
+         * When the player teleports and changes angle, they take a step somehow
+         */
+
+
+
+
         /* Get the vector of the player's movement between now and the last time they were checked */
         Vector3 movementVector = transform.position - lastSavedPosition;
 
         /* Check if there was any movement at all */
         if(movementVector.magnitude != 0) {
 
-            /* Fire a ray of the player's movement that interracts with the world, including teleporters */
+            /* Set the values used to fire the ray */
+            float remainingDistance = movementVector.magnitude;
             Vector3 position = lastSavedPosition;
             Quaternion direction = Quaternion.LookRotation(movementVector.normalized, transform.up);
-            float remainingDistance = movementVector.magnitude;
             bool teleported = false;
+            /* Fire a ray of the player's movement that interracts with the world, including teleporters */
             Quaternion rotationDifference = RayTrace(ref position, ref direction, ref remainingDistance, ref teleported, true, true);
 
             /* If the player's movement passes through a teleporter, reposition their transform to reflect the teleport */
             if(teleported) {
+                Debug.Log("test");
+                tempBool = false;
                 transform.position = position;
                 transform.rotation = transform.rotation * rotationDifference;
             }
@@ -389,6 +429,7 @@ public class CustomPlayerController : MonoBehaviour {
          */
 
         if(movementVector.magnitude != 0) {
+            Debug.Log(movementVector.x + " _ " + movementVector.y + " _ " + movementVector.z);
             expectedMovements.Add(movementVector);
         }
     }
@@ -472,6 +513,7 @@ public class CustomPlayerController : MonoBehaviour {
                 }
             }
 
+            Debug.Log("SHOUDL NOT RUN");
             /* Use the new legLength to make the player undergo a "step" */
             DoStep(newLegLength);
         }
@@ -488,17 +530,27 @@ public class CustomPlayerController : MonoBehaviour {
          * is to find the differnce in the leg lenths, and move the player so that they go from
          * stepLegLength to current
      	*/
+
+        //WHAT HAPPENS: STEPLEGLENGTH BECOMES WRONG
+
+
         Vector3 upDirection = transform.rotation*Vector3.up;
 
         /* Place the footPosition using the stepLegLength */
         currentFootPosition = transform.position - upDirection*(stepLegLength);
 
         /* Move the player's body so that their "legs" are now of proper length */
+        Debug.Log("move");
         MovePlayer(-transform.position + currentFootPosition + upDirection*(currentLegLength));
 
         /* Revert any movement done to the camera to smooth the players view */
         //currentCameraTransform.transform.position -= upDirection*(currentLegLength - stepLegLength);
         cameraYOffset -= (currentLegLength - stepLegLength);
+
+        /* PRINT OUT THE AMOUNT OF DISTANCE THE PLAYER STEPS */
+        if(Mathf.Abs(currentLegLength - stepLegLength) > 0.01f) {
+            Debug.Log((currentLegLength - stepLegLength) + " _|_ " + currentLegLength + " _ " + stepLegLength);
+        }
     }
     
 
@@ -1164,7 +1216,6 @@ public class CustomPlayerController : MonoBehaviour {
 
                 /* Hitting a solid collider will stop the rayTrace where it currently is */
                 else if(!hitInfo.collider.isTrigger) {
-                    //Debug.Log("hit wall");
                     stopRayTrace = true;
                 }
 
