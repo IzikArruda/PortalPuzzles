@@ -60,7 +60,6 @@ public class CubeCreator : MonoBehaviour {
          */
          
         if(updateCube) {
-            Debug.Log("test");
             UpdateBox();
             updateCube = false;
         }

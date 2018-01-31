@@ -327,7 +327,7 @@ public class CustomPlayerController : MonoBehaviour {
             /* Set the values used to fire the ray */
             float remainingDistance = movementVector.magnitude;
             Vector3 position = lastSavedPosition;
-            Quaternion direction = Quaternion.LookRotation(movementVector.normalized, transform.up);
+            Quaternion direction = Quaternion.LookRotation(movementVector.normalized,  transform.up);
             bool teleported = false;
             /* Fire a ray of the player's movement that interracts with the world, including teleporters */
             Quaternion rotationDifference = RayTrace(ref position, ref direction, ref remainingDistance, ref teleported, true, true);
@@ -360,7 +360,7 @@ public class CustomPlayerController : MonoBehaviour {
          * If not enough "legs" connect to an object, the player will not take
          * a step and instead will change states to "falling".
          */
-        Vector3 upDirection = transform.rotation*Vector3.up;
+        Vector3 upDirection = transform.up;
 
         /* Update the legLengths of the player before making a step */
         UpdateLegLengths();
@@ -485,7 +485,8 @@ public class CustomPlayerController : MonoBehaviour {
          * stepLegLength to current
      	*/
         
-        Vector3 upDirection = transform.rotation*Vector3.up;
+        Vector3 upDirection = transform.up;
+
 
         /* Place the footPosition using the stepLegLength */
         currentFootPosition = transform.position - upDirection*(stepLegLength);
@@ -967,7 +968,7 @@ public class CustomPlayerController : MonoBehaviour {
          * or the gap between the leg and the pleyer's center is blocked, set the  distance 
          * of the leg in the extraLegLengths to -1, indicating the leg is not used.
     	 */
-        Vector3 upDirection = transform.rotation*Vector3.up;
+        Vector3 upDirection = transform.up;
 		Vector3 tempLegPos;
 		Quaternion tempLegRotation;
 		float tempLegLength;
