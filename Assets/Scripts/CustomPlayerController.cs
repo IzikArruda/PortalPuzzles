@@ -335,7 +335,7 @@ public class CustomPlayerController : MonoBehaviour {
             /* If the player's movement passes through a teleporter, reposition their transform to reflect the teleport */
             if(teleported) {
                 transform.position = position;
-                transform.rotation = transform.rotation * rotationDifference;
+                transform.rotation = rotationDifference * transform.rotation;
             }
         }
 
