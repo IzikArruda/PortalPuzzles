@@ -228,12 +228,12 @@ public class WaitingRoom : ConnectedRoom {
         
         /* Get the Z axis offset of the room center due to inequal exit/entrance z sizes */
         float zDiff = entranceRoom.roomLength - exitRoom.roomLength;
-        
+
         /* Update the collider with it's new stats */
-        if(roomTrigger == null) { roomTrigger = gameObject.AddComponent<BoxCollider>(); }
-        roomTrigger.isTrigger = true;
+        RecreateMainTrigger();
         roomTrigger.center = roomCenter + new Vector3(0, yDist/2f, -zDiff);
-        roomTrigger.size = new Vector3(xFull, yDist, zFull);
+        //Dont use the full Z distance to prevent the player from hitting it from the puzzleRoom
+        roomTrigger.size = new Vector3(xFull, yDist, zFull*0.95f);
     }
 
     public void DisableRoom() {

@@ -179,4 +179,15 @@ public class ConnectedRoom : MonoBehaviour {
 
     }
 
+    public void RecreateMainTrigger() {
+        /*
+         * Re-create the trigger for this room. Set the tag for this room to "IgnoreYarcast" so that the trigger
+         * is not hit by the player's movement, but still collides with this room's children colliders.
+         */
+
+        if(roomTrigger != null) { DestroyImmediate(roomTrigger); }
+        gameObject.layer = 2;
+        roomTrigger = gameObject.AddComponent<BoxCollider>();
+        roomTrigger.isTrigger = true;
+    }
 }

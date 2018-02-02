@@ -82,11 +82,9 @@ public class AttachedRoom : ConnectedRoom {
         
         /* Get the center position of the room's floor */
         Vector3 roomCenter = (exitPointFront.position + exitPointBack.position)/2f;
-        
+
         /* Re-create the trigger used to determine if the player entered this AttachedRoom */
-        if(roomTrigger != null) { DestroyImmediate(roomTrigger); }
-        roomTrigger = gameObject.AddComponent<BoxCollider>();
-        roomTrigger.isTrigger = true;
+        RecreateMainTrigger();
         roomTrigger.center = -transform.localPosition + roomCenter + new Vector3(0, exitHeight/2f, 0);
         roomTrigger.size = new Vector3(exitWidth, exitHeight, depth);
         

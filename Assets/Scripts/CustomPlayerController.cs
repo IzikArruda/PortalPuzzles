@@ -948,7 +948,7 @@ public class CustomPlayerController : MonoBehaviour {
 		
 		/* Update the legLengths array if needed */
 		if(index != -1){
-		
+            
 			/* The leg did not hit any objects/colliders */
 			if(length == 0){
                 extraLegLenths[index] = -1;
@@ -1134,9 +1134,10 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Include teleport triggers into the layerMask */
         if(detectTeleportTriggers) {rayLayerMask = rayLayerMask | (1 << LayerMask.NameToLayer("Portal Trigger"));}
-        /* Include all non-teleporter triggers colliders into the layerMask */
-        if(detectOtherColliders) {rayLayerMask = rayLayerMask | ~(1 << LayerMask.NameToLayer("Portal Trigger"));}
-        
+        /* Include all colliders into the layerMask. Assume all colliders use the "Default" layer.  */
+        if(detectOtherColliders) { rayLayerMask = rayLayerMask | (1 << LayerMask.NameToLayer("Default")); }
+
+
         /* Travel towards the rotation's forward for the remaining distance */
         while(distance > 0 && stopRayTrace == false) {
             //reduce the distance every loop to prevent infinite loops
@@ -1167,9 +1168,8 @@ public class CustomPlayerController : MonoBehaviour {
 
                 /* non-teleport triggers will be ignored */
                 else if(hitInfo.collider.isTrigger) {
-                    //Debug.Log("hit something?");
-                    position += rotation * Vector3.forward * hitInfo.distance;
-                    distance -= hitInfo.distance;
+                    //Push the raycast forward a bit more. Or, ignore the trigger
+                    //Debug.Log("hit trigger");
                 }
             }
 

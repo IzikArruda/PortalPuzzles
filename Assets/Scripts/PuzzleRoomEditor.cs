@@ -44,23 +44,16 @@ public class PuzzleRoomEditor : MonoBehaviour {
     /* Y displacement applied to the clouds container. Used to keep the player between both cloud sets. */
     public float cloudOffset = 0;
     
-
-    /* The given width of the room */
-    //public float givenRoomWidth;
-
-    
     /* Stats on the room calculated once initialized */
     private float roomLength;
     private float roomHeight;
     public float roomWidth;
-
-
+    
     /* The minimum distance the player needs to be from the center before the clouds move in confunction with them */
     //public float minYClouds;
     /* The maximum distance from the center the "puzzle area" occupies */
     public float maxYPlayArea;
     
-
     /* the minimum distance the player needs to fall from the level's center before getting teleported to the other side. */
     private float minYTeleport;
 
@@ -405,6 +398,9 @@ public class PuzzleRoomEditor : MonoBehaviour {
         if(GetComponent<BoxCollider>() == null) {
             gameObject.AddComponent<BoxCollider>();
         }
+
+        /* Layer the trigger to prevent the player's raytraces from colliding with it */
+        gameObject.layer = 2;
 
         /* It must be a trigger to allow the player to move inside the room */
         GetComponent<BoxCollider>().isTrigger = true;
