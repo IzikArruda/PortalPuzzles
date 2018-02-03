@@ -94,7 +94,7 @@ public class Window : MonoBehaviour {
 
         /* To prevent the portals from being placed behind the room's walls, control it's offset */
         portalSet.portalOffset = new Vector3(0, 0, -0.01f);
-        Vector3 portalOffset = portalSet.portalOffset*2;
+        Vector3 portalOffset = new Vector3(0, 0, -0.05f);
 
         /* Place the portals at their proper locations */
         portalSet.EntrancePortal.transform.position = insidePos;
@@ -102,7 +102,7 @@ public class Window : MonoBehaviour {
         portalSet.EntrancePortal.transform.position += portalSet.EntrancePortal.transform.rotation*portalOffset;
         portalSet.ExitPortal.transform.position = outsidePos;
         portalSet.ExitPortal.transform.eulerAngles = outsideRot;
-        portalSet.ExitPortal.transform.localPosition -= portalSet.ExitPortal.transform.rotation*portalOffset;
+        portalSet.ExitPortal.transform.position -= portalSet.ExitPortal.transform.rotation*portalOffset;
 
         /* Update the portal's meshCollider with these new values */
         portalSet.updatePortal = true;
@@ -151,14 +151,14 @@ public class Window : MonoBehaviour {
         DestroyImmediate(skySphere.GetComponent<SphereCollider>());
 
         /* Flip all the triangles of the sphere to have it inside-out */
-        int[] triangles = skySphere.GetComponent<MeshFilter>().mesh.triangles;
+        int[] triangles = skySphere.GetComponent<MeshFilter>().sharedMesh.triangles;
         int tempInt;
         for(int i = 0; i < triangles.Length; i += 3) {
             tempInt = triangles[i + 0];
             triangles[i + 0] = triangles[i + 2];
             triangles[i + 2] = tempInt;
         }
-        skySphere.GetComponent<MeshFilter>().mesh.triangles = triangles;
+        skySphere.GetComponent<MeshFilter>().sharedMesh.triangles = triangles;
 
         /* Apply the sky sphere material */
         skySphere.GetComponent<MeshRenderer>().sharedMaterial = skySphereMaterial;
@@ -205,7 +205,7 @@ public class Window : MonoBehaviour {
         cubeScript.y = frameThickness;
         cubeScript.z = frameDepth;
         cubeScript.mainMaterial = frameMaterial;
-        cubeScript.UpdateBox();
+        cubeScript.updateCube = true;
         index++;
 
         CreateEmptyObject(ref windowPieces[index], "Bottom frame", windowParent);
@@ -215,7 +215,7 @@ public class Window : MonoBehaviour {
         cubeScript.y = frameThickness;
         cubeScript.z = frameDepth;
         cubeScript.mainMaterial = frameMaterial;
-        cubeScript.UpdateBox();
+        cubeScript.updateCube = true;
         index++;
 
         CreateEmptyObject(ref windowPieces[index], "Left frame", windowParent);
@@ -225,7 +225,7 @@ public class Window : MonoBehaviour {
         cubeScript.y = windowHeight;
         cubeScript.z = frameDepth;
         cubeScript.mainMaterial = frameMaterial;
-        cubeScript.UpdateBox();
+        cubeScript.updateCube = true;
         index++;
 
         CreateEmptyObject(ref windowPieces[index], "Right frame", windowParent);
@@ -235,7 +235,7 @@ public class Window : MonoBehaviour {
         cubeScript.y = windowHeight;
         cubeScript.z = frameDepth;
         cubeScript.mainMaterial = frameMaterial;
-        cubeScript.UpdateBox();
+        cubeScript.updateCube = true;
         index++;
 
         CreateEmptyObject(ref windowPieces[index], "Glass", windowParent);
@@ -245,7 +245,7 @@ public class Window : MonoBehaviour {
         cubeScript.y = windowHeight;
         cubeScript.z = frameDepth/1.5f;
         cubeScript.mainMaterial = glassMaterial;
-        cubeScript.UpdateBox();
+        cubeScript.updateCube = true;
         index++;
     }
 

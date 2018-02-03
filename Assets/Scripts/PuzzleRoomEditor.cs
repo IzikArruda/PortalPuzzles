@@ -138,6 +138,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
                         *(1 - ((Mathf.Abs(playerFromCenter) - maxYPlayArea)/(minYTeleport-maxYPlayArea)));
 
                 /* When the player is out of the play area, force them to fast fall */
+                /*  */
                 collider.GetComponent<CustomPlayerController>().ApplyFastfall();
             }
 

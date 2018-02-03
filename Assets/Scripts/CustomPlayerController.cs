@@ -67,7 +67,7 @@ public class CustomPlayerController : MonoBehaviour {
     /* How fast a player accelerates towards their feet when falling. */
     public float gravity;
     /* The Y velocity of the player along with its max(positive) */
-    private float currentYVelocity;
+    public float currentYVelocity;
     public float maxYVelocity;
     /* The velocity modifier when the player is FastFalling */
     public int fastFallMod;
@@ -119,9 +119,12 @@ public class CustomPlayerController : MonoBehaviour {
     /* How fast cameraYOffset morphs towards 0 each frame, in percentage. */
     [Range(1, 0)]
     public float morphPercentage;
+    /* How much faster the Yoffset is reduced as the offset reaches it's limits */
+    [Range(1, 0)]
+    public float morphDiff;
 
-	
-	/* --- Player Scripts --------------------------- */
+
+    /* --- Player Scripts --------------------------- */
     /* Contains all the post processing effects that will be applied to the camera */
     public CustomPlayerCameraEffects cameraEffectsScript;
 
@@ -1046,26 +1049,37 @@ public class CustomPlayerController : MonoBehaviour {
             cameraYOffset += currentYVelocity/5f;
         }
 
-		/* Keep the range of cameraYOffset to be [bodyLength/2, -(height + boyLength/2] */
-        if(cameraYOffset > playerBodyLength/2f) {
-            cameraYOffset = playerBodyLength/2f;
+        /* Keep the range of cameraYOffset to be [bodyLength/2, -(height + boyLength/2] */
+        float minOffset = -(headHeight + playerBodyLength/2f);
+        float maxOffset = playerBodyLength/2f;
+        if(cameraYOffset > maxOffset) {
+            cameraYOffset = maxOffset;
         }
         
-        else if(cameraYOffset < -(headHeight + playerBodyLength/2f)) {
-            cameraYOffset  = -(headHeight + playerBodyLength/2f);
+        else if(cameraYOffset < minOffset) {
+            cameraYOffset  = minOffset;
         }
 
         /* If the offset is very small, snap it to 0 */
-        if(cameraYOffset < 0.001 && cameraYOffset > -0.001) {
+        if(cameraYOffset < 0.01 && cameraYOffset > -0.01) {
             cameraYOffset = 0;
         }
 
         /* Use the cameraYOffset to get the head's offset */
         headOffset = headHeight + cameraYOffset;
 
-        /* Reduce the cameraYOffset once it gets used */
-        cameraYOffset *= morphPercentage;
+        /* Reduce the cameraYOffset once it gets used. If the offset is past a certain limit, reduce it faster. */
+        float morphAmount = morphPercentage;
+        if(cameraYOffset > 0) {
+            morphAmount -= morphDiff*RatioWithinRange(0, maxOffset, cameraYOffset);
+        }
+        else if(cameraYOffset < 0) {
+            morphAmount -= morphDiff*(1 - RatioWithinRange(minOffset, 0, cameraYOffset));
+        }
 
+        /* Apply the morph to the offset to make it return to 0 over a few frames */
+        cameraYOffset *= morphAmount;
+        
         return headOffset;
     }
 
