@@ -210,7 +210,7 @@ public class CustomPlayerController : MonoBehaviour {
         expectedMovements.Clear();
 
         /* Save the player's current position as the lastSavedPosition */
-        lastSavedPosition = transform.position;
+        UpdateSavedPositon();
     }
 
     void Update() {
@@ -343,9 +343,9 @@ public class CustomPlayerController : MonoBehaviour {
         if(PlayerIsGrounded()) {
             lastStepMovement += movementVector;
         }
-        
+
         /* Update the player's lastSavedPosition with it's new position */
-        lastSavedPosition = transform.position;
+        UpdateSavedPositon();
     }
     
     public void StepPlayer() {
@@ -783,7 +783,7 @@ public class CustomPlayerController : MonoBehaviour {
         cameraYOffset = 0;
 
         /* The "previous frame" had the player starting in it's current position */
-        lastSavedPosition = transform.position;
+        UpdateSavedPositon();
 
         /* The player starts immobile */
         lastStepMovement = Vector3.zero;
@@ -1069,6 +1069,13 @@ public class CustomPlayerController : MonoBehaviour {
         return headOffset;
     }
 
+    public void UpdateSavedPositon() {
+        /*
+         * Update the last saved position value
+         */
+
+        lastSavedPosition = transform.position;
+    }
 
     /* ----------- Outside Called Functions ------------------------------------------------------------- */
 
