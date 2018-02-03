@@ -423,9 +423,9 @@ public class PuzzleRoomEditor : MonoBehaviour {
         Vector3[] vertices = null;
         Vector2[] UV;
         int[] triangles = null;
-        
+
         /* Use the meshCreator function to create the basics of the wall */
-        CreateMesh(xScale, zScale, ref vertices, ref triangles);
+        CreateLargeMesh(xScale, zScale, ref vertices, ref triangles);
 
         /* Set the UVs of the plane */
         UV = new Vector2[vertices.Length];
@@ -460,7 +460,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
             wallBox.size = new Vector3(xScale, colliderDepth, zScale);
         }
     }
-    
+
     public void CreateCloudsMesh(GameObject clouds, float xScale, float zScale, int cloudCount, float cloudDepth){
     	/*
     	 * Create and assign the mesh used to represent the clouds in the room's top and bottom bounds.
@@ -517,9 +517,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
         clouds.GetComponent<MeshFilter>().sharedMesh = cloudMesh;
         clouds.AddComponent<MeshRenderer>();
         clouds.GetComponent<MeshRenderer>().material = cloudMaterial;
-
         
-
         /* Place a single mesh at the end of the clouds to block the players view past the clouds */
         GameObject blocker = new GameObject();
         Mesh blockerMesh = new Mesh();
@@ -535,9 +533,9 @@ public class PuzzleRoomEditor : MonoBehaviour {
         blocker.AddComponent<MeshRenderer>().material = cloudBlockerMaterial;
     }
     
-    public void CreateMesh(float xScale, float zScale, ref Vector3[] vertices, ref int[] triangles){
+    public void CreateLargeMesh(float xScale, float zScale, ref Vector3[] vertices, ref int[] triangles){
         /*
-    	 * Create a mesh using the given scale values and save it's verts and triangles into the given references.
+    	 * Create a large mesh using the given scale values and save it's verts and triangles into the given references.
          * If the mesh is going to be very large, split it into multiple vertices and triangles.
     	 *
     	 * It expects the given arrays to not yet be initialized.
@@ -568,17 +566,24 @@ public class PuzzleRoomEditor : MonoBehaviour {
             triangles[i*6 + 4] = i*4 + 2;
             triangles[i*6 + 5] = i*4 + 0;
         }
+    }
 
+    private void CreateMesh(float xScale, float zScale, ref Vector3[] vertices, ref int[] triangles) {
+        /*
+         * Use the parameters to create a simple mesh using 4 vertices.
+         */
 
-        /*vertices = new Vector3[4];
-    	vertices[0] = new Vector3(0.5f*xScale, 0, 0.5f*zScale);
+        /* Set the vertices */
+        vertices = new Vector3[4];
+        vertices[0] = new Vector3(0.5f*xScale, 0, 0.5f*zScale);
         vertices[1] = new Vector3(-0.5f*xScale, 0, 0.5f*zScale);
         vertices[2] = new Vector3(-0.5f*xScale, 0, -0.5f*zScale);
         vertices[3] = new Vector3(0.5f*xScale, 0, -0.5f*zScale);
-        
+
+        /* Set the triangles */
         triangles = new int[]{
             2, 1, 0,
             3, 2, 0
-        };*/
+        };
     }
 }
