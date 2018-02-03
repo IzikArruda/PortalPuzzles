@@ -428,12 +428,13 @@ public class PuzzleRoomEditor : MonoBehaviour {
         CreateMesh(xScale, zScale, ref vertices, ref triangles);
 
         /* Set the UVs of the plane */
-        UV = new Vector2[] {
-            new Vector2(vertices[0].x, vertices[0].z),
-            new Vector2(vertices[1].x, vertices[1].z),
-            new Vector2(vertices[2].x, vertices[2].z),
-            new Vector2(vertices[3].x, vertices[3].z)
-        };
+        UV = new Vector2[vertices.Length];
+        for(int i = 0; i < vertices.Length/4; i++) {
+            UV[i*4 + 0] = new Vector2(vertices[i*4 + 0].x, vertices[i*4 + 0].z);
+            UV[i*4 + 1] = new Vector2(vertices[i*4 + 1].x, vertices[i*4 + 1].z);
+            UV[i*4 + 2] = new Vector2(vertices[i*4 + 2].x, vertices[i*4 + 2].z);
+            UV[i*4 + 3] = new Vector2(vertices[i*4 + 3].x, vertices[i*4 + 3].z);
+        }
         
         /* Assign the parameters to the mesh */
         wallMesh.vertices = vertices;
@@ -535,13 +536,41 @@ public class PuzzleRoomEditor : MonoBehaviour {
     }
     
     public void CreateMesh(float xScale, float zScale, ref Vector3[] vertices, ref int[] triangles){
-    	/*
+        /*
     	 * Create a mesh using the given scale values and save it's verts and triangles into the given references.
+         * If the mesh is going to be very large, split it into multiple vertices and triangles.
     	 *
     	 * It expects the given arrays to not yet be initialized.
     	 */
-    
-    	vertices = new Vector3[4];
+
+        /* Calculate the sizes of the mesh and create it's arrays */
+        float maxVerticeDifference = 100f;
+        int verticeSections = Mathf.CeilToInt(zScale/maxVerticeDifference) + 1;
+        vertices = new Vector3[4*verticeSections];
+        triangles = new int[6*verticeSections];
+
+        /* Populate the array by going through each section */
+        float sectionSize = zScale/verticeSections;
+        float currentZ = -0.5f*zScale;
+        float nextZ = currentZ + sectionSize;
+        for(int i = 0; i < verticeSections; i++) {
+            vertices[i*4 + 0] = new Vector3(0.5f*xScale, 0, nextZ);
+            vertices[i*4 + 1] = new Vector3(-0.5f*xScale, 0, nextZ);
+            vertices[i*4 + 2] = new Vector3(-0.5f*xScale, 0, currentZ);
+            vertices[i*4 + 3] = new Vector3(0.5f*xScale, 0, currentZ);
+            currentZ = nextZ;
+            nextZ += sectionSize;
+
+            triangles[i*6 + 0] = i*4 + 2;
+            triangles[i*6 + 1] = i*4 + 1;
+            triangles[i*6 + 2] = i*4 + 0;
+            triangles[i*6 + 3] = i*4 + 3;
+            triangles[i*6 + 4] = i*4 + 2;
+            triangles[i*6 + 5] = i*4 + 0;
+        }
+
+
+        /*vertices = new Vector3[4];
     	vertices[0] = new Vector3(0.5f*xScale, 0, 0.5f*zScale);
         vertices[1] = new Vector3(-0.5f*xScale, 0, 0.5f*zScale);
         vertices[2] = new Vector3(-0.5f*xScale, 0, -0.5f*zScale);
@@ -550,6 +579,6 @@ public class PuzzleRoomEditor : MonoBehaviour {
         triangles = new int[]{
             2, 1, 0,
             3, 2, 0
-        };
+        };*/
     }
 }
