@@ -94,7 +94,7 @@ public class Window : MonoBehaviour {
 
         /* To prevent the portals from being placed behind the room's walls, control it's offset */
         portalSet.portalOffset = new Vector3(0, 0, -0.01f);
-        Vector3 portalOffset = new Vector3(0, 0, -0.05f);
+        Vector3 portalOffset = new Vector3(0, 0, -0.025f);
 
         /* Place the portals at their proper locations */
         portalSet.EntrancePortal.transform.position = insidePos;
