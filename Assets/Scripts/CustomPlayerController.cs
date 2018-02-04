@@ -140,6 +140,9 @@ public class CustomPlayerController : MonoBehaviour {
     /* The WaitingRoom the player will first encounter/start in. This room will be enabled on startup. */
     public WaitingRoom startingRoom;
 
+    /* The last collider that was hit. Used when calling Raytrace and we want to save the collider the ray hits */
+    private Collider lastHitCollider;
+
     
     /* -------------- Built-in Unity Functions ---------------------------------------------------------- */
 
@@ -333,7 +336,7 @@ public class CustomPlayerController : MonoBehaviour {
             Quaternion direction = Quaternion.LookRotation(movementVector.normalized,  transform.up);
             bool teleported = false;
             /* Fire a ray of the player's movement that interracts with the world, including teleporters */
-            Quaternion rotationDifference = RayTrace(ref position, ref direction, ref remainingDistance, ref teleported, true, true);
+            Quaternion rotationDifference = RayTrace(ref position, ref direction, ref remainingDistance, ref teleported, true, true, false);
 
             /* If the player's movement passes through a teleporter, reposition their transform to reflect the teleport */
             if(teleported) {
@@ -567,13 +570,13 @@ public class CustomPlayerController : MonoBehaviour {
         bool temp = false;
 
         /* Fire the scouting ray */
-        rotationDifference = RayTrace(ref scoutPos, ref scoutRot, ref scoutDist, ref temp, true, true);
+        rotationDifference = RayTrace(ref scoutPos, ref scoutRot, ref scoutDist, ref temp, true, true, false);
 
         /* Reduce the cameraHeight if the scout ray collided with anything */
         cameraHeight = (cameraHeight - scoutDist) - cameraHeight*0.05f;
 
         /* fire the actual ray for the camera */
-        rotationDifference = RayTrace(ref cameraPosition, ref toCamRotation, ref cameraHeight, ref temp, true, true);
+        rotationDifference = RayTrace(ref cameraPosition, ref toCamRotation, ref cameraHeight, ref temp, true, true, false);
 
 
         /* Use the new position and rotation to find the camera's final position and rotation */
@@ -937,17 +940,28 @@ public class CustomPlayerController : MonoBehaviour {
         }
     }
 
-    void LegCollisionTest(ref Vector3 position, ref Quaternion direction, ref float length, int index) {
+    void LegCollisionTest(ref Vector3 position, ref Quaternion direction, ref float length, int index, ref DetectPlayerLegRay playerLegScript) {
         /*
          * Use the given values to send a ray trace of the player's leg and return the distance of the ray.
          * Update the arrays that track the status of the leg with the given index. If the given
-         * index is -1, then do not update the array
+         * index is -1, then do not update the array.
+         * 
+         * If the ray collides with an object, set playerLegScriptto the detected DetectPlayerLegRay script.
+         * If no collision occurs or there was no script, set the playerLegScript to null.
          */
 
-		/* Use the RayTrace function */
-		float preLength = length;
+        /* Use the RayTrace function */
+        float preLength = length;
         bool temp = false;
-		RayTrace(ref position, ref direction, ref length, ref temp, true, true);
+        lastHitCollider = null;
+
+        /* Fire the ray and use the hit collider to update the playerLegScript */
+        RayTrace(ref position, ref direction, ref length, ref temp, true, true, true);
+        if(lastHitCollider != null && lastHitCollider.GetComponent<DetectPlayerLegRay>() != null) {
+            playerLegScript = lastHitCollider.GetComponent<DetectPlayerLegRay>();
+        }else {
+            playerLegScript = null;
+        }
 		
 		/* Update the legLengths array if needed */
 		if(index != -1){
@@ -970,17 +984,20 @@ public class CustomPlayerController : MonoBehaviour {
          * in the leg array, tracking how far they reach. If the leg does not reach an object 
          * or the gap between the leg and the pleyer's center is blocked, set the  distance 
          * of the leg in the extraLegLengths to -1, indicating the leg is not used.
+         * 
+         * When a leg hits an object, check if the object has a "DetectPlayerLegRay" script attached to it.
     	 */
         Vector3 upDirection = transform.up;
 		Vector3 tempLegPos;
 		Quaternion tempLegRotation;
 		float tempLegLength;
+        DetectPlayerLegRay[] legRayScripts = new DetectPlayerLegRay[extraLegs + 1];
 
         /* Test the first leg. It goes straight down relative to the player's center. */
         tempLegRotation = Quaternion.LookRotation(-transform.up, transform.forward);
         tempLegPos = transform.position;
         tempLegLength = currentLegLength + currentStepHeight;
-        LegCollisionTest(ref tempLegPos, ref tempLegRotation, ref tempLegLength, 0);
+        LegCollisionTest(ref tempLegPos, ref tempLegRotation, ref tempLegLength, 0, ref legRayScripts[0]);
 		
 		/* Test the collision for the other legs */
 		for(int i = 1; i < extraLegLenths.Length; i++) {
@@ -989,21 +1006,29 @@ public class CustomPlayerController : MonoBehaviour {
             float legGapDistance = legGap*playerBodyRadius;
 			tempLegPos = transform.position;
 			tempLegRotation = Quaternion.AngleAxis(i*(360/(extraLegLenths.Length-1)), upDirection)*transform.rotation;
-			LegCollisionTest(ref tempLegPos, ref tempLegRotation, ref legGapDistance, -1);
+			LegCollisionTest(ref tempLegPos, ref tempLegRotation, ref legGapDistance, -1, ref legRayScripts[i]);
 			
 			/* Fire the actual leg ray if there is nothing blocking the leg gab */
 			if(legGapDistance == 0){
                 /* Rotate the leg so it is rayTracing downward */
                 tempLegRotation = Quaternion.LookRotation(tempLegRotation*-Vector3.up, tempLegRotation*Vector3.forward	);
 				tempLegLength = currentLegLength + currentStepHeight;
-				LegCollisionTest(ref tempLegPos, ref tempLegRotation, ref tempLegLength, i);
-			}
+				LegCollisionTest(ref tempLegPos, ref tempLegRotation, ref tempLegLength, i, ref legRayScripts[i]);
+            }
 			
 			//Dont use this leg if the gap between the leg and the player is blocked
 			else {
                 extraLegLenths[i] = -1;
-			}
+                legRayScripts[i+1] = null;
+            }
 		}
+        
+        /* Check each collider hit for a DetectPlayerLegRay script. Run it's PlayerStep command if it exists. */
+        for(int i = 0; i < legRayScripts.Length; i++) {
+            if(legRayScripts[i] != null && legRayScripts[i].GetComponent<DetectPlayerLegRay>() != null) {
+                legRayScripts[i].GetComponent<DetectPlayerLegRay>().PlayerStep();
+            }
+        }
     }
 
     Vector3 GetGravityVector() {
@@ -1130,7 +1155,7 @@ public class CustomPlayerController : MonoBehaviour {
     /* ----------- Helper Functions ------------------------------------------------------------- */
 
     Quaternion RayTrace(ref Vector3 position, ref Quaternion rotation, ref float distance, 
-        ref bool teleported, bool detectTeleportTriggers, bool detectOtherColliders) {
+        ref bool teleported, bool detectTeleportTriggers, bool detectOtherColliders, bool saveCollider) {
         /*
          * Fire a ray from the given position with the given rotation forwards for the given distance.
          * The quaternion returned represents the amount of rotation that the given rotation underwent.
@@ -1145,6 +1170,9 @@ public class CustomPlayerController : MonoBehaviour {
          * 
          * The teleported reference will be set to false if no teleporter was encountered. It will be
          * set to true if it collides with a teleporter and moves the position and rotation.
+         * 
+         * The saveCollider boolean will be true if we want to save a reference to the collider
+         * the ray trace collides into. If nothing is hit while saveCollider is true, set it to null.
          */
         Quaternion totalRotation = Quaternion.identity;
         Quaternion rotationDifference;
@@ -1185,6 +1213,11 @@ public class CustomPlayerController : MonoBehaviour {
                 /* Hitting a solid collider will stop the rayTrace where it currently is */
                 else if(!hitInfo.collider.isTrigger) {
                     stopRayTrace = true;
+
+                    /* Save the collider hit if needed. Do not save the collider if it was a teleport trigger */
+                    if(saveCollider) {
+                        lastHitCollider = hitInfo.collider;
+                    }
                 }
 
                 /* non-teleport triggers will be ignored */
@@ -1192,6 +1225,10 @@ public class CustomPlayerController : MonoBehaviour {
                     //Push the raycast forward a bit more. Or, ignore the trigger
                     //Debug.Log("hit trigger");
                 }
+
+
+
+
             }
 
             /* The raytrace hit nothing, so travel along the direction for the remaining distance */

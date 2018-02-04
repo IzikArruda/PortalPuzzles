@@ -76,6 +76,8 @@ public class StartingRoom : ConnectedRoom {
         roomWalls[0].name = "Floor";
         roomWalls[0].transform.position += new Vector3(0, -roomBellowHeight, 0);
         CreatePlane(roomWalls[0], roomWidth, roomDepth, 8, floorMaterial, 0, false);
+        //Attach a DetectPlayerLegRay script to the floor
+        roomWalls[0].AddComponent<DetectPlayerLegRay>();
 
         roomWalls[1].name = "Left wall";
         roomWalls[1].transform.position += new Vector3(-roomWidth/2f, upperRoomHeight/2f - (fullRoomHeight - upperRoomHeight)/2f, 0);

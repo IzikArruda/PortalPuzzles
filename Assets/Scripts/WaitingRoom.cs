@@ -155,6 +155,8 @@ public class WaitingRoom : ConnectedRoom {
         /* Set unique values for each individual wall */
         roomWalls[0].name = "Floor";
         CreatePlane(roomWalls[0], xDist, zDist, 8, floorMaterial, 0, false);
+        //Attach a DetectPlayerLegRay script to the floor
+        roomWalls[0].AddComponent<DetectPlayerLegRay>();
 
         roomWalls[1].name = "Left wall";
         roomWalls[1].transform.position += new Vector3(-xDist/2f, yDist/2f, 0);
