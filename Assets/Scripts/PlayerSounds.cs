@@ -53,6 +53,8 @@ public class PlayerSounds : MonoBehaviour {
 
     /* --- Audio Clips ------------------- */
     public AudioClip[] stepClips;
+    public AudioClip[] marbleStepClips;
+    public AudioClip[] carpetStepClips;
     public AudioClip[] landingClips;
     public AudioClip[] musicClipsMuted;
     public AudioClip[] musicClipsUpgraded;
@@ -160,7 +162,7 @@ public class PlayerSounds : MonoBehaviour {
 
     /* ----------- Play Sounds Functions ------------------------------------------------------------- */
 
-    public void PlayFootstep(float lastStepTime, float stepHeight) {
+    public void PlayFootstep(float lastStepTime, float stepHeight, int stepType) {
         /*
          * Use the given values to derive the required parameters 
          * to properly send a request to play a footstep.
@@ -174,7 +176,6 @@ public class PlayerSounds : MonoBehaviour {
 		 * By controlling the volume of each part, we can systematically control the tone.
 		 */
         int sourceIndex = UnusedSoundSource(upperStepSources);
-        int stepEffectIndex = RandomClip(stepClips, lastStepClipIndex);
 		float volumeRatio;
 		float footstepToneRatio;
 		float sampleRatio;
@@ -226,18 +227,36 @@ public class PlayerSounds : MonoBehaviour {
         }
         
         /* Send a request to play a footstep with the calculated parameters */
-        PlayFootstep(volumeRatio, footstepToneRatio, sampleRatio, 0);
+        PlayFootstep(volumeRatio, footstepToneRatio, sampleRatio, 0, stepType);
     }
 
-    public void PlayFootstep(float volumeRatio, float toneRatio, float fadeDelayRatio, float playDelay) {
+    public void PlayFootstep(float volumeRatio, float toneRatio, float fadeDelayRatio, float playDelay, int stepType) {
         /*
          * Play a sound effect of a footstep. The given parameters will apply 
 		 * effects to the clip, such as pitch shifting, volume and delay.
          */
-         
+        AudioClip stepClip = null;
+        int clipIndex = 0;
+
         /* Get the index of a free audioSource to use */
         int sourceIndex = UnusedSoundSource(upperStepSources);
-        int clipIndex = RandomClip(stepClips, lastStepClipIndex);
+
+
+        /* Depending on the given stepSoundType, use the proper stepSound array */
+        if(stepType == 0) {
+            /* Use marble floor steps */
+            clipIndex = RandomClip(marbleStepClips, lastStepClipIndex);
+            stepClip = marbleStepClips[clipIndex];
+        }
+        else if(stepType == 1){
+            /* Use carpet floot steps */
+            clipIndex = RandomClip(carpetStepClips, lastStepClipIndex);
+            stepClip = carpetStepClips[clipIndex];
+        }
+        else {
+            Debug.Log("WARNING: GIVEN STEP TYPE DOES NOT HAVE A CLIP ARRAY");
+        }
+
 
         /* Play the footstep effect using the found audio source and clip */
         if(sourceIndex != -1){
@@ -254,12 +273,12 @@ public class PlayerSounds : MonoBehaviour {
             lowerSource.volume *= (1 - toneRatio);
 
             /* Set the fade's starting point on the step*/
-            stepFadeDelay[sourceIndex] = Mathf.FloorToInt(stepClips[clipIndex].samples*fadeDelayRatio);
+            stepFadeDelay[sourceIndex] = Mathf.FloorToInt(stepClip.samples*fadeDelayRatio);
             stepFade[sourceIndex] = 0;
 
             /* Set the proper clips for the sources */
-            upperSource.clip = stepClips[clipIndex];
-            lowerSource.clip = stepClips[clipIndex];
+            upperSource.clip = stepClip;
+            lowerSource.clip = stepClip;
 
             /* Play the full footstep sound clip with the given delay */
             upperSource.PlayDelayed(playDelay);

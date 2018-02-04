@@ -38,6 +38,8 @@ public class FootstepTracker : MonoBehaviour {
     private List<Vector3> pastDirections = new List<Vector3>();
     /* The time between the last footstep effect for a given foot */
     public float[] timeSinceStep;
+    /* The step type to be played. 0 = marble, 1 = carpet */
+    private int stepType = 0;
 
 
     /* -------------- Built-in Unity Functions ---------------------------------------------------------- */
@@ -227,7 +229,7 @@ public class FootstepTracker : MonoBehaviour {
         float timing = ResetFootTiming(GetNextFoot());
 
         /* Adjust the FX of the sound using tracked foostep stats */
-        playerSoundsScript.PlayFootstep(timing, vertStride);
+        playerSoundsScript.PlayFootstep(timing, vertStride, stepType);
 
 
         /* Reset the current stride distances */
@@ -247,8 +249,8 @@ public class FootstepTracker : MonoBehaviour {
         float landingVolume = minVolume + (1-minVolume)*CustomPlayerController.RatioWithinRange(0.1f, 0.4f, fallingSpeedRatio);
         
         /* Play two footstep sound effects to simulate the player landing from a fall */
-        playerSoundsScript.PlayFootstep(landingVolume, 0.5f, 1, 0);
-        playerSoundsScript.PlayFootstep(landingVolume, 0.5f, 1, 0.05f);
+        playerSoundsScript.PlayFootstep(landingVolume, 0.5f, 1, 0, stepType);
+        playerSoundsScript.PlayFootstep(landingVolume, 0.5f, 1, 0.05f, stepType);
         
         /* Reset the player momentum (current stride and pastDirections) */
         ResetStrideProgress();
@@ -276,10 +278,17 @@ public class FootstepTracker : MonoBehaviour {
 		 * of footsteps, both short and high, one with a small delay.
 		 */
 		
-		playerSoundsScript.PlayFootstep(0, 0, 0, 0);
-        playerSoundsScript.PlayFootstep(0, 0, 0, 0);
+		playerSoundsScript.PlayFootstep(0, 0, 0, 0, stepType);
+        playerSoundsScript.PlayFootstep(0, 0, 0, 0, stepType);
 	}
-
+    
+    public void ChangeStepIndex(int newType) {
+        /*
+         * Change the step sound to use when a footstep gets played.
+         */
+         
+        stepType = newType;
+    }
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
 
@@ -381,4 +390,6 @@ public class FootstepTracker : MonoBehaviour {
 
         pastDirections.Clear();
     }
+
+    
 }

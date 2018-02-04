@@ -143,6 +143,11 @@ public class CustomPlayerController : MonoBehaviour {
     /* The last collider that was hit. Used when calling Raytrace and we want to save the collider the ray hits */
     private Collider lastHitCollider;
 
+
+
+    private int stepIndex = 0;
+
+
     
     /* -------------- Built-in Unity Functions ---------------------------------------------------------- */
 
@@ -1022,13 +1027,25 @@ public class CustomPlayerController : MonoBehaviour {
                 legRayScripts[i+1] = null;
             }
 		}
-        
+
         /* Check each collider hit for a DetectPlayerLegRay script. Run it's PlayerStep command if it exists. */
+        DetectLegRayCollisions(legRayScripts);
+    }
+
+    void DetectLegRayCollisions(DetectPlayerLegRay[] legRayScripts) {
+        /*
+         * Given an array of DetectPlayerLegRay, tell the scripts that the player has stepped on them
+         */
+
+        stepIndex = 0;
         for(int i = 0; i < legRayScripts.Length; i++) {
             if(legRayScripts[i] != null && legRayScripts[i].GetComponent<DetectPlayerLegRay>() != null) {
-                legRayScripts[i].GetComponent<DetectPlayerLegRay>().PlayerStep();
+                stepIndex = Mathf.Max(stepIndex, legRayScripts[i].GetComponent<DetectPlayerLegRay>().ChangeStepSound());
             }
         }
+
+        /* Update the step tracker with the new sound index to use */
+        playerStepTracker.ChangeStepIndex(stepIndex);
     }
 
     Vector3 GetGravityVector() {
