@@ -150,15 +150,18 @@ public class Window : MonoBehaviour {
         /* Adjust the components */
         DestroyImmediate(skySphere.GetComponent<SphereCollider>());
 
-        /* Flip all the triangles of the sphere to have it inside-out */
+        /* Flip all the triangles of the sphere to have it inside-out if needed */
         int[] triangles = skySphere.GetComponent<MeshFilter>().sharedMesh.triangles;
-        int tempInt;
-        for(int i = 0; i < triangles.Length; i += 3) {
-            tempInt = triangles[i + 0];
-            triangles[i + 0] = triangles[i + 2];
-            triangles[i + 2] = tempInt;
+        if(triangles[0] == 0) {
+            int tempInt;
+            for(int i = 0; i < triangles.Length; i += 3) {
+                tempInt = triangles[i + 0];
+                triangles[i + 0] = triangles[i + 2];
+                triangles[i + 2] = tempInt;
+            }
+            skySphere.GetComponent<MeshFilter>().sharedMesh.triangles = triangles;
         }
-        skySphere.GetComponent<MeshFilter>().sharedMesh.triangles = triangles;
+
 
         /* Apply the sky sphere material */
         skySphere.GetComponent<MeshRenderer>().sharedMaterial = skySphereMaterial;

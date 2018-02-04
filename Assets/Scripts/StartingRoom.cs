@@ -15,6 +15,9 @@ public class StartingRoom : ConnectedRoom {
     public Material stairsStepMaterial;
     public Material stairsOtherMaterial;
 
+    /* The breakable window used in this room */
+    public BreakableWindow window;
+
     /* How much distance is between the exit and the man wall. Z axis. */
     public float roomDepth;
 
@@ -27,6 +30,17 @@ public class StartingRoom : ConnectedRoom {
     /* How much distance the floor will be from the base of the room's exit */
     public float roomBellowHeight;
 
+    /* Stats used for the window of the room */
+    public float frameThickness;
+    public float frameDepth;
+    public float windowHeight;
+    public float windowWidth;
+    public Transform windowExit;
+    public Material windowFrameMaterial;
+    public Material windowGlassMaterial;
+    public Texture skySphereTexture;
+
+
 
     /* -------- Built-In Functions ---------------------------------------------------- */
 
@@ -36,31 +50,26 @@ public class StartingRoom : ConnectedRoom {
          */
 
         UpdateWalls();
-	}
+        UpdateWindow();
+    }
+
+
+    /* -------- Update Functions ---------------------------------------------------- */
 
     void UpdateWalls() {
         /*
          * Build the walls of the room using the linked AttachedRoom as reference
          */
-        float roomWidth = extraRoomWidth;
-        float upperRoomHeight = extraHeight;
-        Vector3 center = Vector3.zero;
 
-        /* Extract desired values from the linked exit */
-        if(exit != null) {
-            roomWidth += exit.exitWidth;
-            upperRoomHeight += exit.exitHeight;
-            center = exit.exitPointBack.position + new Vector3(0, 0, -roomDepth/2f);
-        }
-        else {
-            Debug.Log("WARNING: StartingRoom does not have a linked exit");
-        }
-
-        /* Get the height of the full room */
+        /* Get the desired sizes of the room */
+        float roomWidth = extraRoomWidth + exit.exitWidth;
+        float upperRoomHeight = extraHeight + exit.exitHeight;
+        Vector3 upperCenter = exit.exitPointBack.position + new Vector3(0, 0, -roomDepth/2f);
         float fullRoomHeight = upperRoomHeight + roomBellowHeight;
         
+
         /* Re-create each wall for the room */
-        CreateObjects(ref roomWalls, 9, center);
+        CreateObjects(ref roomWalls, 9, upperCenter);
 
         /* Set unique values for each individual wall */
         roomWalls[0].name = "Floor";
@@ -101,13 +110,49 @@ public class StartingRoom : ConnectedRoom {
 
 
         /* Position the key points of the stairs for this room */
-        stairs.endPoint.position = center + new Vector3(0, 0, roomDepth/2f);
-        stairs.startPoint.position = center + new Vector3(0, 0, roomDepth/2f) + new Vector3(0, -roomBellowHeight, -roomBellowHeight);
+        stairs.endPoint.position = upperCenter + new Vector3(0, 0, roomDepth/2f);
+        stairs.startPoint.position = upperCenter + new Vector3(0, 0, roomDepth/2f) + new Vector3(0, -roomBellowHeight, -roomBellowHeight);
         stairs.stairsMaterial = stairsStepMaterial;
         stairs.otherMaterial = stairsOtherMaterial;
         stairs.stairsWidth = exit.exitWidth;
+        stairs.baseDepth = roomBellowHeight;
         stairs.upVector = new Vector3(0, 1, 0);
         stairs.updateStairs = true;
         stairs.resetAngle = true;
+    }
+    
+    void UpdateWindow() {
+        /*
+         * Update the values of the window and position it in an appropriate spot in the room
+         */
+         
+        /* Set the size of the window's frame */
+        window.frameThickness = frameThickness;
+        window.frameDepth = frameDepth;
+
+        /* Make the window occupy most of the back wall */
+        float windowFromWall = 0.2f;
+        float roomWidth = extraRoomWidth + exit.exitWidth;
+        float upperRoomHeight = extraHeight + exit.exitHeight;
+        float fullRoomHeight = upperRoomHeight + roomBellowHeight;
+        window.windowHeight = fullRoomHeight - frameThickness*2 - windowFromWall;
+        window.windowWidth = roomWidth - frameThickness*2 - windowFromWall;
+
+        /* Place the window's entrance on the room's back wall */
+        Vector3 backWallCenter = exit.exitPointBack.position + new Vector3(0, -roomBellowHeight + frameThickness + windowFromWall/2f, -roomDepth);
+        window.insidePos = backWallCenter;
+        window.insideRot = new Vector3(0, 180, 0);
+        
+        /* Place the outside window/exit portal using the windowExit transform given to this script  */
+        window.outsidePos = windowExit.position;
+        window.outsideRot = windowExit.eulerAngles;
+
+        /* Set the materials that the window will use */
+        window.frameMaterial = windowFrameMaterial;
+        window.glassMaterial = windowGlassMaterial;
+        window.skySphereTexture = skySphereTexture;
+
+        /* Send a command to update the windows with the new given parameters */
+        window.UpdateWindow();
     }
 }
