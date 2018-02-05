@@ -34,15 +34,10 @@ public class Window : MonoBehaviour {
     public float frameDepth;
     public float windowHeight;
     public float windowWidth;
-
-    /* The GameObject object used as the skysphere for the outside window */
-    public GameObject skySphere;
-
+    
     /* The materials and textures used by the window frame */
     public Material frameMaterial;
     public Material glassMaterial;
-    public Texture skySphereTexture;
-    private Material skySphereMaterial;
 
 
     /* -------- Update Functions ---------------------------------------------------- */
@@ -61,9 +56,6 @@ public class Window : MonoBehaviour {
 
         /* Create the window */
         UpdateWindowMesh();
-
-        /* Create the skysphere for the outside window */
-        UpdateSkySphere();
     }
 
     void UpdateMaterials() {
@@ -74,10 +66,6 @@ public class Window : MonoBehaviour {
         /* Adjust the glass material's scale to reflect the window's size */
         glassMaterial.SetTextureOffset("_MainTex", new Vector2(0.5f, 0.5f));
         glassMaterial.SetTextureScale("_MainTex", new Vector2(1f/windowWidth, 1f/windowHeight));
-
-        /* Create the sky sphere material */
-        skySphereMaterial = new Material(Shader.Find("Unlit/Texture"));
-        skySphereMaterial.SetTexture("_MainTex", skySphereTexture);
     }
 
     public void UpdatePortalStats() {
@@ -106,7 +94,6 @@ public class Window : MonoBehaviour {
 
         /* Update the portal's meshCollider with these new values */
         portalSet.updatePortal = true;
-        Debug.Log("test");
     }
 
     public void UpdateWindowMesh() {
@@ -132,65 +119,7 @@ public class Window : MonoBehaviour {
         CreateFrame(insideWindowContainer.transform, ref index, windowHeight, windowWidth);
         CreateFrame(outsideWindowContainer.transform, ref index, windowHeight, windowWidth);
     }
-
-    public void UpdateSkySphere() {
-        /*
-         * Create a sky sphere to place around the outside window to simulate a new environment
-         */
-
-        /* Create a sphere primitive */
-        if(skySphere != null) { DestroyImmediate(skySphere); }
-        skySphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        skySphere.transform.parent = outsideWindowContainer.transform;
-        OffsetSkySphere(new Vector3(0, 0, 0));
-        skySphere.transform.localScale = new Vector3(100, 100, 100);
-        skySphere.name = "Sky sphere";
-
-        /* Adjust the components */
-        DestroyImmediate(skySphere.GetComponent<SphereCollider>());
-
-        /* Flip all the triangles of the sphere to have it inside-out if needed */
-        int[] triangles = skySphere.GetComponent<MeshFilter>().sharedMesh.triangles;
-        if(triangles[0] == 0) {
-            int tempInt;
-            for(int i = 0; i < triangles.Length; i += 3) {
-                tempInt = triangles[i + 0];
-                triangles[i + 0] = triangles[i + 2];
-                triangles[i + 2] = tempInt;
-            }
-            skySphere.GetComponent<MeshFilter>().sharedMesh.triangles = triangles;
-        }
-
-
-        /* Apply the sky sphere material */
-        skySphere.GetComponent<MeshRenderer>().sharedMaterial = skySphereMaterial;
-    }
-
-
-    /* -------- Event Functions ---------------------------------------------------- */
-
-    public void OffsetSkySphere(Vector3 offset) {
-        /*
-         * Apply an offset to the skySphere of the outside window. This is called by the WaitingRoom
-         * to ensure the sky sphere does not seem like a small sphere but a proper large environment.
-         */
-
-        /* Get the difference in the angles of both portals */
-        Quaternion portalRotDiff = Quaternion.Inverse(portalSet.EntrancePortal.transform.rotation)*portalSet.ExitPortal.transform.rotation;
-        
-        /* Reposition the sky sphere with the offset */
-        skySphere.transform.localPosition = new Vector3(0, 0, 0);
-
-        /* Rotate the material with the same rotation of the outside window */
-        skySphere.transform.rotation = portalSet.ExitPortal.transform.rotation;
-        
-        /* Make sure the window's exit is facing the center of the material/texture */
-        skySphere.transform.rotation *= Quaternion.Euler(new Vector3(0, -90, 0));
-
-        /* Apply the offset relative to the sphere's rotation */
-        skySphere.transform.localPosition -= skySphere.transform.localRotation*offset;
-    }
-
+    
 
     /* -------- Helper Functions ---------------------------------------------------- */
 

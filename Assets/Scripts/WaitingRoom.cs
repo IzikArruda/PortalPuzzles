@@ -23,6 +23,7 @@ public class WaitingRoom : ConnectedRoom {
     public float frameDepth;
     public float windowHeight;
     public float windowWidth;
+    private Vector3 playerEnterOffset;
     //Where the outside window will be placed. Use the "Window Exit" object in it's Points of Interest container
     public Transform windowExit;
 
@@ -36,8 +37,10 @@ public class WaitingRoom : ConnectedRoom {
     public Material windowFrameMaterial;
     public Material windowGlassMaterial;
     public Texture skySphereTexture;
+    private Material skySphereMaterial;
 
-    private Vector3 playerEnterOffset;
+    /* The GameObject object used as the skysphere for the outside window */
+    public GameObject skySphere;
 
     /* -------- Built-In Functions ---------------------------------------------------- */
 
@@ -65,6 +68,9 @@ public class WaitingRoom : ConnectedRoom {
 
         /* Place the window in a good position in the room */
         UpdateWindow();
+
+        /* Update the sky sphere */
+        UpdateSkySphere();
     }
 
     void OnTriggerEnter(Collider player) {
@@ -125,8 +131,7 @@ public class WaitingRoom : ConnectedRoom {
         if(player.GetComponent<CustomPlayerController>() != null) {
             playerCameraPosition = player.GetComponent<CustomPlayerController>().playerCamera.transform.position;
             centerDifference = playerCameraPosition - playerEnterOffset;
-            centerDifference = new Vector3(centerDifference.x, -centerDifference.y, centerDifference.z);
-            window.OffsetSkySphere(centerDifference);
+            OffsetSkySphere(centerDifference);
         }
     }
 
@@ -195,7 +200,8 @@ public class WaitingRoom : ConnectedRoom {
 
     void UpdateWindow() {
         /*
-         * Update the values of the window and position it in an appropriate spot in the room
+         * Update the values of the window and position it in an appropriate spot in the room.
+         * Any adjustements to the window's inside transform will also be done to it's outside transform.
          */
 
         /* Set the size stats of the Window script */
@@ -203,25 +209,80 @@ public class WaitingRoom : ConnectedRoom {
         window.frameDepth = frameDepth;
         window.windowHeight = windowHeight;
         window.windowWidth = windowWidth;
-        
-        /* --- Maybe add more options: place the window on the right wall, entrance wall, etc --- */
+
+
         /* Place the inside window/entrance portal on the left wall, halfway up the wall */
-        window.insidePos = roomCenter + new Vector3(-xDist/2f, yDist/2f - window.windowHeight/2f, 0);
-        window.insideRot = new Vector3(0, -90, 0);
+        Vector3 ontoWallOffset = new Vector3(-xDist/2f, yDist/2f - window.windowHeight/2f, 0);
+        Vector3 ontoWallEuler = new Vector3(0, -90, 0);
+        window.insidePos = roomCenter + ontoWallOffset;
+        window.insideRot = ontoWallEuler;
+        /* Place the outside window/exit portal using windowExit and the previously set vectors */
+        window.outsidePos = windowExit.position + ontoWallOffset;
+        window.outsideRot = windowExit.eulerAngles + ontoWallEuler;
 
-
-        /* Place the outside window/exit portal using the windowExit transform given to this script  */
-        window.outsidePos = windowExit.position;
-        window.outsideRot = windowExit.eulerAngles;
 
         /* Set the materials that the window will use */
         window.frameMaterial = windowFrameMaterial;
         window.glassMaterial = windowGlassMaterial;
-        window.skySphereTexture = skySphereTexture;
 
         /* Send a command to update the windows with the new given parameters */
         window.UpdateWindow();
     }
+    
+    void UpdateSkySphere() {
+        /*
+         * Create a sky sphere to place around the outside window to simulate a new environment
+         */
+
+        /* Create a sphere primitive */
+        if(skySphere != null) { DestroyImmediate(skySphere); }
+        skySphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        skySphere.transform.parent = transform;
+        OffsetSkySphere(new Vector3(0, 0, 0));
+        skySphere.transform.localScale = new Vector3(100, 100, 100);
+        skySphere.name = "Sky sphere";
+
+        /* Rotate the material with the same rotation of the outside window */
+        skySphere.transform.rotation = windowExit.rotation;
+        skySphere.transform.rotation = Quaternion.Euler(new Vector3(0, 0, 0));
+        
+        /* Adjust the components */
+        DestroyImmediate(skySphere.GetComponent<SphereCollider>());
+
+        /* Flip all the triangles of the sphere to have it inside-out if needed */
+        int[] triangles = skySphere.GetComponent<MeshFilter>().sharedMesh.triangles;
+        if(triangles[0] == 0) {
+            int tempInt;
+            for(int i = 0; i < triangles.Length; i += 3) {
+                tempInt = triangles[i + 0];
+                triangles[i + 0] = triangles[i + 2];
+                triangles[i + 2] = tempInt;
+            }
+            skySphere.GetComponent<MeshFilter>().sharedMesh.triangles = triangles;
+        }
+
+        /* Apply the sky sphere material */
+        skySphereMaterial = new Material(Shader.Find("Unlit/Texture"));
+        skySphereMaterial.SetTexture("_MainTex", skySphereTexture);
+        skySphere.GetComponent<MeshRenderer>().sharedMaterial = skySphereMaterial;
+    }
+
+
+    /* -------- Event Functions ---------------------------------------------------- */
+
+    public void OffsetSkySphere(Vector3 offset) {
+        /*
+         * Apply an offset to the skySphere of this room to ensure the sky sphere 
+         * does not seem like a small sphere but a proper large environment.
+         */
+         
+        /* Reposition the sky sphere at the given window exit point */
+        skySphere.transform.position = windowExit.position;
+        
+        /* Apply the offset relative to the sphere's rotation */
+        skySphere.transform.localPosition += skySphere.transform.localRotation*offset;
+    }
+
 
     void CreateTrigger() {
         /*

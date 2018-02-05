@@ -153,7 +153,6 @@ public class StartingRoom : ConnectedRoom {
         /* Set the materials that the window will use */
         window.frameMaterial = windowFrameMaterial;
         window.glassMaterial = windowGlassMaterial;
-        window.skySphereTexture = skySphereTexture;
 
         /* Send a command to update the windows with the new given parameters */
         window.UpdateWindow();
