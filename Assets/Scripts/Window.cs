@@ -177,7 +177,7 @@ public class Window : MonoBehaviour {
          */
 
         /* Get the difference in the angles of both portals */
-        Quaternion portalRotDiff =Quaternion.Inverse(portalSet.EntrancePortal.transform.rotation)*portalSet.ExitPortal.transform.rotation;
+        Quaternion portalRotDiff = Quaternion.Inverse(portalSet.EntrancePortal.transform.rotation)*portalSet.ExitPortal.transform.rotation;
         
         /* Reposition the sky sphere with the offset */
         skySphere.transform.localPosition = new Vector3(0, 0, 0);
