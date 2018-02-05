@@ -119,7 +119,7 @@ public class WaitingRoom : ConnectedRoom {
         /* Ensure the collider entering the trigger is a player */
         if(player.GetComponent<CustomPlayerController>() != null) {
             playerCameraPosition = player.GetComponent<CustomPlayerController>().playerCamera.transform.position;
-            centerDifference = playerCameraPosition;
+            centerDifference = playerCameraPosition - roomCenter;
             centerDifference = new Vector3(centerDifference.x, -centerDifference.y, centerDifference.z);
             window.OffsetSkySphere(centerDifference);
         }

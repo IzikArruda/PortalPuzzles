@@ -142,8 +142,7 @@ public class Window : MonoBehaviour {
         if(skySphere != null) { DestroyImmediate(skySphere); }
         skySphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         skySphere.transform.parent = outsideWindowContainer.transform;
-        skySphere.transform.localPosition = new Vector3(0, 0, 0);
-        skySphere.transform.localEulerAngles = new Vector3(0, 0, 0);
+        OffsetSkySphere(new Vector3(0, 0, 0));
         skySphere.transform.localScale = new Vector3(100, 100, 100);
         skySphere.name = "Sky sphere";
 
