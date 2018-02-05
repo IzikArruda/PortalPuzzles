@@ -37,6 +37,8 @@ public class WaitingRoom : ConnectedRoom {
     public Material windowGlassMaterial;
     public Texture skySphereTexture;
 
+    private Vector3 playerEnterOffset;
+
     /* -------- Built-In Functions ---------------------------------------------------- */
 
     void Awake() {
@@ -77,6 +79,9 @@ public class WaitingRoom : ConnectedRoom {
             exitRoom.EnablePuzzleRoom();
             if(previousRoom != null) { previousRoom.SoftEnable(); }
             if(nextRoom != null) { nextRoom.SoftEnable(); }
+
+            /* Set the playerEnterOffset */
+            playerEnterOffset = player.GetComponent<CustomPlayerController>().playerCamera.transform.position;
         }
     }
 
@@ -119,7 +124,7 @@ public class WaitingRoom : ConnectedRoom {
         /* Ensure the collider entering the trigger is a player */
         if(player.GetComponent<CustomPlayerController>() != null) {
             playerCameraPosition = player.GetComponent<CustomPlayerController>().playerCamera.transform.position;
-            centerDifference = playerCameraPosition - roomCenter;
+            centerDifference = playerCameraPosition - playerEnterOffset;
             centerDifference = new Vector3(centerDifference.x, -centerDifference.y, centerDifference.z);
             window.OffsetSkySphere(centerDifference);
         }
