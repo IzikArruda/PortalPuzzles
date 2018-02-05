@@ -279,6 +279,7 @@ public class WaitingRoom : ConnectedRoom {
          */
 
         roomTrigger.enabled = true;
+        window.gameObject.SetActive(true);
         roomObjectsContainer.gameObject.SetActive(true);
         entranceRoom.EnableRoom();
         exitRoom.EnableRoom();

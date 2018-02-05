@@ -106,7 +106,7 @@ public class Window : MonoBehaviour {
 
         /* Update the portal's meshCollider with these new values */
         portalSet.updatePortal = true;
-        portalSet.Update();
+        Debug.Log("test");
     }
 
     public void UpdateWindowMesh() {
