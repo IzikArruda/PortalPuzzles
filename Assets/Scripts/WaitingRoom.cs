@@ -22,8 +22,10 @@ public class WaitingRoom : ConnectedRoom {
     public Window[] windows;
     public float frameThickness;
     public float frameDepth;
-    public float windowHeight;
-    public float windowWidth;
+    [Range(0, 1)]
+    public float windowHeightRatio;
+    [Range(0, 1)]
+    public float windowWidthRatio;
     private Vector3 playerEnterOffset;
     //Where the outside window will be placed. Use the "Window Exit" object in it's Points of Interest container
     public Transform windowExit;
@@ -152,7 +154,11 @@ public class WaitingRoom : ConnectedRoom {
         /* Re-position the room to the center position between the two attachedRooms */
         roomCenter = (entranceRoom.exitPointFront.position + exitRoom.exitPointBack.position)/2f;
         roomCenter -= new Vector3((xEntranceDist/2f - xExitDist/2f)/2f, 0, 0);
-
+        
+        /* Set the sky spheres in a place to that will not be near other spheres or puzzle rooms */
+        windowExit.eulerAngles = new Vector3(0, 0, 0);
+        windowExit.position = roomCenter + new Vector3(0, 3000, roomCenter.z*10);
+        
         /* Calculate the sizes of this waitingRoom */
         xDist = Mathf.Abs(entranceRoom.exitPointFront.position.x - exitRoom.exitPointBack.position.x) + xEntranceDist/2f + xExitDist/2f;
         yDist = Mathf.Max(yEntranceDist, yExitDist);
@@ -206,32 +212,38 @@ public class WaitingRoom : ConnectedRoom {
          */
         Vector3 ontoWallOffset;
         Vector3 ontoWallEuler;
+        float windowHeight = windowHeightRatio*yDist;
+        float wallWidth;
 
         /* Set the unified values of each window used */
         for(int i = 0; i < windows.Length; i++) {
-            UpdateWindow(windows[i], frameThickness, frameDepth, windowHeight, windowWidth, windowFrameMaterial, windowGlassMaterial);
+            UpdateWindow(windows[i], frameThickness, frameDepth, windowHeight, windowFrameMaterial, windowGlassMaterial);
         }
-        
+
 
         /* Place the inside window/entrance portal on the left wall, halfway up the wall */
-        ontoWallOffset = new Vector3(-xDist/2f, yDist/2f - windows[0].windowHeight/2f, 0);
+        wallWidth = zDist;
+        ontoWallOffset = new Vector3(-xDist/2f, yDist/2f - windowHeight/2f, 0);
         ontoWallEuler = new Vector3(0, -90, 0);
-        UpdateWindowTransform(windows[0], ontoWallOffset, ontoWallEuler);
+        UpdateWindowTransform(windows[0], ontoWallOffset, ontoWallEuler, windowWidthRatio*wallWidth);
 
         /* Place the next window on the right wall, halfway up again */
-        ontoWallOffset = new Vector3(xDist/2f, yDist/2f - windows[1].windowHeight/2f, 0);
+        wallWidth = zDist;
+        ontoWallOffset = new Vector3(xDist/2f, yDist/2f - windowHeight/2f, 0);
         ontoWallEuler = new Vector3(0, 90, 0);
-        UpdateWindowTransform(windows[1], ontoWallOffset, ontoWallEuler);
+        UpdateWindowTransform(windows[1], ontoWallOffset, ontoWallEuler, windowWidthRatio*wallWidth);
 
         /* Place the next window on the front wall */
-        ontoWallOffset = new Vector3(-xDist/2f + (xDist - exitRoom.exitWidth)/2f, yDist/2f - windows[2].windowHeight/2f, zDist/2f);
+        wallWidth = xDist - exitRoom.exitWidth;
+        ontoWallOffset = new Vector3(-xDist/2f + (xDist - exitRoom.exitWidth)/2f, yDist/2f - windowHeight/2f, zDist/2f);
         ontoWallEuler = new Vector3(0, 0, 0);
-        UpdateWindowTransform(windows[2], ontoWallOffset, ontoWallEuler);
+        UpdateWindowTransform(windows[2], ontoWallOffset, ontoWallEuler, windowWidthRatio*wallWidth);
 
         /* Place the next window on the back wall */
-        ontoWallOffset = new Vector3(xDist/2f - (xDist - entranceRoom.exitWidth)/2f, yDist/2f - windows[3].windowHeight/2f, -zDist/2f);
+        wallWidth = xDist - entranceRoom.exitWidth;
+        ontoWallOffset = new Vector3(xDist/2f - (xDist - entranceRoom.exitWidth)/2f, yDist/2f - windowHeight/2f, -zDist/2f);
         ontoWallEuler = new Vector3(0, 180, 0);
-        UpdateWindowTransform(windows[3], ontoWallOffset, ontoWallEuler);
+        UpdateWindowTransform(windows[3], ontoWallOffset, ontoWallEuler, windowWidthRatio*wallWidth);
 
 
 
@@ -251,7 +263,7 @@ public class WaitingRoom : ConnectedRoom {
         skySphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         skySphere.transform.parent = transform;
         OffsetSkySphere(new Vector3(0, 0, 0));
-        skySphere.transform.localScale = new Vector3(100, 100, 100);
+        skySphere.transform.localScale = new Vector3(250, 250, 250);
         skySphere.name = "Sky sphere";
 
         /* Rotate the material with the same rotation of the outside window */
@@ -279,7 +291,7 @@ public class WaitingRoom : ConnectedRoom {
         skySphere.GetComponent<MeshRenderer>().sharedMaterial = skySphereMaterial;
     }
 
-    void UpdateWindow(Window window, float thickness, float depth, float height, float width, 
+    void UpdateWindow(Window window, float thickness, float depth, float height, 
             Material frameMaterial, Material glassMaterial) {
         /*
          * Update the values of the single window script given
@@ -288,16 +300,16 @@ public class WaitingRoom : ConnectedRoom {
         window.frameThickness = thickness;
         window.frameDepth = depth;
         window.windowHeight = height;
-        window.windowWidth = width;
         window.frameMaterial = frameMaterial;
         window.glassMaterial = glassMaterial;
     }
 
-    void UpdateWindowTransform(Window window, Vector3 pos, Vector3 eul) {
+    void UpdateWindowTransform(Window window, Vector3 pos, Vector3 eul, float width) {
         /*
          * Update the given window's start and inside and outside transforms 
          */
 
+        window.windowWidth = width;
         window.insidePos = roomCenter + pos;
         window.insideRot = eul;
         window.outsidePos = windowExit.position + pos;
