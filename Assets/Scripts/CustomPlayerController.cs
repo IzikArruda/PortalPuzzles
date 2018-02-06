@@ -1034,13 +1034,21 @@ public class CustomPlayerController : MonoBehaviour {
 
     void DetectLegRayCollisions(DetectPlayerLegRay[] legRayScripts) {
         /*
-         * Given an array of DetectPlayerLegRay, tell the scripts that the player has stepped on them
+         * Given an array of DetectPlayerLegRay, tell the scripts that the player has stepped on them.
+         * Depending on each objectType of the script, have a different reaction
          */
 
         stepIndex = 0;
         for(int i = 0; i < legRayScripts.Length; i++) {
             if(legRayScripts[i] != null && legRayScripts[i].GetComponent<DetectPlayerLegRay>() != null) {
-                stepIndex = Mathf.Max(stepIndex, legRayScripts[i].GetComponent<DetectPlayerLegRay>().ChangeStepSound());
+
+                /* Run the script */
+                legRayScripts[i].GetComponent<DetectPlayerLegRay>().PlayerStep();
+
+                /* Check the object type and react accordingly */
+                if(legRayScripts[i].GetComponent<DetectPlayerLegRay>().objectType == 0) {
+                    stepIndex = Mathf.Max(stepIndex, legRayScripts[i].GetComponent<DetectPlayerLegRay>().returnValue);
+                }
             }
         }
 

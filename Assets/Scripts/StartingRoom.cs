@@ -17,7 +17,7 @@ public class StartingRoom : ConnectedRoom {
     public Material stairsOtherMaterial;
 
     /* The breakable window used in this room */
-    public BreakableWindow window;
+    public Window window;
 
     /* How much distance is between the exit and the man wall. Z axis. */
     public float roomDepth;
@@ -78,6 +78,7 @@ public class StartingRoom : ConnectedRoom {
         CreatePlane(roomWalls[0], roomWidth, roomDepth, 8, floorMaterial, 0, false);
         //Attach a DetectPlayerLegRay script to the floor
         roomWalls[0].AddComponent<DetectPlayerLegRay>();
+        roomWalls[0].GetComponent<DetectPlayerLegRay>().objectType = 0;
 
         roomWalls[1].name = "Left wall";
         roomWalls[1].transform.position += new Vector3(-roomWidth/2f, upperRoomHeight/2f - (fullRoomHeight - upperRoomHeight)/2f, 0);
@@ -156,5 +157,20 @@ public class StartingRoom : ConnectedRoom {
 
         /* Send a command to update the windows with the new given parameters */
         window.UpdateWindow();
+
+        /* Add a DetectPlayerLegRay script onto the glass of the window, making the window's glass break upon player leg contact */
+        if(window.windowPieces[4].GetComponent<DetectPlayerLegRay>() == null) {
+            window.windowPieces[4].AddComponent<DetectPlayerLegRay>();
+            window.windowPieces[4].GetComponent<DetectPlayerLegRay>().objectType = 1;
+            window.windowPieces[4].GetComponent<DetectPlayerLegRay>().partnerWindow = window.windowPieces[9];
+            window.windowPieces[4].GetComponent<DetectPlayerLegRay>().linkedCollider = roomWalls[4].GetComponent<Collider>();
+
+        }
+        if(window.windowPieces[9].GetComponent<DetectPlayerLegRay>() == null) {
+            window.windowPieces[9].AddComponent<DetectPlayerLegRay>();
+            window.windowPieces[9].GetComponent<DetectPlayerLegRay>().objectType = 1;
+            window.windowPieces[9].GetComponent<DetectPlayerLegRay>().partnerWindow = window.windowPieces[4];
+            window.windowPieces[9].GetComponent<DetectPlayerLegRay>().linkedCollider = roomWalls[4].GetComponent<Collider>();
+        }
     }
 }

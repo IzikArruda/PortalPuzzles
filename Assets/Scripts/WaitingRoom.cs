@@ -175,6 +175,7 @@ public class WaitingRoom : ConnectedRoom {
         CreatePlane(roomWalls[0], xDist, zDist, 8, floorMaterial, 0, false);
         //Attach a DetectPlayerLegRay script to the floor
         roomWalls[0].AddComponent<DetectPlayerLegRay>();
+        roomWalls[0].GetComponent<DetectPlayerLegRay>().objectType = 0;
 
         roomWalls[1].name = "Left wall";
         roomWalls[1].transform.position += new Vector3(-xDist/2f, yDist/2f, 0);
