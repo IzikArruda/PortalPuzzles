@@ -23,6 +23,7 @@ public class CubeCreator : MonoBehaviour {
     public Vector2 YNegativeOffset;
     public Vector2 ZPositiveOffset;
     public Vector2 ZNegativeOffset;
+    public Vector2 UVScale;
 
     /* The materials used by the cube */
     public Material mainMaterial;
@@ -136,6 +137,13 @@ public class CubeCreator : MonoBehaviour {
         CreateTriangles(ref triangles, true);
         if(usesSecondMat) {
             CreateTriangles(ref altTriangles, false);
+        }
+        
+        /* Apply an offset to the UVs */
+        if(UVScale != null && (UVScale.x != 0 && UVScale.y != 0)) {
+            L = UVScale.y;
+            H = UVScale.x;
+            ZNegativeOffset = new Vector2(L, H);
         }
 
         /* Set the UVs of the cube */

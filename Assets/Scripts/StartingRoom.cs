@@ -158,6 +158,7 @@ public class StartingRoom : ConnectedRoom {
         /* Send a command to update the windows with the new given parameters */
         window.UpdateWindow();
 
+
         /* Add a DetectPlayerLegRay script onto the glass of the window, making the window's glass break upon player leg contact */
         if(window.windowPieces[4].GetComponent<DetectPlayerLegRay>() == null) {
             window.windowPieces[4].AddComponent<DetectPlayerLegRay>();

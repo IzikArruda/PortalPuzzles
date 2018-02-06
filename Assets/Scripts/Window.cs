@@ -39,6 +39,9 @@ public class Window : MonoBehaviour {
     public Material frameMaterial;
     public Material glassMaterial;
 
+    /* The UV scale if applicable */
+    public Vector2 UVScale;
+
 
     /* -------- Update Functions ---------------------------------------------------- */
 
@@ -48,26 +51,13 @@ public class Window : MonoBehaviour {
          * outside function after it sets the desired values for this window.
          */
 
-        /* Create the required materials */
-        UpdateMaterials();
-
         /* Place the portal */
         UpdatePortalStats();
 
         /* Create the window */
         UpdateWindowMesh();
     }
-
-    void UpdateMaterials() {
-        /*
-         * Apply any required changes to the materials before creating the window
-         */
-         
-        /* Adjust the glass material's scale to reflect the window's size */
-        glassMaterial.SetTextureOffset("_MainTex", new Vector2(0.5f, 0.5f));
-        glassMaterial.SetTextureScale("_MainTex", new Vector2(1f/windowWidth, 1f/windowHeight));
-    }
-
+    
     public void UpdatePortalStats() {
         /*
          * Update the stats of the portalSet given this window's stats
@@ -176,6 +166,8 @@ public class Window : MonoBehaviour {
         cubeScript.y = windowHeight;
         cubeScript.z = frameDepth/1.5f;
         cubeScript.mainMaterial = glassMaterial;
+        /* Set the scale and offset of the window */
+        cubeScript.UVScale = new Vector2(0.5f, 0.5f);
         cubeScript.updateCube = true;
         index++;
     }
