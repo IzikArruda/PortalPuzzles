@@ -34,15 +34,14 @@ public class StartingRoom : ConnectedRoom {
     /* Stats used for the window of the room */
     public float frameThickness;
     public float frameDepth;
-    public float windowHeight;
-    public float windowWidth;
+    public float windowFromWall;
     public Transform windowExit;
     public Material windowFrameMaterial;
     public Material windowGlassMaterial;
     public Texture skySphereTexture;
 
     /* The particleSystem that will produce a bunch of shattered glass */
-    public ParticleSystem particleSystem;
+    public Material particleMaterial;
 
 
     /* -------- Built-In Functions ---------------------------------------------------- */
@@ -137,7 +136,6 @@ public class StartingRoom : ConnectedRoom {
         window.frameDepth = frameDepth;
 
         /* Make the window occupy most of the back wall */
-        float windowFromWall = 0.5f;
         float roomWidth = extraRoomWidth + exit.exitWidth;
         float upperRoomHeight = extraHeight + exit.exitHeight;
         float fullRoomHeight = upperRoomHeight + roomBellowHeight;
@@ -171,21 +169,34 @@ public class StartingRoom : ConnectedRoom {
             window.windowPieces[9].GetComponent<DetectPlayerLegRay>().objectType = 1;
         }
 
+        /* Create the particle system used by the otuside window's glass */
+        UpdateParticleSystem();
     }
 
     void UpdateParticleSystem() {
         /*
-         * Create and set the stats of the particle emitter placed on the outside window
+         * Create and set the stats of the particle emitter placed on the outside window 
+         * if it is not already created
          */
+        ParticleSystem particleSystem = gameObject.GetComponent<ParticleSystem>();
 
-        /* Add a particle system to the exit window if it's not already linked */
+        /* Create a new particle system if there is not already one attached */
         if(particleSystem == null) {
-            particleSystem = window.windowPieces[9].AddComponent<ParticleSystem>();
+            particleSystem = gameObject.AddComponent<ParticleSystem>();
         }
+        
+        /* Set the particle that will be emitted */
+        ParticleSystemRenderer rend = particleSystem.GetComponent<ParticleSystemRenderer>();
+        rend.material = particleMaterial;
 
         /* Adjust the emission rate to not produce any particles passively */
         ParticleSystem.EmissionModule emission = particleSystem.emission;
         emission.rate = 0;
+
+        /* Adjust the shape where the particles will be emitted from */
+        ParticleSystem.ShapeModule shape = particleSystem.shape;
+        shape.shapeType = ParticleSystemShapeType.Box;
+        shape.box = new Vector3(window.windowWidth, window.windowHeight, 0.01f);
     }
 
     public void BreakGlass() {
@@ -203,5 +214,14 @@ public class StartingRoom : ConnectedRoom {
         
         /* Disable the wall with that holds the window to let the player fall through */
         roomWalls[4].GetComponent<Collider>().enabled = false;
+
+        /* Create a burst of glass particles */
+        ParticleSystem particleSystem = gameObject.GetComponent<ParticleSystem>();
+        if(particleSystem != null) {
+            ParticleSystem.EmitParams emitParams = new ParticleSystem.EmitParams();
+            emitParams.position = windowExit.position + new Vector3(0, window.windowHeight/2f, 0);
+            emitParams.applyShapeToPosition = true;
+            particleSystem.Emit(emitParams, 1000);
+        }
     }
 }
