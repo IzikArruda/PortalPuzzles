@@ -41,6 +41,8 @@ public class StartingRoom : ConnectedRoom {
     public Material windowGlassMaterial;
     public Texture skySphereTexture;
 
+    /* The particleSystem that will produce a bunch of shattered glass */
+    public ParticleSystem particleSystem;
 
 
     /* -------- Built-In Functions ---------------------------------------------------- */
@@ -157,21 +159,49 @@ public class StartingRoom : ConnectedRoom {
 
         /* Send a command to update the windows with the new given parameters */
         window.UpdateWindow();
-
-
+        
         /* Add a DetectPlayerLegRay script onto the glass of the window, making the window's glass break upon player leg contact */
         if(window.windowPieces[4].GetComponent<DetectPlayerLegRay>() == null) {
             window.windowPieces[4].AddComponent<DetectPlayerLegRay>();
             window.windowPieces[4].GetComponent<DetectPlayerLegRay>().objectType = 1;
-            window.windowPieces[4].GetComponent<DetectPlayerLegRay>().partnerWindow = window.windowPieces[9];
-            window.windowPieces[4].GetComponent<DetectPlayerLegRay>().linkedCollider = roomWalls[4].GetComponent<Collider>();
 
         }
         if(window.windowPieces[9].GetComponent<DetectPlayerLegRay>() == null) {
             window.windowPieces[9].AddComponent<DetectPlayerLegRay>();
             window.windowPieces[9].GetComponent<DetectPlayerLegRay>().objectType = 1;
-            window.windowPieces[9].GetComponent<DetectPlayerLegRay>().partnerWindow = window.windowPieces[4];
-            window.windowPieces[9].GetComponent<DetectPlayerLegRay>().linkedCollider = roomWalls[4].GetComponent<Collider>();
         }
+
+    }
+
+    void UpdateParticleSystem() {
+        /*
+         * Create and set the stats of the particle emitter placed on the outside window
+         */
+
+        /* Add a particle system to the exit window if it's not already linked */
+        if(particleSystem == null) {
+            particleSystem = window.windowPieces[9].AddComponent<ParticleSystem>();
+        }
+
+        /* Adjust the emission rate to not produce any particles passively */
+        ParticleSystem.EmissionModule emission = particleSystem.emission;
+        emission.rate = 0;
+    }
+
+    public void BreakGlass() {
+        /*
+         * This is called from an outside function when the window of the room needs to be broken.
+         */
+
+        Debug.Log("Destroy the glass objects");
+
+        /* Set the hit windows to be inactive */
+        window.windowPieces[4].SetActive(false);
+        window.windowPieces[4].GetComponent<DetectPlayerLegRay>().objectType = -1;
+        window.windowPieces[9].SetActive(false);
+        window.windowPieces[9].GetComponent<DetectPlayerLegRay>().objectType = -1;
+        
+        /* Disable the wall with that holds the window to let the player fall through */
+        roomWalls[4].GetComponent<Collider>().enabled = false;
     }
 }

@@ -12,8 +12,6 @@ public class DetectPlayerLegRay : MonoBehaviour {
 
     /* Values that are set and read by outside functions */
     public int returnValue;
-    public GameObject partnerWindow;
-    public Collider linkedCollider;
 
 
     /* -------- Built-In Functions ---------------------------------------------------- */
@@ -59,18 +57,18 @@ public class DetectPlayerLegRay : MonoBehaviour {
 
     public void BreakGlass() {
         /*
-         * Destroy the linked glass objects
+         * Send a call to a function of the script that created the hit window.
          */
-
-        Debug.Log("Destroy the glass objects");
-
-        /* Set this window and it's other window to inactive */
-        partnerWindow.SetActive(false);
-        partnerWindow.GetComponent<DetectPlayerLegRay>().objectType = -1;
-        gameObject.SetActive(false);
-        objectType = -1;
-
-        /* Disable the linked wall's collision once the glass breaks to let the player fall through */
-        linkedCollider.enabled = false;
+         
+        /* From the glass object, get the StartingRoom it's a part of and run it's BreakGlass function */
+        if(transform.parent != null) {
+            if(transform.parent.parent != null) {
+                if(transform.parent.parent.parent != null) {
+                    if(transform.parent.parent.parent.GetComponent<StartingRoom>() != null) {
+                        transform.parent.parent.parent.GetComponent<StartingRoom>().BreakGlass();
+                    }
+                }
+            }
+        }
     }
 }
