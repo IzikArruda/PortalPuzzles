@@ -43,6 +43,9 @@ public class StartingRoom : ConnectedRoom {
     /* The particleSystem that will produce a bunch of shattered glass */
     public Material particleMaterial;
 
+    /* The audio source that will play the glass shattering sound effect. Have it linked to the sound and mixer group in the editor. */
+    public AudioSource glassShatterSource;
+
 
     /* -------- Built-In Functions ---------------------------------------------------- */
 
@@ -221,7 +224,10 @@ public class StartingRoom : ConnectedRoom {
             ParticleSystem.EmitParams emitParams = new ParticleSystem.EmitParams();
             emitParams.position = windowExit.position + new Vector3(0, window.windowHeight/2f, 0);
             emitParams.applyShapeToPosition = true;
-            particleSystem.Emit(emitParams, 1000);
+            particleSystem.Emit(emitParams, 10000);
         }
+
+        /* Play the audioSource of the glass shattering */
+        glassShatterSource.Play();
     }
 }
