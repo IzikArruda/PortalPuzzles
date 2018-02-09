@@ -71,7 +71,7 @@ public class TerrainController : MonoBehaviour {
             List<Vector2> chunksToLoad = newChunks.Except(loadedChunks).ToList();
 
             /* Remove the unnecessary chunks */
-            cache.RemoveChunks(chunksToRemove);
+            cache.RemoveChunksRequest(chunksToRemove);
 
             /* Load the unloaded chunks */
             cache.CreateTerrainChunks(chunksToLoad, settings);
@@ -80,6 +80,9 @@ public class TerrainController : MonoBehaviour {
             Debug.Log("Regenerated");
             currentChunk = newChunk;
         }
+
+        /* Update the cache */
+        cache.UpdateCache();
     }
     
 
@@ -94,9 +97,9 @@ public class TerrainController : MonoBehaviour {
         settings = new TerrainChunkSettings();
     }
     
-    
+
     /* ----------- Helper Functions ------------------------------------------------------------- */
-    
+
     private List<Vector2> GetVisibleChunksFromPosition(Vector2 chunkPosition, int radius) {
         /*
          * Return a list of all chunks that should be rendered given the position.
