@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 /*
  * Used to control the creation of terrain using the TerrainChunk script.
@@ -44,17 +45,28 @@ public class TerrainController : MonoBehaviour {
         Vector2 newChunk = GetChunkPosition(position);
 
         if(newChunk.x != currentChunk.x || newChunk.y != currentChunk.y) {
-            /* for now, delete all previously created chunks */
-            List<Vector2> oldChunks = GetVisibleChunksFromPosition(currentChunk, 3);
-            RemoveChunks(oldChunks);
             
-            /* Re-create the terrain in the new chunk position */
-            List<Vector2> newChunks = GetVisibleChunksFromPosition(GetChunkPosition(position), 3);
-            CreateTerrainChunks(newChunks);
+            /* Get the keys/positions of all the chunks that are currently loaded */
+            List<Vector2> loadedChunks = GetLoadedChunks();
 
-            /* Update the current chunk */
-            currentChunk = newChunk;
+            /* Get the keys/position of all the chunks the new position requires */
+            List<Vector2> newChunks = GetVisibleChunksFromPosition(GetChunkPosition(position), 3);
+
+            /* Get the keys/position of all the chunks that are loaded and not a part of the required chunks */
+            List<Vector2> chunksToRemove = loadedChunks.Except(newChunks).ToList();
+
+            /* Get the keys/position of all the required chunks that have not yet been loaded */
+            List<Vector2> chunksToLoad = newChunks.Except(loadedChunks).ToList();
+
+            /* Remove the unnecessary chunks */
+            RemoveChunks(chunksToRemove);
+
+            /* Load the unloaded chunks */
+            CreateTerrainChunks(chunksToLoad);
+
+            
             Debug.Log("Regenerated");
+            currentChunk = newChunk;
         }
     }
     
@@ -152,5 +164,13 @@ public class TerrainController : MonoBehaviour {
         int z = (int) Mathf.Floor(worldPosition.z / settings.Length);
 
         return new Vector2(x, z);
+    }
+
+    private List<Vector2> GetLoadedChunks() {
+        /*
+         * Return a list of the keys/positions of each chunk that is currently loaded into the game
+         */
+
+        return loadedChunks.Keys.ToList();
     }
 }
