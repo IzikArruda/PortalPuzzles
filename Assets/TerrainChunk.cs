@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class TerrainChunk : MonoBehaviour {
+public class TerrainChunk {
 
     /* Coordinates of the chunk */
     public int X;
@@ -44,8 +44,19 @@ public class TerrainChunk : MonoBehaviour {
         Terrain.Flush();
 
         /* Make the terrain a child to this object, changing it's name to reflect it's coordinates */
-        newTerrainGameObject.transform.parent = transform;
-        transform.name = "[" + X + ", " + Z + "]";
+        newTerrainGameObject.transform.parent = Settings.chunkContainer;
+        newTerrainGameObject.transform.name = "[" + X + ", " + Z + "]";
+    }
+
+    public void Remove() {
+        /*
+         * Delete this chunk of terrain
+         */
+
+        Settings = null;
+        if(Terrain != null) {
+            GameObject.Destroy(Terrain.gameObject);
+        }
     }
 
     private float[,] GetHeightmap() {
