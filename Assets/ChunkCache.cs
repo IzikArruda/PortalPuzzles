@@ -120,6 +120,7 @@ public class ChunkCache {
 
             /* The chunk has not yet been loaded, so it's save to remove them */
             else if(ChunksBeingGenerated.ContainsKey(key)) {
+                ChunksBeingGenerated[key].Remove();
                 ChunksBeingGenerated.Remove(key);
                 chunksToRemove.Remove(key);
             }
