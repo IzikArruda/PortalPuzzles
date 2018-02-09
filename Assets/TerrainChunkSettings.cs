@@ -9,10 +9,10 @@ public class TerrainChunkSettings : MonoBehaviour {
     public int Length { get; private set; }
     public int Height { get; private set; }
 
-    public TerrainChunkSettings(int resX, int resY, int size, int height) {
-        HeightmapResolution = resX;
-        AlphamapResolution = resY;
-        Length = size;
+    public void SetSettings(int mapResolution, int length, int height) {
+        HeightmapResolution = mapResolution;
+        AlphamapResolution = mapResolution;
+        Length = length;
         Height = height;
     }
 }

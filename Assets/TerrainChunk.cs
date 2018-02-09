@@ -10,30 +10,41 @@ public class TerrainChunk : MonoBehaviour {
     private Terrain Terrain { get; set; }
 
     private TerrainChunkSettings Settings { get; set; }
+    
+    public void SetChunkCoordinates(int x, int z) {
+        /*
+         * Set the coordinates of where the chunk is placed in the noise function
+         */
 
-    public void Start() {
-        Test();
-    }
-
-    public TerrainChunk(TerrainChunkSettings settings, int x, int z) {
-        Settings = settings;
         X = x;
         Z = z;
     }
 
+    public void LinkSettings(TerrainChunkSettings newSettings) {
+        /*
+         * Set the new terrainChunkSettings to the given script
+         */
+
+        Settings = newSettings;
+    }
+
     public void CreateTerrain() {
-        var terrainData = new TerrainData();
+        TerrainData terrainData = new TerrainData();
         terrainData.heightmapResolution = Settings.HeightmapResolution;
         terrainData.alphamapResolution = Settings.AlphamapResolution;
 
-        var heightmap = GetHeightmap();
+        float[,] heightmap = GetHeightmap();
         terrainData.SetHeights(0, 0, heightmap);
         terrainData.size = new Vector3(Settings.Length, Settings.Height, Settings.Length);
 
-        var newTerrainGameObject = Terrain.CreateTerrainGameObject(terrainData);
+        GameObject newTerrainGameObject = Terrain.CreateTerrainGameObject(terrainData);
         newTerrainGameObject.transform.position = new Vector3(X * Settings.Length, 0, Z * Settings.Length);
         Terrain = newTerrainGameObject.GetComponent<Terrain>();
         Terrain.Flush();
+
+        /* Make the terrain a child to this object, changing it's name to reflect it's coordinates */
+        newTerrainGameObject.transform.parent = transform;
+        transform.name = "[" + X + ", " + Z + "]";
     }
 
     private float[,] GetHeightmap() {
@@ -51,9 +62,16 @@ public class TerrainChunk : MonoBehaviour {
         return heightmap;
     }
 
-    void Test() {
-        TerrainChunkSettings settings = new TerrainChunkSettings(129, 129, 100, 20);
-        TerrainChunk terrain = new TerrainChunk(settings, 0, 0);
-        terrain.CreateTerrain();
+    public void GenerateTerrain(int x, int z) {
+        /*
+         * Generate terrain with the given settings. 
+         */
+
+        /* Update the settings of the chunk and it's coordinates in the noise function */
+        Settings.SetSettings(129, 100, 20);
+        SetChunkCoordinates(x, z);
+
+        /* Generate the terrain */
+        CreateTerrain();
     }
 }
