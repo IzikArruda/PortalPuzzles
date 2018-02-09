@@ -14,21 +14,53 @@ public class TerrainController : MonoBehaviour {
     /* The chunk settings used by the chunks */
     public TerrainChunkSettings settings;
 
+    /* The position that the terrain will center around */
+    public Vector3 position;
+    public Vector2 currentChunk;
+
+    
+    /* ----------- Built-in Functions ------------------------------------------------------------- */
 
     void Start() {
         /*
          * Create a large circle of terrain around the origin
          */
 
+        /* Initialize any objects that will be used */
         InitializeVariables();
 
-        List<Vector2> newChunks = GetVisibleChunksFromPosition(new Vector2(0, 0), 5);
+        /* Set the settings of the chunkSettings */
+        settings.SetSettings(129, 100, 20);
+
+        //For now, create the land to begin with
+        List<Vector2> newChunks = GetVisibleChunksFromPosition(GetChunkPosition(position), 3);
         CreateTerrainChunks(newChunks);
-
-        //Delete a chunk
-        RemoveChunk(1, 0);
     }
+    
+    void Update() {
+        /*
+         * Check whenever the position changes into a new chunk, updating the terrain when required.
+         */
+        Vector2 newChunk = GetChunkPosition(position);
 
+        if(newChunk.x != currentChunk.x || newChunk.y != currentChunk.y) {
+            /* for now, delete all previously created chunks */
+            List<Vector2> oldChunks = GetVisibleChunksFromPosition(currentChunk, 3);
+            RemoveChunks(oldChunks);
+            
+            /* Re-create the terrain in the new chunk position */
+            List<Vector2> newChunks = GetVisibleChunksFromPosition(GetChunkPosition(position), 3);
+            CreateTerrainChunks(newChunks);
+
+            /* Update the current chunk */
+            currentChunk = newChunk;
+            Debug.Log("Regenerated");
+        }
+    }
+    
+
+    /* ----------- Set-up Functions ------------------------------------------------------------- */
+    
     void InitializeVariables() {
         /*
          * Initialize the varaibles used by this script
@@ -36,8 +68,10 @@ public class TerrainController : MonoBehaviour {
 
         loadedChunks = new Dictionary<Vector2, TerrainChunk>();
     }
+    
 
-
+    /* ----------- Chunk Functions ------------------------------------------------------------- */
+    
     void CreateTerrainChunk(int x, int z) {
         /*
          * Create a single chunk of terraingiven the coordinates of the terrain
@@ -66,9 +100,7 @@ public class TerrainController : MonoBehaviour {
             CreateTerrainChunk((int)chunk.x, (int)chunk.y);
         }
     }
-
-
-
+    
     private void RemoveChunk(int x, int z) {
         /*
          * Remove the chunk in the given position using the dictionary of created chunks
@@ -81,7 +113,18 @@ public class TerrainController : MonoBehaviour {
         Destroy(removedChunk.gameObject);
     }
 
+    private void RemoveChunks(List<Vector2> chunks) {
+        /*
+         * Remove the chunks given by the list
+         */
 
+        foreach(Vector2 chunk in chunks) {
+            RemoveChunk((int) chunk.x, (int) chunk.y);
+        }
+    }
+    
+    /* ----------- Helper Functions ------------------------------------------------------------- */
+    
     private List<Vector2> GetVisibleChunksFromPosition(Vector2 chunkPosition, int radius) {
         /*
          * Return a list of all chunks that should be rendered given the position.
@@ -99,5 +142,15 @@ public class TerrainController : MonoBehaviour {
         }
 
         return visibleChunks;
+    }
+
+    private Vector2 GetChunkPosition(Vector3 worldPosition) {
+        /*
+         * Given a position in the world, get the chunk position it resides within
+         */
+        int x = (int) Mathf.Floor(worldPosition.x / settings.Length);
+        int z = (int) Mathf.Floor(worldPosition.z / settings.Length);
+
+        return new Vector2(x, z);
     }
 }

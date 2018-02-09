@@ -3,14 +3,15 @@ using System.Collections;
 
 public class TerrainChunk : MonoBehaviour {
 
-    public int X { get; private set; }
+    /* Coordinates of the chunk */
+    public int X;
+    public int Z;
 
-    public int Z { get; private set; }
-
-    private Terrain Terrain { get; set; }
-
-    private TerrainChunkSettings Settings { get; set; }
+    /* The terrain of the chunk */
+    private Terrain Terrain;
+    private TerrainChunkSettings Settings;
     
+
     public void SetChunkCoordinates(int x, int z) {
         /*
          * Set the coordinates of where the chunk is placed in the noise function
@@ -67,8 +68,7 @@ public class TerrainChunk : MonoBehaviour {
          * Generate terrain with the given settings. 
          */
 
-        /* Update the settings of the chunk and it's coordinates in the noise function */
-        Settings.SetSettings(129, 100, 20);
+        /* Set the coordinates of this chunk */
         SetChunkCoordinates(x, z);
 
         /* Generate the terrain */
