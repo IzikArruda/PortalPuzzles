@@ -10,7 +10,26 @@ public class TerrainChunk {
     /* The terrain of the chunk */
     private Terrain Terrain;
     private TerrainChunkSettings Settings;
-    
+
+    public TerrainChunk(TerrainChunkSettings settings, Vector2 key) {
+        /*
+         * Create a new terrainChunk with the given parameters
+         */
+
+        Settings = settings;
+        X = (int) key.x;
+        Z = (int) key.y;
+    }
+
+    public TerrainChunk(TerrainChunkSettings settings, int x, int z) {
+        /*
+         * Create a new terrainChunk with the given parameters
+         */
+
+        Settings = settings;
+        X = x;
+        Z = z;
+    }
 
     public void SetChunkCoordinates(int x, int z) {
         /*

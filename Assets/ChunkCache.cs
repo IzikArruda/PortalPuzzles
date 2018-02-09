@@ -11,6 +11,9 @@ public class ChunkCache {
     /* All chunks that have been loaded */
     private Dictionary<Vector2, TerrainChunk> loadedChunks;
 
+    /* All chunks that must undergo generation to be properly loaded */
+    private Dictionary<Vector2, TerrainChunk> ChunksBeingGenerated;
+
     /* A hashset of the chunks that need to be removed */
     private HashSet<Vector2> chunksToRemove;
 
@@ -23,6 +26,7 @@ public class ChunkCache {
          */
          
         loadedChunks = new Dictionary<Vector2, TerrainChunk>();
+        ChunksBeingGenerated = new Dictionary<Vector2, TerrainChunk>();
         chunksToRemove = new HashSet<Vector2>();
     }
     
@@ -33,6 +37,9 @@ public class ChunkCache {
 
         /* Remove any chunks that must be removed */
         RemoveChunksFromList();
+
+        /* Load chunks into the cash that need to be generated */
+        GenerateChunkFromList();
     }
 
 
@@ -44,7 +51,7 @@ public class ChunkCache {
          */
 
         /* Create a new TerrainChunk and link it's settings and position */
-        TerrainChunk newChunk = new TerrainChunk();
+        TerrainChunk newChunk = new TerrainChunk(settings, x, z);
         newChunk.LinkSettings(settings);
         newChunk.GenerateTerrain(x, z);
 
@@ -77,15 +84,19 @@ public class ChunkCache {
             }
         }
     }
-
-    private void RemoveChunk(Vector2 key) {
+    
+    public void AddChunksRequest(List<Vector2> chunks, TerrainChunkSettings settings) {
         /*
-         * Remove the chunk defined by the given key from it's lists and the game
+         * Given a list of chunk positions, add new chunks to the ChunksBeingGenerated collection
          */
 
-        loadedChunks[key].Remove();
-        loadedChunks.Remove(key);
-        chunksToRemove.Remove(key);
+        foreach(Vector2 key in chunks) {
+            /* Check if the given chunk can be added to the collection */
+            if(CanAddChunk(key)) {
+                TerrainChunk newChunk = new TerrainChunk(settings, key);
+                ChunksBeingGenerated.Add(key, newChunk);
+            }
+        }
     }
 
 
@@ -93,21 +104,45 @@ public class ChunkCache {
 
     private void RemoveChunksFromList() {
         /*
-         * Take the chunksToRemove hashset and remove some chunks if needed.
-         * Removing chunks is a fast action, so we can do as many as we like at runtime
+         * Take the chunksToRemove hashset and remove the chunks that can be removed. 
          */
 
         List<Vector2> removedChunks = chunksToRemove.ToList();
 
         foreach(Vector2 key in removedChunks) {
 
-            /* Only remove the chunk once it's fully loaded */
+            /* Remove the chunk once it is fully loaded */
             if(loadedChunks.ContainsKey(key)) {
-                RemoveChunk(key);
+                loadedChunks[key].Remove();
+                loadedChunks.Remove(key);
+                chunksToRemove.Remove(key);
+            }
+
+            /* The chunk has not yet been loaded, so it's save to remove them */
+            else if(ChunksBeingGenerated.ContainsKey(key)) {
+                ChunksBeingGenerated.Remove(key);
+                chunksToRemove.Remove(key);
             }
         }
     }
 
+    private void GenerateChunkFromList() {
+        /*
+         * Given the chunks in ChunksBeingGenerated, generate and load their terrain
+         */
+        var newChunks = ChunksBeingGenerated.ToList();
+
+        /* Create the terrain for the chunk */
+        foreach(var chunk in newChunks) {
+
+            /* Generate and load the chunk into the game */
+            chunk.Value.CreateTerrain();
+
+            /* Place the chunk into the LoadedChunks collection */
+            ChunksBeingGenerated.Remove(chunk.Key);
+            loadedChunks.Add(chunk.Key, chunk.Value);
+        }
+    }
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
 
@@ -126,10 +161,23 @@ public class ChunkCache {
          */
         bool canBeRemoved = false;
         
-        if(loadedChunks.ContainsKey(key) && !chunksToRemove.Contains(key)) {
+        if(loadedChunks.ContainsKey(key) || ChunksBeingGenerated.ContainsKey(key)) {
             canBeRemoved = true;
         }
 
         return canBeRemoved;
+    }
+
+    public bool CanAddChunk(Vector2 key) {
+        /*
+         * Determine if the chunk given by the key can be added to the ChunksBeingGenerated collection
+         */
+        bool canBeAdded = false;
+
+        if(!(loadedChunks.ContainsKey(key) || ChunksBeingGenerated.ContainsKey(key))) {
+            canBeAdded = true;
+        }
+
+        return canBeAdded;
     }
 }

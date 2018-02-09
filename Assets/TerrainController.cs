@@ -74,7 +74,7 @@ public class TerrainController : MonoBehaviour {
             cache.RemoveChunksRequest(chunksToRemove);
 
             /* Load the unloaded chunks */
-            cache.CreateTerrainChunks(chunksToLoad, settings);
+            cache.AddChunksRequest(chunksToLoad, settings);
 
             
             Debug.Log("Regenerated");
