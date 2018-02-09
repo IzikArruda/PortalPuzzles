@@ -8,19 +8,39 @@ using System.Collections.Generic;
  */
 public class TerrainController : MonoBehaviour {
 
+    /* All chunks that have been loaded */
+    private Dictionary<Vector2, TerrainChunk> loadedChunks;
+
+    /* The chunk settings used by the chunks */
+    public TerrainChunkSettings settings;
+
+
     void Start() {
         /*
          * Create a large circle of terrain around the origin
          */
 
+        InitializeVariables();
+
         List<Vector2> newChunks = GetVisibleChunksFromPosition(new Vector2(0, 0), 5);
         CreateTerrainChunks(newChunks);
+
+        //Delete a chunk
+        RemoveChunk(1, 0);
+    }
+
+    void InitializeVariables() {
+        /*
+         * Initialize the varaibles used by this script
+         */
+
+        loadedChunks = new Dictionary<Vector2, TerrainChunk>();
     }
 
 
     void CreateTerrainChunk(int x, int z) {
         /*
-         * Create a single chunk of terraingiven the coordinates of the terrain 
+         * Create a single chunk of terraingiven the coordinates of the terrain
          */
 
         /* Create a new object and attach a TerrainChunk and it's settings */
@@ -28,11 +48,13 @@ public class TerrainController : MonoBehaviour {
         newChunkObject.name = "Terrain Chunk";
         newChunkObject.transform.parent = transform;
         TerrainChunk newChunk = newChunkObject.AddComponent<TerrainChunk>();
-        TerrainChunkSettings newChunkSettings = newChunkObject.AddComponent<TerrainChunkSettings>();
 
         /* Link the settings to the terrain chunk and generate new terrain */
-        newChunk.LinkSettings(newChunkSettings);
+        newChunk.LinkSettings(settings);
         newChunk.GenerateTerrain(x, z);
+
+        /* Add the chunk to the loadedChunks dictionary */
+        loadedChunks.Add(new Vector2(newChunk.X, newChunk.Z), newChunk);
     }
 
     void CreateTerrainChunks(List<Vector2> chunks) {
@@ -46,6 +68,18 @@ public class TerrainController : MonoBehaviour {
     }
 
 
+
+    private void RemoveChunk(int x, int z) {
+        /*
+         * Remove the chunk in the given position using the dictionary of created chunks
+         */
+        Vector2 key = new Vector2(x, z);
+
+        /* Remove the chunk from the list of loaded chunks and delete the object it's attached to */
+        TerrainChunk removedChunk = loadedChunks[key];
+        loadedChunks.Remove(key);
+        Destroy(removedChunk.gameObject);
+    }
 
 
     private List<Vector2> GetVisibleChunksFromPosition(Vector2 chunkPosition, int radius) {
