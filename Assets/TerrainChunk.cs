@@ -1,5 +1,5 @@
 ﻿using UnityEngine;
-using System.Collections;
+using System.Threading;
 
 public class TerrainChunk {
 
@@ -13,6 +13,9 @@ public class TerrainChunk {
     private float[,] heightMap;
     private TerrainData terrainData;
 
+    /* Use this lock to indicate whether this object is creating it's heightmap */
+    private object heightMapThreadLock;
+
 
     /* ----------- Constructor Functions ------------------------------------------------------------- */
 
@@ -21,6 +24,7 @@ public class TerrainChunk {
          * Create a new terrainChunk with the given parameters
          */
 
+        heightMapThreadLock = new object();
         Settings = settings;
         X = (int) key.x;
         Z = (int) key.y;
@@ -32,33 +36,57 @@ public class TerrainChunk {
          * Create a new terrainChunk with the given parameters
          */
 
+        heightMapThreadLock = new object();
         Settings = settings;
         X = x;
         Z = z;
         GenerateHeightMap();
     }
-    
-    /* ----------- Update Functions ------------------------------------------------------------- */
 
+    /* ----------- Heightmap Functions ------------------------------------------------------------- */
+    
     public void GenerateHeightMap() {
         /*
-         * Generate the heightMap for this terrainChunk
+         * Start the thread tha generates the heightmap
          */
 
-        float[,] newHeightMap = new float[Settings.HeightmapResolution, Settings.HeightmapResolution];
-
-        /* Populate the heightMap by going through it's resolution */
-        for(int z = 0; z < Settings.HeightmapResolution; z++) {
-            for(int x = 0; x < Settings.HeightmapResolution; x++) {
-                float xCoord = X + (float) x / (Settings.HeightmapResolution - 1);
-                float zCoord = Z + (float) z / (Settings.HeightmapResolution - 1);
-                newHeightMap[z, x] = Mathf.PerlinNoise(xCoord, zCoord);
-            }
-        }
-
-        heightMap = newHeightMap;
+        Thread thread = new Thread(GenerateHeightMapThread);
+        thread.Start();
     }
-    
+
+    public void GenerateHeightMapThread() {
+        /*
+         * Generate the heightMap for this terrainChunk. This is doen in a thread and uses a lock
+         */
+
+        /* Lock the thread to fully generate the heightmap */
+        lock(heightMapThreadLock) {
+
+            /* Populate the heightMap by going through it's resolution */
+            float[,] newHeightMap = new float[Settings.HeightmapResolution, Settings.HeightmapResolution];
+            for(int z = 0; z < Settings.HeightmapResolution; z++) {
+                for(int x = 0; x < Settings.HeightmapResolution; x++) {
+                    float xCoord = X + (float) x / (Settings.HeightmapResolution - 1);
+                    float zCoord = Z + (float) z / (Settings.HeightmapResolution - 1);
+                    newHeightMap[z, x] = Mathf.PerlinNoise(xCoord, zCoord);
+                }
+            }
+
+            heightMap = newHeightMap;
+        }
+    }
+
+    public bool IsHeightmapReady() {
+        /*
+         * Return true if the heightmap is fully generated and the terrain has not yet been generated
+         */
+
+        return (Terrain == null && heightMap != null);
+    }
+
+
+    /* ----------- Update Functions ------------------------------------------------------------- */
+
     public void SetChunkCoordinates(int x, int z) {
         /*
          * Set the coordinates of where the chunk is placed in the noise function
