@@ -35,9 +35,6 @@ public class TerrainController : MonoBehaviour {
     /* ----------- Built-in Functions ------------------------------------------------------------- */
 
     void Start() {
-        /*
-         * Create a large circle of terrain around the origin
-         */
 
         /* Initialize any objects that will be used */
         InitializeVariables();
@@ -45,9 +42,9 @@ public class TerrainController : MonoBehaviour {
         /* Set the settings for each chunk */
         settings.SetSettings(chunkResolution, chunkLength, height, transform);
 
-        //For now, create the land to begin with
-        List<Vector2> newChunks = GetVisibleChunksFromPosition(GetChunkPosition(position), 3);
-        cache.CreateTerrainChunks(newChunks, settings);
+
+        /* Set the current chunk different than the current position to force the terrain to update */
+        currentChunk = new Vector2(1, 1) + GetChunkPosition(position);
     }
     
     void Update() {
@@ -78,6 +75,7 @@ public class TerrainController : MonoBehaviour {
         cache.UpdateCache();
     }
 
+
     /* ----------- Update Functions ------------------------------------------------------------- */
 
     void RemoveChunksRequest(List<Vector2> chunks) {
@@ -86,6 +84,7 @@ public class TerrainController : MonoBehaviour {
          */
 
         foreach(Vector2 key in chunks) {
+
             /* Check if the given key can be added to the toBeRemoved collection */
             if(cache.CanRemoveChunk(key)) {
                 cache.chunksToRemove.Add(key);
@@ -95,17 +94,19 @@ public class TerrainController : MonoBehaviour {
 
     public void AddChunksRequest(List<Vector2> chunks) {
         /*
-         * Given a list of chunk positions, add new chunks to the ChunksBeingGenerated collection
+         * Given a list of chunk positions, add new chunks to the chunksToBeGenerated collection
          */
 
         foreach(Vector2 key in chunks) {
+
             /* Check if the given chunk can be added to the collection */
             if(cache.CanAddChunk(key)) {
                 TerrainChunk newChunk = new TerrainChunk(settings, key);
-                cache.ChunksBeingGenerated.Add(key, newChunk);
+                cache.chunksToBeGenerated.Add(key, newChunk);
             }
         }
     }
+
 
     /* ----------- Set-up Functions ------------------------------------------------------------- */
 

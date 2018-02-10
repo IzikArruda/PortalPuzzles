@@ -28,7 +28,6 @@ public class TerrainChunk {
         Settings = settings;
         X = (int) key.x;
         Z = (int) key.y;
-        GenerateHeightMap();
     }
 
     public TerrainChunk(TerrainChunkSettings settings, int x, int z) {
@@ -40,7 +39,6 @@ public class TerrainChunk {
         Settings = settings;
         X = x;
         Z = z;
-        GenerateHeightMap();
     }
 
     /* ----------- Heightmap Functions ------------------------------------------------------------- */
@@ -54,7 +52,7 @@ public class TerrainChunk {
         thread.Start();
     }
 
-    public void GenerateHeightMapThread() {
+    private void GenerateHeightMapThread() {
         /*
          * Generate the heightMap for this terrainChunk. This is doen in a thread and uses a lock
          */

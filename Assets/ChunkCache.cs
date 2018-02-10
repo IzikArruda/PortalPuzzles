@@ -8,11 +8,17 @@ using System.Linq;
  */
 public class ChunkCache {
 
+    /* How many chunks that can be generating at the same time */
+    public readonly int maxChunkThreads = 1;
+    
+    /* All chunks that will be generated but have not yet been handled */
+    public Dictionary<Vector2, TerrainChunk> chunksToBeGenerated;
+    
+    /* All chunks that must undergo generation to be properly loaded */
+    public Dictionary<Vector2, TerrainChunk> chunksBeingGenerated;
+
     /* All chunks that have been loaded */
     public Dictionary<Vector2, TerrainChunk> loadedChunks;
-
-    /* All chunks that must undergo generation to be properly loaded */
-    public Dictionary<Vector2, TerrainChunk> ChunksBeingGenerated;
 
     /* A hashset of the chunks that need to be removed */
     public HashSet<Vector2> chunksToRemove;
@@ -26,7 +32,8 @@ public class ChunkCache {
          */
          
         loadedChunks = new Dictionary<Vector2, TerrainChunk>();
-        ChunksBeingGenerated = new Dictionary<Vector2, TerrainChunk>();
+        chunksToBeGenerated = new Dictionary<Vector2, TerrainChunk>();
+        chunksBeingGenerated = new Dictionary<Vector2, TerrainChunk>();
         chunksToRemove = new HashSet<Vector2>();
     }
 
@@ -39,10 +46,13 @@ public class ChunkCache {
          */
 
         /* Remove any chunks that must be removed */
-        RemoveChunksFromList();
+        RemoveChunks();
 
-        /* Load chunks into the cash that need to be generated */
-        GenerateChunkFromList();
+        /* Start generating the height map for chunks if possible */
+        StartGeneratingHeightMaps();
+
+        /* Create the terrain for chunks that have finished generating their height map */
+        CreateTerrainForGeneratedChunks();
     }
 
 
@@ -74,7 +84,7 @@ public class ChunkCache {
 
     /* ----------- Collections Functions ------------------------------------------------------------- */
 
-    private void RemoveChunksFromList() {
+    private void RemoveChunks() {
         /*
          * Take the chunksToRemove hashset and remove the chunks that can be removed. 
          */
@@ -91,29 +101,56 @@ public class ChunkCache {
             }
 
             /* The chunk has not yet been loaded, so it's save to remove them */
-            else if(ChunksBeingGenerated.ContainsKey(key)) {
-                ChunksBeingGenerated[key].Remove();
-                ChunksBeingGenerated.Remove(key);
+            else if(chunksToBeGenerated.ContainsKey(key)) {
+                chunksToBeGenerated[key].Remove();
+                chunksToBeGenerated.Remove(key);
+                chunksToRemove.Remove(key);
+            }
+
+            /* If the chunk is not being generated (which it cant be removed from), then the chunk has already been removed */
+            else if(!chunksBeingGenerated.ContainsKey(key)) {
                 chunksToRemove.Remove(key);
             }
         }
     }
 
-    private void GenerateChunkFromList() {
+    public void StartGeneratingHeightMaps() {
         /*
-         * Given the chunks in ChunksBeingGenerated, generate and load their terrain
+         * Start generating the height map for certain chunks. If the thread count allows it, 
+         * move chunks from the toBeGenerated to the beingGenerated collection.
          */
-        var newChunks = ChunksBeingGenerated.ToList();
 
-        /* Create the terrain for the chunk */
-        foreach(var chunk in newChunks) {
+        /* Check if we can add atleast one more chunk to the beingGenerated dictionary */
+        if(chunksToBeGenerated.Count() > 0 && chunksBeingGenerated.Count() < maxChunkThreads) {
 
-            /* Generate and load the chunk into the game */
-            chunk.Value.CreateTerrain();
+            /* Get enough chunks to fill the chunk generation thread */
+            var chunksToGenerate = chunksToBeGenerated.Take(maxChunkThreads - chunksBeingGenerated.Count());
 
-            /* Place the chunk into the LoadedChunks collection */
-            ChunksBeingGenerated.Remove(chunk.Key);
-            loadedChunks.Add(chunk.Key, chunk.Value);
+            /* Add each chunk to the beingGenerated collection and start generating their heightMap */
+            foreach(var chunk in chunksToGenerate) {
+                chunksBeingGenerated.Add(chunk.Key, chunk.Value);
+                chunksToBeGenerated.Remove(chunk.Key);
+                chunk.Value.GenerateHeightMap();
+            }
+        }
+    }
+
+    private void CreateTerrainForGeneratedChunks() {
+        /*
+         * Given a list of chunks currently being generated, check if any chunks have finished generating.
+         * Any chunks that generating have their terrain created then moved to the loadedChunks collection.
+         */
+        var chunks = chunksBeingGenerated.ToList();
+
+        /* Check each chunk if they have finished generation */
+        foreach(var chunk in chunks) {
+            if(chunk.Value.IsHeightmapReady()) {
+
+                /* Create the chunk's terrain and move it to the loadedChunks dictionary */
+                chunk.Value.CreateTerrain();
+                loadedChunks.Add(chunk.Key, chunk.Value);
+                chunksBeingGenerated.Remove(chunk.Key);
+            }
         }
     }
 
@@ -134,7 +171,10 @@ public class ChunkCache {
          */
         bool canBeRemoved = false;
         
-        if(loadedChunks.ContainsKey(key) || ChunksBeingGenerated.ContainsKey(key)) {
+        if(
+                loadedChunks.ContainsKey(key) || 
+                chunksBeingGenerated.ContainsKey(key) || 
+                chunksToBeGenerated.ContainsKey(key)) {
             canBeRemoved = true;
         }
 
@@ -143,11 +183,14 @@ public class ChunkCache {
 
     public bool CanAddChunk(Vector2 key) {
         /*
-         * Determine if the chunk given by the key can be added to the ChunksBeingGenerated collection
+         * Determine if the chunk given by the key can be added to the chunksToBeGenerated collection
          */
         bool canBeAdded = false;
 
-        if(!(loadedChunks.ContainsKey(key) || ChunksBeingGenerated.ContainsKey(key))) {
+        if(!(
+                loadedChunks.ContainsKey(key) || 
+                chunksBeingGenerated.ContainsKey(key) || 
+                chunksToBeGenerated.ContainsKey(key))) {
             canBeAdded = true;
         }
 
