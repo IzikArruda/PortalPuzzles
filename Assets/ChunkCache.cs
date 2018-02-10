@@ -164,6 +164,17 @@ public class ChunkCache {
         return loadedChunks.Keys.ToList();
     }
 
+    public List<Vector2> GetAllChunks() {
+        /*
+         * Return a list of all chunks that are loaded, being generated or to be generated
+         */
+
+        List<Vector2> allChunks = GetLoadedChunks().Union(chunksBeingGenerated.Keys.ToList()).ToList();
+        allChunks = allChunks.Union(chunksToBeGenerated.Keys.ToList()).ToList();
+        
+        return allChunks;
+    }
+
     public bool CanRemoveChunk(Vector2 key) {
         /*
          * Return whether the chunk defined by the given key can be removed or not.

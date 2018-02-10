@@ -54,13 +54,13 @@ public class TerrainController : MonoBehaviour {
         Vector2 newChunk = GetChunkPosition(position);
 
         if(newChunk.x != currentChunk.x || newChunk.y != currentChunk.y) {
-            
-            /* Get a series of lists that represent a unique group of positions */
-            List<Vector2> loadedChunks = cache.GetLoadedChunks();
-            List<Vector2> newChunks = GetVisibleChunksFromPosition(GetChunkPosition(position), 3);
-            List<Vector2> chunksToRemove = loadedChunks.Except(newChunks).ToList();
-            List<Vector2> chunksToLoad = newChunks.Except(loadedChunks).ToList();
 
+            /* Get a series of lists that represent a unique group of positions */
+            List<Vector2> allChunks = cache.GetAllChunks();
+            List<Vector2> newChunks = GetVisibleChunksFromPosition(GetChunkPosition(position), 3);
+            List<Vector2> chunksToRemove = allChunks.Except(newChunks).ToList();
+            List<Vector2> chunksToLoad = newChunks.Except(allChunks).ToList();
+            
             /* Remove the unnecessary chunks */
             RemoveChunksRequest(chunksToRemove);
 
