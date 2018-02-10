@@ -9,17 +9,17 @@ using System.Linq;
 public class ChunkCache {
 
     /* All chunks that have been loaded */
-    private Dictionary<Vector2, TerrainChunk> loadedChunks;
+    public Dictionary<Vector2, TerrainChunk> loadedChunks;
 
     /* All chunks that must undergo generation to be properly loaded */
-    private Dictionary<Vector2, TerrainChunk> ChunksBeingGenerated;
+    public Dictionary<Vector2, TerrainChunk> ChunksBeingGenerated;
 
     /* A hashset of the chunks that need to be removed */
-    private HashSet<Vector2> chunksToRemove;
+    public HashSet<Vector2> chunksToRemove;
 
 
-    /* ----------- Update Functions ------------------------------------------------------------- */
-    
+    /* ----------- Constructor Functions ------------------------------------------------------------- */
+
     public ChunkCache() {
         /*
          * Upon creation, initialize the required variables used to track the data
@@ -29,7 +29,10 @@ public class ChunkCache {
         ChunksBeingGenerated = new Dictionary<Vector2, TerrainChunk>();
         chunksToRemove = new HashSet<Vector2>();
     }
-    
+
+
+    /* ----------- Update Functions ------------------------------------------------------------- */
+
     public void UpdateCache() {
         /*
          * Update the terrain by going through the cache's collections
@@ -52,7 +55,6 @@ public class ChunkCache {
 
         /* Create a new TerrainChunk and link it's settings and position */
         TerrainChunk newChunk = new TerrainChunk(settings, x, z);
-        newChunk.LinkSettings(settings);
         newChunk.GenerateTerrain(x, z);
 
         /* Add the chunk to the loadedChunks dictionary */
@@ -66,36 +68,6 @@ public class ChunkCache {
 
         foreach(Vector2 chunk in chunks) {
             CreateTerrainChunk(settings, (int) chunk.x, (int) chunk.y);
-        }
-    }
-
-
-    /* ----------- Chunk Functions ------------------------------------------------------------- */
-    
-    public void RemoveChunksRequest(List<Vector2> chunks) {
-        /*
-         * Given a list of chunk keys, add them to the chunksToRemove collection to be removed
-         */
-
-        foreach(Vector2 key in chunks) {
-            /* Check if the given key can be added to the toBeRemoved collection */
-            if(CanRemoveChunk(key)) {
-                chunksToRemove.Add(key);
-            }
-        }
-    }
-    
-    public void AddChunksRequest(List<Vector2> chunks, TerrainChunkSettings settings) {
-        /*
-         * Given a list of chunk positions, add new chunks to the ChunksBeingGenerated collection
-         */
-
-        foreach(Vector2 key in chunks) {
-            /* Check if the given chunk can be added to the collection */
-            if(CanAddChunk(key)) {
-                TerrainChunk newChunk = new TerrainChunk(settings, key);
-                ChunksBeingGenerated.Add(key, newChunk);
-            }
         }
     }
 

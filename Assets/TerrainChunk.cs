@@ -10,6 +10,11 @@ public class TerrainChunk {
     /* The terrain of the chunk */
     private Terrain Terrain;
     private TerrainChunkSettings Settings;
+    private float[,] heightMap;
+    private TerrainData terrainData;
+
+
+    /* ----------- Constructor Functions ------------------------------------------------------------- */
 
     public TerrainChunk(TerrainChunkSettings settings, Vector2 key) {
         /*
@@ -19,6 +24,7 @@ public class TerrainChunk {
         Settings = settings;
         X = (int) key.x;
         Z = (int) key.y;
+        GenerateHeightMap();
     }
 
     public TerrainChunk(TerrainChunkSettings settings, int x, int z) {
@@ -29,8 +35,30 @@ public class TerrainChunk {
         Settings = settings;
         X = x;
         Z = z;
+        GenerateHeightMap();
     }
+    
+    /* ----------- Update Functions ------------------------------------------------------------- */
 
+    public void GenerateHeightMap() {
+        /*
+         * Generate the heightMap for this terrainChunk
+         */
+
+        float[,] newHeightMap = new float[Settings.HeightmapResolution, Settings.HeightmapResolution];
+
+        /* Populate the heightMap by going through it's resolution */
+        for(int z = 0; z < Settings.HeightmapResolution; z++) {
+            for(int x = 0; x < Settings.HeightmapResolution; x++) {
+                float xCoord = X + (float) x / (Settings.HeightmapResolution - 1);
+                float zCoord = Z + (float) z / (Settings.HeightmapResolution - 1);
+                newHeightMap[z, x] = Mathf.PerlinNoise(xCoord, zCoord);
+            }
+        }
+
+        heightMap = newHeightMap;
+    }
+    
     public void SetChunkCoordinates(int x, int z) {
         /*
          * Set the coordinates of where the chunk is placed in the noise function
@@ -39,32 +67,26 @@ public class TerrainChunk {
         X = x;
         Z = z;
     }
-
-    public void LinkSettings(TerrainChunkSettings newSettings) {
+    
+    public void CreateTerrain() {
         /*
-         * Set the new terrainChunkSettings to the given script
+         * Create the terrain and the GameObject to hold it
          */
 
-        Settings = newSettings;
-    }
-
-    public void CreateTerrain() {
-        TerrainData terrainData = new TerrainData();
+        /* Create the terrainData that is used to define the terrain to create */
+        terrainData = new TerrainData();
         terrainData.heightmapResolution = Settings.HeightmapResolution;
         terrainData.alphamapResolution = Settings.AlphamapResolution;
-
-        float[,] heightmap = GetHeightmap();
-        terrainData.SetHeights(0, 0, heightmap);
+        terrainData.SetHeights(0, 0, heightMap);
         terrainData.size = new Vector3(Settings.Length, Settings.Height, Settings.Length);
 
+        /* Create the object that will contain the terrain components */
         GameObject newTerrainGameObject = Terrain.CreateTerrainGameObject(terrainData);
         newTerrainGameObject.transform.position = new Vector3(X * Settings.Length, 0, Z * Settings.Length);
-        Terrain = newTerrainGameObject.GetComponent<Terrain>();
-        Terrain.Flush();
-
-        /* Make the terrain a child to this object, changing it's name to reflect it's coordinates */
         newTerrainGameObject.transform.parent = Settings.chunkContainer;
         newTerrainGameObject.transform.name = "[" + X + ", " + Z + "]";
+        Terrain = newTerrainGameObject.GetComponent<Terrain>();
+        Terrain.Flush();
     }
 
     public void Remove() {
@@ -76,21 +98,6 @@ public class TerrainChunk {
         if(Terrain != null) {
             GameObject.Destroy(Terrain.gameObject);
         }
-    }
-
-    private float[,] GetHeightmap() {
-        var heightmap = new float[Settings.HeightmapResolution, Settings.HeightmapResolution];
-
-        for(var zRes = 0; zRes < Settings.HeightmapResolution; zRes++) {
-            for(var xRes = 0; xRes < Settings.HeightmapResolution; xRes++) {
-                var xCoordinate = X + (float) xRes / (Settings.HeightmapResolution - 1);
-                var zCoordinate = Z + (float) zRes / (Settings.HeightmapResolution - 1);
-
-                heightmap[zRes, xRes] = Mathf.PerlinNoise(xCoordinate, zCoordinate);
-            }
-        }
-
-        return heightmap;
     }
 
     public void GenerateTerrain(int x, int z) {

@@ -58,36 +58,57 @@ public class TerrainController : MonoBehaviour {
 
         if(newChunk.x != currentChunk.x || newChunk.y != currentChunk.y) {
             
-            /* Get the keys/positions of all the chunks that are currently loaded */
+            /* Get a series of lists that represent a unique group of positions */
             List<Vector2> loadedChunks = cache.GetLoadedChunks();
-
-            /* Get the keys/position of all the chunks the new position requires */
             List<Vector2> newChunks = GetVisibleChunksFromPosition(GetChunkPosition(position), 3);
-
-            /* Get the keys/position of all the chunks that are loaded and not a part of the required chunks */
             List<Vector2> chunksToRemove = loadedChunks.Except(newChunks).ToList();
-
-            /* Get the keys/position of all the required chunks that have not yet been loaded */
             List<Vector2> chunksToLoad = newChunks.Except(loadedChunks).ToList();
 
             /* Remove the unnecessary chunks */
-            cache.RemoveChunksRequest(chunksToRemove);
+            RemoveChunksRequest(chunksToRemove);
 
             /* Load the unloaded chunks */
-            cache.AddChunksRequest(chunksToLoad, settings);
-
+            AddChunksRequest(chunksToLoad);
             
-            Debug.Log("Regenerated");
+            /* Update the current coordinates */
             currentChunk = newChunk;
         }
 
         /* Update the cache */
         cache.UpdateCache();
     }
-    
+
+    /* ----------- Update Functions ------------------------------------------------------------- */
+
+    void RemoveChunksRequest(List<Vector2> chunks) {
+        /*
+         * Given a list of chunk keys, add them to the chunksToRemove collection to be removed
+         */
+
+        foreach(Vector2 key in chunks) {
+            /* Check if the given key can be added to the toBeRemoved collection */
+            if(cache.CanRemoveChunk(key)) {
+                cache.chunksToRemove.Add(key);
+            }
+        }
+    }
+
+    public void AddChunksRequest(List<Vector2> chunks) {
+        /*
+         * Given a list of chunk positions, add new chunks to the ChunksBeingGenerated collection
+         */
+
+        foreach(Vector2 key in chunks) {
+            /* Check if the given chunk can be added to the collection */
+            if(cache.CanAddChunk(key)) {
+                TerrainChunk newChunk = new TerrainChunk(settings, key);
+                cache.ChunksBeingGenerated.Add(key, newChunk);
+            }
+        }
+    }
 
     /* ----------- Set-up Functions ------------------------------------------------------------- */
-    
+
     void InitializeVariables() {
         /*
          * Initialize the variables used by this script
