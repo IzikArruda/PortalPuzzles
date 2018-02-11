@@ -1043,7 +1043,7 @@ public class CustomPlayerController : MonoBehaviour {
             if(legRayScripts[i] != null && legRayScripts[i].GetComponent<DetectPlayerLegRay>() != null) {
 
                 /* Run the script */
-                legRayScripts[i].GetComponent<DetectPlayerLegRay>().PlayerStep();
+                legRayScripts[i].GetComponent<DetectPlayerLegRay>().PlayerStep(gameObject);
 
                 /* Check the object type and react accordingly */
                 if(legRayScripts[i].GetComponent<DetectPlayerLegRay>().objectType == 0) {

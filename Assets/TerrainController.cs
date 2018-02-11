@@ -14,8 +14,8 @@ public class TerrainController : MonoBehaviour {
     /* The chunk settings used by the chunks */
     public TerrainChunkSettings settings;
 
-    /* The position that the terrain will center around */
-    public Vector3 position;
+    /* The object that the terrain will center around. Have this set before startup. */
+    public Transform focusPoint;
     public Vector2 currentChunk;
 
     /* The radius of the circle that defines how far the terrain will render */
@@ -55,7 +55,7 @@ public class TerrainController : MonoBehaviour {
         settings.SetSettings(chunkResolution, chunkLength, height, transform, terrainMaterial, flatTexture, steepTexture);
 
         /* Set the current chunk position */
-        currentChunk = GetChunkPosition(position);
+        currentChunk = GetChunkPosition(focusPoint.position);
 
         /* Force the chunkCache to update it's chunks all at once */
         ForceCacheUpdate();
@@ -65,13 +65,15 @@ public class TerrainController : MonoBehaviour {
         /*
          * Check whenever the position changes into a new chunk, updating the terrain when required.
          */
-        Vector2 newChunk = GetChunkPosition(position);
+
+        /* Get the position the chunks will surround */
+        Vector2 newChunk = GetChunkPosition(focusPoint.position);
 
         if(newChunk.x != currentChunk.x || newChunk.y != currentChunk.y) {
 
             /* Get a series of lists that represent a unique group of positions */
             List<Vector2> allChunks = cache.GetAllChunks();
-            List<Vector2> newChunks = GetVisibleChunksFromPosition(GetChunkPosition(position), chunkViewRange);
+            List<Vector2> newChunks = GetVisibleChunksFromPosition(newChunk, chunkViewRange);
             List<Vector2> chunksToRemove = allChunks.Except(newChunks).ToList();
             List<Vector2> chunksToLoad = newChunks.Except(allChunks).ToList();
             
@@ -127,7 +129,7 @@ public class TerrainController : MonoBehaviour {
          * startup as the game has not yet begun, giving it time to load everything.
          */
          
-        List<Vector2> newChunks = GetVisibleChunksFromPosition(GetChunkPosition(position), chunkViewRange);
+        List<Vector2> newChunks = GetVisibleChunksFromPosition(GetChunkPosition(focusPoint.position), chunkViewRange);
         foreach(Vector2 chunkKey in newChunks) {
 
             /* Create the chunk and force it to load into the cache */

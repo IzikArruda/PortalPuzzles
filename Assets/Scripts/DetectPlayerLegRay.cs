@@ -23,7 +23,7 @@ public class DetectPlayerLegRay : MonoBehaviour {
 
     /* -------- Event Functions ---------------------------------------------------- */
 
-    public void PlayerStep() {
+    public void PlayerStep(GameObject playerObject) {
         /*
          * Runs when the player steps on this object with any leg. Run a unique function depending on the value of objectType
          */
@@ -37,7 +37,7 @@ public class DetectPlayerLegRay : MonoBehaviour {
         }
 
         else if(objectType == 1) {
-            BreakGlass();
+            BreakGlass(playerObject);
         }
 
         else {
@@ -55,7 +55,7 @@ public class DetectPlayerLegRay : MonoBehaviour {
         returnValue = 1;
     }
 
-    public void BreakGlass() {
+    public void BreakGlass(GameObject playerObject) {
         /*
          * Send a call to a function of the script that created the hit window.
          */
@@ -65,7 +65,7 @@ public class DetectPlayerLegRay : MonoBehaviour {
             if(transform.parent.parent != null) {
                 if(transform.parent.parent.parent != null) {
                     if(transform.parent.parent.parent.GetComponent<StartingRoom>() != null) {
-                        transform.parent.parent.parent.GetComponent<StartingRoom>().BreakGlass();
+                        transform.parent.parent.parent.GetComponent<StartingRoom>().BreakGlass(playerObject);
                     }
                 }
             }

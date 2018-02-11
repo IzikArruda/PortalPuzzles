@@ -39,12 +39,16 @@ public class StartingRoom : ConnectedRoom {
     public Material windowFrameMaterial;
     public Material windowGlassMaterial;
     public Texture skySphereTexture;
+    private bool glassBroken;
 
     /* The particleSystem that will produce a bunch of shattered glass */
     public Material particleMaterial;
 
     /* The audio source that will play the glass shattering sound effect. Have it linked to the sound and mixer group in the editor. */
     public AudioSource glassShatterSource;
+
+    /* The terrainGenerator that generates the world for the outside window */
+    public TerrainController outsideTerrain;
 
 
     /* -------- Built-In Functions ---------------------------------------------------- */
@@ -56,6 +60,25 @@ public class StartingRoom : ConnectedRoom {
 
         UpdateWalls();
         UpdateWindow();
+        UpdateCollider();
+    }
+
+    void OnTriggerExit(Collider player) {
+        /*
+         * When the player leaves the room and the glass is broken, 
+         * have the outsideTerrain change it's focus target to the player.
+         */
+
+        /* Ensure the collider entering the trigger is a player */
+        if(player.GetComponent<CustomPlayerController>() != null) {
+
+            /* Ensure the glass is broken as the player leaves the room */
+            if(glassBroken) {
+                
+                /* Update the terrain generator's focus object to be the player instead of the window */
+                outsideTerrain.focusPoint = player.transform;
+            }
+        }
     }
 
 
@@ -133,7 +156,8 @@ public class StartingRoom : ConnectedRoom {
         /*
          * Update the values of the window and position it in an appropriate spot in the room
          */
-         
+        glassBroken = false;
+
         /* Set the size of the window's frame */
         window.frameThickness = frameThickness;
         window.frameDepth = frameDepth;
@@ -175,7 +199,7 @@ public class StartingRoom : ConnectedRoom {
         /* Create the particle system used by the otuside window's glass */
         UpdateParticleSystem();
     }
-
+    
     void UpdateParticleSystem() {
         /*
          * Create and set the stats of the particle emitter placed on the outside window 
@@ -202,10 +226,31 @@ public class StartingRoom : ConnectedRoom {
         shape.box = new Vector3(window.windowWidth, window.windowHeight, 0.01f);
     }
 
-    public void BreakGlass() {
+    void UpdateCollider() {
+        /*
+         * Create a collider that surrounds the room
+         */
+        BoxCollider roomCollider = GetComponent<BoxCollider>();
+
+        /* Create the room collider if it does not exist */
+        if(roomCollider == null) { roomCollider = gameObject.AddComponent<BoxCollider>(); }
+        roomCollider.isTrigger = true;
+
+        /* Position the collider into the center of the room */
+        roomCollider.center = exit.exitPointBack.position + new Vector3(0, -(roomBellowHeight - (extraHeight + exit.exitHeight))/2f, -roomDepth/2f);
+
+        /* Set the size of the collider to encompass the whole room */
+        roomCollider.size = new Vector3((extraRoomWidth + exit.exitWidth), (extraHeight + exit.exitHeight + roomBellowHeight), (roomDepth));
+    }
+
+
+    /* -------- Event Functions ---------------------------------------------------- */
+
+    public void BreakGlass(GameObject playerObject) {
         /*
          * This is called from an outside function when the window of the room needs to be broken.
          */
+        glassBroken = true;
 
         Debug.Log("Destroy the glass objects");
 
