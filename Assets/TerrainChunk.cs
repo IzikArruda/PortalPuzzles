@@ -43,9 +43,9 @@ public class TerrainChunk {
 
     /* ----------- Heightmap Functions ------------------------------------------------------------- */
     
-    public void GenerateHeightMap() {
+    public void GenerateHeightMapRequest() {
         /*
-         * Start the thread tha generates the heightmap
+         * Start the thread that generates the heightmap
          */
 
         Thread thread = new Thread(GenerateHeightMapThread);
@@ -54,24 +54,31 @@ public class TerrainChunk {
 
     private void GenerateHeightMapThread() {
         /*
-         * Generate the heightMap for this terrainChunk. This is doen in a thread and uses a lock
+         * Generate the heightMap for this terrainChunk, but have it done within a lock.
          */
 
-        /* Lock the thread to fully generate the heightmap */
+        /* Lock the thread until it fully generates the heightmap */
         lock(heightMapThreadLock) {
-
-            /* Populate the heightMap by going through it's resolution */
-            float[,] newHeightMap = new float[Settings.HeightmapResolution, Settings.HeightmapResolution];
-            for(int z = 0; z < Settings.HeightmapResolution; z++) {
-                for(int x = 0; x < Settings.HeightmapResolution; x++) {
-                    float xCoord = X + (float) x / (Settings.HeightmapResolution - 1);
-                    float zCoord = Z + (float) z / (Settings.HeightmapResolution - 1);
-                    newHeightMap[z, x] = Mathf.PerlinNoise(xCoord, zCoord);
-                }
-            }
-
-            heightMap = newHeightMap;
+            GenerateHeightMap();
         }
+    }
+
+    public void GenerateHeightMap() {
+        /*
+         * Generate the heightMap for this terrainChunk
+         */
+         
+        /* Populate the heightMap by going through it's resolution */
+        float[,] newHeightMap = new float[Settings.HeightmapResolution, Settings.HeightmapResolution];
+        for(int z = 0; z < Settings.HeightmapResolution; z++) {
+            for(int x = 0; x < Settings.HeightmapResolution; x++) {
+                float xCoord = X + (float) x / (Settings.HeightmapResolution - 1);
+                float zCoord = Z + (float) z / (Settings.HeightmapResolution - 1);
+                newHeightMap[z, x] = Mathf.PerlinNoise(xCoord, zCoord);
+            }
+        }
+
+        heightMap = newHeightMap;
     }
 
     public bool IsHeightmapReady() {
@@ -126,15 +133,14 @@ public class TerrainChunk {
         }
     }
 
-    public void GenerateTerrain(int x, int z) {
+
+    /* ----------- Helper Functions ------------------------------------------------------------- */
+
+    public Vector2 GetChunkCoordinates() {
         /*
-         * Generate terrain with the given settings. 
+         * Return the coordinates of this chunk. This serves as it's key in the chunk dicitionaries
          */
 
-        /* Set the coordinates of this chunk */
-        SetChunkCoordinates(x, z);
-
-        /* Generate the terrain */
-        CreateTerrain();
+        return new Vector2(X, Z);
     }
 }

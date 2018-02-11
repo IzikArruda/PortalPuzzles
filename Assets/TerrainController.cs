@@ -31,6 +31,9 @@ public class TerrainController : MonoBehaviour {
     /* All data saved on the current collection of chunks  */
     private ChunkCache cache;
 
+    /* How far the player can see in chunks */
+    public int chunkViewRange;
+
     
     /* ----------- Built-in Functions ------------------------------------------------------------- */
 
@@ -42,9 +45,11 @@ public class TerrainController : MonoBehaviour {
         /* Set the settings for each chunk */
         settings.SetSettings(chunkResolution, chunkLength, height, transform);
 
+        /* Set the current chunk position */
+        currentChunk = GetChunkPosition(position);
 
-        /* Set the current chunk different than the current position to force the terrain to update */
-        currentChunk = new Vector2(1, 1) + GetChunkPosition(position);
+        /* Force the chunkCache to update it's chunks all at once */
+        ForceCacheUpdate();
     }
     
     void Update() {
@@ -57,7 +62,7 @@ public class TerrainController : MonoBehaviour {
 
             /* Get a series of lists that represent a unique group of positions */
             List<Vector2> allChunks = cache.GetAllChunks();
-            List<Vector2> newChunks = GetVisibleChunksFromPosition(GetChunkPosition(position), 3);
+            List<Vector2> newChunks = GetVisibleChunksFromPosition(GetChunkPosition(position), chunkViewRange);
             List<Vector2> chunksToRemove = allChunks.Except(newChunks).ToList();
             List<Vector2> chunksToLoad = newChunks.Except(allChunks).ToList();
             
@@ -107,6 +112,20 @@ public class TerrainController : MonoBehaviour {
         }
     }
 
+    private void ForceCacheUpdate() {
+        /*
+         * Force the cache to update all the terrain at once. This should only ever be run on 
+         * startup as the game has not yet begun, giving it time to load everything.
+         */
+         
+        List<Vector2> newChunks = GetVisibleChunksFromPosition(GetChunkPosition(position), chunkViewRange);
+        foreach(Vector2 chunkKey in newChunks) {
+
+            /* Create the chunk and force it to load into the cache */
+            TerrainChunk newChunk = new TerrainChunk(settings, chunkKey);
+            cache.ForceLoadChunk(newChunk);
+        }
+    }
 
     /* ----------- Set-up Functions ------------------------------------------------------------- */
 

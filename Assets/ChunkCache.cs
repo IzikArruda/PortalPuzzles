@@ -55,33 +55,22 @@ public class ChunkCache {
         CreateTerrainForGeneratedChunks();
     }
 
-
-    /* ----------- Terrain Functions ------------------------------------------------------------- */
-
-    public void CreateTerrainChunk(TerrainChunkSettings settings, int x, int z) {
+    public void ForceLoadChunk(TerrainChunk newChunk) {
         /*
-         * Create a single chunk of terrain given the coordinates of the terrain
+         * Force the given chunk to be fully loaded, regardless of thread limits. This is
+         * run at startup as the game will load everything first.
          */
 
-        /* Create a new TerrainChunk and link it's settings and position */
-        TerrainChunk newChunk = new TerrainChunk(settings, x, z);
-        newChunk.GenerateTerrain(x, z);
+        /* Create the heightMap of the chunk without using a thread */
+        newChunk.GenerateHeightMap();
 
-        /* Add the chunk to the loadedChunks dictionary */
-        loadedChunks.Add(new Vector2(newChunk.X, newChunk.Z), newChunk);
+        /* Create the terrain of the chunk */
+        newChunk.CreateTerrain();
+
+        /* Add the chunk to the loadedChunks list */
+        loadedChunks.Add(newChunk.GetChunkCoordinates(), newChunk);
     }
-
-    public void CreateTerrainChunks(List<Vector2> chunks, TerrainChunkSettings settings) {
-        /*
-         * Create each chunk described by the given list
-         */
-
-        foreach(Vector2 chunk in chunks) {
-            CreateTerrainChunk(settings, (int) chunk.x, (int) chunk.y);
-        }
-    }
-
-
+    
     /* ----------- Collections Functions ------------------------------------------------------------- */
 
     private void RemoveChunks() {
