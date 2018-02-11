@@ -90,7 +90,7 @@ public class TerrainChunk {
     }
 
 
-    /* ----------- Update Functions ------------------------------------------------------------- */
+    /* ----------- Event Functions ------------------------------------------------------------- */
 
     public void SetChunkCoordinates(int x, int z) {
         /*
@@ -112,14 +112,56 @@ public class TerrainChunk {
         terrainData.alphamapResolution = Settings.AlphamapResolution;
         terrainData.SetHeights(0, 0, heightMap);
         terrainData.size = new Vector3(Settings.Length, Settings.Height, Settings.Length);
+        ApplyTextures(terrainData);
 
         /* Create the object that will contain the terrain components */
         GameObject newTerrainGameObject = Terrain.CreateTerrainGameObject(terrainData);
         newTerrainGameObject.transform.position = new Vector3(X * Settings.Length, 0, Z * Settings.Length);
         newTerrainGameObject.transform.parent = Settings.chunkContainer;
         newTerrainGameObject.transform.name = "[" + X + ", " + Z + "]";
+        
+        /*  Set the material of the terrain */
         Terrain = newTerrainGameObject.GetComponent<Terrain>();
+        Terrain.heightmapPixelError = 8;
+        Terrain.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
+        Terrain.materialType = UnityEngine.Terrain.MaterialType.Custom;
+        Terrain.materialTemplate = Settings.terrainMaterial;
         Terrain.Flush();
+    }
+
+    private void ApplyTextures(TerrainData data) {
+        /*
+         * Apply texture to the terrain data depending on the shape of the terrain.
+         * For now, use splatmapping to texture the terrain based on the steepness.
+         */
+        SplatPrototype flatSplat = new SplatPrototype();
+        SplatPrototype steepSplat = new SplatPrototype();
+        flatSplat.texture = Settings.flatTexture;
+        steepSplat.texture = Settings.steepTexture;
+
+        /* Create an array of splat prototypes used by the terrain */
+        terrainData.splatPrototypes = new SplatPrototype[] {
+            flatSplat,
+            steepSplat
+        };
+        terrainData.RefreshPrototypes();
+
+        /* Set the splatmap to switch textures as the terrain's steepness grows */
+        float steepnessStretch = 1.5f;
+        float normX, normZ, steepness, normSteepness;
+        float[,,] splatMap = new float[data.alphamapResolution, data.alphamapResolution, 2];
+        for(int z = 0; z < data.alphamapHeight; z++) {
+            for(int x = 0; x < data.alphamapWidth; x++) {
+                normX = (float) x / (terrainData.alphamapWidth - 1);
+                normZ = (float) z / (terrainData.alphamapHeight - 1);
+                steepness = terrainData.GetSteepness(normX, normZ);
+                normSteepness = Mathf.Clamp(steepness/steepnessStretch, 0f, 1f);
+
+                splatMap[z, x, 0] = 1f - normSteepness;
+                splatMap[z, x, 1] = normSteepness;
+            }
+        }
+        terrainData.SetAlphamaps(0, 0, splatMap);
     }
 
     public void Remove() {

@@ -6,6 +6,8 @@ using System.Linq;
 /*
  * Used to control the creation of terrain using the TerrainChunk script.
  * Attach this to an empty object to turn it into a container for perlin noise generated terrain.
+ * 
+ * http://code-phi.com/infinite-terrain-generation-in-unity-3d/ was used as a tutorial to this terrain generation
  */
 public class TerrainController : MonoBehaviour {
     
@@ -34,7 +36,14 @@ public class TerrainController : MonoBehaviour {
     /* How far the player can see in chunks */
     public int chunkViewRange;
 
-    
+    /* The material used by the terrain */
+    public Material terrainMaterial;
+
+    /* The textures of the terrain */
+    public Texture2D flatTexture;
+    public Texture2D steepTexture;
+
+
     /* ----------- Built-in Functions ------------------------------------------------------------- */
 
     void Start() {
@@ -43,7 +52,7 @@ public class TerrainController : MonoBehaviour {
         InitializeVariables();
 
         /* Set the settings for each chunk */
-        settings.SetSettings(chunkResolution, chunkLength, height, transform);
+        settings.SetSettings(chunkResolution, chunkLength, height, transform, terrainMaterial, flatTexture, steepTexture);
 
         /* Set the current chunk position */
         currentChunk = GetChunkPosition(position);
