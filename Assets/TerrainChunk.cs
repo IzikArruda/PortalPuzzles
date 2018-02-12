@@ -16,27 +16,32 @@ public class TerrainChunk {
     /* Use this lock to indicate whether this object is creating it's heightmap */
     private object heightMapThreadLock;
 
+    /* Use this to find the height of the terrain */
+    private NoiseProvider noiseProvider;
+
 
     /* ----------- Constructor Functions ------------------------------------------------------------- */
 
-    public TerrainChunk(TerrainChunkSettings settings, Vector2 key) {
+    public TerrainChunk(TerrainChunkSettings settings, NoiseProvider noise, Vector2 key) {
         /*
          * Create a new terrainChunk with the given parameters
          */
 
         heightMapThreadLock = new object();
         Settings = settings;
+        noiseProvider = noise;
         X = (int) key.x;
         Z = (int) key.y;
     }
 
-    public TerrainChunk(TerrainChunkSettings settings, int x, int z) {
+    public TerrainChunk(TerrainChunkSettings settings, NoiseProvider noise, int x, int z) {
         /*
          * Create a new terrainChunk with the given parameters
          */
 
         heightMapThreadLock = new object();
         Settings = settings;
+        noiseProvider = noise;
         X = x;
         Z = z;
     }
@@ -74,7 +79,8 @@ public class TerrainChunk {
             for(int x = 0; x < Settings.HeightmapResolution; x++) {
                 float xCoord = X + (float) x / (Settings.HeightmapResolution - 1);
                 float zCoord = Z + (float) z / (Settings.HeightmapResolution - 1);
-                newHeightMap[z, x] = Mathf.PerlinNoise(xCoord, zCoord);
+                
+                newHeightMap[z, x] = noiseProvider.GetNoise(xCoord, zCoord);
             }
         }
 

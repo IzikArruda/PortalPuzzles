@@ -43,6 +43,9 @@ public class TerrainController : MonoBehaviour {
     public Texture2D flatTexture;
     public Texture2D steepTexture;
 
+    /* Calculates the noise for the chunks */
+    private NoiseProvider noiseProvider;
+
 
     /* ----------- Built-in Functions ------------------------------------------------------------- */
 
@@ -57,6 +60,9 @@ public class TerrainController : MonoBehaviour {
         /* Set the current chunk position */
         currentChunk = GetChunkPosition(focusPoint.position);
 
+        /* Create the noiseProvider that will be used by all chunks */
+        noiseProvider = new NoiseProvider();
+
         /* Force the chunkCache to update it's chunks all at once */
         ForceCacheUpdate();
     }
@@ -65,8 +71,8 @@ public class TerrainController : MonoBehaviour {
         /*
          * Check whenever the position changes into a new chunk, updating the terrain when required.
          */
-
-        /* Get the position the chunks will surround */
+         
+        /* Get the chunk that the position currently resides in */
         Vector2 newChunk = GetChunkPosition(focusPoint.position);
 
         if(newChunk.x != currentChunk.x || newChunk.y != currentChunk.y) {
@@ -117,7 +123,7 @@ public class TerrainController : MonoBehaviour {
 
             /* Check if the given chunk can be added to the collection */
             if(cache.CanAddChunk(key)) {
-                TerrainChunk newChunk = new TerrainChunk(settings, key);
+                TerrainChunk newChunk = new TerrainChunk(settings, noiseProvider, key);
                 cache.chunksToBeGenerated.Add(key, newChunk);
             }
         }
@@ -133,7 +139,7 @@ public class TerrainController : MonoBehaviour {
         foreach(Vector2 chunkKey in newChunks) {
 
             /* Create the chunk and force it to load into the cache */
-            TerrainChunk newChunk = new TerrainChunk(settings, chunkKey);
+            TerrainChunk newChunk = new TerrainChunk(settings, noiseProvider, chunkKey);
             cache.ForceLoadChunk(newChunk);
         }
     }
