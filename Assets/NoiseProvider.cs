@@ -2,35 +2,41 @@
 using System.Collections;
 
 /*
- * Generate random noise given an X and Z coordinate. For now, simply parse the built-in PerlinNoise function.
+ * Generate random noise given an X and Z coordinate. Uses a frequency and octave to add detail to the
+ * built-in perlin noise generator.
  */
 public class NoiseProvider {
-    
-    public NoiseProvider() {
-        /*
-         * Upon creation, create a texture of noise for debugging purposes
-         */
 
+    private float frequency;
+    private int octave;
+    
+    public NoiseProvider(float freq, int oct) {
+        /*
+         * Set the frequency and octave of the noise when this object is created
+         */
+        frequency = freq;
+        octave = oct;
+
+        //Create a texture to show what the noise looks like
         //CreateTextureOfNoise();
     }
 
     public float GetNoise(float x, float z) {
         /*
          * Given an X and Z coordinate, return the value of the noise function given the coordinates
+         * Requires a frequency that zooms out the noise and an octave that adds detail at lower levels      
          */
-        //Assume the frequency and octave
-        float frequency = 1;
-        int octave = 4;
-        float noiseSum = RawNoise(x, z, frequency);
+        float tempFreq = frequency;
+        float noiseSum = RawNoise(x, z, tempFreq);
 
         /* For every octave, add to the noise and increase the range respectively */
         float amplitude = 1;
         float range = 1;
         for(int i = 1; i < octave; i++) {
-            frequency *= 2;
+            tempFreq *= 2;
             amplitude *= 0.5f;
             range += amplitude;
-            noiseSum += RawNoise(x, z, frequency)*amplitude;
+            noiseSum += RawNoise(x, z, tempFreq)*amplitude;
         }
         
         return noiseSum / range;

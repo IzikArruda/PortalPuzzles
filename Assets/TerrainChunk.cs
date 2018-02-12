@@ -153,7 +153,7 @@ public class TerrainChunk {
         terrainData.RefreshPrototypes();
 
         /* Set the splatmap to switch textures as the terrain's steepness grows */
-        float steepnessStretch = 1.5f;
+        float steepnessStretch = 2;
         float normX, normZ, steepness, normSteepness;
         float[,,] splatMap = new float[data.alphamapResolution, data.alphamapResolution, 2];
         for(int z = 0; z < data.alphamapHeight; z++) {
@@ -161,7 +161,7 @@ public class TerrainChunk {
                 normX = (float) x / (terrainData.alphamapWidth - 1);
                 normZ = (float) z / (terrainData.alphamapHeight - 1);
                 steepness = terrainData.GetSteepness(normX, normZ);
-                normSteepness = Mathf.Clamp(steepness/steepnessStretch, 0f, 1f);
+                normSteepness = Mathf.Clamp((steepness/90f)/steepnessStretch, 0f, 1f);
 
                 splatMap[z, x, 0] = 1f - normSteepness;
                 splatMap[z, x, 1] = normSteepness;
