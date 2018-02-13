@@ -256,6 +256,10 @@ public class CustomPlayerController : MonoBehaviour {
         if(inputs.rKeyPressed) {
             StartPlayerReset();
         }
+        /* If the player presses v, force them into the 90 degrees rotation */
+        if(Input.GetKeyDown("v")) {
+            transform.eulerAngles = new Vector3(90, 0, 0);
+        }
 
         /* Update and animated the resetTimer if the player wants to reset */
         if(currentResetTime > -1) {

@@ -58,6 +58,7 @@ public class PlayerSounds : MonoBehaviour {
     public AudioClip[] landingClips;
     public AudioClip[] musicClipsMuted;
     public AudioClip[] musicClipsUpgraded;
+    public AudioClip startingMusic;
 	public AudioClip hardLandingClip;
 	//fastfall audio : bus and jet engine?
 	public AudioClip fallingClip;
@@ -133,6 +134,10 @@ public class PlayerSounds : MonoBehaviour {
 
         /* Set the volume for the audio mixer */
         ResetAudioMixerVolume();
+
+        /* Start playing the starting music */
+        musicSourceMuted.clip = startingMusic;
+        musicSourceMuted.Play();
     }
 
     void Update(){

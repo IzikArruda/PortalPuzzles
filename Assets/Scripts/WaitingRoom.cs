@@ -361,6 +361,7 @@ public class WaitingRoom : ConnectedRoom {
         roomTrigger.enabled = false;
         windowContainer.gameObject.SetActive(false);
         roomObjectsContainer.gameObject.SetActive(false);
+        skySphere.gameObject.SetActive(false);
         entranceRoom.DisablePuzzleRoom();
         exitRoom.DisablePuzzleRoom();
         entranceRoom.DisableRoom();
@@ -376,6 +377,7 @@ public class WaitingRoom : ConnectedRoom {
         roomTrigger.enabled = true;
         windowContainer.gameObject.SetActive(true);
         roomObjectsContainer.gameObject.SetActive(true);
+        skySphere.gameObject.SetActive(true);
         entranceRoom.EnablePuzzleRoom();
         exitRoom.EnablePuzzleRoom();
         entranceRoom.EnableRoom();
