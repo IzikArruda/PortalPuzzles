@@ -14,6 +14,10 @@ public class NoiseProvider {
     private float frequency;
     private int octave;
 
+    private float pathWidth = 0.1f;
+    private float pathMeldWidth = 0.3f;
+    private float centerOffset = 0f;
+    private float pathHeight = 0.25f;
 
     /* ----------- Constructor Functions ------------------------------------------------------------- */
 
@@ -67,9 +71,6 @@ public class NoiseProvider {
          * PathMeldWidth gives how much space it takes for the path to go from 1 to 0.
          */
         float ratioValue = 0;
-        float pathWidth = 0.25f;
-        float pathMeldWidth = 0.1f;
-        float centerOffset = 0f;
         
         if(x < centerOffset - pathWidth - pathMeldWidth || x > centerOffset + pathWidth + pathMeldWidth) {
             /* The given position is on the outside of the path*/
@@ -97,12 +98,18 @@ public class NoiseProvider {
     public float GetPathNoise(float x, float z, ref float ratioUsed) {
         /*
          * Get the noise value of the path map at the given coordinates.
-         * For now, the path's value is simply 1 all over.
+         * The path's heigh takes into account the two heights on the edges of the path on the X axis.
          */
         float noiseValue = 0;
 
-        /* The path's noise height is completely flat at the highest point */
-        noiseValue = 1;
+        /* Get the average hieght of the two sides of the path */
+        float negativeHeight = DefaultGetNoise(centerOffset - pathWidth - pathMeldWidth, z);
+        float positiveHeight = DefaultGetNoise(centerOffset - pathWidth - pathMeldWidth, z);
+        float averageHeight = (negativeHeight + positiveHeight)/2f;
+
+        /* Make the noise value a portion of the path's height and a portion of the average ground height */
+        float pathHeightRatio = 0.65f;
+        noiseValue =  averageHeight*(1 - pathHeightRatio) + pathHeight*pathHeightRatio;
 
         return noiseValue;
     }
@@ -147,7 +154,7 @@ public class NoiseProvider {
          * Return the raw value of the perlin noise at the given coordinates
          */
 
-        return Mathf.PerlinNoise(frequency*x, frequency*z);
+        return Mathf.PerlinNoise(1000 + frequency*x, 1000 + frequency*z);
     }
 
     
