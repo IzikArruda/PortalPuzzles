@@ -15,7 +15,7 @@ public class NoiseProvider {
     private int octave;
 
     private float pathWidth = 0.1f;
-    private float pathMeldWidth = 0.3f;
+    private float pathMeldWidth = 0.65f;
     private float centerOffset = 0f;
     private float pathHeight = 0.25f;
 
@@ -49,7 +49,7 @@ public class NoiseProvider {
         usedNoiseRatio = GetPathRatio(x);
         if(usedNoiseRatio > 0) {
             /* Get the path's noise value and apply it to the noiseSum */
-            noiseValue = GetPathNoise(x, z, ref usedNoiseRatio);
+            noiseValue = GetPathNoise(x, z);
             noiseSum += noiseValue*usedNoiseRatio;
             remainingNoiseRatio -= usedNoiseRatio;
         }
@@ -69,8 +69,11 @@ public class NoiseProvider {
          * 
          * PathWidth gives how wide the full path is, ie the white/1 part of the map.
          * PathMeldWidth gives how much space it takes for the path to go from 1 to 0.
+         * 
+         * 1 is the shown value, but the value that is actually used in practice is maxRatioValue.
          */
         float ratioValue = 0;
+        float maxRatioValue = 0.85f;
         
         if(x < centerOffset - pathWidth - pathMeldWidth || x > centerOffset + pathWidth + pathMeldWidth) {
             /* The given position is on the outside of the path*/
@@ -80,47 +83,32 @@ public class NoiseProvider {
         else if(x < centerOffset - pathWidth || x > centerOffset + pathWidth) {
             /* The given position is on the [0, 1] part of the path */
             if(x < centerOffset) {
-                ratioValue = 1 - (-(x + centerOffset + pathWidth)/pathMeldWidth);
+                ratioValue = maxRatioValue*(1 - (-(x + centerOffset + pathWidth)/pathMeldWidth));
             }
             else {
-                ratioValue = 1 - ((x - centerOffset - pathWidth)/pathMeldWidth);
+                ratioValue = maxRatioValue*(1 - ((x - centerOffset - pathWidth)/pathMeldWidth));
             }
         }
 
         else {
             /* The given position is directly on the path */
-            ratioValue = 1;
+            ratioValue = maxRatioValue;
         }
 
         return ratioValue;
     }
     
-    public float GetPathNoise(float x, float z, ref float ratioUsed) {
-        /*
-         * Get the noise value of the path map at the given coordinates.
-         * The path's heigh takes into account the two heights on the edges of the path on the X axis.
-         */
-        float noiseValue = 0;
-
-        /* Get the average hieght of the two sides of the path */
-        float negativeHeight = DefaultGetNoise(centerOffset - pathWidth - pathMeldWidth, z);
-        float positiveHeight = DefaultGetNoise(centerOffset - pathWidth - pathMeldWidth, z);
-        float averageHeight = (negativeHeight + positiveHeight)/2f;
-
-        /* Make the noise value a portion of the path's height and a portion of the average ground height */
-        float pathHeightRatio = 0.65f;
-        noiseValue =  averageHeight*(1 - pathHeightRatio) + pathHeight*pathHeightRatio;
-
-        return noiseValue;
-    }
-
     public float GetPathNoise(float x, float z) {
         /*
-         * Return the noise value of the path map at the given position.
-         * The heightMap of the path is 0.2f at every point
+         * Get the noise value of the path map at the given coordinates. The path's noise height value 
+         * will always be 1 as the main way to control the path is using the path's ratio map.
          */
+        float noiseValue = 0;
+        
+        /* The path's noise height value will always be a set value */
+        noiseValue = 0.25f;
 
-        return 0.2f;
+        return noiseValue;
     }
 
 
