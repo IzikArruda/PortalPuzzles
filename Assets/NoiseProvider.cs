@@ -29,7 +29,7 @@ public class NoiseProvider {
         octave = oct;
 
         //Create a texture to show what the noise looks like
-        //CreateTextureOfNoise();
+        CreateTextureOfNoise();
     }
     
 
@@ -113,7 +113,7 @@ public class NoiseProvider {
 
 
 
-
+    
     public float DefaultGetNoise(float x, float z) {
         /*
          * Given an X and Z coordinate, return the value of the noise function given the coordinates
@@ -134,9 +134,7 @@ public class NoiseProvider {
         
         return noiseSum / range;
     }
-
-
-
+    
     public float RawNoise(float x, float z, float frequency) {
         /*
          * Return the raw value of the perlin noise at the given coordinates
@@ -144,6 +142,32 @@ public class NoiseProvider {
 
         return Mathf.PerlinNoise(1000 + frequency*x, 1000 + frequency*z);
     }
+
+
+
+    public float GetBiomeRatio(float x, float z) {
+        /*
+         * The ratio map that determines the biome. The ranges for each biome are given in the biomeRange float.
+         * The biomes used are: Water, Plains, Hills, Moutains, High Moutains.
+         */
+        float biomeFrequency = 8f;
+        /* The sizes of each biome. It should have a sum of 1 */
+        float[] biomeRange = new float[] { 0.1f, 0.25f, 0.3f, 0.25f, 0.1f };
+        float noiseValue = RawNoise(x, z, biomeFrequency);
+
+        /* Ensure the noise value is subjugated into a biome */
+        float currentBiomeRange = 0;
+        for(int i = 0; i < biomeRange.Length; i++) {
+            currentBiomeRange += biomeRange[i];
+            if(noiseValue < currentBiomeRange) {
+                noiseValue = currentBiomeRange;
+                i = biomeRange.Length;
+            }
+        }
+
+        return noiseValue;
+    }
+
 
     
     public void CreateTextureOfNoise() {
@@ -164,7 +188,7 @@ public class NoiseProvider {
             for(int x = 0; x < texRes; x++) {
                 float xCoord = (float) x / texRes;
                 float yCoord = (float) y / texRes;
-                texture.SetPixel(x, y, Color.white * GetNoise(xCoord, yCoord));
+                texture.SetPixel(x, y, Color.white * GetBiomeRatio(xCoord, yCoord));
             }
         }
         texture.Apply();
