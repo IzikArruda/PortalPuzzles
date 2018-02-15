@@ -21,6 +21,8 @@ public class NoiseProvider {
 
     /* The sizes of each biome. It should have a sum of 1. */
     private float[] biomeRange = new float[] { 0.1f, 0.25f, 0.3f, 0.25f, 0.1f };
+    //private float[] biomeRange = new float[] { 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f };
+    //private float[] biomeRange = new float[] { 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f };
 
     /* Each type of biome used. The order of the biomeRange and this enum is important */
     private enum biomeType {
@@ -31,10 +33,12 @@ public class NoiseProvider {
         HighMoutains = 4
     }
 
-    /* How quickly a biome blends into another */
+    /* How quickly a biome blends into another. Cannot be larger than the smallest range */
     private float blendSize = 0.05f;
 
 
+    private bool test = true;
+    
     /* ----------- Constructor Functions ------------------------------------------------------------- */
 
     public NoiseProvider(float freq, int oct) {
@@ -44,8 +48,77 @@ public class NoiseProvider {
         frequency = freq;
         octave = oct;
 
+        /* Update the biomeRange values to reflect the blendSize */
+        for(int i = 0; i < biomeRange.Length; i++) {
+
+        }
+
         //Create a texture to show what the noise looks like
         CreateTextureOfNoise();
+    }
+
+
+    /* ----------- Main Noise Functions ------------------------------------------------------------- */
+
+    public float GetNoise(float x, float z) {
+        /*
+         * Given a coordinate of X and Z, return the value of the noise function.
+         * The function used to obtain the noise value depends on other mappings.
+         */
+        float noiseSum = 0;
+        float noiseValue;
+        float remainingNoiseRatio = 1;
+        float usedNoiseRatio = 0;
+
+        /* Extract the path's ratio value */
+        usedNoiseRatio = GetPathRatio(x);
+        //if(usedNoiseRatio > 0) {
+        /* Get the path's noise value and apply it to the noiseSum */
+        //    noiseValue = GetPathNoise(x, z);
+        //    noiseSum += noiseValue*usedNoiseRatio;
+        //    remainingNoiseRatio -= usedNoiseRatio;
+        //}
+
+        /* With what remains of the noiseRatio, use it on the default noise map */
+        //if(remainingNoiseRatio > 0) {
+        //    noiseSum += DefaultGetNoise(x, z)*remainingNoiseRatio;
+        //}
+        
+
+
+
+
+
+
+
+
+
+        /* Get the noise ratio for each biome */
+        float currentBiomeRatio = 0;
+        float totalRatio = 0;
+        noiseSum = 0;
+        for(int i = 0; i < biomeRange.Length; i++) {
+            currentBiomeRatio = GetBiomeRatio(i, x, z);
+            totalRatio += currentBiomeRatio;
+
+            /* This biome gets used, so add it's noise height to the current noise sum */
+            if(currentBiomeRatio > 0) {
+                noiseValue = GetBiomeNoise(i, x, z);
+                noiseSum += noiseValue*currentBiomeRatio;
+            }
+        }
+        
+
+        /* Set the noise to 1 if the tallied sum of the biomes ratios do not collectively reach 1 */
+        if(totalRatio < 0.9999f || totalRatio > 1.000001f) {
+            noiseSum = 1f;
+            Debug.Log(totalRatio);
+        }
+        else {
+            noiseSum = 0f;
+        }
+
+        return noiseSum;
     }
 
 
@@ -108,71 +181,68 @@ public class NoiseProvider {
          * Get the value of the biome ratio map. Each biome type uses the same map, but the
          * range of said map is determined by the given biomeType.
          */
-
-        /* Determine which biome is used to properly set it's stats */
-        float rangeOffset = 0;
-        float rangeSize = biomeRange[biomeType];
+         
+        /* Get the ranges of the given biome */
+        float rangeStart = 0;
+        float rangeEnd = 0;
         for(int i = 0; i < biomeType; i++) {
-            rangeOffset += biomeRange[i];
+            rangeStart += biomeRange[i];
+        }
+        rangeEnd = rangeStart + biomeRange[biomeType];
+        
+
+        //at the start
+        if(rangeStart == 0) {
+            rangeStart -= blendSize;
+        }
+        if(rangeEnd == 1f) {
+            rangeEnd += blendSize;
         }
 
 
+
+
+        /* Given the position of X and Z, find where in the range the noise value resides */
         float biomeFrequency = 8f;
         float noiseValue = RawNoise(x, z, biomeFrequency);
         
         /* The position is not within the biome's range */
-        if(noiseValue < rangeOffset - blendSize || noiseValue > rangeOffset + rangeSize + blendSize) {
+        if(noiseValue < rangeStart - blendSize/2f || noiseValue > rangeEnd + blendSize/2f) {
             noiseValue = 0;
         }
 
         /* The position is on the lower blend range */
-        else if(noiseValue < rangeOffset) {
-            noiseValue = ((noiseValue - (rangeOffset - blendSize))/blendSize);
+        else if(noiseValue < rangeStart + blendSize/2f) {
+            noiseValue = ((noiseValue - (rangeStart - blendSize/2f))/blendSize);
         }
 
         /* The position is on the higher blend range */
-        else if(noiseValue > rangeOffset + rangeSize) {
-            noiseValue = 1 - ((noiseValue - (rangeOffset + rangeSize))/blendSize);
+        else if(noiseValue > rangeEnd - blendSize/2f) {
+            noiseValue = 1 - ((noiseValue - (rangeEnd - blendSize/2f))/blendSize);
         }
 
         /* The position is within the flat range */
         else {
             noiseValue = 1;
         }
-
+        
         return noiseValue;
     }
     
+    public float GetBiomeNoise(int biomeType, float x, float z) {
+        /*
+         * Get the noise value/height of the given position of the given biome type.
+         */
+        float noiseValue;
+
+        //For now, have each biome use a set single value for any position
+        noiseValue = ((float) biomeType / (biomeRange.Length-1));
+
+        return noiseValue;
+    }
 
     /* ----------- Noise Functions ------------------------------------------------------------- */
 
-    public float GetNoise(float x, float z) {
-        /*
-         * Given a coordinate of X and Z, return the value of the noise function.
-         * The function used to obtain the noise value depends on other mappings
-         */
-        float noiseSum = 0;
-        float noiseValue;
-        float remainingNoiseRatio = 1;
-        float usedNoiseRatio = 0;
-        
-        /* Extract the path's ratio value */
-        usedNoiseRatio = GetPathRatio(x);
-        if(usedNoiseRatio > 0) {
-            /* Get the path's noise value and apply it to the noiseSum */
-            noiseValue = GetPathNoise(x, z);
-            noiseSum += noiseValue*usedNoiseRatio;
-            remainingNoiseRatio -= usedNoiseRatio;
-        }
-        
-        /* With what remains of the noiseRatio, use it on the default noise map */
-        if(remainingNoiseRatio > 0) {
-            noiseSum += DefaultGetNoise(x, z)*remainingNoiseRatio;
-        }
-        
-        return noiseSum;
-    }
-    
     public float DefaultGetNoise(float x, float z) {
         /*
          * Given an X and Z coordinate, return the value of the noise function given the coordinates
@@ -223,7 +293,7 @@ public class NoiseProvider {
             for(int x = 0; x < texRes; x++) {
                 float xCoord = (float) x / texRes;
                 float yCoord = (float) y / texRes;
-                texture.SetPixel(x, y, Color.white * GetBiomeRatio(0, xCoord, yCoord));
+                texture.SetPixel(x, y, Color.white * GetNoise(xCoord, yCoord));
             }
         }
         texture.Apply();
