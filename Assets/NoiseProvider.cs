@@ -150,25 +150,39 @@ public class NoiseProvider {
          * The ratio map that determines the biome. The ranges for each biome are given in the biomeRange float.
          * The biomes used are: Water, Plains, Hills, Moutains, High Moutains.
          */
-        float biomeFrequency = 8f;
+
         /* The sizes of each biome. It should have a sum of 1 */
         float[] biomeRange = new float[] { 0.1f, 0.25f, 0.3f, 0.25f, 0.1f };
-        float noiseValue = RawNoise(x, z, biomeFrequency);
+
+        /* How large the biomes are */
+        float biomeFrequency = 8f;
+
+        /* How quickly a biome blends into another */
+        float biomeSepperateValue = 0.025f;
+        
 
         /* Ensure the noise value is subjugated into a biome */
+        float noiseValue = RawNoise(x, z, biomeFrequency);
         float currentBiomeRange = 0;
         for(int i = 0; i < biomeRange.Length; i++) {
             currentBiomeRange += biomeRange[i];
-            if(noiseValue < currentBiomeRange) {
-                noiseValue = currentBiomeRange;
+
+            /* The noise is dead center of the biome */
+            if(noiseValue < currentBiomeRange - biomeSepperateValue) {
+                noiseValue = biomeIndividualValue*i;
+                i = biomeRange.Length;
+            }
+
+            /* The noise is blending between two biomes */
+            else if(noiseValue < currentBiomeRange + biomeSepperateValue) {
+                float noiseRange = ((noiseValue - (currentBiomeRange - biomeSepperateValue))/(biomeSepperateValue*2));
+                noiseValue = biomeIndividualValue*i + biomeIndividualValue*noiseRange;
                 i = biomeRange.Length;
             }
         }
 
         return noiseValue;
     }
-
-
     
     public void CreateTextureOfNoise() {
         /*
