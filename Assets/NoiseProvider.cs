@@ -21,11 +21,9 @@ public class NoiseProvider {
 
     /* The sizes of each biome. It should have a sum of 1. */
     private float[] biomeRange = new float[] { 0.1f, 0.25f, 0.3f, 0.25f, 0.1f };
-    //private float[] biomeRange = new float[] { 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f };
-    //private float[] biomeRange = new float[] { 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f };
 
     /* Each type of biome used. The order of the biomeRange and this enum is important */
-    private enum biomeType {
+    private enum biomeTypes {
         Water = 0,
         Plains = 1,
         Hills = 2,
@@ -34,11 +32,12 @@ public class NoiseProvider {
     }
 
     /* How quickly a biome blends into another. Cannot be larger than the smallest range */
-    private float blendSize = 0.05f;
+    private float blendSize = 0.075f;
+
+    /* Controls the size of biomes */
+    private float biomeFrequency = 1f;
 
 
-    private bool test = true;
-    
     /* ----------- Constructor Functions ------------------------------------------------------------- */
 
     public NoiseProvider(float freq, int oct) {
@@ -67,32 +66,7 @@ public class NoiseProvider {
          */
         float noiseSum = 0;
         float noiseValue;
-        float remainingNoiseRatio = 1;
-        float usedNoiseRatio = 0;
-
-        /* Extract the path's ratio value */
-        usedNoiseRatio = GetPathRatio(x);
-        //if(usedNoiseRatio > 0) {
-        /* Get the path's noise value and apply it to the noiseSum */
-        //    noiseValue = GetPathNoise(x, z);
-        //    noiseSum += noiseValue*usedNoiseRatio;
-        //    remainingNoiseRatio -= usedNoiseRatio;
-        //}
-
-        /* With what remains of the noiseRatio, use it on the default noise map */
-        //if(remainingNoiseRatio > 0) {
-        //    noiseSum += DefaultGetNoise(x, z)*remainingNoiseRatio;
-        //}
         
-
-
-
-
-
-
-
-
-
         /* Get the noise ratio for each biome */
         float currentBiomeRatio = 0;
         float totalRatio = 0;
@@ -108,16 +82,6 @@ public class NoiseProvider {
             }
         }
         
-
-        /* Set the noise to 1 if the tallied sum of the biomes ratios do not collectively reach 1 */
-        if(totalRatio < 0.9999f || totalRatio > 1.000001f) {
-            noiseSum = 1f;
-            Debug.Log(totalRatio);
-        }
-        else {
-            noiseSum = 0f;
-        }
-
         return noiseSum;
     }
 
@@ -190,8 +154,7 @@ public class NoiseProvider {
         }
         rangeEnd = rangeStart + biomeRange[biomeType];
         
-
-        //at the start
+        /* If the calculated ranges reach the end of the noise's range [0, 1], extend them so they do not blend */
         if(rangeStart == 0) {
             rangeStart -= blendSize;
         }
@@ -199,11 +162,7 @@ public class NoiseProvider {
             rangeEnd += blendSize;
         }
 
-
-
-
         /* Given the position of X and Z, find where in the range the noise value resides */
-        float biomeFrequency = 8f;
         float noiseValue = RawNoise(x, z, biomeFrequency);
         
         /* The position is not within the biome's range */
@@ -234,9 +193,57 @@ public class NoiseProvider {
          * Get the noise value/height of the given position of the given biome type.
          */
         float noiseValue;
+        float maxRange = 0;
+        float minRange = 0;
 
         //For now, have each biome use a set single value for any position
         noiseValue = ((float) biomeType / (biomeRange.Length-1));
+
+
+
+        /* The Water biome is deep and flat */
+        if(biomeType == (int) biomeTypes.Water) {
+            maxRange = 0;
+            minRange = 0;
+            noiseValue = 0;
+        }
+
+        /* The plains biome is more zoomed in than the other biomes */
+        else if(biomeType == (int) biomeTypes.Plains) {
+            maxRange = 0.55f;
+            minRange = 0.15f;
+            x = x/3f;
+            z = z/3f;
+
+            noiseValue = DefaultGetNoise(x, z);
+        }
+
+        else if(biomeType == (int) biomeTypes.Hills) {
+            maxRange = 0.6f;
+            minRange = 0.10f;
+            noiseValue = DefaultGetNoise(x, z);
+        }
+
+        /* The moutain biomes are more zoomed out to be more sharp */
+        else if(biomeType == (int) biomeTypes.Moutains) {
+            maxRange = 0.80f;
+            minRange = 0.2f;
+            x = x*3f;
+            z = z*3f;
+
+            noiseValue = DefaultGetNoise(x, z);
+        }
+
+        else if(biomeType == (int) biomeTypes.HighMoutains) {
+            maxRange = 1.00f;
+            minRange = 1.00f;
+            noiseValue = DefaultGetNoise(x, z);
+        }
+
+        /* Force the noise value to be within the given range */
+        noiseValue = noiseValue*(maxRange-minRange) + minRange;
+
+
 
         return noiseValue;
     }
@@ -272,7 +279,7 @@ public class NoiseProvider {
         
         /* For some reason, PerlinNoise can return values above 1 and bellow 0. Clamp the values. */
         noiseValue = Mathf.Clamp(noiseValue, 0, 1);
-
+        
         return noiseValue;
     }
 
