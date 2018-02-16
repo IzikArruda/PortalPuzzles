@@ -77,8 +77,9 @@ public class TerrainChunk {
         float[,] newHeightMap = new float[Settings.HeightmapResolution, Settings.HeightmapResolution];
         for(int z = 0; z < Settings.HeightmapResolution; z++) {
             for(int x = 0; x < Settings.HeightmapResolution; x++) {
-                float xCoord = X + (float) x / (Settings.HeightmapResolution - 1);
-                float zCoord = Z + (float) z / (Settings.HeightmapResolution - 1);
+                float lengthModifier = Settings.Length/1000f;
+                float xCoord = lengthModifier*(X + (float) x / (Settings.HeightmapResolution - 1));
+                float zCoord = lengthModifier*(Z + (float) z / (Settings.HeightmapResolution - 1));
                 
                 newHeightMap[z, x] = noiseProvider.GetNoise(xCoord, zCoord);
             }

@@ -20,7 +20,7 @@ public class NoiseProvider {
     private float pathHeight = 0.25f;
 
     /* The sizes of each biome. It should have a sum of 1. */
-    private float[] biomeRange = new float[] { 0.1f, 0.25f, 0.3f, 0.25f, 0.1f };
+    private float[] biomeRange = new float[] { 0.10f, 0.25f, 0.3f, 0.25f, 0.10f };
 
     /* Each type of biome used. The order of the biomeRange and this enum is important */
     private enum biomeTypes {
@@ -32,10 +32,10 @@ public class NoiseProvider {
     }
 
     /* How quickly a biome blends into another. Cannot be larger than the smallest range */
-    private float blendSize = 0.075f;
+    private float blendSize = 0.10f;
 
     /* Controls the size of biomes */
-    private float biomeFrequency = 1f;
+    private float biomeFrequency = 0.1f;
 
 
     /* ----------- Constructor Functions ------------------------------------------------------------- */
@@ -210,7 +210,7 @@ public class NoiseProvider {
 
         /* The plains biome is more zoomed in than the other biomes */
         else if(biomeType == (int) biomeTypes.Plains) {
-            maxRange = 0.55f;
+            maxRange = 0.50f;
             minRange = 0.15f;
             x = x/3f;
             z = z/3f;
@@ -219,15 +219,15 @@ public class NoiseProvider {
         }
 
         else if(biomeType == (int) biomeTypes.Hills) {
-            maxRange = 0.6f;
-            minRange = 0.10f;
+            maxRange = 0.60f;
+            minRange = 0.25f;
             noiseValue = DefaultGetNoise(x, z);
         }
 
         /* The moutain biomes are more zoomed out to be more sharp */
         else if(biomeType == (int) biomeTypes.Moutains) {
             maxRange = 0.80f;
-            minRange = 0.2f;
+            minRange = 0.45f;
             x = x*3f;
             z = z*3f;
 
@@ -235,16 +235,14 @@ public class NoiseProvider {
         }
 
         else if(biomeType == (int) biomeTypes.HighMoutains) {
-            maxRange = 1.00f;
-            minRange = 1.00f;
+            maxRange = 0.90f;
+            minRange = 0.70f;
             noiseValue = DefaultGetNoise(x, z);
         }
 
         /* Force the noise value to be within the given range */
         noiseValue = noiseValue*(maxRange-minRange) + minRange;
-
-
-
+        
         return noiseValue;
     }
 
