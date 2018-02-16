@@ -268,8 +268,12 @@ public class NoiseProvider {
         /*
          * Return the raw value of the perlin noise at the given coordinates
          */
+        float noiseValue = Mathf.PerlinNoise(1000 + frequency*x, 1000 + frequency*z);
+        
+        /* For some reason, PerlinNoise can return values above 1 and bellow 0. Clamp the values. */
+        noiseValue = Mathf.Clamp(noiseValue, 0, 1);
 
-        return Mathf.PerlinNoise(1000 + frequency*x, 1000 + frequency*z);
+        return noiseValue;
     }
 
 
