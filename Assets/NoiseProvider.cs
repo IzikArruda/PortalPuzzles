@@ -19,6 +19,9 @@ public class NoiseProvider {
     private float centerOffset = 0f;
     private float pathHeight = 0.25f;
 
+    /* The maximum height of the terrain given by the TerrainController */
+    private float maxTerrainHeight;
+
     /* The sizes of each biome. It should have a sum of 1. */
     private float[] biomeRange = new float[] { 0.10f, 0.25f, 0.3f, 0.25f, 0.10f };
 
@@ -40,17 +43,14 @@ public class NoiseProvider {
 
     /* ----------- Constructor Functions ------------------------------------------------------------- */
 
-    public NoiseProvider(float freq, int oct) {
+    public NoiseProvider(float freq, int oct, float maxHeight) {
         /*
          * Set the frequency and octave of the noise when this object is created
          */
         frequency = freq;
         octave = oct;
+        maxTerrainHeight = maxHeight;
 
-        /* Update the biomeRange values to reflect the blendSize */
-        for(int i = 0; i < biomeRange.Length; i++) {
-
-        }
 
         //Create a texture to show what the noise looks like
         CreateTextureOfNoise();
@@ -192,20 +192,22 @@ public class NoiseProvider {
         /*
          * Get the noise value/height of the given position of the given biome type.
          */
-        float noiseValue;
+        float noiseValue = 0;
         float maxRange = 0;
         float minRange = 0;
-
-        //For now, have each biome use a set single value for any position
-        noiseValue = ((float) biomeType / (biomeRange.Length-1));
-
-
+        //The highest points the bump can reach
+        float bumpHeight = 0;
+        //Increasing frequency will increase the amount of bumps/change height faster
+        float bumpFrequency = 0;
 
         /* The Water biome is deep and flat */
         if(biomeType == (int) biomeTypes.Water) {
             maxRange = 0;
             minRange = 0;
-            noiseValue = 0;
+
+            /* Basic bumps are used */
+            bumpHeight = 15;
+            bumpFrequency = 15;
         }
 
         /* The plains biome is more zoomed in than the other biomes */
@@ -215,13 +217,19 @@ public class NoiseProvider {
             x = x/3f;
             z = z/3f;
 
-            noiseValue = DefaultGetNoise(x, z);
+            /* More flat bumps are used */
+            bumpHeight = 10;
+            bumpFrequency = 10;
         }
 
+        /* The hills biome is a basic rolling hills terrain */
         else if(biomeType == (int) biomeTypes.Hills) {
             maxRange = 0.60f;
             minRange = 0.25f;
-            noiseValue = DefaultGetNoise(x, z);
+
+            /* bumps are larger */
+            bumpHeight = 20;
+            bumpFrequency = 10;
         }
 
         /* The moutain biomes are more zoomed out to be more sharp */
@@ -231,18 +239,27 @@ public class NoiseProvider {
             x = x*3f;
             z = z*3f;
 
-            noiseValue = DefaultGetNoise(x, z);
+            /* bumps are much larger */
+            bumpHeight = 25;
+            bumpFrequency = 15;
         }
 
         else if(biomeType == (int) biomeTypes.HighMoutains) {
             maxRange = 0.90f;
             minRange = 0.70f;
-            noiseValue = DefaultGetNoise(x, z);
+
+            /* bumps are much sharper */
+            bumpHeight = 20;
+            bumpFrequency = 35;
         }
 
         /* Force the noise value to be within the given range */
+        noiseValue = DefaultGetNoise(x, z);
         noiseValue = noiseValue*(maxRange-minRange) + minRange;
-        
+
+        /* Apply another random noise value to make the ground seem much less even */
+        noiseValue += bumpHeight*RawNoise(x, z, bumpFrequency)/maxTerrainHeight;
+
         return noiseValue;
     }
 

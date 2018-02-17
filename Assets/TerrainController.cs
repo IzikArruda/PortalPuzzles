@@ -65,7 +65,7 @@ public class TerrainController : MonoBehaviour {
         currentChunk = GetChunkPosition(focusPoint.position);
 
         /* Create the noiseProvider that will be used by all chunks */
-        noiseProvider = new NoiseProvider(frequency, octave);
+        noiseProvider = new NoiseProvider(frequency, octave, height);
 
         /* Force the chunkCache to update it's chunks all at once */
         ForceCacheUpdate();
