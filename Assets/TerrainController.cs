@@ -39,9 +39,8 @@ public class TerrainController : MonoBehaviour {
     /* The material used by the terrain */
     public Material terrainMaterial;
 
-    /* The textures of the terrain */
-    public Texture2D flatTexture;
-    public Texture2D steepTexture;
+    /* The textures used by the terrain */
+    public Texture2D[] terrainTextures;
 
     /* Calculates the noise for the chunks */
     private NoiseProvider noiseProvider;
@@ -59,7 +58,7 @@ public class TerrainController : MonoBehaviour {
         InitializeVariables();
 
         /* Set the settings for each chunk */
-        settings.SetSettings(chunkResolution, chunkLength, height, transform, terrainMaterial, flatTexture, steepTexture);
+        settings.SetSettings(chunkResolution, chunkLength, height, transform, terrainMaterial, terrainTextures);
 
         /* Set the current chunk position */
         currentChunk = GetChunkPosition(focusPoint.position);

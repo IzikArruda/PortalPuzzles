@@ -23,7 +23,7 @@ public class NoiseProvider {
     private float maxTerrainHeight;
 
     /* The sizes of each biome. It should have a sum of 1. */
-    private float[] biomeRange = new float[] { 0.10f, 0.25f, 0.3f, 0.25f, 0.10f };
+    public float[] biomeRange = new float[] { 0.10f, 0.25f, 0.3f, 0.25f, 0.10f };
 
     /* Each type of biome used. The order of the biomeRange and this enum is important */
     private enum biomeTypes {

@@ -12,12 +12,11 @@ public class TerrainChunkSettings {
     public int Height;
     public Transform chunkContainer;
     public Material terrainMaterial;
-    public Texture2D flatTexture;
-    public Texture2D steepTexture;
+    public Texture2D[] terrainTextures;
 
 
     public void SetSettings(int mapResolution, int length, int height, Transform container, 
-            Material terrain, Texture2D flatTerrain, Texture2D steepTerrain) {
+            Material terrain, Texture2D[] textures) {
         /*
          * Set the settings of this script to the given values
          */
@@ -27,7 +26,6 @@ public class TerrainChunkSettings {
         Length = length;
         Height = height;
         chunkContainer = container;
-        flatTexture = flatTerrain;
-        steepTexture = steepTerrain;
+        terrainTextures = textures;
     }
 }

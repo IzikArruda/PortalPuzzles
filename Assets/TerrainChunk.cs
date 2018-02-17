@@ -139,24 +139,29 @@ public class TerrainChunk {
     private void ApplyTextures(TerrainData data) {
         /*
          * Apply texture to the terrain data depending on the shape of the terrain.
-         * For now, use splatmapping to texture the terrain based on the steepness.
+         * For now, use the ratio of the given position's biome to determine which texture to use
          */
-        SplatPrototype flatSplat = new SplatPrototype();
-        SplatPrototype steepSplat = new SplatPrototype();
-        flatSplat.texture = Settings.flatTexture;
-        steepSplat.texture = Settings.steepTexture;
+        int biomeTextureCount = Mathf.Min(noiseProvider.biomeRange.Length, Settings.terrainTextures.Length);
 
-        /* Create an array of splat prototypes used by the terrain */
-        terrainData.splatPrototypes = new SplatPrototype[] {
-            flatSplat,
-            steepSplat
-        };
+        /* Create a splat map prototype for each biome */
+        SplatPrototype[] biomeSplatMaps = new SplatPrototype[biomeTextureCount];
+        for(int i = 0; i < biomeTextureCount; i++) {
+            biomeSplatMaps[i] = new SplatPrototype();
+        }
+
+        /* Assign a texture in the settings to each splat prototype */
+        for(int i = 0; i < biomeTextureCount; i++) {
+            biomeSplatMaps[i].texture = Settings.terrainTextures[i];
+        }
+
+        /* Apply the splat prototypes onto the terrain */
+        terrainData.splatPrototypes = biomeSplatMaps;
         terrainData.RefreshPrototypes();
 
         /* Set the splatmap to switch textures as the terrain's steepness grows */
         float steepnessStretch = 2;
         float normX, normZ, steepness, normSteepness;
-        float[,,] splatMap = new float[data.alphamapResolution, data.alphamapResolution, 2];
+        float[,,] splatMap = new float[data.alphamapResolution, data.alphamapResolution, biomeTextureCount];
         for(int z = 0; z < data.alphamapHeight; z++) {
             for(int x = 0; x < data.alphamapWidth; x++) {
                 normX = (float) x / (terrainData.alphamapWidth - 1);
@@ -164,8 +169,17 @@ public class TerrainChunk {
                 steepness = terrainData.GetSteepness(normX, normZ);
                 normSteepness = Mathf.Clamp((steepness/90f)/steepnessStretch, 0f, 1f);
 
-                splatMap[z, x, 0] = 1f - normSteepness;
-                splatMap[z, x, 1] = normSteepness;
+                //splatMap[z, x, 0] = 1f - normSteepness;
+                //splatMap[z, x, 1] = normSteepness;
+                /* Have the biome control which texture is used */
+                float lengthModifier = Settings.Length/1000f;
+                float xCoord = lengthModifier*(X + (float) x / (Settings.HeightmapResolution - 1));
+                float zCoord = lengthModifier*(Z + (float) z / (Settings.HeightmapResolution - 1));
+
+                /* Go through each biome */
+                for(int i = 0; i < biomeTextureCount; i++) {
+                    splatMap[z, x, i] = noiseProvider.GetBiomeRatio(i, xCoord, zCoord);
+                }
             }
         }
         terrainData.SetAlphamaps(0, 0, splatMap);
