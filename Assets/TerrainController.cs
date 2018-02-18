@@ -39,7 +39,7 @@ public class TerrainController : MonoBehaviour {
     /* The material used by the terrain */
     public Material terrainMaterial;
 
-    /* The textures used by the terrain */
+    /* The textures used by the terrain. Each biome type requires two textures it switches between by the steepness. */
     public Texture2D[] terrainTextures;
 
     /* Calculates the noise for the chunks */
