@@ -69,6 +69,9 @@ public class ChunkCache {
 
         /* Add the chunk to the loadedChunks list */
         loadedChunks.Add(newChunk.GetChunkCoordinates(), newChunk);
+
+        /* Set the neighbors of this chunk */
+        SetChunkNeighborhood(newChunk);
     }
     
     /* ----------- Collections Functions ------------------------------------------------------------- */
@@ -139,9 +142,60 @@ public class ChunkCache {
                 chunk.Value.CreateTerrain();
                 loadedChunks.Add(chunk.Key, chunk.Value);
                 chunksBeingGenerated.Remove(chunk.Key);
+                SetChunkNeighborhood(chunk.Value);
             }
         }
     }
+
+
+    /* ----------- Event Functions ------------------------------------------------------------- */
+
+    void SetChunkNeighborhood(TerrainChunk chunk) {
+        /*
+         * Given a chunk, set the neighbors of it and it's neighbors' neighbors. 
+         * This is done to complete the connection of the given chunk.
+         */
+        TerrainChunk neighbor;
+
+        /* Set the neighbors of the given chunk and it's neighbors */
+        SetChunkNeighbors(chunk);
+        if(loadedChunks.TryGetValue(new Vector2(chunk.X, chunk.Z + 1), out neighbor)) {
+            SetChunkNeighbors(neighbor);
+        }
+        if(loadedChunks.TryGetValue(new Vector2(chunk.X + 1, chunk.Z), out neighbor)) {
+            SetChunkNeighbors(neighbor);
+        }
+        if(loadedChunks.TryGetValue(new Vector2(chunk.X, chunk.Z - 1), out neighbor)) {
+            SetChunkNeighbors(neighbor);
+        }
+        if(loadedChunks.TryGetValue(new Vector2(chunk.X - 1, chunk.Z), out neighbor)) {
+            SetChunkNeighbors(neighbor);
+        }
+    }
+
+    void SetChunkNeighbors(TerrainChunk chunk) {
+        /*
+         * Set the neighbors of the given chunk.
+         */
+        TerrainChunk Xn, Zp, Xp, Zn;
+
+        /* Either get the chunk neighbor if it exists or use a null value */
+        if(!loadedChunks.TryGetValue(new Vector2(chunk.X - 1, chunk.Z), out Xn)) {
+            Xn = null;
+        }
+        if(!loadedChunks.TryGetValue(new Vector2(chunk.X, chunk.Z + 1), out Zp)) {
+            Zp = null;
+        }
+        if(!loadedChunks.TryGetValue(new Vector2(chunk.X + 1, chunk.Z), out Xp)) {
+            Xp = null;
+        }
+        if(!loadedChunks.TryGetValue(new Vector2(chunk.X, chunk.Z - 1), out Zn)) {
+            Zn = null;
+        }
+
+        chunk.SetNeighbors(Xn, Zp, Xp, Zn);
+    }
+
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
 

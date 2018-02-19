@@ -8,7 +8,7 @@ public class TerrainChunk {
     public int Z;
 
     /* The terrain of the chunk */
-    private Terrain Terrain;
+    public Terrain terrain;
     private TerrainChunkSettings Settings;
     private float[,] heightMap;
     private TerrainData terrainData;
@@ -93,7 +93,7 @@ public class TerrainChunk {
          * Return true if the heightmap is fully generated and the terrain has not yet been generated
          */
 
-        return (Terrain == null && heightMap != null);
+        return (terrain == null && heightMap != null);
     }
 
 
@@ -128,12 +128,13 @@ public class TerrainChunk {
         newTerrainGameObject.transform.name = "[" + X + ", " + Z + "]";
         
         /*  Set the material of the terrain */
-        Terrain = newTerrainGameObject.GetComponent<Terrain>();
-        Terrain.heightmapPixelError = 8;
-        Terrain.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
-        Terrain.materialType = UnityEngine.Terrain.MaterialType.Custom;
-        Terrain.materialTemplate = Settings.terrainMaterial;
-        Terrain.Flush();
+        terrain = newTerrainGameObject.GetComponent<Terrain>();
+        terrain.heightmapPixelError = 8;
+        terrain.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
+        terrain.materialType = UnityEngine.Terrain.MaterialType.Custom;
+        terrain.materialTemplate = Settings.terrainMaterial;
+
+        terrain.Flush();
     }
 
     private void ApplyTextures(TerrainData data) {
@@ -197,11 +198,45 @@ public class TerrainChunk {
          */
 
         Settings = null;
-        if(Terrain != null) {
-            GameObject.Destroy(Terrain.gameObject);
+        if(terrain != null) {
+            GameObject.Destroy(terrain.gameObject);
         }
     }
 
+    public void SetNeighbors(TerrainChunk Xn, TerrainChunk Zp, TerrainChunk Xp, TerrainChunk Zn) {
+        /*
+         * Set the neighbors of this chunk. This is to ensure the chunks are properly connected.
+         */
+        Terrain left = null;
+        Terrain up = null;
+        Terrain right = null;
+        Terrain down = null;
+
+        if(Xn != null) {
+            left = Xn.terrain;
+        }
+        if(Zp != null) {
+            up = Zp.terrain;
+        }
+        if(Xp != null) {
+            right = Xp.terrain;
+        }
+        if(Zn != null) {
+            down = Zn.terrain;
+        }
+
+        terrain.SetNeighbors(left, up, right, down);
+        terrain.Flush();
+
+
+        if(X == 0 && Z == 0) {
+            Debug.Log(left);
+            Debug.Log(up);
+            Debug.Log(right);
+            Debug.Log(down);
+            Debug.Log("___");
+        }
+    }
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
 
