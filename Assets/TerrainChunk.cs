@@ -160,7 +160,8 @@ public class TerrainChunk {
         terrainData.RefreshPrototypes();
 
         /* Set the splatmap to switch textures as the terrain's steepness grows */
-        float normX, normZ, steepness, normSteepness, maxAngle;
+        float normX, normZ, steepness, normSteepness;
+        float[] maxAngle = new float[] { 15, 10, 30, 50, 70 };
         float[,,] splatMap = new float[data.alphamapResolution, data.alphamapResolution, biomeTextureCount];
         for(int z = 0; z < data.alphamapHeight; z++) {
             for(int x = 0; x < data.alphamapWidth; x++) {
@@ -176,8 +177,7 @@ public class TerrainChunk {
 
                     /* Get the steepness of the terrain at this given position. Each biome has a different stepRatio */
                     steepness = terrainData.GetSteepness(normX, normZ);
-                    maxAngle = 45;
-                    normSteepness = Mathf.Clamp((steepness/maxAngle), 0f, 1f);
+                    normSteepness = Mathf.Clamp((steepness/maxAngle[i]), 0f, 1f);
 
                     /* Get the ratio of the texture that will be used for this biome */
                     usedTextureRatio = noiseProvider.GetBiomeRatio(i, xCoord, zCoord);
