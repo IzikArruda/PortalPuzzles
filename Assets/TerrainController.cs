@@ -49,6 +49,10 @@ public class TerrainController : MonoBehaviour {
     public float frequency;
     public int octave;
 
+    /* The skySphere and it's texture that will surround the focus point */
+    private GameObject skySphere;
+    public Texture2D skySphereTexture;
+
 
     /* ----------- Built-in Functions ------------------------------------------------------------- */
 
@@ -68,6 +72,9 @@ public class TerrainController : MonoBehaviour {
 
         /* Force the chunkCache to update it's chunks all at once */
         ForceCacheUpdate();
+
+        /* Create the skySphere */
+        CreateSkySphere();
     }
     
     void Update() {
@@ -98,6 +105,9 @@ public class TerrainController : MonoBehaviour {
 
         /* Update the cache */
         cache.UpdateCache();
+
+        /* Reposition the skySphere */
+        UpdateSkySphere(focusPoint.position);
     }
 
 
@@ -146,6 +156,16 @@ public class TerrainController : MonoBehaviour {
             cache.ForceLoadChunk(newChunk);
         }
     }
+    
+    public void UpdateSkySphere(Vector3 focusPointPosition) {
+        /*
+         * Have the skySphere reposition given the new focusPointPosition
+         */
+
+        /* Reposition the sky sphere at the given window exit point */
+        skySphere.transform.position = focusPointPosition;
+    }
+
 
     /* ----------- Set-up Functions ------------------------------------------------------------- */
 
@@ -158,6 +178,37 @@ public class TerrainController : MonoBehaviour {
         settings = new TerrainChunkSettings();
     }
     
+    void CreateSkySphere() {
+        /*
+         * Create the skySphere that surrounds the terrain
+         */
+
+        /* Create the object */
+        if(skySphere != null) { DestroyImmediate(skySphere); }
+        skySphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        DestroyImmediate(skySphere.GetComponent<SphereCollider>());
+        skySphere.transform.parent = transform;
+        UpdateSkySphere(new Vector3(0, 0, 0));
+        skySphere.transform.localScale = new Vector3(maxRenderDistance*0.95f, maxRenderDistance*0.95f, maxRenderDistance*0.95f);
+        skySphere.name = "Sky sphere";
+
+        /* flip all it's triangles of the sphere to have it inside out */
+        int[] triangles = skySphere.GetComponent<MeshFilter>().sharedMesh.triangles;
+        if(triangles[0] == 0) {
+            int tempInt;
+            for(int i = 0; i < triangles.Length; i += 3) {
+                tempInt = triangles[i + 0];
+                triangles[i + 0] = triangles[i + 2];
+                triangles[i + 2] = tempInt;
+            }
+            skySphere.GetComponent<MeshFilter>().sharedMesh.triangles = triangles;
+        }
+
+        /* Apply the skyTexture to the skySphere */
+        Material skySphereMaterial = new Material(Shader.Find("Unlit/Texture"));
+        skySphereMaterial.SetTexture("_MainTex", skySphereTexture);
+        skySphere.GetComponent<MeshRenderer>().sharedMaterial = skySphereMaterial;
+    }
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
 

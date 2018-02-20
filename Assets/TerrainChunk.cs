@@ -33,19 +33,7 @@ public class TerrainChunk {
         X = (int) key.x;
         Z = (int) key.y;
     }
-
-    public TerrainChunk(TerrainChunkSettings settings, NoiseProvider noise, int x, int z) {
-        /*
-         * Create a new terrainChunk with the given parameters
-         */
-
-        heightMapThreadLock = new object();
-        Settings = settings;
-        noiseProvider = noise;
-        X = x;
-        Z = z;
-    }
-
+    
     /* ----------- Heightmap Functions ------------------------------------------------------------- */
     
     public void GenerateHeightMapRequest() {
@@ -162,7 +150,7 @@ public class TerrainChunk {
 
         /* Set the splatmap to switch textures as the terrain's steepness grows */
         float normX, normZ, steepness, normSteepness;
-        float[] maxAngle = new float[] { 15, 10, 30, 50, 70 };
+        float[] maxAngle = new float[] { 15, 10, 30, 45, 70 };
         float[,,] splatMap = new float[data.alphamapResolution, data.alphamapResolution, biomeTextureCount];
         for(int z = 0; z < data.alphamapHeight; z++) {
             for(int x = 0; x < data.alphamapWidth; x++) {
@@ -227,16 +215,9 @@ public class TerrainChunk {
 
         terrain.SetNeighbors(left, up, right, down);
         terrain.Flush();
-
-
-        if(X == 0 && Z == 0) {
-            Debug.Log(left);
-            Debug.Log(up);
-            Debug.Log(right);
-            Debug.Log(down);
-            Debug.Log("___");
-        }
     }
+
+
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
 
