@@ -74,6 +74,9 @@ public class Window : MonoBehaviour {
         portalSet.portalOffset = new Vector3(0, 0, -0.01f);
         Vector3 portalOffset = new Vector3(0, 0, -0.025f);
 
+        /* Ensure the window's portal's thickness is above 0 */
+        portalSet.triggerThickness = 0.01f;
+
         /* Place the portals at their proper locations */
         portalSet.EntrancePortal.transform.position = insidePos;
         portalSet.EntrancePortal.transform.eulerAngles = insideRot;

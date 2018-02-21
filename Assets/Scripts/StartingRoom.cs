@@ -235,6 +235,7 @@ public class StartingRoom : ConnectedRoom {
         /* Create the room collider if it does not exist */
         if(roomCollider == null) { roomCollider = gameObject.AddComponent<BoxCollider>(); }
         roomCollider.isTrigger = true;
+        gameObject.layer = 2;
 
         /* Position the collider into the center of the room */
         roomCollider.center = exit.exitPointBack.position + new Vector3(0, -(roomBellowHeight - (extraHeight + exit.exitHeight))/2f, -roomDepth/2f);

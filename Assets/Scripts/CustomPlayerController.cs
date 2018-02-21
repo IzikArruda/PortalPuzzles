@@ -754,7 +754,6 @@ public class CustomPlayerController : MonoBehaviour {
         if(outsideState) {
             usedMovementSpeed *= 2;
         }
-        Debug.Log(usedMovementSpeed/movementSpeed);
 
         /* Add the player speed to the movement vector */
         inputVector *= usedMovementSpeed;
@@ -1287,7 +1286,7 @@ public class CustomPlayerController : MonoBehaviour {
         /* Travel towards the rotation's forward for the remaining distance */
         while(distance > 0 && stopRayTrace == false) {
             //reduce the distance every loop to prevent infinite loops
-            //distance -= 0.001f;
+            distance -= 0.001f;
 
             /* Check for any collisions from the current position towards the current direction */
             if(Physics.Raycast(position, rotation*Vector3.forward, out hitInfo, distance, rayLayerMask)) {
@@ -1317,15 +1316,12 @@ public class CustomPlayerController : MonoBehaviour {
                     }
                 }
 
-                /* non-teleport triggers will be ignored */
+                /* non-teleport triggers that are hit will signal an error. All triggers should be on the IgnoreRaycastLayer. */
                 else if(hitInfo.collider.isTrigger) {
-                    //Push the raycast forward a bit more. Or, ignore the trigger
-                    //Debug.Log("hit trigger");
+                    /* Warn the player that they hit an unknown trigger */
+                    Debug.Log("WARNING: Player's RayCast hit an unknown trigger");
+                    stopRayTrace = true;
                 }
-
-
-
-
             }
 
             /* The raytrace hit nothing, so travel along the direction for the remaining distance */
