@@ -189,7 +189,7 @@ public class TerrainController : MonoBehaviour {
         DestroyImmediate(skySphere.GetComponent<SphereCollider>());
         skySphere.transform.parent = transform;
         UpdateSkySphere(new Vector3(0, 0, 0));
-        skySphere.transform.localScale = new Vector3(maxRenderDistance*0.95f, maxRenderDistance*0.95f, maxRenderDistance*0.95f);
+        skySphere.transform.localScale = new Vector3(maxRenderDistance*0.99f, maxRenderDistance*0.99f, maxRenderDistance*0.99f);
         skySphere.name = "Sky sphere";
 
         /* flip all it's triangles of the sphere to have it inside out */

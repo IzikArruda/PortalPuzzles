@@ -256,10 +256,9 @@ public class CustomPlayerController : MonoBehaviour {
         if(inputs.rKeyPressed) {
             StartPlayerReset();
         }
-        /* If the player presses v, force them into the 90 degrees rotation */
-        if(Input.GetKeyDown("v")) {
-            transform.eulerAngles = new Vector3(90, 0, 0);
-        }
+
+        /* Check if the user presses any other important keys */
+        ArbitraryInput();
 
         /* Update and animated the resetTimer if the player wants to reset */
         if(currentResetTime > -1) {
@@ -1144,6 +1143,41 @@ public class CustomPlayerController : MonoBehaviour {
 
         lastSavedPosition = transform.position;
     }
+
+    private void ArbitraryInput() {
+        /*
+         * Catch any inputs from the keyboard that are used for debugging or other uses.
+         */
+         
+        /* If the player presses v, force them into the 90 degrees rotation. Used to land on the StartingRoom's window */
+        if(Input.GetKeyDown("v")) {
+            transform.eulerAngles = new Vector3(90, 0, 0);
+        }
+
+        /* Pressing certain keys will raise or lower a value of the player stats. The values being changed are: */
+        /* maxYVelocity: change it to see if the player should fall any faster while outside. */
+        if(Input.GetKeyDown("-")) {
+            maxYVelocity -= 0.2f;
+        }
+        if(Input.GetKeyDown("+")) {
+            maxYVelocity += 0.2f;
+        }
+        /* fastFallMod: change how fast the player speeds up when fast falling. Maybe use a new value for outside? */
+        if(Input.GetKeyDown("9")) {
+            fastFallMod -= 1;
+        }
+        if(Input.GetKeyDown("0")) {
+            fastFallMod += 1;
+        }
+
+        /* If the player presses y, force the player into fastFall if they are falling */
+        if(Input.GetKeyDown("y")) {
+            if(state == (int) PlayerStates.Falling) {
+                state = (int) PlayerStates.FastFalling;
+            }
+        }
+    }
+
 
     /* ----------- Outside Called Functions ------------------------------------------------------------- */
 
