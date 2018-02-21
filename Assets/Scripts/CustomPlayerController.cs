@@ -143,9 +143,10 @@ public class CustomPlayerController : MonoBehaviour {
     /* The last collider that was hit. Used when calling Raytrace and we want to save the collider the ray hits */
     private Collider lastHitCollider;
 
-
-
+    
     private int stepIndex = 0;
+
+    private bool outsideState = false;
 
 
     
@@ -485,6 +486,15 @@ public class CustomPlayerController : MonoBehaviour {
             /* Use the new legLength to make the player undergo a "step" */
             DoStep(newLegLength);
         }
+
+        /* Not enough legs are grounded, so they continue falling */
+        else {
+
+            /* If the player is falling at nearly their maximum falling speed, force them into the fastFalling state */
+            if(Mathf.Abs(currentYVelocity) > maxYVelocity*0.95f) {
+                ChangeState((int) PlayerStates.FastFalling);
+            }
+        }
     }
     
     void DoStep(float stepLegLength) {
@@ -733,9 +743,21 @@ public class CustomPlayerController : MonoBehaviour {
         if(inputVector.magnitude > 1) {
             inputVector.Normalize();
         }
+        
+        /* Alter the used movementSpeed relative to the player's falling speed */
+        float usedMovementSpeed = movementSpeed;
+        /* Increase the player's base airborn movement up to double */
+        if(PlayerIsAirborn()) {
+            usedMovementSpeed += movementSpeed*Mathf.Clamp(Mathf.Abs(currentYVelocity)/maxYVelocity, 0, 1);
+        }
+        /* In the outside state, double the final movementSpeed */
+        if(outsideState) {
+            usedMovementSpeed *= 2;
+        }
+        Debug.Log(usedMovementSpeed/movementSpeed);
 
         /* Add the player speed to the movement vector */
-        inputVector *= movementSpeed;
+        inputVector *= usedMovementSpeed;
         if(Input.GetKey(KeyCode.LeftShift)) {
             inputVector *= runSpeedMultiplier;
         }
@@ -1173,7 +1195,7 @@ public class CustomPlayerController : MonoBehaviour {
         /* If the player presses y, force the player into fastFall if they are falling */
         if(Input.GetKeyDown("y")) {
             if(state == (int) PlayerStates.Falling) {
-                state = (int) PlayerStates.FastFalling;
+                ChangeState((int) PlayerStates.FastFalling);
             }
         }
     }
@@ -1213,6 +1235,18 @@ public class CustomPlayerController : MonoBehaviour {
          */
 
         lastRoom = newRoom;
+    }
+
+    public void ActiveOutsideState() {
+        /*
+         * When called, puts the player into an "outside" state, 
+         * changing certain stats of the controller
+         */
+
+        /* When outside, give the player's fastFall a slow speed increases but high max velocity */
+        outsideState = true;
+        fastFallMod = 5;
+        maxYVelocity = 1.5f;
     }
 
     /* ----------- Helper Functions ------------------------------------------------------------- */

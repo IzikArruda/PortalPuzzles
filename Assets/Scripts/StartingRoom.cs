@@ -272,6 +272,9 @@ public class StartingRoom : ConnectedRoom {
             particleSystem.Emit(emitParams, 10000);
         }
 
+        /* Once the player breaks the glass, put them into the "outside" state */
+        playerObject.GetComponent<CustomPlayerController>().ActiveOutsideState();
+
         /* Play the audioSource of the glass shattering */
         glassShatterSource.Play();
     }
