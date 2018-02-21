@@ -18,9 +18,6 @@ public class TerrainController : MonoBehaviour {
     public Transform focusPoint;
     public Vector2 currentChunk;
 
-    /* The radius of the circle that defines how far the terrain will render */
-    public float maxRenderDistance;
-
     /* How long/wide a chunk is. Chunks are always square shaped. */
     public int chunkLength;
 
@@ -180,7 +177,8 @@ public class TerrainController : MonoBehaviour {
     
     void CreateSkySphere() {
         /*
-         * Create the skySphere that surrounds the terrain
+         * Create the skySphere that surrounds the terrain. Use the player camera's far clipping plane
+         * to judge how large the sky sphere will be.
          */
 
         /* Create the object */
@@ -189,7 +187,8 @@ public class TerrainController : MonoBehaviour {
         DestroyImmediate(skySphere.GetComponent<SphereCollider>());
         skySphere.transform.parent = transform;
         UpdateSkySphere(new Vector3(0, 0, 0));
-        skySphere.transform.localScale = new Vector3(maxRenderDistance*0.99f, maxRenderDistance*0.99f, maxRenderDistance*0.99f);
+        float renderDist = CustomPlayerController.cameraFarClippingPlane;
+        skySphere.transform.localScale = new Vector3(renderDist*0.99f, renderDist*0.99f, renderDist*0.99f);
         skySphere.name = "Sky sphere";
 
         /* flip all it's triangles of the sphere to have it inside out */
@@ -208,6 +207,9 @@ public class TerrainController : MonoBehaviour {
         Material skySphereMaterial = new Material(Shader.Find("Unlit/Texture"));
         skySphereMaterial.SetTexture("_MainTex", skySphereTexture);
         skySphere.GetComponent<MeshRenderer>().sharedMaterial = skySphereMaterial;
+
+        /* Put the SkySphere into the SkyDome layer as that is how it wil be treated by the cameras */
+        skySphere.layer = PortalSet.maxLayer+1;
     }
 
     /* ----------- Helper Functions ------------------------------------------------------------- */

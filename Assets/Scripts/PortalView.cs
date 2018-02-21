@@ -88,6 +88,7 @@ public class PortalView : MonoBehaviour {
                 recursiveCameras[i] = CreateScoutCamera();
                 recursiveCameras[i].name = "ScoutCamera | Depth " + i;
                 recursiveCameras[i].GetComponent<CameraScript>().cameraDepth = i;
+                recursiveCameras[i].GetComponent<Camera>().farClipPlane = CustomPlayerController.cameraFarClippingPlane;
 
                 /* Remove the camera once the scene unloads */
                 recursiveCameras[i].hideFlags = HideFlags.DontSave;
@@ -372,7 +373,7 @@ public class PortalView : MonoBehaviour {
     public void AssignCameraLayer(int layer) {
         /*
          * Assign the given layer to be ignored by all the scout camera's linked to this portal and 
-         * any new cameras created. If the layer is -1, do not remove any layers from being rendered
+         * any new cameras created. If the layer is -1, do not remove any layers from being rendered.
          */
         cameraIgnoreLayer = layer;
         

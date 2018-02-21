@@ -157,7 +157,7 @@ public class WaitingRoom : ConnectedRoom {
         
         /* Set the sky spheres in a place to that will not be near other spheres or puzzle rooms */
         windowExit.eulerAngles = new Vector3(0, 0, 0);
-        windowExit.position = roomCenter + new Vector3(0, 3000, roomCenter.z*10);
+        windowExit.position = roomCenter + new Vector3(0, CustomPlayerController.cameraFarClippingPlane*2, roomCenter.z*10);
         
         /* Calculate the sizes of this waitingRoom */
         xDist = Mathf.Abs(entranceRoom.exitPointFront.position.x - exitRoom.exitPointBack.position.x) + xEntranceDist/2f + xExitDist/2f;

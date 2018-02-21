@@ -148,6 +148,8 @@ public class CustomPlayerController : MonoBehaviour {
 
     private bool outsideState = false;
 
+    /* The far clipping plane of the player's camera. The portals will use this for their cameras. */
+    public static float cameraFarClippingPlane = 5000;
 
     
     /* -------------- Built-in Unity Functions ---------------------------------------------------------- */
@@ -491,7 +493,7 @@ public class CustomPlayerController : MonoBehaviour {
         else {
 
             /* If the player is falling at nearly their maximum falling speed, force them into the fastFalling state */
-            if(Mathf.Abs(currentYVelocity) > maxYVelocity*0.95f) {
+            if(state == (int)PlayerStates.Falling && Mathf.Abs(currentYVelocity) > maxYVelocity*0.95f) {
                 ChangeState((int) PlayerStates.FastFalling);
             }
         }
@@ -897,7 +899,7 @@ public class CustomPlayerController : MonoBehaviour {
     
     
     	/* Going from FastFalling to a grounded state... */
-    	if(state == (int) PlayerStates.FastFalling){
+    	if(state == (int) PlayerStates.FastFalling && !StateIsAirborn(newState)) {
     		/*... Will have the player undergo a hard landing. */
     		playerStepTracker.PlayHardLanding();
     	}
@@ -1048,7 +1050,7 @@ public class CustomPlayerController : MonoBehaviour {
 			//Dont use this leg if the gap between the leg and the player is blocked
 			else {
                 extraLegLenths[i] = -1;
-                legRayScripts[i+1] = null;
+                legRayScripts[i] = null;
             }
 		}
 
