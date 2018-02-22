@@ -30,6 +30,9 @@ public class SkySphereCamera : MonoBehaviour {
         skysphereCamera.clearFlags = CameraClearFlags.Depth;
         skysphereCamera.cullingMask = 1 << PortalSet.maxLayer + 1;
 
+        /* Add a script to the camera that will prevent the rendering of fog */
+        skySphereCameraObject.AddComponent<RemoveFog>();
+
         /* Get the camera that wants the skySphere to be rendered and use some of it's stats */
         if(GetComponent<Camera>() != null) {
             skysphereCamera.depth = GetComponent<Camera>().depth - 1;
