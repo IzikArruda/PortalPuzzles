@@ -1248,6 +1248,10 @@ public class CustomPlayerController : MonoBehaviour {
         outsideState = true;
         fastFallMod = 5;
         maxYVelocity = 1.5f;
+
+        /* Set the player's camera's close clipping plane to a higher value as it fixes issues when rendering
+         * objects far away and we will not be encoutering another portal anymore. */
+        playerCamera.nearClipPlane = 0.1f;
     }
 
     /* ----------- Helper Functions ------------------------------------------------------------- */

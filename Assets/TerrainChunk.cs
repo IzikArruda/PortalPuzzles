@@ -121,7 +121,8 @@ public class TerrainChunk {
         terrain.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
         terrain.materialType = UnityEngine.Terrain.MaterialType.Custom;
         terrain.materialTemplate = Settings.terrainMaterial;
-
+        terrain.heightmapPixelError = 1;
+        terrain.basemapDistance = CustomPlayerController.cameraFarClippingPlane;
         terrain.Flush();
     }
 
