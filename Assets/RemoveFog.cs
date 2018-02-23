@@ -13,7 +13,7 @@ public class RemoveFog : MonoBehaviour {
         /*
          * Save the fog's current state and disable it before the camera renders the scene
          */
-
+         
         revertFogState = RenderSettings.fog;
         RenderSettings.fog = false;
     }
@@ -22,7 +22,7 @@ public class RemoveFog : MonoBehaviour {
         /*
          * Revert the fog's state back to what it was before the scene was rendered once the camera is done
          */
-
+         
         RenderSettings.fog = revertFogState;
     }
 }

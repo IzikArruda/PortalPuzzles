@@ -10,8 +10,16 @@ public class SkySphereCamera : MonoBehaviour {
     private GameObject skySphereCameraObject;
     private Camera skysphereCamera;
 
+    void OnPreRender() {
 
-	void Start () {
+        GetComponent<Camera>().depthTextureMode = DepthTextureMode.Depth;
+
+
+        skysphereCamera.Render();
+    }
+    
+
+    void Start () {
         /*
          * On startup, create the camera and set it's properties to make it only render the skySphere
          */
@@ -27,6 +35,7 @@ public class SkySphereCamera : MonoBehaviour {
 
         /* Attach the camera and change it's settings */
         skysphereCamera = skySphereCameraObject.AddComponent<Camera>();
+        skysphereCamera.enabled = false;
         skysphereCamera.clearFlags = CameraClearFlags.Depth;
         skysphereCamera.cullingMask = 1 << PortalSet.maxLayer + 1;
 
