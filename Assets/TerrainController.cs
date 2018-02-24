@@ -13,6 +13,7 @@ public class TerrainController : MonoBehaviour {
     
     /* The chunk settings used by the chunks */
     public TerrainChunkSettings settings;
+    private GameObject terrainContainer;
 
     /* The object that the terrain will center around. Have this set before startup. */
     public Transform focusPoint;
@@ -47,8 +48,9 @@ public class TerrainController : MonoBehaviour {
     public int octave;
 
     /* The skySphere and it's texture that will surround the focus point */
-    private GameObject skySphere;
     public Texture2D skySphereTexture;
+    private GameObject skySphere;
+    private SkySphere skySphereScript;
 
 
     /* ----------- Built-in Functions ------------------------------------------------------------- */
@@ -59,7 +61,7 @@ public class TerrainController : MonoBehaviour {
         InitializeVariables();
 
         /* Set the settings for each chunk */
-        settings.SetSettings(chunkResolution, chunkLength, height, transform, terrainMaterial, terrainTextures);
+        settings.SetSettings(chunkResolution, chunkLength, height, terrainContainer.transform, terrainMaterial, terrainTextures);
 
         /* Set the current chunk position */
         currentChunk = GetChunkPosition(focusPoint.position);
@@ -72,13 +74,6 @@ public class TerrainController : MonoBehaviour {
 
         /* Create the skySphere */
         CreateSkySphere();
-
-        /* Set the fog of the world. This should be a sepperate function, but for now we can leave it in here */
-        float playerViewLength = 0.5f*CustomPlayerController.cameraFarClippingPlane;
-        //Have the fog start halfway from the player and their max view
-        RenderSettings.fogStartDistance = playerViewLength*0.5f;
-        //Have the fog end before the last 10% of the player's view
-        RenderSettings.fogEndDistance = playerViewLength*0.9f;
     }
     
     void Update() {
@@ -167,7 +162,7 @@ public class TerrainController : MonoBehaviour {
          */
 
         /* Reposition the sky sphere at the given window exit point */
-        skySphere.transform.position = focusPointPosition;
+        skySphereScript.UpdateSkySpherePosition(focusPointPosition);
     }
 
 
@@ -180,6 +175,14 @@ public class TerrainController : MonoBehaviour {
 
         cache = new ChunkCache();
         settings = new TerrainChunkSettings();
+
+        /* Create the container that holds all the terrain objects */
+        terrainContainer = new GameObject();
+        terrainContainer.name = "Terrain Container";
+        terrainContainer.transform.parent = transform;
+        terrainContainer.transform.localPosition = new Vector3(0, 0, 0);
+        terrainContainer.transform.localEulerAngles = new Vector3(0, 0, 0);
+        terrainContainer.transform.localScale = new Vector3(1, 1, 1);
     }
     
     void CreateSkySphere() {
@@ -188,35 +191,15 @@ public class TerrainController : MonoBehaviour {
          * to judge how large the sky sphere will be.
          */
 
-        /* Create the object */
+        /* Create the sphere object and add the skySphere script to it */
         if(skySphere != null) { DestroyImmediate(skySphere); }
         skySphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        DestroyImmediate(skySphere.GetComponent<SphereCollider>());
         skySphere.transform.parent = transform;
+        skySphereScript = skySphere.AddComponent<SkySphere>();
         UpdateSkySphere(new Vector3(0, 0, 0));
-        float renderDist = CustomPlayerController.cameraFarClippingPlane;
-        skySphere.transform.localScale = new Vector3(renderDist*0.99f, renderDist*0.99f, renderDist*0.99f);
-        skySphere.name = "Sky sphere";
-
-        /* flip all it's triangles of the sphere to have it inside out */
-        int[] triangles = skySphere.GetComponent<MeshFilter>().sharedMesh.triangles;
-        if(triangles[0] == 0) {
-            int tempInt;
-            for(int i = 0; i < triangles.Length; i += 3) {
-                tempInt = triangles[i + 0];
-                triangles[i + 0] = triangles[i + 2];
-                triangles[i + 2] = tempInt;
-            }
-            skySphere.GetComponent<MeshFilter>().sharedMesh.triangles = triangles;
-        }
 
         /* Apply the skyTexture to the skySphere */
-        Material skySphereMaterial = new Material(Shader.Find("Unlit/Fogless"));
-        skySphereMaterial.SetTexture("_MainTex", skySphereTexture);
-        skySphere.GetComponent<MeshRenderer>().sharedMaterial = skySphereMaterial;
-
-        /* Put the SkySphere into the SkyDome layer as that is how it wil be treated by the cameras */
-        skySphere.layer = PortalSet.maxLayer+1;
+        skySphereScript.ApplyTexture(skySphereTexture);
     }
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
