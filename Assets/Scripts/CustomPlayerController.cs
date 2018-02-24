@@ -149,7 +149,7 @@ public class CustomPlayerController : MonoBehaviour {
     private bool outsideState = false;
 
     /* The far clipping plane of the player's camera. The portals will use this for their cameras. */
-    public static float cameraFarClippingPlane = 5000;
+    public static float cameraFarClippingPlane;
 
     
     /* -------------- Built-in Unity Functions ---------------------------------------------------------- */
@@ -158,6 +158,7 @@ public class CustomPlayerController : MonoBehaviour {
         /*
          * Initilize required objects and set starting values for certain variables 
          */
+        cameraFarClippingPlane = playerCamera.farClipPlane;
 
         /* Link the player's step tracker to their sound script */
         playerStepTracker.SetSoundsScript(playerSoundsScript);

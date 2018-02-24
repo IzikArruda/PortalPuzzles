@@ -199,7 +199,7 @@ public class TerrainController : MonoBehaviour {
         UpdateSkySphere(new Vector3(0, 0, 0));
 
         /* Apply the skyTexture to the skySphere */
-        skySphereScript.ApplyTexture(skySphereTexture);
+        skySphereScript.ApplyColor(new Color(0.45f, 0.50f, 0.65f));
     }
 
     /* ----------- Helper Functions ------------------------------------------------------------- */

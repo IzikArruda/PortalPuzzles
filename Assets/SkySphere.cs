@@ -8,7 +8,6 @@ using System.Collections;
 public class SkySphere : MonoBehaviour {
 
 
-
 	void Start () {
         /*
          * Once this script is created and attached onto a sphere primitive, ensure it's properly sized.
@@ -36,10 +35,10 @@ public class SkySphere : MonoBehaviour {
 
         /* Set the fog of the world. This should be a sepperate function, but for now we can leave it in here */
         float playerViewLength = 0.5f*CustomPlayerController.cameraFarClippingPlane;
-        //Have the fog start halfway from the player and their max view
-        RenderSettings.fogStartDistance = playerViewLength*0.5f;
-        //Have the fog end before the last 25% of the player's view
-        RenderSettings.fogEndDistance = playerViewLength*0.75f;
+        //Have the fog start 20% into the player's max view
+        RenderSettings.fogStartDistance = playerViewLength*0.2f;
+        //Have the fog end before the last 10% of the player's view
+        RenderSettings.fogEndDistance = playerViewLength*0.9f;
     }
 	
     public void ApplyTexture(Texture2D skySphereTexture) {
@@ -52,6 +51,19 @@ public class SkySphere : MonoBehaviour {
         GetComponent<MeshRenderer>().sharedMaterial = skySphereMaterial;
     }
 
+    public void ApplyColor(Color color) {
+        /*
+         * Create a texture of only the given color and use it as the skySphere's texture
+         */
+
+        Texture2D colorTex = new Texture2D(1, 1);
+        colorTex.SetPixel(0, 0, color);
+        colorTex.Apply();
+
+        /* Apply the texture to the skySphere and the fog */
+        ApplyTexture(colorTex);
+        RenderSettings.fogColor = color;
+    }
 
     public void UpdateSkySpherePosition(Vector3 focusPointPosition) {
         /*
