@@ -72,6 +72,13 @@ public class TerrainController : MonoBehaviour {
 
         /* Create the skySphere */
         CreateSkySphere();
+
+        /* Set the fog of the world. This should be a sepperate function, but for now we can leave it in here */
+        float playerViewLength = 0.5f*CustomPlayerController.cameraFarClippingPlane;
+        //Have the fog start halfway from the player and their max view
+        RenderSettings.fogStartDistance = playerViewLength*0.5f;
+        //Have the fog end before the last 10% of the player's view
+        RenderSettings.fogEndDistance = playerViewLength*0.9f;
     }
     
     void Update() {
@@ -204,7 +211,7 @@ public class TerrainController : MonoBehaviour {
         }
 
         /* Apply the skyTexture to the skySphere */
-        Material skySphereMaterial = new Material(Shader.Find("Unlit/Texture"));
+        Material skySphereMaterial = new Material(Shader.Find("Unlit/Fogless"));
         skySphereMaterial.SetTexture("_MainTex", skySphereTexture);
         skySphere.GetComponent<MeshRenderer>().sharedMaterial = skySphereMaterial;
 
