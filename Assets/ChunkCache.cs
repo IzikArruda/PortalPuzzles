@@ -61,8 +61,9 @@ public class ChunkCache {
          * run at startup as the game will load everything first.
          */
 
-        /* Create the heightMap of the chunk without using a thread */
+        /* Create the heightMap and the terrain texture of the chunk without using a thread */
         newChunk.GenerateHeightMap();
+        newChunk.GenerateTerrainData();
 
         /* Create the terrain of the chunk */
         newChunk.CreateTerrain();
@@ -118,11 +119,11 @@ public class ChunkCache {
             /* Get enough chunks to fill the chunk generation thread */
             var chunksToGenerate = chunksToBeGenerated.Take(maxChunkThreads - chunksBeingGenerated.Count());
 
-            /* Add each chunk to the beingGenerated collection and start generating their heightMap */
+            /* Add each chunk to the beingGenerated collection and start generating their terrainData */
             foreach(var chunk in chunksToGenerate) {
                 chunksBeingGenerated.Add(chunk.Key, chunk.Value);
                 chunksToBeGenerated.Remove(chunk.Key);
-                chunk.Value.GenerateHeightMap();
+                chunk.Value.GenerateHeightMapRequest();
             }
         }
     }

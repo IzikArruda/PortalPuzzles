@@ -32,6 +32,9 @@ public class TerrainChunk {
         noiseProvider = noise;
         X = (int) key.x;
         Z = (int) key.y;
+        terrainData = new TerrainData();
+        terrainData.heightmapResolution = Settings.HeightmapResolution;
+        terrainData.alphamapResolution = Settings.AlphamapResolution;
     }
     
     /* ----------- Heightmap Functions ------------------------------------------------------------- */
@@ -47,12 +50,18 @@ public class TerrainChunk {
 
     private void GenerateHeightMapThread() {
         /*
-         * Generate the heightMap for this terrainChunk, but have it done within a lock.
+         * Generate the terrainData for this terrainChunk, but have it done within a lock.
+         * Generating the terrainData requires creating the heightMap and the terrain's textures,
+         * which requires accessing Mathf.Perlin, which is an expensive task.
          */
 
-        /* Lock the thread until it fully generates the heightmap */
+        /* Lock the thread until it fully generates the terrainData */
         lock(heightMapThreadLock) {
+            /* Generate the heightMap for the terrainData */
             GenerateHeightMap();
+
+            /* Generate the terrainData and it's texture */
+            
         }
     }
 
@@ -74,6 +83,16 @@ public class TerrainChunk {
         }
 
         heightMap = newHeightMap;
+    }
+
+    public void GenerateTerrainData() {
+        /*
+         * Create the terrainData and set it's texture
+         */
+         
+        terrainData.SetHeights(0, 0, heightMap);
+        terrainData.size = new Vector3(Settings.Length, Settings.Height, Settings.Length);
+        ApplyTextures(terrainData);
     }
 
     public bool IsHeightmapReady() {
@@ -98,17 +117,9 @@ public class TerrainChunk {
     
     public void CreateTerrain() {
         /*
-         * Create the terrain and the GameObject to hold it
+         * Create the terrain object using the terrainData
          */
-
-        /* Create the terrainData that is used to define the terrain to create */
-        terrainData = new TerrainData();
-        terrainData.heightmapResolution = Settings.HeightmapResolution;
-        terrainData.alphamapResolution = Settings.AlphamapResolution;
-        terrainData.SetHeights(0, 0, heightMap);
-        terrainData.size = new Vector3(Settings.Length, Settings.Height, Settings.Length);
-        ApplyTextures(terrainData);
-
+        GenerateTerrainData();
         /* Create the object that will contain the terrain components */
         GameObject newTerrainGameObject = Terrain.CreateTerrainGameObject(terrainData);
         newTerrainGameObject.transform.position = new Vector3(X * Settings.Length, 0, Z * Settings.Length);
