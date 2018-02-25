@@ -74,6 +74,10 @@ public class WaitingRoom : ConnectedRoom {
 
         /* Update the sky sphere */
         UpdateSkySphere();
+
+        /* Update the layers of each object */
+        UpdateLayers();
+
     }
 
     void OnTriggerEnter(Collider player) {
@@ -157,7 +161,7 @@ public class WaitingRoom : ConnectedRoom {
         
         /* Set the sky spheres in a place to that will not be near other spheres or puzzle rooms */
         windowExit.eulerAngles = new Vector3(0, 0, 0);
-        windowExit.position = roomCenter + new Vector3(0, CustomPlayerController.cameraFarClippingPlane*2, roomCenter.z*10);
+        windowExit.position = roomCenter + new Vector3(0, 3000, roomCenter.z*10);
         
         /* Calculate the sizes of this waitingRoom */
         xDist = Mathf.Abs(entranceRoom.exitPointFront.position.x - exitRoom.exitPointBack.position.x) + xEntranceDist/2f + xExitDist/2f;
@@ -317,8 +321,24 @@ public class WaitingRoom : ConnectedRoom {
         window.outsideRot = windowExit.eulerAngles + eul;
     }
 
-    /* -------- Event Functions ---------------------------------------------------- */
+    void UpdateLayers() {
+        /*
+         * Set the layers of the outside window frame and the window's cameras to only render the skySphere layer.
+         */
+         int layer = PortalSet.maxLayer+1;
+        
+        /* Set the layer of the windows so that the cameras only render the skySphere layer */
+        for(int i  = 0; i < windows.Length; i++) {
+            windows[i].SetWindowLayer(layer);
+        }
 
+        /* Set the layer of the skySphere */
+        skySphere.gameObject.layer = layer;
+    }
+    
+
+    /* -------- Event Functions ---------------------------------------------------- */
+    
     public void OffsetSkySphere(Vector3 offset) {
         /*
          * Apply an offset to the skySphere of this room to ensure the sky sphere 

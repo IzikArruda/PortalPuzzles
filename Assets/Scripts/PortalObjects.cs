@@ -98,4 +98,5 @@ public class PortalObjects : MonoBehaviour {
         border.transform.localPosition = new Vector3(0, 0, 0);
         border.transform.localEulerAngles = new Vector3(0, 0, 0);
     }
+    
 }

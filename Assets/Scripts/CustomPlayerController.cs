@@ -151,6 +151,8 @@ public class CustomPlayerController : MonoBehaviour {
     /* The far clipping plane of the player's camera. The portals will use this for their cameras. */
     public static float cameraFarClippingPlane;
 
+    /* Track how many cameras were rendered this frame */
+    public static int renderedCameraCount = 0;
     
     /* -------------- Built-in Unity Functions ---------------------------------------------------------- */
 
@@ -245,6 +247,10 @@ public class CustomPlayerController : MonoBehaviour {
          * after a physics update, we detected a teleport SHOULD have occured, but we did not update the frame yet,
          * so by teleporting the player in that moment they will NOT render a frame of them PAST the teleport trigger.
          */
+
+        //Print how many cams were rendered this frame
+        Debug.Log(renderedCameraCount);
+        renderedCameraCount = 0;
 
         /* Update the player's inputs and stateTime */
         inputs.UpdateInputs();

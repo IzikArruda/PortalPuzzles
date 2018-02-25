@@ -112,9 +112,26 @@ public class Window : MonoBehaviour {
         CreateFrame(insideWindowContainer.transform, ref index, windowHeight, windowWidth);
         CreateFrame(outsideWindowContainer.transform, ref index, windowHeight, windowWidth);
     }
-    
+
+    /* -------- Event Functions ---------------------------------------------------- */
+
+    public void SetWindowLayer(int newLayer) {
+        /*
+         * Set the cameras and the outside window frame to be on the given layer.
+         */
+
+        /* Set the window's layer */
+        outsideWindowContainer.layer = newLayer;
+        for(int i = 5; i < windowPieces.Length; i++) {
+            windowPieces[i].layer = newLayer;
+        }
+
+        /* Set the camera's rendering layer */
+        portalSet.SetPortalLayer(newLayer);
+    }
 
     /* -------- Helper Functions ---------------------------------------------------- */
+
 
     void CreateFrame(Transform windowParent, ref int index, float windowHeight, float windowWidth) {
         /*

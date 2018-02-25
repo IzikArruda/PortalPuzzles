@@ -35,8 +35,7 @@ public class PortalSet : MonoBehaviour {
     
     /* The object to be used as a border for the portal mesh. If this is null, a default border will be created */
     public GameObject portalBorder;
-
-
+    
     /* The sizes of the default border. 0 or less means the side will not be created. */
     public float defaultBorderDepth;
     public float defaultBorderLeft;
@@ -259,6 +258,17 @@ public class PortalSet : MonoBehaviour {
 
 
     /* -------- Event Functions ---------------------------------------------------- */
+
+    public void SetPortalLayer(int layer) {
+        /*
+         * Set the layers of the portal's cameras
+         */
+
+        EntrancePortal.portalMesh.GetComponent<PortalView>().ForceCameraRenderLayer(layer);
+        EntrancePortal.backwardsPortalMesh.GetComponent<PortalView>().ForceCameraRenderLayer(layer);
+        ExitPortal.portalMesh.GetComponent<PortalView>().ForceCameraRenderLayer(layer);
+        ExitPortal.backwardsPortalMesh.GetComponent<PortalView>().ForceCameraRenderLayer(layer);
+    }
 
     void AssignRenderingLayers() {
         /*

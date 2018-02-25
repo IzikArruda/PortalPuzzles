@@ -247,6 +247,7 @@ public class StartingRoom : ConnectedRoom {
 
     /* -------- Event Functions ---------------------------------------------------- */
 
+
     public void BreakGlass(GameObject playerObject) {
         /*
          * This is called from an outside function when the window of the room needs to be broken.

@@ -42,6 +42,8 @@ public class PortalView : MonoBehaviour {
     /* The rendering layer that the camera's will ignore */
     private int cameraIgnoreLayer = -1;
 
+    /* When this is true, the camera's rendering layer has been set and won't change */
+    private bool forcedLayer = false;
 
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
 
@@ -232,6 +234,7 @@ public class PortalView : MonoBehaviour {
 
             /* Render the scoutCamera's view with it's new projection matrix */
             scoutCamera.Render();
+            CustomPlayerController.renderedCameraCount++;
 
             /* Extract the scoutingCamera's view after rendering as a static texture */
             Material[] materials = rend.sharedMaterials;
@@ -370,14 +373,29 @@ public class PortalView : MonoBehaviour {
 
     /* -------- Event Functions ---------------------------------------------------- */
 
+    public void ForceCameraRenderLayer(int layer) {
+        /*
+         * Force the cameras of this portal to use the given layer and only the given render.
+         * This means it will only render objects on said layer. 
+         */
+
+        if(recursiveCameras != null) {
+            for(int i = 0; i < recursiveCameras.Length; i++) {
+                recursiveCameras[i].GetComponent<Camera>().cullingMask = 1 << layer;
+            }
+            //forcedLayer = true;
+        }
+    }
+
     public void AssignCameraLayer(int layer) {
         /*
          * Assign the given layer to be ignored by all the scout camera's linked to this portal and 
          * any new cameras created. If the layer is -1, do not remove any layers from being rendered.
          */
+        Debug.Log("set");
         cameraIgnoreLayer = layer;
         
-        if(recursiveCameras != null) {
+        if(recursiveCameras != null && forcedLayer != true) {
             /* If the given layer is -1, then do not remove any renderingLayers for the cameras */
             if(layer == -1) {
                 for(int i = 0; i < recursiveCameras.Length; i++) {
