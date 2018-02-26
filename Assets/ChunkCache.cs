@@ -13,16 +13,18 @@ public class ChunkCache {
     
     /* All chunks that will be generated but have not yet been handled */
     public Dictionary<Vector2, TerrainChunk> chunksToBeGenerated;
-    
+
     /* All chunks that must undergo generation to be properly loaded */
-    public Dictionary<Vector2, TerrainChunk> chunksBeingGenerated;
+    public Dictionary<Vector2, TerrainChunk> chunksGeneratingHeightMap;
+    public Dictionary<Vector2, TerrainChunk> chunksFinishedHeightMaps;
+    public Dictionary<Vector2, TerrainChunk> chunksGeneratingTextureMap;
 
     /* All chunks that have been loaded */
     public Dictionary<Vector2, TerrainChunk> loadedChunks;
 
     /* A hashset of the chunks that need to be removed */
     public HashSet<Vector2> chunksToRemove;
-
+    
 
     /* ----------- Constructor Functions ------------------------------------------------------------- */
 
@@ -33,7 +35,9 @@ public class ChunkCache {
          
         loadedChunks = new Dictionary<Vector2, TerrainChunk>();
         chunksToBeGenerated = new Dictionary<Vector2, TerrainChunk>();
-        chunksBeingGenerated = new Dictionary<Vector2, TerrainChunk>();
+        chunksGeneratingHeightMap = new Dictionary<Vector2, TerrainChunk>();
+        chunksFinishedHeightMaps = new Dictionary<Vector2, TerrainChunk>();
+        chunksGeneratingTextureMap = new Dictionary<Vector2, TerrainChunk>();
         chunksToRemove = new HashSet<Vector2>();
     }
 
@@ -44,6 +48,7 @@ public class ChunkCache {
         /*
          * Update the terrain by going through the cache's collections
          */
+        Debug.Log(chunksToBeGenerated.ToList().Count + " " + chunksGeneratingHeightMap.ToList().Count + " " + chunksFinishedHeightMaps.ToList().Count + " " + chunksGeneratingTextureMap.ToList().Count + " " + loadedChunks.ToList().Count);
 
         /* Remove any chunks that must be removed */
         RemoveChunks();
@@ -51,8 +56,16 @@ public class ChunkCache {
         /* Start generating the height map for chunks if possible */
         StartGeneratingHeightMaps();
 
-        /* Create the terrain for chunks that have finished generating their height map */
-        CreateTerrainForGeneratedChunks();
+        /* Check if any maps have finished generating their height maps */
+        MoveGeneratedHeightMaps();
+
+        /* Start generating the texture map for the chunks if possible */
+        StartGeneratingTextureMaps();
+
+        /* Check if any maps have finished generating their texture maps */
+        MoveGeneratedTextureMaps();
+
+        //NEED TO SET THE CHUNK NEIHGBOORHOOD ONCE ITS DONE
     }
 
     public void ForceLoadChunk(TerrainChunk newChunk) {
@@ -62,11 +75,10 @@ public class ChunkCache {
          */
 
         /* Create the heightMap and the terrain texture of the chunk without using a thread */
-        newChunk.GenerateHeightMap();
-        newChunk.GenerateTerrainData();
+        newChunk.ForceLoad();
 
-        /* Create the terrain of the chunk */
-        newChunk.CreateTerrain();
+        /* Create the object of the chunk */
+        newChunk.CreateObject();
 
         /* Add the chunk to the loadedChunks list */
         loadedChunks.Add(newChunk.GetChunkCoordinates(), newChunk);
@@ -75,6 +87,7 @@ public class ChunkCache {
         SetChunkNeighborhood(newChunk);
     }
     
+
     /* ----------- Collections Functions ------------------------------------------------------------- */
 
     private void RemoveChunks() {
@@ -100,8 +113,15 @@ public class ChunkCache {
                 chunksToRemove.Remove(key);
             }
 
-            /* If the chunk is not being generated (which it cant be removed from), then the chunk has already been removed */
-            else if(!chunksBeingGenerated.ContainsKey(key)) {
+            /* Remove the chunk if it's waiting to start generating it's texture map */
+            else if(chunksFinishedHeightMaps.ContainsKey(key)) {
+                chunksFinishedHeightMaps[key].Remove();
+                chunksFinishedHeightMaps.Remove(key);
+                chunksToRemove.Remove(key);
+            }
+
+            /* If the chunk is not being generated (cant remove a chunk whilst generating), then the chunk has already been removed */
+            else if(!chunksGeneratingHeightMap.ContainsKey(key) && !chunksGeneratingTextureMap.ContainsKey(key)) {
                 chunksToRemove.Remove(key);
             }
         }
@@ -113,42 +133,83 @@ public class ChunkCache {
          * move chunks from the toBeGenerated to the beingGenerated collection.
          */
 
-        /* Check if we can add atleast one more chunk to the beingGenerated dictionary */
-        if(chunksToBeGenerated.Count() > 0 && chunksBeingGenerated.Count() < maxChunkThreads) {
+        /* Check if we can add atleast one more chunk to the generatingHeightMap dictionary */
+        if(chunksToBeGenerated.Count() > 0 && chunksGeneratingHeightMap.Count() < maxChunkThreads) {
 
-            /* Get enough chunks to fill the chunk generation thread */
-            var chunksToGenerate = chunksToBeGenerated.Take(maxChunkThreads - chunksBeingGenerated.Count());
+            /* Get enough chunks to fill the height generation thread */
+            var chunksToGenerate = chunksToBeGenerated.Take(maxChunkThreads - chunksGeneratingHeightMap.Count());
 
-            /* Add each chunk to the beingGenerated collection and start generating their terrainData */
+            /* Start generating the chunk's height map and add it to chunksGeneratingHeightMap */
             foreach(var chunk in chunksToGenerate) {
-                chunksBeingGenerated.Add(chunk.Key, chunk.Value);
+                chunksGeneratingHeightMap.Add(chunk.Key, chunk.Value);
                 chunksToBeGenerated.Remove(chunk.Key);
                 chunk.Value.GenerateHeightMapRequest();
             }
         }
     }
 
-    private void CreateTerrainForGeneratedChunks() {
+    public void StartGeneratingTextureMaps() {
         /*
-         * Given a list of chunks currently being generated, check if any chunks have finished generating.
-         * Any chunks that generating have their terrain created then moved to the loadedChunks collection.
+         * Start generating the texture map for chunks that have completed their heightMapGeneration
          */
-        var chunks = chunksBeingGenerated.ToList();
 
-        /* Check each chunk if they have finished generation */
+        /* Check if we can add atleast one more chunk to the generatingTextureMap dictionary */
+        if(chunksFinishedHeightMaps.Count() > 0 && chunksGeneratingTextureMap.Count() < maxChunkThreads) {
+
+            /* Get enough chunks to fill the height generation thread */
+            var chunksToGenerate = chunksToBeGenerated.Take(maxChunkThreads - chunksGeneratingTextureMap.Count());
+
+            /* Start generating the chunk's texture map and add it to chunksGeneratingTextureMap */
+            foreach(var chunk in chunksToGenerate) {
+                chunksGeneratingTextureMap.Add(chunk.Key, chunk.Value);
+                chunksToBeGenerated.Remove(chunk.Key);
+                chunk.Value.GenerateTextureMapRequest();
+            }
+        }
+    }
+
+    private void MoveGeneratedHeightMaps() {
+        /*
+         * Check the maps currently generating their height maps and move any that have completed into the
+         * chunksFinishedHeightMaps dictionary.
+         */
+        var chunks = chunksGeneratingHeightMap.ToList();
+
+        /* Check each chunk whether they have finished their heightMap */
         foreach(var chunk in chunks) {
             if(chunk.Value.IsHeightmapReady()) {
 
-                /* Create the chunk's terrain and move it to the loadedChunks dictionary */
-                chunk.Value.CreateTerrain();
+                /* Initialize some values for the texture map before making it ready for texture generation */
+                chunk.Value.SetupTextureMap();
+
+                /* Move the chunk to chunksFinishedHeightMaps */
+                chunksGeneratingHeightMap.Remove(chunk.Key);
+                chunksFinishedHeightMaps.Add(chunk.Key, chunk.Value);
+            }
+        }
+    }
+
+    private void MoveGeneratedTextureMaps() {
+        /*
+         * Check for maps that have finished generating their texture map and create their gameObject.
+         * Put them into the loadedChunks dictionary and set up their neighbooring chunks.
+         */
+        var chunks = chunksGeneratingTextureMap.ToList();
+
+        /* Check each chunk whether they have finished their heightMap */
+        foreach(var chunk in chunks) {
+            if(chunk.Value.IsTerrainMapReady()) {
+
+                /* Create the chunk's object and add it to the loaded chunks dictionary */
+                chunk.Value.CreateObject();
+                chunksGeneratingTextureMap.Remove(chunk.Key);
                 loadedChunks.Add(chunk.Key, chunk.Value);
-                chunksBeingGenerated.Remove(chunk.Key);
                 SetChunkNeighborhood(chunk.Value);
             }
         }
     }
 
-
+    
     /* ----------- Event Functions ------------------------------------------------------------- */
 
     void SetChunkNeighborhood(TerrainChunk chunk) {
@@ -213,9 +274,11 @@ public class ChunkCache {
          * Return a list of all chunks that are loaded, being generated or to be generated
          */
 
-        List<Vector2> allChunks = GetLoadedChunks().Union(chunksBeingGenerated.Keys.ToList()).ToList();
-        allChunks = allChunks.Union(chunksToBeGenerated.Keys.ToList()).ToList();
-        
+        List<Vector2> allChunks = GetLoadedChunks().Union(chunksToBeGenerated.Keys.ToList()).ToList();
+        allChunks = allChunks.Union(chunksGeneratingHeightMap.Keys.ToList()).ToList();
+        allChunks = allChunks.Union(chunksFinishedHeightMaps.Keys.ToList()).ToList();
+        allChunks = allChunks.Union(chunksGeneratingTextureMap.Keys.ToList()).ToList();
+
         return allChunks;
     }
 
@@ -227,8 +290,10 @@ public class ChunkCache {
         bool canBeRemoved = false;
         
         if(
-                loadedChunks.ContainsKey(key) || 
-                chunksBeingGenerated.ContainsKey(key) || 
+                loadedChunks.ContainsKey(key) ||
+                chunksGeneratingHeightMap.ContainsKey(key) ||
+                chunksFinishedHeightMaps.ContainsKey(key) ||
+                chunksGeneratingTextureMap.ContainsKey(key) ||
                 chunksToBeGenerated.ContainsKey(key)) {
             canBeRemoved = true;
         }
@@ -243,8 +308,10 @@ public class ChunkCache {
         bool canBeAdded = false;
 
         if(!(
-                loadedChunks.ContainsKey(key) || 
-                chunksBeingGenerated.ContainsKey(key) || 
+                loadedChunks.ContainsKey(key) ||
+                chunksGeneratingHeightMap.ContainsKey(key) ||
+                chunksFinishedHeightMaps.ContainsKey(key) ||
+                chunksGeneratingTextureMap.ContainsKey(key) ||
                 chunksToBeGenerated.ContainsKey(key))) {
             canBeAdded = true;
         }

@@ -42,8 +42,6 @@ public class PortalView : MonoBehaviour {
     /* The rendering layer that the camera's will ignore */
     private int cameraIgnoreLayer = -1;
 
-    /* When this is true, the camera's rendering layer has been set and won't change */
-    private bool forcedLayer = false;
 
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
 
@@ -383,7 +381,6 @@ public class PortalView : MonoBehaviour {
             for(int i = 0; i < recursiveCameras.Length; i++) {
                 recursiveCameras[i].GetComponent<Camera>().cullingMask = 1 << layer;
             }
-            //forcedLayer = true;
         }
     }
 
@@ -392,10 +389,9 @@ public class PortalView : MonoBehaviour {
          * Assign the given layer to be ignored by all the scout camera's linked to this portal and 
          * any new cameras created. If the layer is -1, do not remove any layers from being rendered.
          */
-        Debug.Log("set");
         cameraIgnoreLayer = layer;
         
-        if(recursiveCameras != null && forcedLayer != true) {
+        if(recursiveCameras != null) {
             /* If the given layer is -1, then do not remove any renderingLayers for the cameras */
             if(layer == -1) {
                 for(int i = 0; i < recursiveCameras.Length; i++) {

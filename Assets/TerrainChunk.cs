@@ -11,14 +11,22 @@ public class TerrainChunk {
     public Terrain terrain;
     private TerrainChunkSettings Settings;
     private float[,] heightMap;
+    private float[,,] splatMap;
     private TerrainData terrainData;
+    private SplatPrototype[] biomeSplatMaps;
 
-    /* Use this lock to indicate whether this object is creating it's heightmap */
+    /* Use this lock to indicate whether this object is creating it's maps */
     private object heightMapThreadLock;
+    private object terrainMapThreadLock;
 
     /* Use this to find the height of the terrain */
     private NoiseProvider noiseProvider;
-
+    
+    /* Sizes of the terrain's alpha map. Used for tracking purposes. */
+    private int alphaRes;
+    private int alphaHeight;
+    private int alphaWidth;
+    
 
     /* ----------- Constructor Functions ------------------------------------------------------------- */
 
@@ -28,6 +36,7 @@ public class TerrainChunk {
          */
 
         heightMapThreadLock = new object();
+        terrainMapThreadLock = new object();
         Settings = settings;
         noiseProvider = noise;
         X = (int) key.x;
@@ -36,32 +45,51 @@ public class TerrainChunk {
         terrainData.heightmapResolution = Settings.HeightmapResolution;
         terrainData.alphamapResolution = Settings.AlphamapResolution;
     }
-    
-    /* ----------- Heightmap Functions ------------------------------------------------------------- */
-    
+
+    /* ----------- Map Generation Functions ------------------------------------------------------------- */
+
     public void GenerateHeightMapRequest() {
         /*
-         * Start the thread that generates the heightmap
+         * Start the thread that generates the height map
          */
 
         Thread thread = new Thread(GenerateHeightMapThread);
         thread.Start();
     }
 
-    private void GenerateHeightMapThread() {
+    public void GenerateTextureMapRequest() {
         /*
-         * Generate the terrainData for this terrainChunk, but have it done within a lock.
-         * Generating the terrainData requires creating the heightMap and the terrain's textures,
-         * which requires accessing Mathf.Perlin, which is an expensive task.
+         * Start the thread that generates the texture map
          */
 
-        /* Lock the thread until it fully generates the terrainData */
+        Thread thread = new Thread(GenerateTextureMapThread);
+        thread.Start();
+    }
+
+    private void GenerateHeightMapThread() {
+        /*
+         * Generate the height map for this terrainChunk within a thread and a lock.
+         */
+
+        /* Lock the thread until it fully generates the height map */
         lock(heightMapThreadLock) {
+
             /* Generate the heightMap for the terrainData */
             GenerateHeightMap();
+        }
+    }
 
-            /* Generate the terrainData and it's texture */
-            
+    private void GenerateTextureMapThread() {
+        /*
+         * Generate the texture map for this terrainChunk within a thread and a lock.
+         * This requires the heightMap to be generated.
+         */
+
+        /* Lock the thread until it fully generates the texture map */
+        lock(terrainMapThreadLock) {
+
+            /* Generate the texture map */
+            GenerateTextureMap();
         }
     }
 
@@ -77,7 +105,7 @@ public class TerrainChunk {
                 float lengthModifier = Settings.Length/1000f;
                 float xCoord = lengthModifier*(X + (float) x / (Settings.HeightmapResolution - 1));
                 float zCoord = lengthModifier*(Z + (float) z / (Settings.HeightmapResolution - 1));
-                
+
                 newHeightMap[z, x] = noiseProvider.GetNoise(xCoord, zCoord);
             }
         }
@@ -85,26 +113,61 @@ public class TerrainChunk {
         heightMap = newHeightMap;
     }
 
-    public void GenerateTerrainData() {
+    public void GenerateTextureMap() {
         /*
-         * Create the terrainData and set it's texture
+         * Create the texture map
          */
-         
-        terrainData.SetHeights(0, 0, heightMap);
-        terrainData.size = new Vector3(Settings.Length, Settings.Height, Settings.Length);
-        ApplyTextures(terrainData);
+
+        ApplyTextures();
     }
 
     public bool IsHeightmapReady() {
         /*
-         * Return true if the heightmap is fully generated and the terrain has not yet been generated
+         * Return true if the height map is fully generated and the terrain has not yet been generated
          */
 
         return (terrain == null && heightMap != null);
     }
 
+    public bool IsTerrainMapReady() {
+        /*
+         * Return true if the terrain map is fully generated and the terrain has not yet been generated
+         */
+
+        return (terrain == null && splatMap != null);
+    }
+
+    public void SetupTextureMap() {
+        /*
+         * Set up values for the texture map so it can properly texture the terrain.
+         * This will run after the height map is generated and before the texture generation starts.
+         */
+         
+        /* Apply the heightMap to the terrain */
+        terrainData.SetHeights(0, 0, heightMap);
+        terrainData.size = new Vector3(Settings.Length, Settings.Height, Settings.Length);
+
+
+
+        /* Create the splatMaps for the terrain's texture */
+        alphaRes = terrainData.alphamapResolution;
+        alphaHeight = terrainData.alphamapHeight;
+        alphaWidth = terrainData.alphamapWidth;
+    }
+
 
     /* ----------- Event Functions ------------------------------------------------------------- */
+
+    public void ForceLoad() {
+        /*
+         * Force the main thread to load the given chunk without using threads
+         */
+
+        GenerateHeightMap();
+        SetupTextureMap();
+        GenerateTextureMap();
+        CreateObject();
+    }
 
     public void SetChunkCoordinates(int x, int z) {
         /*
@@ -115,18 +178,24 @@ public class TerrainChunk {
         Z = z;
     }
     
-    public void CreateTerrain() {
+    public void CreateObject() {
         /*
-         * Create the terrain object using the terrainData
+         * Create the gameObject of the terrain. Runs after the height and texture maps have been loaded.
          */
-        GenerateTerrainData();
+
+        /* Apply the splat prototypes onto the terrain */
+        terrainData.splatPrototypes = biomeSplatMaps;
+        terrainData.RefreshPrototypes();
+        /* Apply the textured splatMap to the terrain */
+        terrainData.SetAlphamaps(0, 0, splatMap);
+
         /* Create the object that will contain the terrain components */
         GameObject newTerrainGameObject = Terrain.CreateTerrainGameObject(terrainData);
         newTerrainGameObject.transform.position = new Vector3(X * Settings.Length, 0, Z * Settings.Length);
         newTerrainGameObject.transform.parent = Settings.chunkContainer;
         newTerrainGameObject.transform.name = "[" + X + ", " + Z + "]";
         
-        /*  Set the material of the terrain */
+        /* Set the material of the terrain and it's stats */
         terrain = newTerrainGameObject.GetComponent<Terrain>();
         terrain.heightmapPixelError = 8;
         terrain.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
@@ -137,16 +206,16 @@ public class TerrainChunk {
         terrain.Flush();
     }
 
-    private void ApplyTextures(TerrainData data) {
+    private void ApplyTextures() {
         /*
          * Apply texture to the terrain data depending on the shape of the terrain.
          * Use the ratio of the given position's biome to determine which texture to use.
          * Also use the steepness of the terrain to determines the texture used.
          */
-        int biomeTextureCount = Mathf.Min(noiseProvider.biomeRange.Length*2, Settings.terrainTextures.Length);
 
         /* Create a splat map prototype for each texture that will be used */
-        SplatPrototype[] biomeSplatMaps = new SplatPrototype[biomeTextureCount];
+        int biomeTextureCount = Mathf.Min(noiseProvider.biomeRange.Length*2, Settings.terrainTextures.Length);
+        biomeSplatMaps = new SplatPrototype[biomeTextureCount];
         for(int i = 0; i < biomeTextureCount; i++) {
             biomeSplatMaps[i] = new SplatPrototype();
         }
@@ -156,18 +225,20 @@ public class TerrainChunk {
             biomeSplatMaps[i].texture = Settings.terrainTextures[i];
         }
 
-        /* Apply the splat prototypes onto the terrain */
-        terrainData.splatPrototypes = biomeSplatMaps;
-        terrainData.RefreshPrototypes();
+
+
+
+
+
 
         /* Set the splatmap to switch textures as the terrain's steepness grows */
         float normX, normZ, steepness, normSteepness;
         float[] maxAngle = new float[] { 15, 10, 30, 45, 70 };
-        float[,,] splatMap = new float[data.alphamapResolution, data.alphamapResolution, biomeTextureCount];
-        for(int z = 0; z < data.alphamapHeight; z++) {
-            for(int x = 0; x < data.alphamapWidth; x++) {
-                normX = (float) x / (terrainData.alphamapWidth - 1);
-                normZ = (float) z / (terrainData.alphamapHeight - 1);
+        float[,,] newSplatMap = new float[alphaRes, alphaRes, biomeTextureCount];
+        for(int z = 0; z < alphaHeight; z++) {
+            for(int x = 0; x < alphaWidth; x++) {
+                normX = (float) x / (alphaWidth - 1);
+                normZ = (float) z / (alphaHeight - 1);
                 
                 /* Each biome is assigned two textures. Switch between them depending in the steepness */
                 float lengthModifier = Settings.Length/1000f;
@@ -184,12 +255,13 @@ public class TerrainChunk {
                     usedTextureRatio = noiseProvider.GetBiomeRatio(i, xCoord, zCoord);
 
                     /* Split the texture ratio across the two textures used by this biome relative to the steepness */
-                    splatMap[z, x, i*2 + 0] = usedTextureRatio*(normSteepness);
-                    splatMap[z, x, i*2 + 1] = usedTextureRatio*(1 - normSteepness);
+                    newSplatMap[z, x, i*2 + 0] = usedTextureRatio*(normSteepness);
+                    newSplatMap[z, x, i*2 + 1] = usedTextureRatio*(1 - normSteepness);
                 }
             }
         }
-        terrainData.SetAlphamaps(0, 0, splatMap);
+
+        splatMap = newSplatMap;
     }
 
     public void Remove() {

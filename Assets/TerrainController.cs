@@ -91,7 +91,7 @@ public class TerrainController : MonoBehaviour {
             List<Vector2> newChunks = GetVisibleChunksFromPosition(newChunk, chunkViewRange);
             List<Vector2> chunksToRemove = allChunks.Except(newChunks).ToList();
             List<Vector2> chunksToLoad = newChunks.Except(allChunks).ToList();
-            
+
             /* Remove the unnecessary chunks */
             RemoveChunksRequest(chunksToRemove);
 
