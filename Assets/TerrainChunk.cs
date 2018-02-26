@@ -270,7 +270,10 @@ public class TerrainChunk {
          */
 
         Settings = null;
+        heightMap = null;
+        splatMap = null;
         if(terrain != null) {
+            Debug.Log(terrain.name);
             GameObject.Destroy(terrain.gameObject);
         }
     }

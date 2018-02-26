@@ -49,6 +49,7 @@ public class ChunkCache {
          * Update the terrain by going through the cache's collections
          */
         Debug.Log(chunksToBeGenerated.ToList().Count + " " + chunksGeneratingHeightMap.ToList().Count + " " + chunksFinishedHeightMaps.ToList().Count + " " + chunksGeneratingTextureMap.ToList().Count + " " + loadedChunks.ToList().Count);
+        Debug.Log(chunksToRemove.ToList().Count);
 
         /* Remove any chunks that must be removed */
         RemoveChunks();
@@ -73,12 +74,9 @@ public class ChunkCache {
          * Force the given chunk to be fully loaded, regardless of thread limits. This is
          * run at startup as the game will load everything first.
          */
-
-        /* Create the heightMap and the terrain texture of the chunk without using a thread */
+         
+        /* Create the entire chunk without using a thread */
         newChunk.ForceLoad();
-
-        /* Create the object of the chunk */
-        newChunk.CreateObject();
 
         /* Add the chunk to the loadedChunks list */
         loadedChunks.Add(newChunk.GetChunkCoordinates(), newChunk);
@@ -104,6 +102,7 @@ public class ChunkCache {
                 loadedChunks[key].Remove();
                 loadedChunks.Remove(key);
                 chunksToRemove.Remove(key);
+                Debug.Log("removed loaded chunk");
             }
 
             /* The chunk has not yet been loaded, so it's save to remove them */
@@ -157,12 +156,12 @@ public class ChunkCache {
         if(chunksFinishedHeightMaps.Count() > 0 && chunksGeneratingTextureMap.Count() < maxChunkThreads) {
 
             /* Get enough chunks to fill the height generation thread */
-            var chunksToGenerate = chunksToBeGenerated.Take(maxChunkThreads - chunksGeneratingTextureMap.Count());
+            var chunksToGenerate = chunksFinishedHeightMaps.Take(maxChunkThreads - chunksGeneratingTextureMap.Count());
 
             /* Start generating the chunk's texture map and add it to chunksGeneratingTextureMap */
             foreach(var chunk in chunksToGenerate) {
                 chunksGeneratingTextureMap.Add(chunk.Key, chunk.Value);
-                chunksToBeGenerated.Remove(chunk.Key);
+                chunksFinishedHeightMaps.Remove(chunk.Key);
                 chunk.Value.GenerateTextureMapRequest();
             }
         }
