@@ -61,7 +61,7 @@ public class TerrainController : MonoBehaviour {
         InitializeVariables();
 
         /* Set the settings for each chunk */
-        settings.SetSettings(chunkResolution, chunkLength, height, terrainContainer.transform, terrainMaterial, terrainTextures);
+        settings.SetSettings(chunkResolution, chunkLength, height, terrainContainer.transform, terrainMaterial, terrainTextures, PortalSet.maxLayer + 2);
 
         /* Set the current chunk position */
         currentChunk = GetChunkPosition(focusPoint.position);

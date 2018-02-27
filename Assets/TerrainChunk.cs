@@ -9,7 +9,7 @@ public class TerrainChunk {
 
     /* The terrain of the chunk */
     public Terrain terrain;
-    private TerrainChunkSettings Settings;
+    private TerrainChunkSettings settings;
     private float[,] heightMap;
     private float[,,] splatMap;
     private TerrainData terrainData;
@@ -22,28 +22,23 @@ public class TerrainChunk {
     /* Use this to find the height of the terrain */
     private NoiseProvider noiseProvider;
     
-    /* Sizes of the terrain's alpha map. Used for tracking purposes. */
-    private int alphaRes;
-    private int alphaHeight;
-    private int alphaWidth;
-    
 
     /* ----------- Constructor Functions ------------------------------------------------------------- */
 
-    public TerrainChunk(TerrainChunkSettings settings, NoiseProvider noise, Vector2 key) {
+    public TerrainChunk(TerrainChunkSettings chunkSettings, NoiseProvider noise, Vector2 key) {
         /*
          * Create a new terrainChunk with the given parameters
          */
 
         heightMapThreadLock = new object();
         terrainMapThreadLock = new object();
-        Settings = settings;
+        settings = chunkSettings;
         noiseProvider = noise;
         X = (int) key.x;
         Z = (int) key.y;
         terrainData = new TerrainData();
-        terrainData.heightmapResolution = Settings.HeightmapResolution;
-        terrainData.alphamapResolution = Settings.AlphamapResolution;
+        terrainData.heightmapResolution = settings.HeightmapResolution;
+        terrainData.alphamapResolution = settings.AlphamapResolution;
     }
 
     /* ----------- Map Generation Functions ------------------------------------------------------------- */
@@ -99,12 +94,12 @@ public class TerrainChunk {
          */
          
         /* Populate the heightMap by going through it's resolution */
-        float[,] newHeightMap = new float[Settings.HeightmapResolution, Settings.HeightmapResolution];
-        for(int z = 0; z < Settings.HeightmapResolution; z++) {
-            for(int x = 0; x < Settings.HeightmapResolution; x++) {
-                float lengthModifier = Settings.Length/1000f;
-                float xCoord = lengthModifier*(X + (float) x / (Settings.HeightmapResolution - 1));
-                float zCoord = lengthModifier*(Z + (float) z / (Settings.HeightmapResolution - 1));
+        float[,] newHeightMap = new float[settings.HeightmapResolution, settings.HeightmapResolution];
+        for(int z = 0; z < settings.HeightmapResolution; z++) {
+            for(int x = 0; x < settings.HeightmapResolution; x++) {
+                float lengthModifier = settings.Length/1000f;
+                float xCoord = lengthModifier*(X + (float) x / (settings.HeightmapResolution - 1));
+                float zCoord = lengthModifier*(Z + (float) z / (settings.HeightmapResolution - 1));
 
                 newHeightMap[z, x] = noiseProvider.GetNoise(xCoord, zCoord);
             }
@@ -115,10 +110,46 @@ public class TerrainChunk {
 
     public void GenerateTextureMap() {
         /*
-         * Create the texture map
+         * Apply texture to the terrain data depending on the shape of the terrain.
+         * Use the ratio of the given position's biome to determine which texture to use.
+         * Use two splatMaps for each biomes and set the ratio for both of them.
+         * Later, a function will pass through and will change the splatMap values depending on the steepness.
          */
 
-        ApplyTextures();
+        /* Create a splat map prototype for each texture that will be used */
+        int biomeTextureCount = Mathf.Min(noiseProvider.biomeRange.Length*2, settings.terrainTextures.Length);
+        biomeSplatMaps = new SplatPrototype[biomeTextureCount];
+        for(int i = 0; i < biomeTextureCount; i++) {
+            biomeSplatMaps[i] = new SplatPrototype();
+        }
+
+        /* Assign a texture in the settings to each splat prototype */
+        for(int i = 0; i < biomeTextureCount; i++) {
+            biomeSplatMaps[i].texture = settings.terrainTextures[i];
+        }
+
+        /* Cycle through each vertices of the terrain, getting which splatMaps have what values due to biome ratios */
+        float usedTextureRatio, lengthModifier, xCoord, zCoord;
+        float[] maxAngle = new float[] { 15, 10, 30, 45, 70 };
+        float[,,] newSplatMap = new float[settings.AlphamapResolution, settings.AlphamapResolution, biomeTextureCount];
+        for(int z = 0; z < settings.AlphamapResolution; z++) {
+            for(int x = 0; x < settings.AlphamapResolution; x++) {
+
+                /* Each biome is assigned two textures. Switch between them depending in the steepness */
+                lengthModifier = settings.Length/1000f;
+                xCoord = lengthModifier*(X + (float) x / (settings.AlphamapResolution - 1));
+                zCoord = lengthModifier*(Z + (float) z / (settings.AlphamapResolution - 1));
+                for(int i = 0; i < biomeTextureCount/2; i++) {
+
+                    /* Get the ratio of the texture that will be used for this biome and apply it to the splatMap */
+                    usedTextureRatio = noiseProvider.GetBiomeRatio(i, xCoord, zCoord);
+                    newSplatMap[z, x, i*2 + 0] = usedTextureRatio;
+                    newSplatMap[z, x, i*2 + 1] = usedTextureRatio;
+                }
+            }
+        }
+
+        splatMap = newSplatMap;
     }
 
     public bool IsHeightmapReady() {
@@ -145,14 +176,7 @@ public class TerrainChunk {
          
         /* Apply the heightMap to the terrain */
         terrainData.SetHeights(0, 0, heightMap);
-        terrainData.size = new Vector3(Settings.Length, Settings.Height, Settings.Length);
-
-
-
-        /* Create the splatMaps for the terrain's texture */
-        alphaRes = terrainData.alphamapResolution;
-        alphaHeight = terrainData.alphamapHeight;
-        alphaWidth = terrainData.alphamapWidth;
+        terrainData.size = new Vector3(settings.Length, settings.Height, settings.Length);
     }
 
 
@@ -189,87 +213,41 @@ public class TerrainChunk {
         /* Apply the splat prototypes onto the terrain */
         terrainData.splatPrototypes = biomeSplatMaps;
         terrainData.RefreshPrototypes();
-        /* Apply the textured splatMap to the terrain */
         terrainData.SetAlphamaps(0, 0, splatMap);
 
         /* Create the object that will contain the terrain components */
         GameObject newTerrainGameObject = Terrain.CreateTerrainGameObject(terrainData);
-        newTerrainGameObject.transform.position = new Vector3(X * Settings.Length, 0, Z * Settings.Length);
-        newTerrainGameObject.transform.parent = Settings.chunkContainer;
+        newTerrainGameObject.transform.position = new Vector3(X * settings.Length, 0, Z * settings.Length);
+        newTerrainGameObject.transform.parent = settings.chunkContainer;
         newTerrainGameObject.transform.name = "[" + X + ", " + Z + "]";
-        
+        newTerrainGameObject.layer = settings.terrainLayer;
+
         /* Set the material of the terrain and it's stats */
         terrain = newTerrainGameObject.GetComponent<Terrain>();
         terrain.heightmapPixelError = 8;
         terrain.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
         terrain.materialType = UnityEngine.Terrain.MaterialType.Custom;
-        terrain.materialTemplate = Settings.terrainMaterial;
+        terrain.materialTemplate = settings.terrainMaterial;
         terrain.heightmapPixelError = 1;
         terrain.basemapDistance = CustomPlayerController.cameraFarClippingPlane;
         terrain.Flush();
     }
-
-    private void ApplyTextures() {
-        /*
-         * Apply texture to the terrain data depending on the shape of the terrain.
-         * Use the ratio of the given position's biome to determine which texture to use.
-         * Use two splatMaps for each biomes and set the ratio for both of them.
-         * Later, a function will pass through and will change the splatMap values depending on the steepness.
-         */
-
-        /* Create a splat map prototype for each texture that will be used */
-        int biomeTextureCount = Mathf.Min(noiseProvider.biomeRange.Length*2, Settings.terrainTextures.Length);
-        biomeSplatMaps = new SplatPrototype[biomeTextureCount];
-        for(int i = 0; i < biomeTextureCount; i++) {
-            biomeSplatMaps[i] = new SplatPrototype();
-        }
-
-        /* Assign a texture in the settings to each splat prototype */
-        for(int i = 0; i < biomeTextureCount; i++) {
-            biomeSplatMaps[i].texture = Settings.terrainTextures[i];
-        }
-        
-        /* Cycle through each vertices of the terrain, getting which splatMaps have what values due to biome ratios */
-        float normX, normZ, usedTextureRatio, lengthModifier, xCoord, zCoord;
-        float[] maxAngle = new float[] { 15, 10, 30, 45, 70 };
-        float[,,] newSplatMap = new float[alphaRes, alphaRes, biomeTextureCount];
-        for(int z = 0; z < alphaHeight; z++) {
-            for(int x = 0; x < alphaWidth; x++) {
-                normX = (float) x / (alphaWidth - 1);
-                normZ = (float) z / (alphaHeight - 1);
-                
-                /* Each biome is assigned two textures. Switch between them depending in the steepness */
-                lengthModifier = Settings.Length/1000f;
-                xCoord = lengthModifier*(X + (float) x / (Settings.HeightmapResolution - 1));
-                zCoord = lengthModifier*(Z + (float) z / (Settings.HeightmapResolution - 1));
-                for(int i = 0; i < biomeTextureCount/2; i++) {
-                    
-                    /* Get the ratio of the texture that will be used for this biome and apply it to the splatMap */
-                    usedTextureRatio = noiseProvider.GetBiomeRatio(i, xCoord, zCoord);
-                    newSplatMap[z, x, i*2 + 0] = usedTextureRatio;
-                    newSplatMap[z, x, i*2 + 1] = usedTextureRatio;
-                }
-            }
-        }
-
-        splatMap = newSplatMap;
-    }
-
+    
     private void ApplyTerrainSteepness() {
         /*
          * Go through the terrain's vertices and adjust it's splatMaps depending on the steepness of each vert.
          */
-        int biomeTextureCount = Mathf.Min(noiseProvider.biomeRange.Length*2, Settings.terrainTextures.Length);
+        int biomeTextureCount = Mathf.Min(noiseProvider.biomeRange.Length*2, settings.terrainTextures.Length);
 
         /* Set the splatmap to switch textures as the terrain's steepness grows */
         float normX, normZ, steepness, normSteepness;
         float[] maxAngle = new float[] { 15, 10, 30, 45, 70 };
         float[,,] newSplatMap = splatMap;
-        for(int z = 0; z < alphaHeight; z++) {
-            for(int x = 0; x < alphaWidth; x++) {
+        for(int z = 0; z < settings.AlphamapResolution; z++) {
+            for(int x = 0; x < settings.AlphamapResolution; x++) {
 
-                normX = (float) x / (alphaWidth - 1);
-                normZ = (float) z / (alphaHeight - 1);
+                normX = (float) x / (settings.AlphamapResolution - 1);
+                normZ = (float) z / (settings.AlphamapResolution - 1);
                 for(int i = 0; i < biomeTextureCount/2; i++) {
 
                     /* Get the steepness of the terrain at this given position. Each biome has a different stepRatio */
@@ -291,7 +269,7 @@ public class TerrainChunk {
          * Delete this chunk of terrain
          */
 
-        Settings = null;
+        settings = null;
         heightMap = null;
         splatMap = null;
         if(terrain != null) {

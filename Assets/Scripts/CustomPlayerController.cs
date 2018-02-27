@@ -162,6 +162,9 @@ public class CustomPlayerController : MonoBehaviour {
          */
         cameraFarClippingPlane = playerCamera.farClipPlane;
 
+        /* Set the rendering layers of the camera so the player doesnt render the outside terrain */
+        playerCamera.cullingMask = ~(1 << PortalSet.maxLayer + 2);
+
         /* Link the player's step tracker to their sound script */
         playerStepTracker.SetSoundsScript(playerSoundsScript);
 
@@ -1256,9 +1259,12 @@ public class CustomPlayerController : MonoBehaviour {
         fastFallMod = 5;
         maxYVelocity = 1.5f;
 
-        /* Set the player's camera's close clipping plane to a higher value as it fixes issues when rendering
+        /* Set the player camera's close clipping plane to a higher value as it fixes issues when rendering
          * objects far away and we will not be encoutering another portal anymore. */
         playerCamera.nearClipPlane = 0.1f;
+
+        /* Change the player camera's layers so that they are rendering the terrain layer */
+        playerCamera.cullingMask = -1;
     }
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
