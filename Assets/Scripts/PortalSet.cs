@@ -261,17 +261,6 @@ public class PortalSet : MonoBehaviour {
 
 
     /* -------- Event Functions ---------------------------------------------------- */
-
-    public void SetPortalLayer(int layer) {
-        /*
-         * Set the layers of the portal's cameras to only render the given layer.
-         */
-
-        EntrancePortal.portalMesh.GetComponent<PortalView>().ForceCameraRenderLayer(layer);
-        EntrancePortal.backwardsPortalMesh.GetComponent<PortalView>().ForceCameraRenderLayer(layer);
-        ExitPortal.portalMesh.GetComponent<PortalView>().ForceCameraRenderLayer(layer);
-        ExitPortal.backwardsPortalMesh.GetComponent<PortalView>().ForceCameraRenderLayer(layer);
-    }
     
     void AssignRenderingLayers() {
         /*

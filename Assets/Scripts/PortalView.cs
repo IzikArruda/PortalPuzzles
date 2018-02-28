@@ -38,9 +38,11 @@ public class PortalView : MonoBehaviour {
 
     /* The max viewing depth for recursive portal calls */
     private static int maxCameraDepth = 5;
-    
-    /* The rendering layer that the camera's will ignore */
+
+    /* Values that track what the camera's culling layers will be */
     private int cameraIgnoreLayer = -1;
+    private bool renderTerrain = false;
+    private bool onlySkySphere = false;
 
 
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
@@ -99,7 +101,7 @@ public class PortalView : MonoBehaviour {
             }
 
             /* Assign the proper renderingLayer to the cameras */
-            AssignCameraLayer(cameraIgnoreLayer);
+            UpdateCameraRenderingLayer();
         }
     }
     
@@ -371,56 +373,73 @@ public class PortalView : MonoBehaviour {
 
     /* -------- Event Functions ---------------------------------------------------- */
 
-    public void ForceCameraRenderLayer(int layer) {
+    public void SetSkySphereLayer(bool newValue) {
         /*
-         * Force the cameras of this portal to use the given layer and only the given layer.
-         * This means it will only render objects on said layer. Used when rendering the skySphere
+         * Set the onlySkySphere boolean to the given value and refresh the portal's camera's rendering layer
          */
 
-        if(recursiveCameras != null) {
-            for(int i = 0; i < recursiveCameras.Length; i++) {
-                recursiveCameras[i].GetComponent<Camera>().cullingMask = 1 << layer;
-            }
-        }
+        onlySkySphere = newValue;
+        UpdateCameraRenderingLayer();
+    }
+
+    public void SetRenderTerrain(bool newValue) {
+        /*
+         * Set the renderTerrain boolean to the given value and refresh the portal's camera's rendering layer
+         */
+
+        renderTerrain = newValue;
+        UpdateCameraRenderingLayer();
     }
     
-    public void AddCameraRenderLayer(int layer) {
-        /*
-         * Add the given layer to the camera's current rendering layer
-         */
-
-        if(recursiveCameras != null) {
-            for(int i = 0; i < recursiveCameras.Length; i++) {
-                recursiveCameras[i].GetComponent<Camera>().cullingMask = recursiveCameras[i].GetComponent<Camera>().cullingMask & (1 << layer);
-            }
-        }
-        Debug.Log("test");
-    }
-
     public void AssignCameraLayer(int layer) {
         /*
+         * Have this portal's cameras ignore the given layer. This is mainly used when handling double sided portals.
+         */
+
+        cameraIgnoreLayer = layer;
+        UpdateCameraRenderingLayer();
+    }
+
+    public void UpdateCameraRenderingLayer() {
+        /*
+         * Update the camera's rendering layer to reflect this script's previously set variables
+         * (cameraIgnoreLayer, onlySkySphere, renderTerrain).
+         * 
          * Assign the given layer to be ignored by all the scout camera's linked to this portal and 
          * any new cameras created. If the layer is -1, do not remove any layers from being rendered.
          */
-        cameraIgnoreLayer = layer;
         
         if(recursiveCameras != null) {
-            /* If the given layer is -1, then do not remove any renderingLayers for the cameras */
-            if(layer == -1) {
+
+            /* Only render the skySphere layer */
+            if(onlySkySphere) {
                 for(int i = 0; i < recursiveCameras.Length; i++) {
-                    recursiveCameras[i].GetComponent<Camera>().cullingMask = cameraIgnoreLayer;
-                }
-            }
-            /* have the children cameras render all but the given rendering layer */
-            else {
-                for(int i = 0; i < recursiveCameras.Length; i++) {
-                    recursiveCameras[i].GetComponent<Camera>().cullingMask = ~(1 << cameraIgnoreLayer);
+                    recursiveCameras[i].GetComponent<Camera>().cullingMask = 1 << PortalSet.maxLayer + 1;
                 }
             }
 
-            /* No matter the layer to render, do not render the terrainLayer */
-            for(int i = 0; i < recursiveCameras.Length; i++) {
-                recursiveCameras[i].GetComponent<Camera>().cullingMask = recursiveCameras[i].GetComponent<Camera>().cullingMask & ~(1 << PortalSet.maxLayer + 2);
+            else {
+
+                /* If told to ignore layer -1, the camera will render all layers */
+                if(cameraIgnoreLayer == -1) {
+                    for(int i = 0; i < recursiveCameras.Length; i++) {
+                        recursiveCameras[i].GetComponent<Camera>().cullingMask = cameraIgnoreLayer;
+                    }
+                }
+
+                /* Any value other than -1 will properly be ignored */
+                else {
+                    for(int i = 0; i < recursiveCameras.Length; i++) {
+                        recursiveCameras[i].GetComponent<Camera>().cullingMask = ~(1 << cameraIgnoreLayer);
+                    }
+                }
+
+                /* If the renderTerrain boolean is false, remove the terrain layer from the camera */
+                if(!renderTerrain) {
+                    for(int i = 0; i < recursiveCameras.Length; i++) {
+                        recursiveCameras[i].GetComponent<Camera>().cullingMask = recursiveCameras[i].GetComponent<Camera>().cullingMask & ~(1 << PortalSet.maxLayer + 2);
+                    }
+                }
             }
         }
     }

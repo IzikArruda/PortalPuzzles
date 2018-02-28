@@ -74,10 +74,6 @@ public class WaitingRoom : ConnectedRoom {
 
         /* Update the sky sphere */
         UpdateSkySphere();
-
-        /* Update the layers of each object */
-        UpdateLayers();
-
     }
 
     void OnTriggerEnter(Collider player) {
@@ -249,8 +245,14 @@ public class WaitingRoom : ConnectedRoom {
         ontoWallOffset = new Vector3(xDist/2f - (xDist - entranceRoom.exitWidth)/2f, yDist/2f - windowHeight/2f, -zDist/2f);
         ontoWallEuler = new Vector3(0, 180, 0);
         UpdateWindowTransform(windows[3], ontoWallOffset, ontoWallEuler, windowWidthRatio*wallWidth);
-
-
+        
+        /* Make each portal's camera only render the skySphere layer */
+        for(int i = 0; i < windows.Length; i++) {
+            windows[i].portalSet.EntrancePortal.portalMesh.GetComponent<PortalView>().SetSkySphereLayer(true);
+            windows[i].portalSet.EntrancePortal.backwardsPortalMesh.GetComponent<PortalView>().SetSkySphereLayer(true);
+            windows[i].portalSet.ExitPortal.portalMesh.GetComponent<PortalView>().SetSkySphereLayer(true);
+            windows[i].portalSet.ExitPortal.backwardsPortalMesh.GetComponent<PortalView>().SetSkySphereLayer(true);
+        }
 
         /* Send a command to update the windows with the new given parameters */
         for(int i = 0; i < windows.Length; i++) {
@@ -270,6 +272,7 @@ public class WaitingRoom : ConnectedRoom {
         OffsetSkySphere(new Vector3(0, 0, 0));
         skySphere.transform.localScale = new Vector3(250, 250, 250);
         skySphere.name = "Sky sphere";
+        skySphere.layer = PortalSet.maxLayer + 1;
 
         /* Rotate the material with the same rotation of the outside window */
         skySphere.transform.rotation = windowExit.rotation;
@@ -319,21 +322,6 @@ public class WaitingRoom : ConnectedRoom {
         window.insideRot = eul;
         window.outsidePos = windowExit.position + pos;
         window.outsideRot = windowExit.eulerAngles + eul;
-    }
-
-    void UpdateLayers() {
-        /*
-         * Set the layers of the outside window frame and the window's cameras to only render the skySphere layer.
-         */
-         int layer = PortalSet.maxLayer+1;
-        
-        /* Set the layer of the windows so that the cameras only render the skySphere layer */
-        for(int i  = 0; i < windows.Length; i++) {
-            windows[i].SetWindowLayer(layer);
-        }
-
-        /* Set the layer of the skySphere */
-        skySphere.gameObject.layer = layer;
     }
     
 
