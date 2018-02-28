@@ -184,7 +184,13 @@ public class StartingRoom : ConnectedRoom {
 
         /* Send a command to update the windows with the new given parameters */
         window.UpdateWindow();
-        
+
+        /* Make the window's portal's cameras render the terrain layer as this is the only window that will view the terrain */
+        window.portalSet.EntrancePortal.portalMesh.GetComponent<PortalView>().AddCameraRenderLayer(PortalSet.maxLayer + 2);
+        window.portalSet.EntrancePortal.backwardsPortalMesh.GetComponent<PortalView>().AddCameraRenderLayer(PortalSet.maxLayer + 2);
+        window.portalSet.ExitPortal.portalMesh.GetComponent<PortalView>().AddCameraRenderLayer(PortalSet.maxLayer + 2);
+        window.portalSet.ExitPortal.backwardsPortalMesh.GetComponent<PortalView>().AddCameraRenderLayer(PortalSet.maxLayer + 2);
+
         /* Add a DetectPlayerLegRay script onto the glass of the window, making the window's glass break upon player leg contact */
         if(window.windowPieces[4].GetComponent<DetectPlayerLegRay>() == null) {
             window.windowPieces[4].AddComponent<DetectPlayerLegRay>();

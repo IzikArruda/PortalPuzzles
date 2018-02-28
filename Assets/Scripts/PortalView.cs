@@ -373,8 +373,8 @@ public class PortalView : MonoBehaviour {
 
     public void ForceCameraRenderLayer(int layer) {
         /*
-         * Force the cameras of this portal to use the given layer and only the given render.
-         * This means it will only render objects on said layer. 
+         * Force the cameras of this portal to use the given layer and only the given layer.
+         * This means it will only render objects on said layer. Used when rendering the skySphere
          */
 
         if(recursiveCameras != null) {
@@ -382,6 +382,19 @@ public class PortalView : MonoBehaviour {
                 recursiveCameras[i].GetComponent<Camera>().cullingMask = 1 << layer;
             }
         }
+    }
+    
+    public void AddCameraRenderLayer(int layer) {
+        /*
+         * Add the given layer to the camera's current rendering layer
+         */
+
+        if(recursiveCameras != null) {
+            for(int i = 0; i < recursiveCameras.Length; i++) {
+                recursiveCameras[i].GetComponent<Camera>().cullingMask = recursiveCameras[i].GetComponent<Camera>().cullingMask & (1 << layer);
+            }
+        }
+        Debug.Log("test");
     }
 
     public void AssignCameraLayer(int layer) {
@@ -403,6 +416,11 @@ public class PortalView : MonoBehaviour {
                 for(int i = 0; i < recursiveCameras.Length; i++) {
                     recursiveCameras[i].GetComponent<Camera>().cullingMask = ~(1 << cameraIgnoreLayer);
                 }
+            }
+
+            /* No matter the layer to render, do not render the terrainLayer */
+            for(int i = 0; i < recursiveCameras.Length; i++) {
+                recursiveCameras[i].GetComponent<Camera>().cullingMask = recursiveCameras[i].GetComponent<Camera>().cullingMask & ~(1 << PortalSet.maxLayer + 2);
             }
         }
     }
