@@ -29,5 +29,6 @@ public class TerrainChunkSettings {
         chunkContainer = container;
         terrainTextures = textures;
         terrainLayer = layer;
+        terrainMaterial = terrain;
     }
 }

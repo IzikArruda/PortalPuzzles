@@ -226,9 +226,11 @@ public class TerrainChunk {
         terrain = newTerrainGameObject.GetComponent<Terrain>();
         terrain.heightmapPixelError = 4;
         terrain.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
-        terrain.materialType = UnityEngine.Terrain.MaterialType.BuiltInLegacyDiffuse;
-        //terrain.materialTemplate = settings.terrainMaterial;
-        terrain.basemapDistance = 500;
+        terrain.castShadows = false;
+        terrain.materialType = UnityEngine.Terrain.MaterialType.Custom;
+        terrain.materialTemplate = settings.terrainMaterial;
+        terrain.basemapDistance = CustomPlayerController.cameraFarClippingPlane;
+        Debug.Log(settings.terrainMaterial.shader.name);
         terrain.Flush();
     }
     
