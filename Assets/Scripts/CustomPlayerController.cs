@@ -1300,7 +1300,8 @@ public class CustomPlayerController : MonoBehaviour {
         if(detectTeleportTriggers) {rayLayerMask = rayLayerMask | (1 << LayerMask.NameToLayer("Portal Trigger"));}
         /* Include all colliders into the layerMask. Assume all colliders use the "Default" layer.  */
         if(detectOtherColliders) { rayLayerMask = rayLayerMask | (1 << LayerMask.NameToLayer("Default")); }
-
+        /* Include terrain to stop the player when outside */
+        rayLayerMask = rayLayerMask | (1 << LayerMask.NameToLayer("Terrain"));
 
         /* Travel towards the rotation's forward for the remaining distance */
         while(distance > 0 && stopRayTrace == false) {
