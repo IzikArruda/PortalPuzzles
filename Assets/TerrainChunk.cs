@@ -230,7 +230,6 @@ public class TerrainChunk {
         terrain.materialType = UnityEngine.Terrain.MaterialType.Custom;
         terrain.materialTemplate = settings.terrainMaterial;
         terrain.basemapDistance = CustomPlayerController.cameraFarClippingPlane;
-        Debug.Log(settings.terrainMaterial.shader.name);
         terrain.Flush();
     }
     

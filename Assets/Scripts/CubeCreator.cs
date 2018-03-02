@@ -52,6 +52,7 @@ public class CubeCreator : MonoBehaviour {
          * Ensure the object that has this script has the required components
          */
 
+        updateCube = true;
         InitializeComponents();
     }
 
