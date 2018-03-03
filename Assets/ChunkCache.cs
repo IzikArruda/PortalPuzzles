@@ -48,8 +48,8 @@ public class ChunkCache {
         /*
          * Update the terrain by going through the cache's collections
          */
-        Debug.Log(chunksToBeGenerated.ToList().Count + " " + chunksGeneratingHeightMap.ToList().Count + " " + chunksFinishedHeightMaps.ToList().Count + " " + chunksGeneratingTextureMap.ToList().Count + " " + loadedChunks.ToList().Count);
-        Debug.Log(chunksToRemove.ToList().Count);
+        //Debug.Log(chunksToBeGenerated.ToList().Count + " " + chunksGeneratingHeightMap.ToList().Count + " " + chunksFinishedHeightMaps.ToList().Count + " " + chunksGeneratingTextureMap.ToList().Count + " " + loadedChunks.ToList().Count);
+        //Debug.Log(chunksToRemove.ToList().Count);
 
         /* Remove any chunks that must be removed */
         RemoveChunks();
@@ -102,7 +102,6 @@ public class ChunkCache {
                 loadedChunks[key].Remove();
                 loadedChunks.Remove(key);
                 chunksToRemove.Remove(key);
-                Debug.Log("removed loaded chunk");
             }
 
             /* The chunk has not yet been loaded, so it's save to remove them */

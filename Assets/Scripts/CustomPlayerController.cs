@@ -349,7 +349,7 @@ public class CustomPlayerController : MonoBehaviour {
         Vector3 movementVector = transform.position - lastSavedPosition;
 
         /* Check if there was any movement at all */
-        if(movementVector.magnitude != 0) {
+        if(movementVector.magnitude != 0 && movementVector != Vector3.zero) {
 
             /* Set the values used to fire the ray */
             float remainingDistance = movementVector.magnitude;

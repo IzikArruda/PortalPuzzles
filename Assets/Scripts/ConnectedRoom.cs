@@ -21,6 +21,7 @@ public class ConnectedRoom : MonoBehaviour {
     public BoxCollider roomTrigger;
 
 
+
     /* -------- Helper Functions ---------------------------------------------------- */
 
     public void CreateObjects(ref GameObject[] objects, int size, Vector3 position) {

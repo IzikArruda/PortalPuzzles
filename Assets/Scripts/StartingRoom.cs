@@ -81,6 +81,26 @@ public class StartingRoom : ConnectedRoom {
         }
     }
 
+    void OnEnable() {
+        /*
+         * When this room is enabled, make sure the outside terrain is also enabled
+         */
+
+        if(outsideTerrain != null) {
+            outsideTerrain.gameObject.SetActive(true);
+        }
+    }
+    
+    void OnDisable() {
+        /*
+         * When this room is disabled, make sure the outside terrain is also disabled
+         */
+
+        if(outsideTerrain != null) {
+            outsideTerrain.gameObject.SetActive(false);
+        }
+    }
+    
 
     /* -------- Update Functions ---------------------------------------------------- */
 

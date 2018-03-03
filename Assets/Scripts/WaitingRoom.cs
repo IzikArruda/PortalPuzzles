@@ -405,6 +405,7 @@ public class WaitingRoom : ConnectedRoom {
         roomTrigger.enabled = true;
         windowContainer.gameObject.SetActive(true);
         roomObjectsContainer.gameObject.SetActive(true);
+        skySphere.gameObject.SetActive(true);
         entranceRoom.EnableRoom();
         exitRoom.EnableRoom();
     }
