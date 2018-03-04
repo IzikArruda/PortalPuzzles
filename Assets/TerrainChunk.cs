@@ -1,7 +1,8 @@
 ﻿using UnityEngine;
 using System.Threading;
+using System.Collections;
 
-public class TerrainChunk {
+public class TerrainChunk : MonoBehaviour{
 
     /* Coordinates of the chunk */
     public int X;
@@ -22,6 +23,9 @@ public class TerrainChunk {
     /* Use this to find the height of the terrain */
     private NoiseProvider noiseProvider;
     
+    /* All coroutines */
+    private IEnumerator coroutines;
+    private Coroutine steepnessRoutine;
 
     /* ----------- Constructor Functions ------------------------------------------------------------- */
 
@@ -225,15 +229,17 @@ public class TerrainChunk {
 
 
 
-
         /* Get the steepness of the terrain and adjust the terrain's specific textures depending on it */
-        ApplyTerrainSteepness();
+        steepnessRoutine = StartCoroutine(SteepnessCo());
+
 
 
         after = System.DateTime.Now;
         duration = after.Subtract(before);
         Debug.Log("steepness " + duration.Milliseconds);
         before = System.DateTime.Now;
+
+
 
 
         /* Apply the splat prototypes onto the terrain */
@@ -289,8 +295,12 @@ public class TerrainChunk {
         duration = after.Subtract(before);
         Debug.Log("terrain " + duration.Milliseconds);
     }
-    
-    private void ApplyTerrainSteepness() {
+
+    IEnumerator SteepnessCo() {
+        yield return new ApplyTerrainSteepness();
+    }
+
+    private IEnumerator ApplyTerrainSteepness() {
         /*
          * Go through the terrain's vertices and adjust it's splatMaps depending on the steepness of each vert.
          */
@@ -309,7 +319,7 @@ public class TerrainChunk {
 
                     /* Get the steepness of the terrain at this given position. Each biome has a different stepRatio */
                     steepness = terrainData.GetSteepness(normX, normZ);
-                    normSteepness = Mathf.Clamp((steepness/maxAngle[i]), 0f, 1f);
+                    normSteepness = Mathf.Clamp(steepness/maxAngle[i], 0f, 1f);
 
                     /* Split the texture ratio across the two textures used by this biome relative to the steepness */
                     newSplatMap[z, x, i*2 + 0] = newSplatMap[z, x, i*2 + 0]*(normSteepness);
@@ -319,6 +329,8 @@ public class TerrainChunk {
         }
 
         splatMap = newSplatMap;
+        Debug.Log("Finishes steepness");
+        yield return null;
     }
 
     public void Remove() {

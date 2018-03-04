@@ -24,6 +24,9 @@ public class ChunkCache {
 
     /* A hashset of the chunks that need to be removed */
     public HashSet<Vector2> chunksToRemove;
+
+    /* All coroutines */
+    private IEnumerator coroutines;
     
 
     /* ----------- Constructor Functions ------------------------------------------------------------- */
