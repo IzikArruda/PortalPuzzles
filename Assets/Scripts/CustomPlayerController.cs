@@ -153,7 +153,9 @@ public class CustomPlayerController : MonoBehaviour {
 
     /* Track how many cameras were rendered this frame */
     public static int renderedCameraCount = 0;
-    
+
+    private System.DateTime before;
+
     /* -------------- Built-in Unity Functions ---------------------------------------------------------- */
 
     void Start() {
@@ -251,9 +253,19 @@ public class CustomPlayerController : MonoBehaviour {
          * so by teleporting the player in that moment they will NOT render a frame of them PAST the teleport trigger.
          */
 
+        /* Get how long it's been since a time update */
+        System.DateTime current = System.DateTime.Now;
+        System.TimeSpan duration = current.Subtract(before);
+        Debug.Log(" ------- Since update: " + duration.Milliseconds);
+        before = System.DateTime.Now;
+
+
         //Print how many cams were rendered this frame
         //Debug.Log(renderedCameraCount);
         renderedCameraCount = 0;
+
+
+
 
         /* Update the player's inputs and stateTime */
         inputs.UpdateInputs();
@@ -284,6 +296,11 @@ public class CustomPlayerController : MonoBehaviour {
         //Draw a line in the camera's forward vector
         Debug.DrawLine(playerCamera.transform.position, 
                 playerCamera.transform.position + playerCamera.transform.rotation*Vector3.forward*0.5f, Color.green);
+
+        //time the amount it takes for the player update
+        System.DateTime playerUpdate = System.DateTime.Now;
+        System.TimeSpan playerDur = playerUpdate.Subtract(before);
+        //Debug.Log("PlayerUpdate " + playerDur.Milliseconds);
     }
 
     void LateUpdate() {

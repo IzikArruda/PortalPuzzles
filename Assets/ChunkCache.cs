@@ -65,8 +65,6 @@ public class ChunkCache {
 
         /* Check if any maps have finished generating their texture maps */
         MoveGeneratedTextureMaps();
-
-        //NEED TO SET THE CHUNK NEIHGBOORHOOD ONCE ITS DONE
     }
 
     public void ForceLoadChunk(TerrainChunk newChunk) {

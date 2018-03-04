@@ -173,10 +173,22 @@ public class TerrainChunk {
          * Set up values for the texture map so it can properly texture the terrain.
          * This will run after the height map is generated and before the texture generation starts.
          */
-         
+        System.DateTime before = System.DateTime.Now;
+
+
+
+
+
         /* Apply the heightMap to the terrain */
         terrainData.SetHeights(0, 0, heightMap);
         terrainData.size = new Vector3(settings.Length, settings.Height, settings.Length);
+
+
+
+
+        System.DateTime after = System.DateTime.Now;
+        System.TimeSpan duration = after.Subtract(before);
+        Debug.Log("Texturemap setup: " + duration.Milliseconds);
     }
 
 
@@ -206,14 +218,41 @@ public class TerrainChunk {
         /*
          * Create the gameObject of the terrain. Runs after the height and texture maps have been loaded.
          */
+        System.DateTime after = System.DateTime.Now;
+        System.DateTime before = System.DateTime.Now;
+        System.TimeSpan duration = after.Subtract(before);
+
+
+
+
 
         /* Get the steepness of the terrain and adjust the terrain's specific textures depending on it */
         ApplyTerrainSteepness();
+
+
+        after = System.DateTime.Now;
+        duration = after.Subtract(before);
+        Debug.Log("steepness " + duration.Milliseconds);
+        before = System.DateTime.Now;
+
 
         /* Apply the splat prototypes onto the terrain */
         terrainData.splatPrototypes = biomeSplatMaps;
         terrainData.RefreshPrototypes();
         terrainData.SetAlphamaps(0, 0, splatMap);
+
+
+
+
+
+
+        after = System.DateTime.Now;
+        duration = after.Subtract(before);
+        Debug.Log("splats " + duration.Milliseconds);
+        before = System.DateTime.Now;
+
+
+
 
         /* Create the object that will contain the terrain components */
         GameObject newTerrainGameObject = Terrain.CreateTerrainGameObject(terrainData);
@@ -221,6 +260,19 @@ public class TerrainChunk {
         newTerrainGameObject.transform.parent = settings.chunkContainer;
         newTerrainGameObject.transform.name = "[" + X + ", " + Z + "]";
         newTerrainGameObject.layer = settings.terrainLayer;
+
+
+
+
+
+
+        after = System.DateTime.Now;
+        duration = after.Subtract(before);
+        Debug.Log("object " + duration.Milliseconds);
+        before = System.DateTime.Now;
+
+
+
 
         /* Set the material of the terrain and it's stats */
         terrain = newTerrainGameObject.GetComponent<Terrain>();
@@ -231,6 +283,11 @@ public class TerrainChunk {
         terrain.materialTemplate = settings.terrainMaterial;
         terrain.basemapDistance = CustomPlayerController.cameraFarClippingPlane;
         terrain.Flush();
+
+
+        after = System.DateTime.Now;
+        duration = after.Subtract(before);
+        Debug.Log("terrain " + duration.Milliseconds);
     }
     
     private void ApplyTerrainSteepness() {
