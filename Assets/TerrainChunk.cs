@@ -29,11 +29,11 @@ public class TerrainChunk : MonoBehaviour{
 
     /* ----------- Constructor Functions ------------------------------------------------------------- */
 
-    public TerrainChunk(TerrainChunkSettings chunkSettings, NoiseProvider noise, Vector2 key) {
+    public void Constructor(TerrainChunkSettings chunkSettings, NoiseProvider noise, Vector2 key) {
         /*
          * Create a new terrainChunk with the given parameters
          */
-
+         
         heightMapThreadLock = new object();
         terrainMapThreadLock = new object();
         settings = chunkSettings;
@@ -43,6 +43,12 @@ public class TerrainChunk : MonoBehaviour{
         terrainData = new TerrainData();
         terrainData.heightmapResolution = settings.HeightmapResolution;
         terrainData.alphamapResolution = settings.AlphamapResolution;
+        terrain = gameObject.AddComponent<Terrain>();
+        terrain.terrainData = terrainData;
+        gameObject.transform.position = new Vector3(X * settings.Length, 0, Z * settings.Length);
+        gameObject.transform.parent = settings.chunkContainer;
+        gameObject.transform.name = "[" + X + ", " + Z + "]";
+        gameObject.layer = settings.terrainLayer;
     }
 
     /* ----------- Map Generation Functions ------------------------------------------------------------- */
@@ -230,7 +236,7 @@ public class TerrainChunk : MonoBehaviour{
 
 
         /* Get the steepness of the terrain and adjust the terrain's specific textures depending on it */
-        steepnessRoutine = StartCoroutine(SteepnessCo());
+        StartCoroutine(ApplyTerrainSteepness());
 
 
 
@@ -259,29 +265,9 @@ public class TerrainChunk : MonoBehaviour{
 
 
 
-
-        /* Create the object that will contain the terrain components */
-        GameObject newTerrainGameObject = Terrain.CreateTerrainGameObject(terrainData);
-        newTerrainGameObject.transform.position = new Vector3(X * settings.Length, 0, Z * settings.Length);
-        newTerrainGameObject.transform.parent = settings.chunkContainer;
-        newTerrainGameObject.transform.name = "[" + X + ", " + Z + "]";
-        newTerrainGameObject.layer = settings.terrainLayer;
-
-
-
-
-
-
-        after = System.DateTime.Now;
-        duration = after.Subtract(before);
-        Debug.Log("object " + duration.Milliseconds);
-        before = System.DateTime.Now;
-
-
-
-
         /* Set the material of the terrain and it's stats */
-        terrain = newTerrainGameObject.GetComponent<Terrain>();
+        //terrain = gameObject.AddComponent<Terrain>();
+        terrain = gameObject.GetComponent<Terrain>();
         terrain.heightmapPixelError = 4;
         terrain.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
         terrain.castShadows = false;
@@ -295,11 +281,7 @@ public class TerrainChunk : MonoBehaviour{
         duration = after.Subtract(before);
         Debug.Log("terrain " + duration.Milliseconds);
     }
-
-    IEnumerator SteepnessCo() {
-        yield return new ApplyTerrainSteepness();
-    }
-
+    
     private IEnumerator ApplyTerrainSteepness() {
         /*
          * Go through the terrain's vertices and adjust it's splatMaps depending on the steepness of each vert.

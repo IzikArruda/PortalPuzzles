@@ -145,7 +145,9 @@ public class TerrainController : MonoBehaviour {
 
             /* Check if the given chunk can be added to the collection */
             if(cache.CanAddChunk(key)) {
-                TerrainChunk newChunk = new TerrainChunk(settings, noiseProvider, key);
+                GameObject newChunkObject = new GameObject();
+                TerrainChunk newChunk = newChunkObject.AddComponent<TerrainChunk>();
+                newChunk.Constructor(settings, noiseProvider, key);
                 cache.chunksToBeGenerated.Add(key, newChunk);
             }
         }
@@ -161,7 +163,9 @@ public class TerrainController : MonoBehaviour {
         foreach(Vector2 chunkKey in newChunks) {
 
             /* Create the chunk and force it to load into the cache */
-            TerrainChunk newChunk = new TerrainChunk(settings, noiseProvider, chunkKey);
+            GameObject newChunkObject = new GameObject();
+            TerrainChunk newChunk = newChunkObject.AddComponent<TerrainChunk>();
+            newChunk.Constructor(settings, noiseProvider, chunkKey);
             cache.ForceLoadChunk(newChunk);
         }
     }
