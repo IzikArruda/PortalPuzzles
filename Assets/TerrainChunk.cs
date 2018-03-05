@@ -22,7 +22,10 @@ public class TerrainChunk : MonoBehaviour{
 
     /* Use this to find the height of the terrain */
     private NoiseProvider noiseProvider;
-    
+
+    /* The steepness of the terrain of each biome */
+    private float[] maxAngle = new float[] { 15, 10, 30, 45, 70 };
+
     /* All coroutines */
     private IEnumerator coroutines;
     private Coroutine steepnessRoutine;
@@ -43,13 +46,14 @@ public class TerrainChunk : MonoBehaviour{
         terrainData = new TerrainData();
         terrainData.heightmapResolution = settings.HeightmapResolution;
         terrainData.alphamapResolution = settings.AlphamapResolution;
-        terrain = gameObject.AddComponent<Terrain>();
-        terrain.terrainData = terrainData;
+        gameObject.AddComponent<Terrain>().terrainData = terrainData;
+        gameObject.AddComponent<TerrainCollider>().terrainData = terrainData;
         gameObject.transform.position = new Vector3(X * settings.Length, 0, Z * settings.Length);
         gameObject.transform.parent = settings.chunkContainer;
         gameObject.transform.name = "[" + X + ", " + Z + "]";
         gameObject.layer = settings.terrainLayer;
     }
+
 
     /* ----------- Map Generation Functions ------------------------------------------------------------- */
 
@@ -202,47 +206,12 @@ public class TerrainChunk : MonoBehaviour{
     }
 
 
-    /* ----------- Event Functions ------------------------------------------------------------- */
+    /* ----------- Terrain Texture Functions ------------------------------------------------------------- */
 
-    public void ForceLoad() {
-        /*
-         * Force the main thread to load the given chunk without using threads
-         */
-
-        GenerateHeightMap();
-        SetupTextureMap();
-        GenerateTextureMap();
-        CreateObject();
-    }
-
-    public void SetChunkCoordinates(int x, int z) {
-        /*
-         * Set the coordinates of where the chunk is placed in the noise function
-         */
-
-        X = x;
-        Z = z;
-    }
-    
-    public void CreateObject() {
-        /*
-         * Create the gameObject of the terrain. Runs after the height and texture maps have been loaded.
-         */
-         
-        /* Start the coroutine which will set the splatmap of the terrain depending on the steepness */
-        StartCoroutine(ApplyTerrainSteepnessCoroutine());
-
-        /* Apply the splat prototypes onto the terrain */
-        //ApplySplatMap();
-
-        /* Set the material of the terrain and it's stats */
-        //SetTerrainStats();
-    }
-    
     private IEnumerator ApplyTerrainSteepnessCoroutine() {
         /*
          * Go through the terrain's vertices and adjust it's splatMaps depending on the steepness of each vert.
-         * This is done during a coroutine so after each row, yield.
+         * This will be done as a coroutine, so use yield statements to not run for too long.
          */
         int biomeTextureCount = Mathf.Min(noiseProvider.biomeRange.Length*2, settings.terrainTextures.Length);
         int stopCount = 1;
@@ -250,27 +219,13 @@ public class TerrainChunk : MonoBehaviour{
         float currLimit = settings.AlphamapResolution/coroutineLoops;
 
         /* Set the splatmap to switch textures as the terrain's steepness grows */
-        float normX, normZ, steepness, normSteepness;
-        float[] maxAngle = new float[] { 15, 10, 30, 45, 70 };
         float[,,] newSplatMap = splatMap;
         for(int z = 0; z < settings.AlphamapResolution; z++) {
             for(int x = 0; x < settings.AlphamapResolution; x++) {
-
-                normX = (float) x / (settings.AlphamapResolution - 1);
-                normZ = (float) z / (settings.AlphamapResolution - 1);
-                for(int i = 0; i < biomeTextureCount/2; i++) {
-
-                    /* Get the steepness of the terrain at this given position. Each biome has a different stepRatio */
-                    steepness = terrainData.GetSteepness(normX, normZ);
-                    normSteepness = Mathf.Clamp(steepness/maxAngle[i], 0f, 1f);
-
-                    /* Split the texture ratio across the two textures used by this biome relative to the steepness */
-                    newSplatMap[z, x, i*2 + 0] = newSplatMap[z, x, i*2 + 0]*(normSteepness);
-                    newSplatMap[z, x, i*2 + 1] = newSplatMap[z, x, i*2 + 1]*(1 - normSteepness);
-                }
+                UpdateTexturesToSplatmap(x, z, biomeTextureCount, ref newSplatMap);
             }
 
-            /* Stop the generation once 1/8th of the terrain is generated */
+            /* Stop the generation once part of the terrain is generated */
             if(z > stopCount*currLimit) {
                 stopCount++;
                 Debug.Log("Finished " + stopCount + "/" + coroutineLoops + " loops");
@@ -283,6 +238,48 @@ public class TerrainChunk : MonoBehaviour{
         ApplySplatMap();
         SetTerrainStats();
         Debug.Log("Finishes steepness");
+    }
+
+    private void ApplyTerrainSteepness() {
+        /*
+         * Go through the terrain's vertices and adjust it's splatMaps depending on the steepness of each vert.
+         */
+        int biomeTextureCount = Mathf.Min(noiseProvider.biomeRange.Length*2, settings.terrainTextures.Length);
+        
+        /* Set the splatmap to switch textures as the terrain's steepness grows */
+        float[,,] newSplatMap = splatMap;
+        for(int z = 0; z < settings.AlphamapResolution; z++) {
+            for(int x = 0; x < settings.AlphamapResolution; x++) {
+                UpdateTexturesToSplatmap(x, z, biomeTextureCount, ref newSplatMap);
+            }
+        }
+
+        /* Once the new splatMap is defined, we can apply it to the terrain */
+        splatMap = newSplatMap;
+        ApplySplatMap();
+        SetTerrainStats();
+    }
+
+    private void UpdateTexturesToSplatmap(int x, int z, int biomeTextureCount, ref float[,,] splatmap) {
+        /*
+         * Given an X and Z position along with a splatMap, update the splatMap's values.
+         * This function is purely to ensure ApplyTerrainSteepness and ApplyTerrainSteepnessCoroutine
+         * accomplish the same thing by running the same function.
+         */
+        float normX = (float) x / (settings.AlphamapResolution - 1);
+        float normZ = (float) z / (settings.AlphamapResolution - 1);
+
+        float steepness, normSteepness;
+        for(int i = 0; i < biomeTextureCount/2; i++) {
+
+            /* Get the steepness of the terrain at this given position. Each biome has a different stepRatio */
+            steepness = terrainData.GetSteepness(normX, normZ);
+            normSteepness = Mathf.Clamp(steepness/maxAngle[i], 0f, 1f);
+
+            /* Split the texture ratio across the two textures used by this biome relative to the steepness */
+            splatmap[z, x, i*2 + 0] = splatmap[z, x, i*2 + 0]*(normSteepness);
+            splatmap[z, x, i*2 + 1] = splatmap[z, x, i*2 + 1]*(1 - normSteepness);
+        }
     }
 
     private void ApplySplatMap() {
@@ -300,6 +297,7 @@ public class TerrainChunk : MonoBehaviour{
          * Set the stats of the terrain, such as the material and bumpmap distance
          */
 
+        terrain = GetComponent<Terrain>();
         terrain.heightmapPixelError = 4;
         terrain.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
         terrain.castShadows = false;
@@ -307,6 +305,30 @@ public class TerrainChunk : MonoBehaviour{
         terrain.materialTemplate = settings.terrainMaterial;
         terrain.basemapDistance = CustomPlayerController.cameraFarClippingPlane;
         terrain.Flush();
+    }
+
+
+    /* ----------- Event Functions ------------------------------------------------------------- */
+
+    public void ForceLoad() {
+        /*
+         * Force the main thread to load the given chunk without using threads
+         */
+
+        GenerateHeightMap();
+        SetupTextureMap();
+        GenerateTextureMap();
+        ApplyTerrainSteepness();
+    }
+    
+    public void UpdateTerrainLive() {
+        /*
+         * Update the terrain's splatmap using a coroutine to prevent frame loss. 
+         * Runs after the height and texture maps have been loaded.
+         */
+
+        /* Start the coroutine which will set the splatmap of the terrain depending on the steepness */
+        StartCoroutine(ApplyTerrainSteepnessCoroutine());
     }
 
     public void Remove() {
@@ -325,6 +347,8 @@ public class TerrainChunk : MonoBehaviour{
     public void SetNeighbors(TerrainChunk Xn, TerrainChunk Zp, TerrainChunk Xp, TerrainChunk Zn) {
         /*
          * Set the neighbors of this chunk. This is to ensure the chunks are properly connected.
+         * Even if this chunk has not yet finished it's texture generation and splatmap adjusting,
+         * we can still assign the terrain's 
          */
         Terrain left = null;
         Terrain up = null;
@@ -332,23 +356,27 @@ public class TerrainChunk : MonoBehaviour{
         Terrain down = null;
 
         if(Xn != null) {
-            left = Xn.terrain;
+            left = Xn.GetComponent<Terrain>();
         }
         if(Zp != null) {
-            up = Zp.terrain;
+            up = Zp.GetComponent<Terrain>();
         }
         if(Xp != null) {
-            right = Xp.terrain;
+            right = Xp.GetComponent<Terrain>();
         }
         if(Zn != null) {
-            down = Zn.terrain;
+            down = Zn.GetComponent<Terrain>();
         }
 
-        terrain.SetNeighbors(left, up, right, down);
-        terrain.Flush();
+        /* Set the neighboors for the terrain to have a seamless connection */
+        GetComponent<Terrain>().SetNeighbors(left, up, right, down);
+
+        /* If the terrain value has not yet been set, then the terrain will already flush itself later */
+        if(terrain != null) {
+            GetComponent<Terrain>().Flush();
+        }
     }
-
-
+    
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
 

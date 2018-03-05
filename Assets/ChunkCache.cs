@@ -203,7 +203,7 @@ public class ChunkCache {
                 //Time how long it takes to finish this set of actions
                 System.DateTime after = System.DateTime.Now;
 
-                chunk.Value.CreateObject();
+                chunk.Value.UpdateTerrainLive();
                 chunksGeneratingTextureMap.Remove(chunk.Key);
                 loadedChunks.Add(chunk.Key, chunk.Value);
                 SetChunkNeighborhood(chunk.Value);
