@@ -189,23 +189,16 @@ public class TerrainController : MonoBehaviour {
 
 
 
-
-        /* This is the improiper way to create the object as it takes too long */
-        originalTerrainObject = new GameObject();
-        TerrainChunk newChunk = originalTerrainObject.AddComponent<TerrainChunk>();
-        newChunk.Constructor(settings, noiseProvider);
-        newChunk.SetKey(chunkKey);
-
-        /* This SHOULD be the proper way, but the terrain heightMap and other objects are not properly being set */
-        /*
+        
+        /* Create a clone of the chunk and use it as the new chunk */
         GameObject newChunkObject = GameObject.Instantiate(originalTerrainObject);
         newChunkObject.SetActive(true);
         TerrainChunk newChunk = newChunkObject.GetComponent<TerrainChunk>();
+        
+        /* Run this for every new chunk to see what is needed for it to work */
+        newChunk.Reset(settings, noiseProvider, originalTerrainObject.GetComponent<TerrainChunk>().terrainData);
         newChunk.SetKey(chunkKey);
-        Debug.Log("New object's splatmaps: " + newChunk.biomeSplatMaps);
-        */
-
-
+        
 
 
 

@@ -84,6 +84,29 @@ public class TerrainChunk : MonoBehaviour{
         gameObject.transform.name = "[" + X + ", " + Z + "]";
     }
 
+    public void Reset(TerrainChunkSettings chunkSettings, NoiseProvider noise, TerrainData oldTerrain) {
+        /*
+         * Reset certain values to see what is needed for it to properly recreate
+         */
+         
+        settings = chunkSettings;
+        noiseProvider = noise;
+        gameObject.transform.parent = settings.chunkContainer;
+        gameObject.layer = settings.terrainLayer;
+
+
+
+        /* Create the new terrainData object by cloning the previous one */
+        terrainData = Object.Instantiate(oldTerrain);
+        System.DateTime before = System.DateTime.Now;
+
+        gameObject.GetComponent<Terrain>().terrainData = terrainData;
+        gameObject.GetComponent<TerrainCollider>().terrainData = terrainData;
+
+        System.DateTime after = System.DateTime.Now;
+        System.TimeSpan duration = after.Subtract(before);
+        Debug.Log("CLOSNE TIME: " + duration.Milliseconds);
+    }
 
     /* ----------- Map Generation Functions ------------------------------------------------------------- */
 
