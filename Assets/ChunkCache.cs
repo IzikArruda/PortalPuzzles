@@ -210,7 +210,7 @@ public class ChunkCache {
 
                 System.DateTime before = System.DateTime.Now;
                 System.TimeSpan duration = after.Subtract(before);
-                Debug.Log("Time to create chunk object: " + duration.Milliseconds);
+                //Debug.Log("Time to create chunk object: " + duration.Milliseconds);
             }
         }
     }

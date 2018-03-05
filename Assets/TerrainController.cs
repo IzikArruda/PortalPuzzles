@@ -52,6 +52,9 @@ public class TerrainController : MonoBehaviour {
     private GameObject skySphere;
     private SkySphere skySphereScript;
 
+    /* The default terrain object that will be cloned and used as all new terrain objects */
+    public GameObject originalTerrainObject;
+
 
     /* ----------- Built-in Functions ------------------------------------------------------------- */
 
@@ -62,13 +65,16 @@ public class TerrainController : MonoBehaviour {
 
         /* Set the settings for each chunk */
         settings.SetSettings(chunkResolution, chunkLength, height, terrainContainer.transform, terrainMaterial, terrainTextures, PortalSet.maxLayer + 2);
-
-        /* Set the current chunk position */
-        currentChunk = GetChunkPosition(focusPoint.position);
-
+        
         /* Create the noiseProvider that will be used by all chunks */
         noiseProvider = new NoiseProvider(frequency, octave, height);
 
+        /* Create the original terrain object that will be cloned when creating new objects */
+        CreateOriginalTerrainObject();
+
+        /* Set the current chunk position */
+        currentChunk = GetChunkPosition(focusPoint.position);
+        
         /* Force the chunkCache to update it's chunks all at once */
         ForceCacheUpdate();
 
@@ -116,7 +122,7 @@ public class TerrainController : MonoBehaviour {
 
         System.DateTime after = System.DateTime.Now;
         System.TimeSpan duration = after.Subtract(before);
-        Debug.Log("TerrainControllerUpdate: " + duration.Milliseconds);
+        //Debug.Log("TerrainControllerUpdate: " + duration.Milliseconds);
     }
 
 
@@ -141,14 +147,12 @@ public class TerrainController : MonoBehaviour {
          * Given a list of chunk positions, add new chunks to the chunksToBeGenerated collection
          */
 
-        foreach(Vector2 key in chunks) {
+        foreach(Vector2 chunkKey in chunks) {
 
             /* Check if the given chunk can be added to the collection */
-            if(cache.CanAddChunk(key)) {
-                GameObject newChunkObject = new GameObject();
-                TerrainChunk newChunk = newChunkObject.AddComponent<TerrainChunk>();
-                newChunk.Constructor(settings, noiseProvider, key);
-                cache.chunksToBeGenerated.Add(key, newChunk);
+            if(cache.CanAddChunk(chunkKey)) {
+                TerrainChunk newChunk = CreateNewChunk(chunkKey);
+                cache.chunksToBeGenerated.Add(chunkKey, newChunk);
             }
         }
     }
@@ -163,9 +167,7 @@ public class TerrainController : MonoBehaviour {
         foreach(Vector2 chunkKey in newChunks) {
 
             /* Create the chunk and force it to load into the cache */
-            GameObject newChunkObject = new GameObject();
-            TerrainChunk newChunk = newChunkObject.AddComponent<TerrainChunk>();
-            newChunk.Constructor(settings, noiseProvider, chunkKey);
+            TerrainChunk newChunk = CreateNewChunk(chunkKey);
             cache.ForceLoadChunk(newChunk);
         }
     }
@@ -179,6 +181,42 @@ public class TerrainController : MonoBehaviour {
         skySphereScript.UpdateSkySpherePosition(focusPointPosition);
     }
 
+    public TerrainChunk CreateNewChunk(Vector2 chunkKey) {
+        /*
+         * Create a new chunk by duplicating a reference to a already set chunk
+         */
+        System.DateTime before = System.DateTime.Now;
+
+
+
+
+        /* This is the improiper way to create the object as it takes too long */
+        originalTerrainObject = new GameObject();
+        TerrainChunk newChunk = originalTerrainObject.AddComponent<TerrainChunk>();
+        newChunk.Constructor(settings, noiseProvider);
+        newChunk.SetKey(chunkKey);
+
+        /* This SHOULD be the proper way, but the terrain heightMap and other objects are not properly being set */
+        /*
+        GameObject newChunkObject = GameObject.Instantiate(originalTerrainObject);
+        newChunkObject.SetActive(true);
+        TerrainChunk newChunk = newChunkObject.GetComponent<TerrainChunk>();
+        newChunk.SetKey(chunkKey);
+        Debug.Log("New object's splatmaps: " + newChunk.biomeSplatMaps);
+        */
+
+
+
+
+
+
+
+
+        System.DateTime after = System.DateTime.Now;
+        System.TimeSpan duration = after.Subtract(before);
+        Debug.Log("Creating new terrain object: " + duration.Milliseconds);
+        return newChunk;
+    }
 
     /* ----------- Set-up Functions ------------------------------------------------------------- */
 
@@ -215,6 +253,18 @@ public class TerrainController : MonoBehaviour {
         /* Apply the skyTexture to the skySphere */
         skySphereScript.ApplyColor(new Color(0.45f, 0.50f, 0.65f));
     }
+
+    void CreateOriginalTerrainObject() {
+        /*
+         * Create the terrain object that will be used as a base for all upcomming terrain objects
+         */
+        originalTerrainObject = new GameObject();
+        TerrainChunk newChunk = originalTerrainObject.AddComponent<TerrainChunk>();
+        newChunk.Constructor(settings, noiseProvider);
+        newChunk.name = "Default terrain object";
+        originalTerrainObject.SetActive(true);
+    }
+
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
 
