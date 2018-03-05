@@ -228,65 +228,26 @@ public class TerrainChunk : MonoBehaviour{
         /*
          * Create the gameObject of the terrain. Runs after the height and texture maps have been loaded.
          */
-        System.DateTime after = System.DateTime.Now;
-        System.DateTime before = System.DateTime.Now;
-        System.TimeSpan duration = after.Subtract(before);
-
-
-
-
-        /* Get the steepness of the terrain and adjust the terrain's specific textures depending on it */
-        StartCoroutine(ApplyTerrainSteepness());
-
-
-
-        after = System.DateTime.Now;
-        duration = after.Subtract(before);
-        Debug.Log("steepness " + duration.Milliseconds);
-        before = System.DateTime.Now;
-
-
-
+         
+        /* Start the coroutine which will set the splatmap of the terrain depending on the steepness */
+        StartCoroutine(ApplyTerrainSteepnessCoroutine());
 
         /* Apply the splat prototypes onto the terrain */
-        terrainData.splatPrototypes = biomeSplatMaps;
-        terrainData.RefreshPrototypes();
-        terrainData.SetAlphamaps(0, 0, splatMap);
-
-
-
-
-
-
-        after = System.DateTime.Now;
-        duration = after.Subtract(before);
-        Debug.Log("splats " + duration.Milliseconds);
-        before = System.DateTime.Now;
-
-
+        //ApplySplatMap();
 
         /* Set the material of the terrain and it's stats */
-        //terrain = gameObject.AddComponent<Terrain>();
-        terrain = gameObject.GetComponent<Terrain>();
-        terrain.heightmapPixelError = 4;
-        terrain.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
-        terrain.castShadows = false;
-        terrain.materialType = UnityEngine.Terrain.MaterialType.Custom;
-        terrain.materialTemplate = settings.terrainMaterial;
-        terrain.basemapDistance = CustomPlayerController.cameraFarClippingPlane;
-        terrain.Flush();
-
-
-        after = System.DateTime.Now;
-        duration = after.Subtract(before);
-        Debug.Log("terrain " + duration.Milliseconds);
+        //SetTerrainStats();
     }
     
-    private IEnumerator ApplyTerrainSteepness() {
+    private IEnumerator ApplyTerrainSteepnessCoroutine() {
         /*
          * Go through the terrain's vertices and adjust it's splatMaps depending on the steepness of each vert.
+         * This is done during a coroutine so after each row, yield.
          */
         int biomeTextureCount = Mathf.Min(noiseProvider.biomeRange.Length*2, settings.terrainTextures.Length);
+        int stopCount = 1;
+        int coroutineLoops = 8;
+        float currLimit = settings.AlphamapResolution/coroutineLoops;
 
         /* Set the splatmap to switch textures as the terrain's steepness grows */
         float normX, normZ, steepness, normSteepness;
@@ -308,11 +269,44 @@ public class TerrainChunk : MonoBehaviour{
                     newSplatMap[z, x, i*2 + 1] = newSplatMap[z, x, i*2 + 1]*(1 - normSteepness);
                 }
             }
+
+            /* Stop the generation once 1/8th of the terrain is generated */
+            if(z > stopCount*currLimit) {
+                stopCount++;
+                Debug.Log("Finished " + stopCount + "/" + coroutineLoops + " loops");
+                yield return null;
+            }
         }
 
+        /* Once the new splatMap is defined, we can apply it to the terrain */
         splatMap = newSplatMap;
+        ApplySplatMap();
+        SetTerrainStats();
         Debug.Log("Finishes steepness");
-        yield return null;
+    }
+
+    private void ApplySplatMap() {
+        /*
+         * Apply the current splatMap value to the terrain
+         */
+
+        terrainData.splatPrototypes = biomeSplatMaps;
+        terrainData.RefreshPrototypes();
+        terrainData.SetAlphamaps(0, 0, splatMap);
+    }
+
+    private void SetTerrainStats() {
+        /*
+         * Set the stats of the terrain, such as the material and bumpmap distance
+         */
+
+        terrain.heightmapPixelError = 4;
+        terrain.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
+        terrain.castShadows = false;
+        terrain.materialType = UnityEngine.Terrain.MaterialType.Custom;
+        terrain.materialTemplate = settings.terrainMaterial;
+        terrain.basemapDistance = CustomPlayerController.cameraFarClippingPlane;
+        terrain.Flush();
     }
 
     public void Remove() {
