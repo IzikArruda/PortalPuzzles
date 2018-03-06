@@ -12,7 +12,6 @@ public class ChunkCache {
     public readonly int maxChunkThreads = 1;
 
     /* All terrainChunks that will be used. Helps with object pooling. */
-    public Dictionary<Vector2, TerrainChunk> activeChunks;
     public List<TerrainChunk> inactiveChunks;
 
     /* All chunks that will be generated but have not yet been handled */
@@ -46,7 +45,6 @@ public class ChunkCache {
 
         settings = chunkSettings;
         noise = noiseProvider;
-        activeChunks = new Dictionary<Vector2, TerrainChunk>();
         inactiveChunks = new List<TerrainChunk>();
         loadedChunks = new Dictionary<Vector2, TerrainChunk>();
         chunksToBeGenerated = new Dictionary<Vector2, TerrainChunk>();
@@ -85,20 +83,30 @@ public class ChunkCache {
         MoveGeneratedTextureMaps();
     }
 
-    public void ForceLoadChunk(TerrainChunk newChunk) {
+    public void ForceLoadChunk(Vector2 chunkKey) {
         /*
-         * Force the given chunk to be fully loaded, regardless of thread limits. This is
-         * run at startup as the game will load everything first.
+         * Get a chunk using the given key and force it to fully load, regardless of threads.
+         * run at startup as the game will force load all the chunks first.
          */
-         
-        /* Create the entire chunk without using a thread */
-        newChunk.ForceLoad();
 
-        /* Add the chunk to the loadedChunks list */
-        loadedChunks.Add(newChunk.GetChunkCoordinates(), newChunk);
+        /* Get an unloaded chunk from the inactive list */
+        TerrainChunk newChunk = GetInactiveChunk();
 
-        /* Set the neighbors of this chunk */
-        SetChunkNeighborhood(newChunk);
+        /* If a chunk is ontained, force it to load into the game */
+        if(newChunk != null) {
+
+            /* Set the key of the chunk */
+            newChunk.SetKey(chunkKey);
+
+            /* Create the entire chunk without using a thread */
+            newChunk.ForceLoad();
+
+            /* Add the chunk to the loadedChunks list */
+            loadedChunks.Add(newChunk.GetChunkCoordinates(), newChunk);
+
+            /* Set the neighbors of this chunk */
+            SetChunkNeighborhood(newChunk);
+        }
     }
     
 
@@ -107,6 +115,8 @@ public class ChunkCache {
     private void RemoveChunks() {
         /*
          * Take the chunksToRemove hashset and remove the chunks that can be removed. 
+         * When a chunk is removed, it's returned to it's most default state and 
+         * placed back into the inactiveChunks list to be reused later.
          */
 
         List<Vector2> removedChunks = chunksToRemove.ToList();
@@ -115,6 +125,7 @@ public class ChunkCache {
 
             /* Remove the chunk once it is fully loaded */
             if(loadedChunks.ContainsKey(key)) {
+                inactiveChunks.Add(loadedChunks[key]);
                 loadedChunks[key].Remove();
                 loadedChunks.Remove(key);
                 chunksToRemove.Remove(key);
@@ -122,6 +133,7 @@ public class ChunkCache {
 
             /* The chunk has not yet been loaded, so it's save to remove them */
             else if(chunksToBeGenerated.ContainsKey(key)) {
+                inactiveChunks.Add(chunksToBeGenerated[key]);
                 chunksToBeGenerated[key].Remove();
                 chunksToBeGenerated.Remove(key);
                 chunksToRemove.Remove(key);
@@ -129,6 +141,7 @@ public class ChunkCache {
 
             /* Remove the chunk if it's waiting to start generating it's texture map */
             else if(chunksFinishedHeightMaps.ContainsKey(key)) {
+                inactiveChunks.Add(chunksFinishedHeightMaps[key]);
                 chunksFinishedHeightMaps[key].Remove();
                 chunksFinishedHeightMaps.Remove(key);
                 chunksToRemove.Remove(key);
@@ -137,6 +150,7 @@ public class ChunkCache {
             /* If the chunk is not being generated (cant remove a chunk whilst generating), then the chunk has already been removed */
             else if(!chunksGeneratingHeightMap.ContainsKey(key) && !chunksGeneratingTextureMap.ContainsKey(key)) {
                 chunksToRemove.Remove(key);
+                Debug.Log("Requested to remove a chunk that is already removed");
             }
         }
     }
@@ -230,6 +244,22 @@ public class ChunkCache {
         }
     }
 
+    public void RequestNewChunk(Vector2 chunkKey) {
+        /*
+         * Check if the chunk defined by the given key can be loaded into the game
+         */
+        TerrainChunk newChunk = null;
+
+        if(CanAddChunk(chunkKey)) {
+            /* Check if there is a free chunk to use */
+            newChunk = GetInactiveChunk();
+            if(newChunk != null) {
+                newChunk.Constructor(settings, noise);
+                newChunk.SetKey(chunkKey);
+                chunksToBeGenerated.Add(chunkKey, newChunk);
+            }
+        }
+    }
     
     /* ----------- Event Functions ------------------------------------------------------------- */
 
@@ -303,7 +333,7 @@ public class ChunkCache {
         chunkObject = new GameObject();
         chunk = chunkObject.AddComponent<TerrainChunk>();
         chunk.Constructor(settings, noise);
-        chunk.name = "Empty terrain";
+        chunk.name = "Inactive chunk";
         chunk.gameObject.SetActive(false);
             
         return chunk;
@@ -354,7 +384,7 @@ public class ChunkCache {
 
     public bool CanAddChunk(Vector2 key) {
         /*
-         * Determine if the chunk given by the key can be added to the chunksToBeGenerated collection
+         * Determine if the chunk given by the key is not already in a collection to be loaded
          */
         bool canBeAdded = false;
 
@@ -368,5 +398,21 @@ public class ChunkCache {
         }
 
         return canBeAdded;
+    }
+
+    public TerrainChunk GetInactiveChunk() {
+        /*
+         * Return a free chunk from the list of inactive chunks if possible. Else, return null.
+         * When a chunk is returned, it assumes that said chunk will be loaded into the game,
+         * so this function will remove the chunk from the list of inactive chunks.
+         */
+        TerrainChunk newChunk = null;
+
+        if(inactiveChunks.Count > 0) {
+            newChunk = inactiveChunks[0];
+            inactiveChunks.RemoveAt(0);
+        }
+
+        return newChunk;
     }
 }

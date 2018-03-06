@@ -256,7 +256,7 @@ public class CustomPlayerController : MonoBehaviour {
         /* Get how long it's been since a time update */
         System.DateTime current = System.DateTime.Now;
         System.TimeSpan duration = current.Subtract(before);
-        Debug.Log(" ------- Since update: " + duration.Milliseconds);
+        //Debug.Log(" ------- Since update: " + duration.Milliseconds);
         before = System.DateTime.Now;
 
 

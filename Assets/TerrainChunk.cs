@@ -38,7 +38,7 @@ public class TerrainChunk : MonoBehaviour{
     public void Constructor(TerrainChunkSettings chunkSettings, NoiseProvider noiseProvider) {
         /*
          * Create a new terrainChunk with the given parameters. This will also set universal values that 
-         * will be used no matter this chunk's key, such as terrainData's size and it's splatMap reference.
+         * will be used no matter this chunk's key, such as terrainData's size and it's SplatPrototype reference.
          */
 
         test = true;
@@ -74,6 +74,7 @@ public class TerrainChunk : MonoBehaviour{
     public void SetKey(Vector2 key) {
         /*
          * Set the key of this chunk, which represents it's X and Z coordinate.
+         * This is usually run when an unloaded chunk starts to load in.
          */
          
         X = (int) key.x;
@@ -81,6 +82,7 @@ public class TerrainChunk : MonoBehaviour{
         gameObject.transform.parent = settings.chunkContainer;
         gameObject.transform.position = new Vector3(X * settings.Length, 0, Z * settings.Length);
         gameObject.transform.name = "[" + X + ", " + Z + "]";
+        gameObject.SetActive(true);
     }
 
     public void Reset(TerrainChunkSettings chunkSettings, NoiseProvider noiseProvider, TerrainData oldTerrain) {
@@ -372,15 +374,13 @@ public class TerrainChunk : MonoBehaviour{
 
     public void Remove() {
         /*
-         * Delete this chunk of terrain
+         * Delete certain values of this chunk, returning it to it's default state.
          */
-
-        settings = null;
+         
         heightMap = null;
         splatMap = null;
-        if(terrain != null) {
-            GameObject.Destroy(terrain.gameObject);
-        }
+        gameObject.name = "Inactive chunk";
+        gameObject.SetActive(false);
     }
 
     public void SetNeighbors(TerrainChunk Xn, TerrainChunk Zp, TerrainChunk Xp, TerrainChunk Zn) {

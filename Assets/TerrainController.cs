@@ -52,9 +52,6 @@ public class TerrainController : MonoBehaviour {
     private GameObject skySphere;
     private SkySphere skySphereScript;
 
-    /* The default terrain object that will be cloned and used as all new terrain objects */
-    public GameObject originalTerrainObject;
-
 
     /* ----------- Built-in Functions ------------------------------------------------------------- */
 
@@ -66,9 +63,6 @@ public class TerrainController : MonoBehaviour {
         /* Populate the chunk cache with default chunks */
         cache = new ChunkCache(GetVisibleChunksFromPositionCount(new Vector2(0, 0), chunkViewRange), chunkSettings, noiseProvider);
         
-        /* Create the original terrain object that will be cloned when creating new objects */
-        CreateOriginalTerrainObject();
-
         /* Set the current chunk position */
         currentChunk = GetChunkPosition(focusPoint.position);
         
@@ -146,11 +140,8 @@ public class TerrainController : MonoBehaviour {
 
         foreach(Vector2 chunkKey in chunks) {
 
-            /* Check if the given chunk can be added to the collection */
-            if(cache.CanAddChunk(chunkKey)) {
-                TerrainChunk newChunk = CreateNewChunk(chunkKey);
-                cache.chunksToBeGenerated.Add(chunkKey, newChunk);
-            }
+            /* Send a request to add the given key to the chunk collection */
+            cache.RequestNewChunk(chunkKey);
         }
     }
 
@@ -163,9 +154,8 @@ public class TerrainController : MonoBehaviour {
         List<Vector2> newChunks = GetVisibleChunksFromPosition(GetChunkPosition(focusPoint.position), chunkViewRange);
         foreach(Vector2 chunkKey in newChunks) {
 
-            /* Create the chunk and force it to load into the cache */
-            TerrainChunk newChunk = CreateNewChunk(chunkKey);
-            cache.ForceLoadChunk(newChunk);
+            /* Request the cache to load a given coordinate */
+            cache.ForceLoadChunk(chunkKey);
         }
     }
     
@@ -177,37 +167,7 @@ public class TerrainController : MonoBehaviour {
         /* Reposition the sky sphere at the given window exit point */
         skySphereScript.UpdateSkySpherePosition(focusPointPosition);
     }
-
-    public TerrainChunk CreateNewChunk(Vector2 chunkKey) {
-        /*
-         * Create a new chunk by duplicating a reference to a already set chunk
-         */
-        System.DateTime before = System.DateTime.Now;
-
-
-
-        
-        /* Create a clone of the chunk and use it as the new chunk */
-        GameObject newChunkObject = GameObject.Instantiate(originalTerrainObject);
-        newChunkObject.SetActive(true);
-        TerrainChunk newChunk = newChunkObject.GetComponent<TerrainChunk>();
-        
-        /* Run this for every new chunk to see what is needed for it to work */
-        newChunk.Reset(chunkSettings, noiseProvider, originalTerrainObject.GetComponent<TerrainChunk>().terrainData);
-        newChunk.SetKey(chunkKey);
-        
-
-
-
-
-
-
-        System.DateTime after = System.DateTime.Now;
-        System.TimeSpan duration = after.Subtract(before);
-        Debug.Log("Creating new terrain object: " + duration.Milliseconds);
-        return newChunk;
-    }
-
+    
 
     /* ----------- Set-up Functions ------------------------------------------------------------- */
 
@@ -249,18 +209,7 @@ public class TerrainController : MonoBehaviour {
         /* Apply the skyTexture to the skySphere */
         skySphereScript.ApplyColor(new Color(0.45f, 0.50f, 0.65f));
     }
-
-    void CreateOriginalTerrainObject() {
-        /*
-         * Create the terrain object that will be used as a base for all upcomming terrain objects
-         */
-        originalTerrainObject = new GameObject();
-        TerrainChunk newChunk = originalTerrainObject.AddComponent<TerrainChunk>();
-        newChunk.Constructor(chunkSettings, noiseProvider);
-        newChunk.name = "Default terrain object";
-        originalTerrainObject.SetActive(true);
-    }
-
+    
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
 
