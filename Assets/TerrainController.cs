@@ -12,7 +12,7 @@ using System.Linq;
 public class TerrainController : MonoBehaviour {
     
     /* The chunk settings used by the chunks */
-    public TerrainChunkSettings settings;
+    public TerrainChunkSettings chunkSettings;
     private GameObject terrainContainer;
 
     /* The object that the terrain will center around. Have this set before startup. */
@@ -63,12 +63,9 @@ public class TerrainController : MonoBehaviour {
         /* Initialize any objects that will be used */
         InitializeVariables();
 
-        /* Set the settings for each chunk */
-        settings.SetSettings(chunkResolution, chunkLength, height, terrainContainer.transform, terrainMaterial, terrainTextures, PortalSet.maxLayer + 2);
+        /* Populate the chunk cache with default chunks */
+        cache = new ChunkCache(GetVisibleChunksFromPositionCount(new Vector2(0, 0), chunkViewRange), chunkSettings, noiseProvider);
         
-        /* Create the noiseProvider that will be used by all chunks */
-        noiseProvider = new NoiseProvider(frequency, octave, height);
-
         /* Create the original terrain object that will be cloned when creating new objects */
         CreateOriginalTerrainObject();
 
@@ -196,7 +193,7 @@ public class TerrainController : MonoBehaviour {
         TerrainChunk newChunk = newChunkObject.GetComponent<TerrainChunk>();
         
         /* Run this for every new chunk to see what is needed for it to work */
-        newChunk.Reset(settings, noiseProvider, originalTerrainObject.GetComponent<TerrainChunk>().terrainData);
+        newChunk.Reset(chunkSettings, noiseProvider, originalTerrainObject.GetComponent<TerrainChunk>().terrainData);
         newChunk.SetKey(chunkKey);
         
 
@@ -211,15 +208,13 @@ public class TerrainController : MonoBehaviour {
         return newChunk;
     }
 
+
     /* ----------- Set-up Functions ------------------------------------------------------------- */
 
     void InitializeVariables() {
         /*
          * Initialize the variables used by this script
          */
-
-        cache = new ChunkCache();
-        settings = new TerrainChunkSettings();
 
         /* Create the container that holds all the terrain objects */
         terrainContainer = new GameObject();
@@ -228,8 +223,16 @@ public class TerrainController : MonoBehaviour {
         terrainContainer.transform.localPosition = new Vector3(0, 0, 0);
         terrainContainer.transform.localEulerAngles = new Vector3(0, 0, 0);
         terrainContainer.transform.localScale = new Vector3(1, 1, 1);
+
+        /* Set the settings for each chunk */
+        chunkSettings = new TerrainChunkSettings();
+        chunkSettings.SetSettings(chunkResolution, chunkLength, height, terrainContainer.transform, terrainMaterial, terrainTextures, PortalSet.maxLayer + 2);
+
+        /* Create the noiseProvider that will be used by all chunks */
+        noiseProvider = new NoiseProvider(frequency, octave, height);
+
     }
-    
+
     void CreateSkySphere() {
         /*
          * Create the skySphere that surrounds the terrain. Use the player camera's far clipping plane
@@ -253,7 +256,7 @@ public class TerrainController : MonoBehaviour {
          */
         originalTerrainObject = new GameObject();
         TerrainChunk newChunk = originalTerrainObject.AddComponent<TerrainChunk>();
-        newChunk.Constructor(settings, noiseProvider);
+        newChunk.Constructor(chunkSettings, noiseProvider);
         newChunk.name = "Default terrain object";
         originalTerrainObject.SetActive(true);
     }
@@ -280,14 +283,30 @@ public class TerrainController : MonoBehaviour {
         return visibleChunks;
     }
 
+    private int GetVisibleChunksFromPositionCount(Vector2 chunkPosition, int radius) {
+        /*
+         * Get the count of how many chunks are visible from a given position.
+         */
+        int chunkCount = 0;
+        
+        for(int x = -radius; x < radius; x++) {
+            for(int z = -radius; z < radius; z++) {
+                if(x*x + z*z < radius*radius) {
+                    chunkCount++;
+                }
+            }
+        }
+
+        return chunkCount;
+    }
+
     private Vector2 GetChunkPosition(Vector3 worldPosition) {
         /*
          * Given a position in the world, get the chunk position it resides within
          */
-        int x = (int) Mathf.Floor(worldPosition.x / settings.Length);
-        int z = (int) Mathf.Floor(worldPosition.z / settings.Length);
+        int x = (int) Mathf.Floor(worldPosition.x / chunkSettings.Length);
+        int z = (int) Mathf.Floor(worldPosition.z / chunkSettings.Length);
 
         return new Vector2(x, z);
     }
-
 }

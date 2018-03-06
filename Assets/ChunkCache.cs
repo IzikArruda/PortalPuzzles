@@ -10,7 +10,11 @@ public class ChunkCache {
 
     /* How many chunks that can be generating at the same time */
     public readonly int maxChunkThreads = 1;
-    
+
+    /* All terrainChunks that will be used. Helps with object pooling. */
+    public Dictionary<Vector2, TerrainChunk> activeChunks;
+    public List<TerrainChunk> inactiveChunks;
+
     /* All chunks that will be generated but have not yet been handled */
     public Dictionary<Vector2, TerrainChunk> chunksToBeGenerated;
 
@@ -27,21 +31,32 @@ public class ChunkCache {
 
     /* All coroutines */
     private IEnumerator coroutines;
-    
+
+    /* The settings and noise provider that will be linked to all created chunks */
+    private TerrainChunkSettings settings;
+    private NoiseProvider noise;
+
 
     /* ----------- Constructor Functions ------------------------------------------------------------- */
 
-    public ChunkCache() {
+    public ChunkCache(int chunkCount, TerrainChunkSettings chunkSettings, NoiseProvider noiseProvider) {
         /*
          * Upon creation, initialize the required variables used to track the data
          */
-         
+
+        settings = chunkSettings;
+        noise = noiseProvider;
+        activeChunks = new Dictionary<Vector2, TerrainChunk>();
+        inactiveChunks = new List<TerrainChunk>();
         loadedChunks = new Dictionary<Vector2, TerrainChunk>();
         chunksToBeGenerated = new Dictionary<Vector2, TerrainChunk>();
         chunksGeneratingHeightMap = new Dictionary<Vector2, TerrainChunk>();
         chunksFinishedHeightMaps = new Dictionary<Vector2, TerrainChunk>();
         chunksGeneratingTextureMap = new Dictionary<Vector2, TerrainChunk>();
         chunksToRemove = new HashSet<Vector2>();
+
+        /* Populate the inactive chunk set by creating all the chunks that will be used */
+        PopulateInactiveChunks(chunkCount);
     }
 
 
@@ -262,6 +277,36 @@ public class ChunkCache {
         }
 
         chunk.SetNeighbors(Xn, Zp, Xp, Zn);
+    }
+
+    void PopulateInactiveChunks(int chunkCount) {
+        /*
+         * Create each chunk that will be used by the cache so the overhead of creating 
+         * new chunks wil not occur during run-time.
+         */
+        TerrainChunk newChunk;
+
+        /* Create each chunk, run it's constructor and add it to the inactive chunk list */
+        for(int i = 0; i < chunkCount; i++) {
+            newChunk = CreateBaseTerrainChunk();
+            inactiveChunks.Add(newChunk);
+        }
+    }
+
+    TerrainChunk CreateBaseTerrainChunk() {
+        /*
+         * Create a terrainChunk and run it's overhead creation function
+         */
+        GameObject chunkObject;
+        TerrainChunk chunk;
+
+        chunkObject = new GameObject();
+        chunk = chunkObject.AddComponent<TerrainChunk>();
+        chunk.Constructor(settings, noise);
+        chunk.name = "Empty terrain";
+        chunk.gameObject.SetActive(false);
+            
+        return chunk;
     }
 
 

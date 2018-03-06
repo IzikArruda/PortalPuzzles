@@ -24,8 +24,7 @@ public class TerrainChunk : MonoBehaviour{
     private object terrainMapThreadLock;
 
     /* Use this to find the height of the terrain */
-    //Need to keep this reference saved even after new object creation
-    public NoiseProvider noiseProvider;
+    public NoiseProvider noise;
 
     /* The steepness of the terrain of each biome */
     private float[] maxAngle = new float[] { 15, 10, 30, 45, 70 };
@@ -36,7 +35,7 @@ public class TerrainChunk : MonoBehaviour{
 
     /* ----------- Constructor Functions ------------------------------------------------------------- */
 
-    public void Constructor(TerrainChunkSettings chunkSettings, NoiseProvider noise) {
+    public void Constructor(TerrainChunkSettings chunkSettings, NoiseProvider noiseProvider) {
         /*
          * Create a new terrainChunk with the given parameters. This will also set universal values that 
          * will be used no matter this chunk's key, such as terrainData's size and it's splatMap reference.
@@ -46,7 +45,7 @@ public class TerrainChunk : MonoBehaviour{
         heightMapThreadLock = new object();
         terrainMapThreadLock = new object();
         settings = chunkSettings;
-        noiseProvider = noise;
+        noise = noiseProvider;
         terrainData = new TerrainData();
         terrainData.heightmapResolution = settings.HeightmapResolution;
         terrainData.alphamapResolution = settings.AlphamapResolution;
@@ -84,13 +83,13 @@ public class TerrainChunk : MonoBehaviour{
         gameObject.transform.name = "[" + X + ", " + Z + "]";
     }
 
-    public void Reset(TerrainChunkSettings chunkSettings, NoiseProvider noise, TerrainData oldTerrain) {
+    public void Reset(TerrainChunkSettings chunkSettings, NoiseProvider noiseProvider, TerrainData oldTerrain) {
         /*
          * Reset certain values to see what is needed for it to properly recreate
          */
          
         settings = chunkSettings;
-        noiseProvider = noise;
+        noise = noiseProvider;
         gameObject.transform.parent = settings.chunkContainer;
         gameObject.layer = settings.terrainLayer;
 
@@ -168,7 +167,7 @@ public class TerrainChunk : MonoBehaviour{
                 float xCoord = lengthModifier*(X + (float) x / (settings.HeightmapResolution - 1));
                 float zCoord = lengthModifier*(Z + (float) z / (settings.HeightmapResolution - 1));
 
-                newHeightMap[z, x] = noiseProvider.GetNoise(xCoord, zCoord);
+                newHeightMap[z, x] = noise.GetNoise(xCoord, zCoord);
             }
         }
 
@@ -182,7 +181,7 @@ public class TerrainChunk : MonoBehaviour{
          * Use two splatMaps for each biomes and set the ratio for both of them.
          * Later, a function will pass through and will change the splatMap values depending on the steepness.
          */
-        int biomeTextureCount = Mathf.Min(noiseProvider.biomeRange.Length*2, settings.terrainTextures.Length);
+        int biomeTextureCount = Mathf.Min(noise.biomeRange.Length*2, settings.terrainTextures.Length);
         
         /* Cycle through each vertices of the terrain, getting which splatMaps have what values due to biome ratios */
         float usedTextureRatio, lengthModifier, xCoord, zCoord;
@@ -198,7 +197,7 @@ public class TerrainChunk : MonoBehaviour{
                 for(int i = 0; i < biomeTextureCount/2; i++) {
 
                     /* Get the ratio of the texture that will be used for this biome and apply it to the splatMap */
-                    usedTextureRatio = noiseProvider.GetBiomeRatio(i, xCoord, zCoord);
+                    usedTextureRatio = noise.GetBiomeRatio(i, xCoord, zCoord);
                     newSplatMap[z, x, i*2 + 0] = usedTextureRatio;
                     newSplatMap[z, x, i*2 + 1] = usedTextureRatio;
                 }
@@ -254,7 +253,7 @@ public class TerrainChunk : MonoBehaviour{
          * Go through the terrain's vertices and adjust it's splatMaps depending on the steepness of each vert.
          * This will be done as a coroutine, so use yield statements to not run for too long.
          */
-        int biomeTextureCount = Mathf.Min(noiseProvider.biomeRange.Length*2, settings.terrainTextures.Length);
+        int biomeTextureCount = Mathf.Min(noise.biomeRange.Length*2, settings.terrainTextures.Length);
         int stopCount = 1;
         int coroutineLoops = 32;
         float currLimit = settings.AlphamapResolution/coroutineLoops;
@@ -285,7 +284,7 @@ public class TerrainChunk : MonoBehaviour{
         /*
          * Go through the terrain's vertices and adjust it's splatMaps depending on the steepness of each vert.
          */
-        int biomeTextureCount = Mathf.Min(noiseProvider.biomeRange.Length*2, settings.terrainTextures.Length);
+        int biomeTextureCount = Mathf.Min(noise.biomeRange.Length*2, settings.terrainTextures.Length);
         
         /* Set the splatmap to switch textures as the terrain's steepness grows */
         float[,,] newSplatMap = splatMap;
