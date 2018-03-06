@@ -64,8 +64,8 @@ public class ChunkCache {
         /*
          * Update the terrain by going through the cache's collections
          */
-        Debug.Log(chunksToBeGenerated.ToList().Count + " " + chunksGeneratingHeightMap.ToList().Count + " " + chunksFinishedHeightMaps.ToList().Count + " " + chunksGeneratingTextureMap.ToList().Count + " " + loadedChunks.ToList().Count);
-        Debug.Log(chunksToRemove.ToList().Count);
+        //Debug.Log(chunksToBeGenerated.ToList().Count + " " + chunksGeneratingHeightMap.ToList().Count + " " + chunksFinishedHeightMaps.ToList().Count + " " + chunksGeneratingTextureMap.ToList().Count + " " + loadedChunks.ToList().Count);
+        //Debug.Log(chunksToRemove.ToList().Count);
 
         /* Remove any chunks that must be removed */
         RemoveChunks();
@@ -261,6 +261,7 @@ public class ChunkCache {
         }
     }
     
+
     /* ----------- Event Functions ------------------------------------------------------------- */
 
     void SetChunkNeighborhood(TerrainChunk chunk) {
@@ -312,7 +313,7 @@ public class ChunkCache {
     void PopulateInactiveChunks(int chunkCount) {
         /*
          * Create each chunk that will be used by the cache so the overhead of creating 
-         * new chunks wil not occur during run-time.
+         * new chunks will not occur during run-time.
          */
         TerrainChunk newChunk;
 

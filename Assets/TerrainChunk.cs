@@ -13,7 +13,6 @@ public class TerrainChunk : MonoBehaviour{
 
     /* The terrain of the chunk */
     public Terrain terrain;
-    public bool test;
     public float[,] heightMap;
     public float[,,] splatMap;
     public TerrainData terrainData;
@@ -40,23 +39,29 @@ public class TerrainChunk : MonoBehaviour{
          * Create a new terrainChunk with the given parameters. This will also set universal values that 
          * will be used no matter this chunk's key, such as terrainData's size and it's SplatPrototype reference.
          */
-
-        test = true;
-        heightMapThreadLock = new object();
-        terrainMapThreadLock = new object();
         settings = chunkSettings;
         noise = noiseProvider;
+
+        /* Setup the gameObject */
+        gameObject.transform.parent = settings.chunkContainer;
+        gameObject.layer = settings.terrainLayer;
+
+        /* Create the lock objects */
+        heightMapThreadLock = new object();
+        terrainMapThreadLock = new object();
+
+        /* Setup the terrainData object */
         terrainData = new TerrainData();
         terrainData.heightmapResolution = settings.HeightmapResolution;
         terrainData.alphamapResolution = settings.AlphamapResolution;
         gameObject.AddComponent<Terrain>().terrainData = terrainData;
         gameObject.AddComponent<TerrainCollider>().terrainData = terrainData;
-        gameObject.transform.parent = settings.chunkContainer;
-        gameObject.layer = settings.terrainLayer;
         terrainData.size = new Vector3(settings.Length, settings.Height, settings.Length);
+        
+        /* Setup the terrain object */
+        terrain = GetComponent<Terrain>();
+        SetTerrainStats();
 
-
-        /* Create the terrainData and link it to the biome maps */
         /* Create a splat map prototype for each texture that will be used */
         int biomeTextureCount = Mathf.Min(noiseProvider.biomeRange.Length*2, settings.terrainTextures.Length);
         biomeSplatMaps = new SplatPrototype[biomeTextureCount];
@@ -69,6 +74,7 @@ public class TerrainChunk : MonoBehaviour{
             biomeSplatMaps[i].texture = settings.terrainTextures[i];
         }
         terrainData.splatPrototypes = biomeSplatMaps;
+        terrainData.RefreshPrototypes();
     }
 
     public void SetKey(Vector2 key) {
@@ -84,30 +90,7 @@ public class TerrainChunk : MonoBehaviour{
         gameObject.transform.name = "[" + X + ", " + Z + "]";
         gameObject.SetActive(true);
     }
-
-    public void Reset(TerrainChunkSettings chunkSettings, NoiseProvider noiseProvider, TerrainData oldTerrain) {
-        /*
-         * Reset certain values to see what is needed for it to properly recreate
-         */
-         
-        settings = chunkSettings;
-        noise = noiseProvider;
-        gameObject.transform.parent = settings.chunkContainer;
-        gameObject.layer = settings.terrainLayer;
-
-
-
-        /* Create the new terrainData object by cloning the previous one */
-        terrainData = Object.Instantiate(oldTerrain);
-        System.DateTime before = System.DateTime.Now;
-
-        gameObject.GetComponent<Terrain>().terrainData = terrainData;
-        gameObject.GetComponent<TerrainCollider>().terrainData = terrainData;
-
-        System.DateTime after = System.DateTime.Now;
-        System.TimeSpan duration = after.Subtract(before);
-        Debug.Log("CLOSNE TIME: " + duration.Milliseconds);
-    }
+    
 
     /* ----------- Map Generation Functions ------------------------------------------------------------- */
 
@@ -214,7 +197,7 @@ public class TerrainChunk : MonoBehaviour{
          * Return true if the height map is fully generated and the terrain has not yet been generated
          */
 
-        return (terrain == null && heightMap != null);
+        return (heightMap != null);
     }
 
     public bool IsTerrainMapReady() {
@@ -222,7 +205,7 @@ public class TerrainChunk : MonoBehaviour{
          * Return true if the terrain map is fully generated and the terrain has not yet been generated
          */
 
-        return (terrain == null && splatMap != null);
+        return (splatMap != null);
     }
 
     public void SetupTextureMap() {
@@ -257,29 +240,29 @@ public class TerrainChunk : MonoBehaviour{
          */
         int biomeTextureCount = Mathf.Min(noise.biomeRange.Length*2, settings.terrainTextures.Length);
         int stopCount = 1;
-        int coroutineLoops = 32;
+        int coroutineLoops = 64;
         float currLimit = settings.AlphamapResolution/coroutineLoops;
-
         /* Set the splatmap to switch textures as the terrain's steepness grows */
         float[,,] newSplatMap = splatMap;
         for(int z = 0; z < settings.AlphamapResolution; z++) {
+
             for(int x = 0; x < settings.AlphamapResolution; x++) {
                 UpdateTexturesToSplatmap(x, z, biomeTextureCount, ref newSplatMap);
             }
 
-            /* Stop the generation once part of the terrain is generated */
+            /* Yield the generation once it has updated the textures of a certain amount of rows */
             if(z > stopCount*currLimit) {
                 stopCount++;
-                //Debug.Log("Finished " + stopCount + "/" + coroutineLoops + " loops");
                 yield return null;
             }
         }
 
         /* Once the new splatMap is defined, we can apply it to the terrain */
+        yield return null;
         splatMap = newSplatMap;
-        ApplySplatMap();
-        SetTerrainStats();
-        //Debug.Log("Finishes steepness");
+        terrainData.SetAlphamaps(0, 0, splatMap);
+        terrain.Flush();
+
     }
 
     private void ApplyTerrainSteepness() {
@@ -298,8 +281,8 @@ public class TerrainChunk : MonoBehaviour{
 
         /* Once the new splatMap is defined, we can apply it to the terrain */
         splatMap = newSplatMap;
-        ApplySplatMap();
-        SetTerrainStats();
+        terrainData.SetAlphamaps(0, 0, splatMap);
+        terrain.Flush();
     }
 
     private void UpdateTexturesToSplatmap(int x, int z, int biomeTextureCount, ref float[,,] splatmap) {
@@ -323,27 +306,16 @@ public class TerrainChunk : MonoBehaviour{
             splatmap[z, x, i*2 + 1] = splatmap[z, x, i*2 + 1]*(1 - normSteepness);
         }
     }
-
-    private void ApplySplatMap() {
-        /*
-         * Apply the current splatMap value to the terrain
-         */
-         
-        terrainData.RefreshPrototypes();
-        terrainData.SetAlphamaps(0, 0, splatMap);
-    }
-
+    
     private void SetTerrainStats() {
         /*
          * Set the stats of the terrain, such as the material and bumpmap distance
          */
 
-        terrain = GetComponent<Terrain>();
         terrain.heightmapPixelError = 4;
         terrain.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
         terrain.castShadows = false;
-        terrain.materialType = UnityEngine.Terrain.MaterialType.Custom;
-        terrain.materialTemplate = settings.terrainMaterial;
+        terrain.materialType = UnityEngine.Terrain.MaterialType.BuiltInLegacyDiffuse;
         terrain.basemapDistance = CustomPlayerController.cameraFarClippingPlane;
         terrain.Flush();
     }
@@ -379,7 +351,6 @@ public class TerrainChunk : MonoBehaviour{
          
         heightMap = null;
         splatMap = null;
-        terrain = null;
         gameObject.name = "Inactive chunk";
         gameObject.SetActive(false);
     }

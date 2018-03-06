@@ -77,9 +77,6 @@ public class TerrainController : MonoBehaviour {
         /*
          * Check whenever the position changes into a new chunk, updating the terrain when required.
          */
-        System.DateTime before = System.DateTime.Now;
-
-
 
         /* Get the chunk that the position currently resides in */
         Vector2 newChunk = GetChunkPosition(focusPoint.position);
@@ -108,13 +105,6 @@ public class TerrainController : MonoBehaviour {
 
         /* Reposition the skySphere */
         UpdateSkySphere(focusPoint.position);
-
-
-
-
-        System.DateTime after = System.DateTime.Now;
-        System.TimeSpan duration = after.Subtract(before);
-        //Debug.Log("TerrainControllerUpdate: " + duration.Milliseconds);
     }
 
 

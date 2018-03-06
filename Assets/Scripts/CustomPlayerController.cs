@@ -256,10 +256,9 @@ public class CustomPlayerController : MonoBehaviour {
         /* Get how long it's been since a time update */
         System.DateTime current = System.DateTime.Now;
         System.TimeSpan duration = current.Subtract(before);
-        //Debug.Log(" ------- Since update: " + duration.Milliseconds);
+        Debug.Log(" ------- Since update: " + duration.Milliseconds);
         before = System.DateTime.Now;
-
-
+        
         //Print how many cams were rendered this frame
         //Debug.Log(renderedCameraCount);
         renderedCameraCount = 0;
@@ -296,11 +295,6 @@ public class CustomPlayerController : MonoBehaviour {
         //Draw a line in the camera's forward vector
         Debug.DrawLine(playerCamera.transform.position, 
                 playerCamera.transform.position + playerCamera.transform.rotation*Vector3.forward*0.5f, Color.green);
-
-        //time the amount it takes for the player update
-        System.DateTime playerUpdate = System.DateTime.Now;
-        System.TimeSpan playerDur = playerUpdate.Subtract(before);
-        //Debug.Log("PlayerUpdate " + playerDur.Milliseconds);
     }
 
     void LateUpdate() {
