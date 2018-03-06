@@ -379,6 +379,7 @@ public class TerrainChunk : MonoBehaviour{
          
         heightMap = null;
         splatMap = null;
+        terrain = null;
         gameObject.name = "Inactive chunk";
         gameObject.SetActive(false);
     }

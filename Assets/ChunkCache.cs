@@ -64,8 +64,8 @@ public class ChunkCache {
         /*
          * Update the terrain by going through the cache's collections
          */
-        //Debug.Log(chunksToBeGenerated.ToList().Count + " " + chunksGeneratingHeightMap.ToList().Count + " " + chunksFinishedHeightMaps.ToList().Count + " " + chunksGeneratingTextureMap.ToList().Count + " " + loadedChunks.ToList().Count);
-        //Debug.Log(chunksToRemove.ToList().Count);
+        Debug.Log(chunksToBeGenerated.ToList().Count + " " + chunksGeneratingHeightMap.ToList().Count + " " + chunksFinishedHeightMaps.ToList().Count + " " + chunksGeneratingTextureMap.ToList().Count + " " + loadedChunks.ToList().Count);
+        Debug.Log(chunksToRemove.ToList().Count);
 
         /* Remove any chunks that must be removed */
         RemoveChunks();
@@ -254,7 +254,7 @@ public class ChunkCache {
             /* Check if there is a free chunk to use */
             newChunk = GetInactiveChunk();
             if(newChunk != null) {
-                newChunk.Constructor(settings, noise);
+                //newChunk.Constructor(settings, noise);
                 newChunk.SetKey(chunkKey);
                 chunksToBeGenerated.Add(chunkKey, newChunk);
             }
@@ -414,5 +414,13 @@ public class ChunkCache {
         }
 
         return newChunk;
+    }
+
+    public int GetRemainingInactiveChunks() {
+        /*
+         * Get how many chunks are inactive
+         */
+
+        return inactiveChunks.Count;
     }
 }

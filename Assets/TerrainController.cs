@@ -84,7 +84,8 @@ public class TerrainController : MonoBehaviour {
         /* Get the chunk that the position currently resides in */
         Vector2 newChunk = GetChunkPosition(focusPoint.position);
 
-        if(newChunk.x != currentChunk.x || newChunk.y != currentChunk.y) {
+        /* If we enter a new chunk or there are remaining inactive chunks, update the active chunks */
+        if((newChunk.x != currentChunk.x || newChunk.y != currentChunk.y) || cache.GetRemainingInactiveChunks() != 0) {
 
             /* Get a series of lists that represent a unique group of positions */
             List<Vector2> allChunks = cache.GetAllChunks();
