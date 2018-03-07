@@ -29,7 +29,7 @@ public class FootstepTracker : MonoBehaviour {
     /* Modifies the required vertical distance to play a footstep. Relative to playerLegLength */
     public float vertStrideMod = 0.9f;
 	/* How many "feet" the player has. Controls the outputted timeSinceStep */
-	public int footCount = 2;
+	public int footCount;
 
     /* --- Footstep Tracker ------------------- */
     /* How many past directions are tracked */
@@ -87,9 +87,9 @@ public class FootstepTracker : MonoBehaviour {
         for(int i = 0; i < timeSinceStep.Length; i++) {
             timeSinceStep[i] += Time.deltaTime;
         }
-
+        
         /* Check whether a footstep sound effect should be played by comparing the current stride progress */
-        if(Mathf.Abs(vertStride) >= maxVertStride || Mathf.Abs(horiStride) >= maxHoriStride) {
+        if((Mathf.Abs(vertStride) >= maxVertStride || Mathf.Abs(horiStride) >= maxHoriStride) && timeSinceStep[GetNextFoot()] > 0.05f) {
             PlayStep();
         }
     }
@@ -230,8 +230,7 @@ public class FootstepTracker : MonoBehaviour {
 
         /* Adjust the FX of the sound using tracked foostep stats */
         playerSoundsScript.PlayFootstep(timing, vertStride, stepType);
-
-
+        
         /* Reset the current stride distances */
         ResetStrideProgress();
     }

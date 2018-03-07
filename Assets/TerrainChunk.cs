@@ -315,7 +315,8 @@ public class TerrainChunk : MonoBehaviour{
         terrain.heightmapPixelError = 4;
         terrain.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
         terrain.castShadows = false;
-        terrain.materialType = UnityEngine.Terrain.MaterialType.BuiltInLegacyDiffuse;
+        terrain.materialType = UnityEngine.Terrain.MaterialType.Custom;
+        terrain.materialTemplate = settings.terrainMaterial;
         terrain.basemapDistance = CustomPlayerController.cameraFarClippingPlane;
         terrain.Flush();
     }

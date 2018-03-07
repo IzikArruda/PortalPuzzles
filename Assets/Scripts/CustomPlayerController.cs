@@ -142,19 +142,20 @@ public class CustomPlayerController : MonoBehaviour {
 
     /* The last collider that was hit. Used when calling Raytrace and we want to save the collider the ray hits */
     private Collider lastHitCollider;
-
     
-    private int stepIndex = 0;
-
+    /* The player is in the outside state if they enter outside through the startingRoom's window portal */
     private bool outsideState = false;
 
     /* The far clipping plane of the player's camera. The portals will use this for their cameras. */
     public static float cameraFarClippingPlane;
 
-    /* Track how many cameras were rendered this frame */
-    public static int renderedCameraCount = 0;
+    /* The type of step sound is played for the player footstep tracker */
+    private int currentStepType = 0;
 
+    /* Debugging trackers */
+    public static int renderedCameraCount = 0;
     private System.DateTime before;
+
 
     /* -------------- Built-in Unity Functions ---------------------------------------------------------- */
 
@@ -225,6 +226,7 @@ public class CustomPlayerController : MonoBehaviour {
             newPosition += (Vector3) expectedMovements[i];
         }
         rigidBody.MovePosition(newPosition);
+
         /* Freeze the player's rigidbody's velocity */
         rigidBody.velocity = Vector3.zero;
 
@@ -256,7 +258,7 @@ public class CustomPlayerController : MonoBehaviour {
         /* Get how long it's been since a time update */
         System.DateTime current = System.DateTime.Now;
         System.TimeSpan duration = current.Subtract(before);
-        Debug.Log(" ------- Since update: " + duration.Milliseconds);
+        //Debug.Log(" ------- Since update: " + duration.Milliseconds);
         before = System.DateTime.Now;
         
         //Print how many cams were rendered this frame
@@ -1082,22 +1084,27 @@ public class CustomPlayerController : MonoBehaviour {
     void DetectLegRayCollisions(DetectPlayerLegRay[] legRayScripts) {
         /*
          * Given an array of DetectPlayerLegRay, tell the scripts that the player has stepped on them.
-         * Depending on each objectType of the script, have a different reaction
+         * Depending on each objectType of the script, have a different reaction.
+         * 
+         * If the stepIndex is already 1, dont bother checking the type and simply use the 1.
          */
+        int stepIndex = currentStepType;
 
-        stepIndex = 0;
-        for(int i = 0; i < legRayScripts.Length; i++) {
-            if(legRayScripts[i] != null && legRayScripts[i].GetComponent<DetectPlayerLegRay>() != null) {
+        if(currentStepType == 0) {
+            for(int i = 0; i < legRayScripts.Length; i++) {
+                if(legRayScripts[i] != null && legRayScripts[i].GetComponent<DetectPlayerLegRay>() != null) {
 
-                /* Run the script */
-                legRayScripts[i].GetComponent<DetectPlayerLegRay>().PlayerStep(gameObject);
+                    /* Run the script */
+                    legRayScripts[i].GetComponent<DetectPlayerLegRay>().PlayerStep(gameObject);
 
-                /* Check the object type and react accordingly */
-                if(legRayScripts[i].GetComponent<DetectPlayerLegRay>().objectType == 0) {
-                    stepIndex = Mathf.Max(stepIndex, legRayScripts[i].GetComponent<DetectPlayerLegRay>().returnValue);
+                    /* Check the object type and react accordingly */
+                    if(legRayScripts[i].GetComponent<DetectPlayerLegRay>().objectType == 0) {
+                        stepIndex = Mathf.Max(stepIndex, legRayScripts[i].GetComponent<DetectPlayerLegRay>().returnValue);
+                    }
                 }
             }
         }
+
 
         /* Update the step tracker with the new sound index to use */
         playerStepTracker.ChangeStepIndex(stepIndex);
@@ -1276,6 +1283,9 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Change the player camera's layers so that they are rendering the terrain layer */
         playerCamera.cullingMask = -1;
+
+        /* The player's steps will now be stepping on soft ground */
+        currentStepType = 1;
     }
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
