@@ -18,7 +18,7 @@ Material:
     - first:
         name: _BlendTex
       second:
-        m_Texture: {fileID: 2800000, guid: f2ddc5a4b530ac34780c26a170f99469, type: 3}
+        m_Texture: {fileID: 2800000, guid: a2e222ab6a2ba0647bd5f9e02525c2c3, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - first:
@@ -54,7 +54,7 @@ Material:
     - first:
         name: _MainTex
       second:
-        m_Texture: {fileID: 2800000, guid: 7c8196de190bfaa47b01ac8d00a84126, type: 3}
+        m_Texture: {fileID: 2800000, guid: f9ab33d52b82c7149854b25c8c1a96ec, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - first:

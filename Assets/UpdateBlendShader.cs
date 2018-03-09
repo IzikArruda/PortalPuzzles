@@ -15,10 +15,10 @@ public class UpdateBlendShader : MonoBehaviour {
          */
 
         /* Set the radius of when the texture starts blending */
-        GetComponent<Renderer>().material.SetFloat("_BlendDistance", 1f);
+        GetComponent<Terrain>().materialTemplate.SetFloat("_BlendDistance", 10f);
 
         /* Set the distance of how far it takes for the texture to start blending */
-        GetComponent<Renderer>().material.SetFloat("_BlendRate", 5f);
+        GetComponent<Terrain>().materialTemplate.SetFloat("_BlendRate", 0.1f);
     }
 
 	void Update () {
@@ -28,7 +28,7 @@ public class UpdateBlendShader : MonoBehaviour {
 
         /* Update the shader's camera position with this script's focus object */
         if(focusObject != null) {
-            GetComponent<Renderer>().material.SetVector("_CameraPos", focusObject.transform.position);
+            GetComponent<Terrain>().materialTemplate.SetVector("_CameraPos", focusObject.transform.position);
         }
 	}
 }
