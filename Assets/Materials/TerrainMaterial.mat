@@ -7,7 +7,7 @@ Material:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_Name: TerrainMaterial
-  m_Shader: {fileID: 10623, guid: 0000000000000000f000000000000000, type: 0}
+  m_Shader: {fileID: 4800000, guid: 5dd71d146a37fc44690909e456775297, type: 3}
   m_ShaderKeywords: _EMISSION
   m_LightmapFlags: 1
   m_CustomRenderQueue: -1
@@ -54,7 +54,7 @@ Material:
     - first:
         name: _MainTex
       second:
-        m_Texture: {fileID: 2800000, guid: 7e4226f9d9c85714683a0a12d7e8fa75, type: 3}
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - first:
@@ -137,6 +137,12 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Floats:
     - first:
+        name: _BlendDistance
+      second: 1
+    - first:
+        name: _BlendRate
+      second: 5
+    - first:
         name: _BumpScale
       second: 1
     - first:
@@ -215,6 +221,9 @@ Material:
         name: _ZWrite
       second: 1
     m_Colors:
+    - first:
+        name: _CameraPos
+      second: {r: 15.64, g: 470.64, b: -80.35, a: 0}
     - first:
         name: _Color
       second: {r: 1, g: 1, b: 1, a: 1}

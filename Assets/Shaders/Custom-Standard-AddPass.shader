@@ -1,4 +1,4 @@
-Shader "Nature/Terrain/Custom-Standard" {
+Shader "Hidden/TerrainEngine/Splatmap/Custom-Standard-AddPass" {
 	Properties {
 		// set by terrain engine
 		[HideInInspector] _Control ("Control (RGBA)", 2D) = "red" {}
@@ -18,20 +18,17 @@ Shader "Nature/Terrain/Custom-Standard" {
 		[HideInInspector] _Smoothness1 ("Smoothness 1", Range(0.0, 1.0)) = 1.0	
 		[HideInInspector] _Smoothness2 ("Smoothness 2", Range(0.0, 1.0)) = 1.0	
 		[HideInInspector] _Smoothness3 ("Smoothness 3", Range(0.0, 1.0)) = 1.0
-
-		// used in fallback on old cards & base map
-		[HideInInspector] _MainTex ("BaseMap (RGB)", 2D) = "white" {}
-		[HideInInspector] _Color ("Main Color", Color) = (1,1,1,1)
 	}
 
 	SubShader {
 		Tags {
-			"Queue" = "Geometry-100"
+			"Queue" = "Geometry-99"
+			"IgnoreProjector"="True"
 			"RenderType" = "Opaque"
 		}
 
 		CGPROGRAM
-		#pragma surface surf Standard vertex:SplatmapVert finalcolor:SplatmapFinalColor finalgbuffer:SplatmapFinalGBuffer fullforwardshadows
+		#pragma surface surf Standard decal:add vertex:SplatmapVert finalcolor:SplatmapFinalColor finalgbuffer:SplatmapFinalGBuffer fullforwardshadows
 		#pragma multi_compile_fog
 		#pragma target 3.0
 		// needs more than 8 texcoords
@@ -40,6 +37,7 @@ Shader "Nature/Terrain/Custom-Standard" {
 
 		#pragma multi_compile __ _TERRAIN_NORMAL_MAP
 
+		#define TERRAIN_SPLAT_ADDPASS
 		#define TERRAIN_STANDARD_SHADER
 		#define TERRAIN_SURFACE_OUTPUT SurfaceOutputStandard
 		#include "TerrainSplatmapCommon.cginc"
@@ -68,8 +66,5 @@ Shader "Nature/Terrain/Custom-Standard" {
 		ENDCG
 	}
 
-	Dependency "AddPassShader" = "Hidden/TerrainEngine/Splatmap/Custom-Standard-AddPass"
-	Dependency "BaseMapShader" = "Hidden/TerrainEngine/Splatmap/Custom-Standard-Base"
-
-	Fallback "Nature/Terrain/Diffuse"
+	Fallback "Hidden/TerrainEngine/Splatmap/Diffuse-AddPass"
 }
