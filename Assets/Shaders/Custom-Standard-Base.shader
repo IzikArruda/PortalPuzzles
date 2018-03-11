@@ -34,7 +34,7 @@ Shader "Hidden/TerrainEngine/Splatmap/Custom-Standard-Base" {
 			o.Alpha = 1;
 			o.Smoothness = c.a;
 			o.Metallic = tex2D (_MetallicTex, IN.uv_MainTex).r;
-			o.Albedo = blend;
+			o.Albedo = c;
 		}
 
 		ENDCG

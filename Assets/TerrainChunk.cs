@@ -291,8 +291,10 @@ public class TerrainChunk : MonoBehaviour{
          * This function is purely to ensure ApplyTerrainSteepness and ApplyTerrainSteepnessCoroutine
          * accomplish the same thing by running the same function.
          */
-        float normX = (float) x / (settings.AlphamapResolution - 1);
-        float normZ = (float) z / (settings.AlphamapResolution - 1);
+        float normX = (float) x / (settings.AlphamapResolution );
+        float normZ = (float) z / (settings.AlphamapResolution );
+        
+
 
         float steepness, normSteepness;
         for(int i = 0; i < biomeTextureCount/2; i++) {
@@ -300,6 +302,13 @@ public class TerrainChunk : MonoBehaviour{
             /* Get the steepness of the terrain at this given position. Each biome has a different stepRatio */
             steepness = terrainData.GetSteepness(normX, normZ);
             normSteepness = Mathf.Clamp(steepness/maxAngle[i], 0f, 1f);
+
+            if(x == settings.AlphamapResolution - 1 || z == settings.AlphamapResolution - 1) {
+                /*normX = (float) x-1 / (settings.AlphamapResolution - 1);
+                normZ = (float) z-1 / (settings.AlphamapResolution - 1);
+                steepness = terrainData.GetSteepness(normX, normZ);
+                normSteepness = Mathf.Clamp(steepness/maxAngle[i], 0f, 1f);*/
+            }
 
             /* Split the texture ratio across the two textures used by this biome relative to the steepness */
             splatmap[z, x, i*2 + 0] = splatmap[z, x, i*2 + 0]*(normSteepness);
