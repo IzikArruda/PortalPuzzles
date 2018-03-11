@@ -34,15 +34,6 @@ Shader "Hidden/TerrainEngine/Splatmap/Custom-Standard-Base" {
 			o.Alpha = 1;
 			o.Smoothness = c.a;
 			o.Metallic = tex2D (_MetallicTex, IN.uv_MainTex).r;
-
-			/* Apply a blending effect to the texture */
-			//Get a second texture of the main texture
-			half3 blend = tex2D(_MainTex, IN.uv_MainTex * 0.2).rgb;
-			/* Get the distance between the camera's position and the pixel's point */
-			//float d = distance(_CameraPos, IN.worldPos);
-			//float dN = 1 - saturate((d - _BlendDistance) / (_BlendRate));
-			/* Change the output depending on how far from the  */
-			//o.Albedo = tex2D(_MainTex, IN.uv_MainTex).rgb*(dN)+blend*(1 - dN);
 			o.Albedo = blend;
 		}
 
