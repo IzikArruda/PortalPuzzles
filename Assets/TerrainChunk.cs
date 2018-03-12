@@ -31,6 +31,11 @@ public class TerrainChunk : MonoBehaviour{
     /* The coroutine container for when calculating the steepness in realtime */
     private IEnumerator coroutines;
 
+    private bool test1 = false;
+    private bool test2 = false;
+    private bool test3 = false;
+    private bool test4 = false;
+
 
     /* ----------- Constructor Functions ------------------------------------------------------------- */
 
@@ -291,24 +296,53 @@ public class TerrainChunk : MonoBehaviour{
          * This function is purely to ensure ApplyTerrainSteepness and ApplyTerrainSteepnessCoroutine
          * accomplish the same thing by running the same function.
          */
-        float normX = (float) x / (settings.AlphamapResolution );
-        float normZ = (float) z / (settings.AlphamapResolution );
+        float normX = (float) x / (settings.AlphamapResolution - 1);
+        float normZ = (float) z / (settings.AlphamapResolution - 1);
+
+        /* If the position is an edge case, use the adjacent point instead */
+        if(normX == 0) {
+            normX = ((float) (x+1)) / (settings.AlphamapResolution - 1);
+        }
+        else if(normX == 1) {
+            normX = ((float) (x-1)) / (settings.AlphamapResolution - 1);
+        }
+        if(normZ == 0) {
+            normZ = ((float) (z+1)) / (settings.AlphamapResolution - 1);
+        }
+        else if(normZ == 1) {
+            normZ = ((float) (z-1)) / (settings.AlphamapResolution - 1);
+        }
         
-
-
         float steepness, normSteepness;
         for(int i = 0; i < biomeTextureCount/2; i++) {
 
             /* Get the steepness of the terrain at this given position. Each biome has a different stepRatio */
             steepness = terrainData.GetSteepness(normX, normZ);
             normSteepness = Mathf.Clamp(steepness/maxAngle[i], 0f, 1f);
+            
 
-            if(x == settings.AlphamapResolution - 1 || z == settings.AlphamapResolution - 1) {
-                /*normX = (float) x-1 / (settings.AlphamapResolution - 1);
-                normZ = (float) z-1 / (settings.AlphamapResolution - 1);
-                steepness = terrainData.GetSteepness(normX, normZ);
-                normSteepness = Mathf.Clamp(steepness/maxAngle[i], 0f, 1f);*/
+            /* Check if the values reach the edges of the terrain */
+            if((normX == 0 || normZ == 0) && test1 == false) {
+                Debug.Log("LOW " + normX + " " + normZ);
+                test1 = true;
             }
+            if((normX == 1 || normZ == 1) && test2 == false) {
+                Debug.Log("HIGH " + normX + " " + normZ);
+                test2 = true;
+            }
+            
+            /* Ensure the values dont go too high or too low (>1 or <0) */
+            if((normX < 0 || normZ < 0) && test3 == false) {
+                Debug.Log("!!! VALUES WENT TOO LOW !!!  " + normX + " " + normZ);
+                test3 = true;
+            }
+            if((normX > 1 || normZ > 1) && test4 == false) {
+                Debug.Log("!!! VALUES WENT TOO HIGH !!!  " + normX + " " + normZ);
+                test4 = true;
+            }
+
+
+
 
             /* Split the texture ratio across the two textures used by this biome relative to the steepness */
             splatmap[z, x, i*2 + 0] = splatmap[z, x, i*2 + 0]*(normSteepness);
