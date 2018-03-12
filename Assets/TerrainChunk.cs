@@ -295,6 +295,10 @@ public class TerrainChunk : MonoBehaviour{
          * Given an X and Z position along with a splatMap, update the splatMap's values.
          * This function is purely to ensure ApplyTerrainSteepness and ApplyTerrainSteepnessCoroutine
          * accomplish the same thing by running the same function.
+         * 
+         * WARNING: the edges of the terrain are not calculated correctly. The steepeness of the terrain
+         * while on the edge, ie: (pos == 0 || pos == settings.AlphamapResolution - 1), where pos is either X or Z,
+         * is incorrect. I added a hack that makes the terrain use the nearby steepness if it's an edge case.
          */
         float normX = (float) x / (settings.AlphamapResolution - 1);
         float normZ = (float) z / (settings.AlphamapResolution - 1);
@@ -312,7 +316,7 @@ public class TerrainChunk : MonoBehaviour{
         else if(normZ == 1) {
             normZ = ((float) (z-1)) / (settings.AlphamapResolution - 1);
         }
-        
+
         float steepness, normSteepness;
         for(int i = 0; i < biomeTextureCount/2; i++) {
 
@@ -320,30 +324,6 @@ public class TerrainChunk : MonoBehaviour{
             steepness = terrainData.GetSteepness(normX, normZ);
             normSteepness = Mathf.Clamp(steepness/maxAngle[i], 0f, 1f);
             
-
-            /* Check if the values reach the edges of the terrain */
-            if((normX == 0 || normZ == 0) && test1 == false) {
-                Debug.Log("LOW " + normX + " " + normZ);
-                test1 = true;
-            }
-            if((normX == 1 || normZ == 1) && test2 == false) {
-                Debug.Log("HIGH " + normX + " " + normZ);
-                test2 = true;
-            }
-            
-            /* Ensure the values dont go too high or too low (>1 or <0) */
-            if((normX < 0 || normZ < 0) && test3 == false) {
-                Debug.Log("!!! VALUES WENT TOO LOW !!!  " + normX + " " + normZ);
-                test3 = true;
-            }
-            if((normX > 1 || normZ > 1) && test4 == false) {
-                Debug.Log("!!! VALUES WENT TOO HIGH !!!  " + normX + " " + normZ);
-                test4 = true;
-            }
-
-
-
-
             /* Split the texture ratio across the two textures used by this biome relative to the steepness */
             splatmap[z, x, i*2 + 0] = splatmap[z, x, i*2 + 0]*(normSteepness);
             splatmap[z, x, i*2 + 1] = splatmap[z, x, i*2 + 1]*(1 - normSteepness);
