@@ -259,9 +259,9 @@ public class FootstepTracker : MonoBehaviour {
     
     public void PlayHardLanding(){
     	/*
-    	 * Runs qhen the player labds from a fast falling state.
+    	 * Runs when the player lands from a fast falling state.
     	 */
-    
+
     	playerSoundsScript.PlayHardLanding();
         Debug.Log("Play hard landing");
         
@@ -288,6 +288,7 @@ public class FootstepTracker : MonoBehaviour {
          
         stepType = newType;
     }
+
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
 

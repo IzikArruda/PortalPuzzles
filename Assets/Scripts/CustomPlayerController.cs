@@ -800,7 +800,7 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Reset the player's sounds */
         if(resetSounds) {
-            playerSoundsScript.ResetAll(false);
+            playerSoundsScript.ResetAll(true);
         }
 
         /* Reset the camera's effects and any extra animations it has */
@@ -912,6 +912,7 @@ public class CustomPlayerController : MonoBehaviour {
         playerSoundsScript.ResetAudioMixerVolume();
     }
 
+
     /* ----------- Event Functions ------------------------------------------------------------- */
 
     void ChangeState(int newState) {
@@ -919,26 +920,32 @@ public class CustomPlayerController : MonoBehaviour {
          * Change the player's current state to the given newState. Run certain lines if
          * certain states change into other specific states (fast falling > standing)
          */
-    
-    
-    	/* Going from FastFalling to a grounded state... */
-    	if(state == (int) PlayerStates.FastFalling && !StateIsAirborn(newState)) {
-    		/*... Will have the player undergo a hard landing. */
-    		playerStepTracker.PlayHardLanding();
-    	}
-    	/* Going from an airborn state to a grounded state... */
-        if(StateIsAirborn(state) && !StateIsAirborn(newState)) {
-        	
-            /*... Will inform the footstep tracker of the landing. */
-            playerStepTracker.PlayLanding(-currentYVelocity/maxYVelocity);
-        }
-
-
+         
         /* Dont change anything if the player is already in the new state */
         if(state != newState) {
 
-			/* Entering the Standing state... */
-			if(newState == (int) PlayerStates.Standing){
+            /* Going from FastFalling to a grounded state... */
+            if(state == (int) PlayerStates.FastFalling && !StateIsAirborn(newState)) {
+                /*... Will have the player undergo a hard landing. */
+                if(outsideState) {
+                    /* If the player is outside, a hard landing will play a normal landing sound */
+                    playerStepTracker.PlayLanding(-currentYVelocity/maxYVelocity);
+                }
+                else {
+                    /* Play the hard landing clip if the player did not escape yet */
+                    playerStepTracker.PlayHardLanding();
+                }
+            }
+
+            /* Going from an airborn state to a grounded state... */
+            if(StateIsAirborn(state) && !StateIsAirborn(newState)) {
+
+                /*... Will inform the footstep tracker of the landing. */
+                playerStepTracker.PlayLanding(-currentYVelocity/maxYVelocity);
+            }
+
+            /* Entering the Standing state... */
+            if(newState == (int) PlayerStates.Standing){
 			
 				/*... When leaving the Falling state... */
 				if(state == (int) PlayerStates.Falling){
@@ -968,9 +975,9 @@ public class CustomPlayerController : MonoBehaviour {
 			/* Entering the FastFalling state... */
 			if(newState == (int) PlayerStates.FastFalling){
 
-                /*... Will start playing the fastfalling audio */
-                playerSoundsScript.PlayFastFall();
-
+                /*... Will start playing the fastfalling audio (if the player is not outside) */
+                if(!outsideState) { playerSoundsScript.PlayFastFall(); }
+                
                 /*... Will start a set of post processing effects. */
                 cameraEffectsScript.StartEffectVignette();
                 cameraEffectsScript.StartChromaticAberration();
@@ -1227,6 +1234,11 @@ public class CustomPlayerController : MonoBehaviour {
                 ChangeState((int) PlayerStates.FastFalling);
             }
         }
+
+        /* Pressing the K key will "Upgrade" the current music */
+        if(Input.GetKeyDown("y")) {
+            playerSoundsScript.UpgradeMusic();
+        }
     }
 
 
@@ -1286,6 +1298,11 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* The player's steps will now be stepping on soft ground */
         currentStepType = 1;
+
+        /* Tell the player's sound script that they are now in the outside state */
+        playerSoundsScript.EnteringOutside();
+
+        //Update the camera effect's maximum values to reflect the change
     }
 
     /* ----------- Helper Functions ------------------------------------------------------------- */

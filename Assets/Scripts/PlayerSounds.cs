@@ -90,7 +90,10 @@ public class PlayerSounds : MonoBehaviour {
     private float[] stepFade;
     /* How many samples into the clip a footstep effect needs to be before the fade begins */
 	private int[] stepFadeDelay;
-    
+
+    /* When the player is in the outside state, handle certain sounds differently, such as playing upgraded music instead of muted */
+    private bool outside = false;
+
 
     /* ----------- Built-in Unity Functions ------------------------------------------------------------- */
 
@@ -145,22 +148,28 @@ public class PlayerSounds : MonoBehaviour {
 		/* Apply any fade effects for the frame */
 		ApplyFade();
         
-
-
-
-
-
-        //Check if the player has pressed the P key, which will play a new song. Always play a upgraded song
+        //Check if the player has pressed the P key, which will play a new song.
         if(Input.GetKeyDown("p")){
-            PlayMusic(1);
+            PlayMusic();
         }
 
-        //Pressing L will upgrade the music while k will downgrade
-        if(Input.GetKeyDown("l")) {
-            SetMusicFade(1);
-        }
-        if(Input.GetKeyDown("k")) {
-            SetMusicFade(-1);
+        /* If the music ever stops playing, have it start over again */
+        if(!musicSourceMuted.isPlaying) {
+            /* If we are using upgraded music, play a new song */
+            if(outside) {
+                /* Get the index of a new clip/song */
+                int songIndex = RandomClip(musicClipsMuted, lastMusicClipIndex);
+
+                /* Play the clip and it's upgraded version using the two musicSources*/
+                musicSourceMuted.clip = musicClipsMuted[songIndex];
+                musicSourceUpgraded.clip = musicClipsUpgraded[songIndex];
+                Debug.Log(songIndex);
+            }
+
+            /* Play the source's music clip after a 2 second delay */
+            musicSourceMuted.PlayDelayed(2);
+            musicSourceUpgraded.PlayDelayed(2);
+
         }
     }
 
@@ -296,18 +305,16 @@ public class PlayerSounds : MonoBehaviour {
         	Debug.Log("Footstep effect cannot play - no available audio sources");
         }
     }
-
-    public void PlayMusic(int upgraded){
+    
+    public void PlayMusic(){
 		/*
-         * Get a random song clip and play it's muted and upgraded versions using both musicSources.
-         * The given boolean controls the volumes of both sources.
-         * -1 = only hear the non-upgraded song
-         * 0 = set both volumes to 0
-         * 1 = only hear the upgraded song
+         * Get a random song clip and restart the music audio sources with a new clip/song.
+         * Have the volume of the sources fade in from 0, with the outside state determinign whether
+         * we use the upgraded or the muted version.
          */
 		int songIndex;
         
-        /* Get the index of a new clip */
+        /* Get the index of a new clip/song */
         songIndex = RandomClip(musicClipsMuted, lastMusicClipIndex);
 
         /* Play the clip and it's upgraded version using the two musicSources*/
@@ -315,9 +322,14 @@ public class PlayerSounds : MonoBehaviour {
         musicSourceUpgraded.clip = musicClipsUpgraded[songIndex];
         Debug.Log(songIndex);
 
-        /* Set the volume of the clips */
-        musicSourceMuted.volume = -upgraded*maxVolume;
-        musicSourceUpgraded.volume = upgraded*maxVolume;
+        /* Set the volume of the clips to reflect the music's upgraded state */
+        musicSourceMuted.volume = 0;
+        musicSourceUpgraded.volume = 0;
+        if(outside) {
+            musicFadeUpgraded = 0.5f;
+        }else {
+            musicFadeMuted = 0.5f;
+        }
 
         /* play the clips and track the clip's index */
         musicSourceMuted.Play();
@@ -332,8 +344,8 @@ public class PlayerSounds : MonoBehaviour {
 		 */
 
         /* fade out the music */
-        musicFadeMuted = -0.25f;
-        musicFadeUpgraded = -0.25f;
+        musicFadeMuted = -1f;
+        musicFadeUpgraded = -1f;
 
         /* Start and fade in the FastFalling state audio */
         fallingSource.clip = fallingClip;
@@ -360,12 +372,14 @@ public class PlayerSounds : MonoBehaviour {
 		else{
 			Debug.Log("Landing effect cannot play - no available audio sources");
 		}
-		
-		/* Stop playing the fastFalling audio and fade in the music */
+
+        /* Quickly fade out the fastFalling audio */
         fallingFade = -2.5f;
-        PlayMusic(0);
-        /* Fade in the non-upgraded music */
-        musicFadeMuted = 0.1f;
+
+        /* After a hard landing, reset the music if the player is not outside */
+        if(!outside) {
+            PlayMusic();
+        }
     }
 
 
@@ -425,11 +439,11 @@ public class PlayerSounds : MonoBehaviour {
                     source.Stop();
                 }
 				source.volume = 0;
-				fade = 0;
+				//fade = 0;
 			}
 			else if(source.volume >= maxVolume){
 				source.volume = maxVolume;
-				fade = 0;
+				//fade = 0;
 			}
 		}
     }
@@ -470,11 +484,9 @@ public class PlayerSounds : MonoBehaviour {
         /* Stop and mute all audio sources */
         StopAllAudioSources();
 
-        /* Play a muted song that fades in */
+        /* Start playing a new song from the start */
         if(playSong) {
-            PlayMusic(0);
-            /* Fade in the non-upgraded music */
-            musicFadeMuted = 0.1f;
+            PlayMusic();
         }
     }
 
@@ -522,6 +534,25 @@ public class PlayerSounds : MonoBehaviour {
         audioMixer.SetFloat("masterVolume", -50 + (50+masterMixerVolume)*masterVolumeRatio);
     }
 
+    public void EnteringOutside() {
+        /*
+         * Called when the player enters the outside state, this function will set the outside
+         * boolean to true, making certain sounds play differently when they occur.
+         */
+
+        outside = true;
+        UpgradeMusic();
+    }
+
+    public void UpgradeMusic() {
+        /*
+         * Running this function will upgrade the current the current and all upcomming songs.
+         */
+
+        /* Fade out the current muted song and fade in the upgraded version */
+        musicFadeMuted = -0.1f;
+        musicFadeUpgraded = 0.1f;
+    }
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
 
