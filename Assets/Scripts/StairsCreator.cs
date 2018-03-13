@@ -33,8 +33,10 @@ public class StairsCreator : MonoBehaviour {
     /* Angles that define how the stairs are rotated */
     [Range(0, 1)]
     public float sideAngle;
+    private float previousSideAngle;
     [Range(0, 180)]
     public float stairsAngle;
+    private float previousStairsAngle;
 
     /* Set to true if you want to reset the angle */
     public bool resetAngle;
@@ -52,8 +54,12 @@ public class StairsCreator : MonoBehaviour {
     public Vector3 upVector;
 
     
-
     /* -------- Built-in Unity Functions ---------------------------------------------------- */
+
+    void Start() {
+        previousSideAngle = sideAngle;
+        previousStairsAngle = stairsAngle;
+    }
 
     void Update() {
         /*
@@ -69,6 +75,7 @@ public class StairsCreator : MonoBehaviour {
         /* Reset the angle so the stairs are flat relative to the stair's transform's axis */
         if(resetAngle) {
             resetAngle = false;
+            updateStairs = true;
             Vector3 currentAngle = (endPoint.transform.position - startPoint.transform.position).normalized;
             Vector3 neutralAngle = Vector3.zero;
             /* Use the given upVector if it's not 0 */
@@ -89,11 +96,19 @@ public class StairsCreator : MonoBehaviour {
             }
         }
 
+        /* If the angle of the stairs has changed, update the stair's form */
+        if(previousSideAngle != sideAngle || previousStairsAngle != stairsAngle) {
+            updateStairs = true;
+            previousSideAngle = sideAngle;
+            previousStairsAngle = stairsAngle;
+        }
+
         /* Update the stairs  */
-        //if(updateStairs) {
+        if(updateStairs) {
             UpdateStairs();
             updateStairs = false;
-        //}
+            Debug.Log("Updated stairs object");
+        }
     }
 
 
