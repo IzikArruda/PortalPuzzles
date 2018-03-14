@@ -26,9 +26,10 @@ public class GlobalRoomController : MonoBehaviour {
 
     /* --- Script controlled values ----------------------- */
     /* Arrays of the rooms */
-    public ConnectedRoom[] attachedRooms;
+    public AttachedRoom[] attachedRooms;
     public PuzzleRoomEditor[] puzzleRooms;
     public WaitingRoom[] waitingRooms;
+
 
     /* --- User customization ----------------------- */
     /* Setup variables */
@@ -36,7 +37,10 @@ public class GlobalRoomController : MonoBehaviour {
     public bool RepopulateAttachedRoomArray = false;
     public bool RepopulateWaitingRoomArray = false;
     public bool resetNames = false;
+    public bool relink = false;
 
+
+    /* ----------- Built-in Functions ------------------------------------------------------------- */
 
     void Start () {
         /*
@@ -56,8 +60,15 @@ public class GlobalRoomController : MonoBehaviour {
             resetNames = false;
             RenameRooms();
         }
+
+        if(relink) {
+            relink = false;
+            RelinkRooms();
+        }
     }
 
+    
+    /* ----------- Event Functions ------------------------------------------------------------- */
 
     private void RenameRooms() {
         /*
@@ -65,7 +76,7 @@ public class GlobalRoomController : MonoBehaviour {
          */
 
         /* Name the starting room */
-
+        startingRoom.name = startingRoomNamePrefix;
 
         /* Name the puzzle rooms */
         for(int i = 0; i < puzzleRooms.Length; i++) {
@@ -112,7 +123,7 @@ public class GlobalRoomController : MonoBehaviour {
             RepopulateAttachedRoomArray = false;
 
             /* Create and repopulate the array */
-            attachedRooms = new ConnectedRoom[attachedRoomContainer.transform.childCount];
+            attachedRooms = new AttachedRoom[attachedRoomContainer.transform.childCount];
             for(int i = 0; i < attachedRoomContainer.transform.childCount; i++) {
                 attachedRooms[i] = attachedRoomContainer.transform.GetChild(i).GetComponent<AttachedRoom>();
             }
@@ -127,6 +138,44 @@ public class GlobalRoomController : MonoBehaviour {
             for(int i = 0; i < waitingRoomContainer.transform.childCount; i++) {
                 waitingRooms[i] = waitingRoomContainer.transform.GetChild(i).GetComponent<WaitingRoom>();
             }
+        }
+    }
+
+    private void RelinkRooms() {
+        /*
+         * Set the script links that all the rooms share between eachother
+         */
+
+        /* Link the startingRoom and it's attached room */
+        startingRoom.exit = attachedRooms[0];
+        attachedRooms[0].puzzleRoomParent = startingRoom.gameObject;
+        
+        /* Link the puzzleRooms and their connected AttachedRooms */
+        for(int i = 0; i < puzzleRooms.Length; i++) {
+            /* Linked the attachedRooms to each puzzleRoom */
+            puzzleRooms[i].entrance = attachedRooms[i*2 + 1];
+            puzzleRooms[i].entrance = attachedRooms[i*2 + 2];
+
+            /* Link the puzzleRooms to the attachedRooms */
+            attachedRooms[i*2 + 1].puzzleRoomParent = puzzleRooms[i].transform.parent.gameObject;
+            attachedRooms[i*2 + 2].puzzleRoomParent = puzzleRooms[i].transform.parent.gameObject;
+        }
+
+        /* Link the waitingRoom's references to their two attachedRooms */
+        for(int i = 0; i < waitingRooms.Length; i++) {
+            waitingRooms[i].entranceRoom = attachedRooms[i*2];
+            waitingRooms[i].exitRoom = attachedRooms[i*2 + 1];
+        }
+
+        /* Link the waitingRooms to their adjacent waitingRoom */
+        for(int i = 1; i < waitingRooms.Length - 1; i++) {
+            waitingRooms[i].previousRoom = waitingRooms[i-1];
+            waitingRooms[i].nextRoom = waitingRooms[i+1];
+        }
+        //Link the edge cases
+        if(waitingRooms.Length > 1) {
+            waitingRooms[0].nextRoom = waitingRooms[1];
+            waitingRooms[waitingRooms.Length-1].previousRoom = waitingRooms[waitingRooms.Length-2];
         }
     }
 }
