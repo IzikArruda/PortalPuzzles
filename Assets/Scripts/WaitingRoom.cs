@@ -140,7 +140,7 @@ public class WaitingRoom : ConnectedRoom {
 
     /* -------- Event Functions ---------------------------------------------------- */
 
-    void UpdateRoom() {
+    public void UpdateRoom() {
         /*
          * Given the position of the attached rooms, re-create this room's bounderies
          */

@@ -36,11 +36,25 @@ public class GlobalRoomController : MonoBehaviour {
     public bool repopulateArrays = false;
     public bool resetNames = false;
     public bool relink = false;
-    public bool reposition = false;
-
-    /* Positional updating values */
+    
+    /* PuzzleRoom */
+    public bool puzzleRoomUpdate = false;
     public int puzzleRoomNumber;
-    public Vector3 puzzleRoomPositionChange;
+    public Vector3 puzzleRoomDistance;
+
+    /* WaitingRoom */
+    public bool waitingRoomUpdate = false;
+    public int waitingRoomIndex;
+    public Vector3 waitingRoomDistance;
+
+
+
+
+
+
+
+
+
 
 
     /* ----------- Built-in Functions ------------------------------------------------------------- */
@@ -75,10 +89,16 @@ public class GlobalRoomController : MonoBehaviour {
             RelinkRooms();
         }
 
-        /* Reposition the rooms */
-        if(reposition) {
-            reposition = false;
+        /* Reposition the puzzleRooms */
+        if(puzzleRoomUpdate) {
+            puzzleRoomUpdate = false;
             RepositionPuzzleRoomRequest();
+        }
+
+        /* Reposition the waitingRoom */
+        if(waitingRoomUpdate) {
+            waitingRoomUpdate = false;
+            RepositionWaitingRoomRequest();
         }
     }
 
@@ -99,8 +119,8 @@ public class GlobalRoomController : MonoBehaviour {
 
         /* If the request is valid, commit to the distance change */
         if(validValues) {
-            RepositionPuzzleRoom(puzzleRoomNumber - 1, puzzleRoomPositionChange);
-            puzzleRoomPositionChange = Vector3.zero;
+            RepositionPuzzleRoom(puzzleRoomNumber - 1, puzzleRoomDistance);
+            puzzleRoomDistance = Vector3.zero;
         }
     }
 
@@ -108,21 +128,92 @@ public class GlobalRoomController : MonoBehaviour {
         /*
          * Move the puzzleRoom defined by the given index by the given distance amount.
          */
+        Vector3 distanceXZ = new Vector3(distance.x, 0, distance.z);
+        Vector3 distanceY = new Vector3(0, distance.y, 0);
 
-        /* Any change in height (Y), will be pushed down to both entrance and exit transforms */
-        float height = distance.y;
-        distance = new Vector3(distance.x, 0, distance.z);
-
-        /* Move the puzzleRoom itself */
+        /* Move the puzzleRoom itself by the given X and Z distances */
         puzzleRooms[index].transform.parent.transform.position += distance;
-
-        /* Any height in the movement is passed down to the entrance and exit */
-        puzzleRooms[index].puzzleRoomEntrancePoint.position += new Vector3(0, height, 0);
-        puzzleRooms[index].puzzleRoomExitPoint.position += new Vector3(0, height, 0);
+        
+        /* Any height change is passed down to the entrance/exit and their linked waitingRoom */
+        RepositionWaitingRoom(index, distanceY);
+        RepositionWaitingRoom(index + 1, distanceY);
 
         /* Force the room to update */
         puzzleRooms[index].updateWalls = true;
         //NOTE: EACH ROOM SHOULD HAVE A WAY TO FORCE ITSELF TO BE UPDATED SO THAT THIS FUNCTION CAN CALL IT
+    }
+
+    private void RepositionWaitingRoomRequest() {
+        /*
+         * Request to move a waitingRoom and it's two AttachedRooms. 
+         */
+        bool validValues = true;
+
+        /* Checkl that the user has given a valid waitingRoom index */
+        if(waitingRoomIndex < 0 || waitingRoomIndex >= waitingRooms.Length) {
+            validValues = false;
+            Debug.Log("Warning: Given waitingRoom index is not a valid index");
+        }
+
+        /* If the request is valid, move the waitingRoom and it's parts */
+        if(validValues) {
+            //So far the waitingRoom can only be moved in the Y and X directions
+            Vector3 distance = new Vector3(waitingRoomDistance.x, waitingRoomDistance.y, 0);
+            RepositionWaitingRoom(waitingRoomIndex, distance);
+            waitingRoomDistance = Vector3.zero;
+        }
+    }
+
+    private void RepositionWaitingRoom(int index, Vector3 distance) {
+        /*
+         * Reposition the given waiting room along with it's two attachedRooms. 
+         * The act of moving a waitingRoom is simply by moving the two attachedRooms.
+         */
+
+        /* Move both the attachedRooms */
+        RepositionAttachedRoom(waitingRooms[index].entranceRoom, false, index-1, distance);
+        RepositionAttachedRoom(waitingRooms[index].exitRoom, true, index, distance);
+
+        /* Update the waitingRoom after the other rooms are updated */
+        waitingRooms[index].UpdateRoom();
+    }
+
+
+    private void RepositionAttachedRoom(AttachedRoom room, bool entrance, int puzzleRoomIndex, Vector3 distance) {
+        /*
+         * Given an attachedRoom, reposition it in the world. Moving the room requires 
+         * looking at what room it is linked to first. Determine what room it
+         * is linked to by looking at the name.
+         */
+
+        /* Linked to a puzzleRoom */
+        if(room.puzzleRoomParent.gameObject.name == "Puzzle " + (puzzleRoomIndex+1)) {
+            /* Get the linked puzzleRoom's entrance/exit point */
+            Transform transToMove;
+            if(entrance) {
+                transToMove = puzzleRooms[puzzleRoomIndex].puzzleRoomEntrancePoint;
+            }else {
+                transToMove = puzzleRooms[puzzleRoomIndex].puzzleRoomExitPoint;
+            }
+
+            /* Move the entrance/exit point */
+            transToMove.position += distance;
+
+            /* Update the puzzleRoom's walls */
+            puzzleRooms[puzzleRoomIndex].updateWalls = true;
+        }
+
+        /* Linked to a startingRoom */
+        else if(room.puzzleRoomParent.GetComponent<StartingRoom>() != null) {
+            /* Moving the startingRoom simply requires moving it's attachedRoom */
+            room.transform.position += distance;
+        }
+
+        /* Unknown room link */
+        else {
+            Debug.Log("WARNING: attachedRoom is not linked to a known room");
+            Debug.Log("Puzzle " + (puzzleRoomIndex+1));
+        }
     }
 
 
@@ -247,6 +338,18 @@ public class GlobalRoomController : MonoBehaviour {
 
 
         //When moving a waitingRoom, make sure to move the linked attachedRooms too, which in effect will move the puzzleRoom's exit/entrance
+        //Note that moving the fisrt waitingRoom will need to move the attachedRoom instead of the attachedRoom's puzzleRoom.
+        //
+        /*
+         * 
+         * 
+         * NOTE: when moving the StartingRoom, we must move the attachedRoom instead as the startingRoom will not auto-move it's 
+         * attachedRoom and instead the startginRoom is moved along with the attachedRoom
+         * 
+         * 
+         * 
+         * 
+         */
 
 
 
