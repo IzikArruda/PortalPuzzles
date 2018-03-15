@@ -132,15 +132,15 @@ public class GlobalRoomController : MonoBehaviour {
         Vector3 distanceY = new Vector3(0, distance.y, 0);
 
         /* Move the puzzleRoom itself by the given X and Z distances */
-        puzzleRooms[index].transform.parent.transform.position += distance;
+        puzzleRooms[index].transform.parent.transform.position += distanceXZ;
         
         /* Any height change is passed down to the entrance/exit and their linked waitingRoom */
         RepositionWaitingRoom(index, distanceY);
         RepositionWaitingRoom(index + 1, distanceY);
 
-        /* Force the room to update */
+        /* Recreate the puzzleRoom */
         puzzleRooms[index].updateWalls = true;
-        //NOTE: EACH ROOM SHOULD HAVE A WAY TO FORCE ITSELF TO BE UPDATED SO THAT THIS FUNCTION CAN CALL IT
+        puzzleRooms[index].Update();
     }
 
     private void RepositionWaitingRoomRequest() {
@@ -174,8 +174,8 @@ public class GlobalRoomController : MonoBehaviour {
         RepositionAttachedRoom(waitingRooms[index].entranceRoom, false, index-1, distance);
         RepositionAttachedRoom(waitingRooms[index].exitRoom, true, index, distance);
 
-        /* Update the waitingRoom after the other rooms are updated */
-        waitingRooms[index].UpdateRoom();
+        /* Recreate the waitingRoom */
+        waitingRooms[index].Start();
     }
 
 
@@ -201,12 +201,16 @@ public class GlobalRoomController : MonoBehaviour {
 
             /* Update the puzzleRoom's walls */
             puzzleRooms[puzzleRoomIndex].updateWalls = true;
+            puzzleRooms[puzzleRoomIndex].Update();
         }
 
         /* Linked to a startingRoom */
         else if(room.puzzleRoomParent.GetComponent<StartingRoom>() != null) {
             /* Moving the startingRoom simply requires moving it's attachedRoom */
             room.transform.position += distance;
+
+            /* Update the startingRoom */
+            startingRoom.Start();
         }
 
         /* Unknown room link */

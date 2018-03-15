@@ -53,7 +53,7 @@ public class StartingRoom : ConnectedRoom {
 
     /* -------- Built-In Functions ---------------------------------------------------- */
 
-    void Start () {
+    public void Start () {
         /*
          * On startup, build the walls of the room
          */
@@ -170,6 +170,10 @@ public class StartingRoom : ConnectedRoom {
         stairs.upVector = new Vector3(0, 1, 0);
         stairs.updateStairs = true;
         stairs.resetAngle = true;
+        stairs.Update();
+
+        /* Reposition the attachedRoom */
+        exit.Start();
     }
     
     void UpdateWindow() {

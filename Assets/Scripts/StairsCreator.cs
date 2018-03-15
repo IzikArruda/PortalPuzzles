@@ -61,7 +61,7 @@ public class StairsCreator : MonoBehaviour {
         previousStairsAngle = stairsAngle;
     }
 
-    void Update() {
+    public void Update() {
         /*
          * Update the stairs if told to do so
          */

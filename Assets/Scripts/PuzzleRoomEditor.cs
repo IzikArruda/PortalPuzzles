@@ -78,7 +78,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
         Update();
     }
 
-    void Update() {
+    public void Update() {
         /*
          * Update the walls that form the puzzle room
          */

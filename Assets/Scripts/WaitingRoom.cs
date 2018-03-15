@@ -61,7 +61,7 @@ public class WaitingRoom : ConnectedRoom {
         }
     }
 
-    void Start() {
+    public void Start() {
         /*
          * On start-up, recreate the room's skeleton any puzzle rooms from the AttachedRooms.
          */
