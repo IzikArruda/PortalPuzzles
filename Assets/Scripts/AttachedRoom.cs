@@ -24,15 +24,30 @@ public class AttachedRoom : ConnectedRoom {
     /* The gameObject of the puzzleRoom that this room is attached to */
     public GameObject puzzleRoomParent;
 
+    /* If set to true, the room will recreate it's walls on the next frame */
+    public bool update;
+
 
     /* -------- Built-In Functions ---------------------------------------------------- */
  
-    public void Start() {
+    void Start() {
         /*
          * On startup, update the walls for now
          */
 
+        update = true;
         UpdateWalls();
+    }
+
+    public void Update() {
+        /*
+         * Recreate the walls if it needs to update
+         */
+
+        if(update) {
+            update = false;
+            UpdateWalls();
+        }
     }
 
     void OnTriggerEnter(Collider player) {
@@ -60,7 +75,7 @@ public class AttachedRoom : ConnectedRoom {
 
     /* -------- Event Functions ---------------------------------------------------- */
 
-    public void UpdateWalls() {
+    void UpdateWalls() {
         /*
          * Look at the position of the exit points and create the walls for the room
          */

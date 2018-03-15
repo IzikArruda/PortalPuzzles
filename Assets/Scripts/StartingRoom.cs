@@ -173,7 +173,8 @@ public class StartingRoom : ConnectedRoom {
         stairs.Update();
 
         /* Reposition the attachedRoom */
-        exit.Start();
+        exit.update = true;
+        exit.Update();
     }
     
     void UpdateWindow() {

@@ -85,12 +85,12 @@ public class PuzzleRoomEditor : MonoBehaviour {
 
         if(updateWalls) {
 
-			/* Calculate the new positionnal stats of this puzzleRoom */
-			UpdateSizes();
-            
             /* Move the attached rooms into their given positions and link them to this room */
             UpdateAttachedRooms();
 
+            /* Calculate the new positionnal stats of this puzzleRoom */
+            UpdateSizes();
+            
             /* Ensure the walls and clouds that form the room are properly created and positioned */
             CreateWalls();
             CreateClouds();
