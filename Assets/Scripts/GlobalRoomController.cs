@@ -40,6 +40,7 @@ public class GlobalRoomController : MonoBehaviour {
     
     /* PuzzleRoom */
     public bool puzzleRoomUpdate = false;
+    public bool puzzleRoomMultipleUpdate = false;
     public int puzzleRoomNumber;
     public Vector3 puzzleRoomDistance;
 
@@ -55,7 +56,7 @@ public class GlobalRoomController : MonoBehaviour {
     /* Room deletion */
     public int roomIndexToDelete = -1;
     public bool deleteRoom;
-
+    
 
 
     /* ----------- Built-in Functions ------------------------------------------------------------- */
@@ -95,6 +96,11 @@ public class GlobalRoomController : MonoBehaviour {
             puzzleRoomUpdate = false;
             RepositionPuzzleRoomRequest();
         }
+        /* Reposition multiple puzzleRooms */
+        if(puzzleRoomMultipleUpdate) {
+            puzzleRoomMultipleUpdate = false;
+            RepositionMultipleRoomsRequest();
+        }
 
         /* Reposition the waitingRoom */
         if(waitingRoomUpdate) {
@@ -118,6 +124,36 @@ public class GlobalRoomController : MonoBehaviour {
 
     /* ----------- Positonal Updating Functions ------------------------------------------------------------- */
     
+    private void RepositionMultipleRooms(int index, Vector3 distance) {
+        /*
+         * When wanting to reposition a puzzleRoom, reposition all upcomming rooms to reflect the change.
+         */
+
+        /* Move each puzzleRoom at the index and above */
+        for(int i = index; i < puzzleRooms.Length; i++) {
+            RepositionPuzzleRoom(i, distance);
+        }
+    }
+
+    private void RepositionMultipleRoomsRequest() {
+        /*
+         * Request to move a puzzleRoom along with any other puzzleRooms ahead of it
+         */
+        bool validValues = true;
+
+        /* Check that the user has given a valid puzzleRoom number (NOT index) */
+        if(puzzleRoomNumber < 1 || puzzleRoomNumber > puzzleRooms.Length) {
+            validValues = false;
+            Debug.Log("Warning: Given puzzleRoom number is not a valid puzzle room");
+        }
+
+        /* If the request is valid, commit to the distance change */
+        if(validValues) {
+            RepositionMultipleRooms(puzzleRoomNumber - 1, puzzleRoomDistance);
+            puzzleRoomDistance = Vector3.zero;
+        }
+    }
+
     private void RepositionPuzzleRoomRequest() {
         /*
          * Request to move a puzzle room. The room and the distance is controlled by a user set value in the editor.
@@ -158,6 +194,14 @@ public class GlobalRoomController : MonoBehaviour {
         /* Recreate the puzzleRoom */
         puzzleRooms[index].updateWalls = true;
         puzzleRooms[index].Update();
+
+        /* If there was any movement along the X or Z axis, also update the two adjacent waitingRooms */
+        if(distanceXZ.magnitude != 0) {
+            waitingRooms[index].Start();
+            if(index + 1 < waitingRooms.Length) {
+                waitingRooms[index + 1].Start();
+            }
+        }
     }
 
     private void RepositionWaitingRoomRequest() {
@@ -328,25 +372,19 @@ public class GlobalRoomController : MonoBehaviour {
         AttachedRoom entrance, exit;
         entrance = GameObject.Instantiate(newPuzzleRoom.entrance.gameObject).GetComponent<AttachedRoom>();
         exit = GameObject.Instantiate(newPuzzleRoom.entrance.gameObject).GetComponent<AttachedRoom>();
-        /* Link the duplicated attachedRooms to the new puzzleRoom */
-        newPuzzleRoom.entrance = entrance;
-        newPuzzleRoom.exit = exit;
-        /* Set the lengths of the attachedRooms to be of proper sizes */
-        puzzleRoom.exit.roomLength = 1f;
-        entrance.roomLength = 1f;
         /* Reset the puzzleRoomParent of the attachedRoom that was duplicated */
         puzzleRoom.exit.puzzleRoomParent = puzzleRoom.transform.parent.gameObject;
+        /* Set the lengths of the attachedRooms to be of proper sizes */
+        entrance.roomLength = 1f;
+        exit.roomLength = 1f;
         /* Update the attachedRooms */
-        puzzleRoom.exit.update = true;
-        puzzleRoom.exit.Update();
+        exit.update = true;
+        exit.Update();
         entrance.update = true;
         entrance.Update();
         
         /* Duplicate a waitingRoom */
         WaitingRoom newWaitingRoom = GameObject.Instantiate(waitingRoom.gameObject).GetComponent<WaitingRoom>();
-        /* Link the waitingRoom to the proper attachedRooms */
-        newWaitingRoom.entranceRoom = puzzleRoom.exit;
-        newWaitingRoom.exitRoom = entrance;
         
         /* Reorder the rooms in the heirarchy to reflect the position they are in the room order */
         newPuzzleRoomObject.transform.parent = puzzleRoomContainer.transform;
