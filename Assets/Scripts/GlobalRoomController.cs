@@ -313,6 +313,14 @@ public class GlobalRoomController : MonoBehaviour {
          * Delete the puzzleRoom along with it's waitingRoom and it's attachedRoom.
          */
 
+        /* Move back the puzzleRooms ahead to fill in the empty space created by the missing room */
+        float removedRoomLength = puzzleRooms[index].exit.exitPointFront.position.z -
+                waitingRooms[index].entranceRoom.exitPointFront.transform.position.z;
+        float removedRoomWidth = puzzleRooms[index].puzzleRoomExitPoint.position.x -
+                puzzleRooms[index].puzzleRoomEntrancePoint.position.x +
+                waitingRooms[index].GetRoomWidth();
+        RepositionMultipleRooms(index + 1, new Vector3(-removedRoomWidth, 0, -removedRoomLength));
+
         /* Delete the two attachedRooms connected to the puzzleRoom */
         GameObject.DestroyImmediate(puzzleRooms[index].entrance.gameObject);
         GameObject.DestroyImmediate(puzzleRooms[index].exit.gameObject);
@@ -322,7 +330,7 @@ public class GlobalRoomController : MonoBehaviour {
 
         /* Delete the waitingRoom at the given index */
         GameObject.DestroyImmediate(waitingRooms[index].gameObject);
-
+        
         /* Repopulate, rename and relink the rooms of the game */
         RepopulateArrays();
         RenameRooms();

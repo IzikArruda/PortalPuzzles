@@ -409,4 +409,28 @@ public class WaitingRoom : ConnectedRoom {
         entranceRoom.EnableRoom();
         exitRoom.EnableRoom();
     }
+
+    public float GetRoomWidth() {
+        /*
+         * Return the width (X axis) of the room
+         */
+
+        return xDist;
+    }
+
+    public float GetRoomLength() {
+        /*
+         * Return the length (Z axis) of the room
+         */
+
+        return zDist;
+    }
+
+    public float GetRoomHeight() {
+        /*
+         * Return the height (Y axis) of the room
+         */
+
+        return yDist;
+    }
 }
