@@ -48,12 +48,13 @@ public class GlobalRoomController : MonoBehaviour {
     public int waitingRoomIndex;
     public Vector3 waitingRoomDistance;
 
+    /* Room creation */
+    public int roomIndexToCreate = -1;
+    public bool AddRoom;
+
     /* Room deletion */
     public int roomIndexToDelete = -1;
     public bool deleteRoom;
-
-
-    public bool AddRoom;
 
 
 
@@ -104,7 +105,7 @@ public class GlobalRoomController : MonoBehaviour {
         /* Create a new room */
         if(AddRoom) {
             AddRoom = false;
-            CreateNewRoom();
+            CreateRoomRequest();
         }
 
         /* Delete a room */
@@ -289,28 +290,44 @@ public class GlobalRoomController : MonoBehaviour {
         }
     }
 
-    private void CreateNewRoom() {
+    private void CreateRoomRequest() {
+        /*
+         * Request to create a new puzzle room along with it's waitingRoom and two attachedRooms
+         */
+        bool validValues = true;
+
+        /* check if the given index points to an actual room */
+        if(roomIndexToCreate < 0 || roomIndexToCreate > puzzleRooms.Length-1) {
+            validValues = false;
+            Debug.Log("Warning: The selected room index to create does not exist");
+        }
+
+        /* If the request is valid, delete a set of rooms */
+        if(validValues) {
+            CreateRoom(roomIndexToCreate);
+            roomIndexToCreate = -1;
+        }
+    }
+
+    private void CreateRoom(int index) {
         /*
          * Create a new puzzle room and it's required waiting and attached rooms
          */
         float waitingRoomSetWidth = 10f;
         float waitingRoomSetLength = 15f;
-        PuzzleRoomEditor puzzleRoom = puzzleRooms[puzzleRooms.Length - 1];
-        WaitingRoom waitingRoom = waitingRooms[waitingRooms.Length - 1];
+        PuzzleRoomEditor puzzleRoom = puzzleRooms[index];
+        WaitingRoom waitingRoom = waitingRooms[index];
         
         /* Duplicate and position the puzzleRoom */
         GameObject newPuzzleRoomObject = GameObject.Instantiate(puzzleRoom.transform.parent.gameObject);
         PuzzleRoomEditor newPuzzleRoom = newPuzzleRoomObject.transform.GetChild(0).GetComponent<PuzzleRoomEditor>();
-        newPuzzleRoomObject.transform.parent = puzzleRoomContainer.transform;
         float previousPuzzleSize = puzzleRoom.puzzleRoomExitPoint.position.z - puzzleRoom.puzzleRoomEntrancePoint.position.z;
         newPuzzleRoomObject.transform.position += new Vector3(waitingRoomSetWidth, 0, previousPuzzleSize + waitingRoomSetLength);
         
         /* Duplicate two new attachedRooms from the exit of the previously duplicated puzzleRoom */
         AttachedRoom entrance, exit;
         entrance = GameObject.Instantiate(newPuzzleRoom.entrance.gameObject).GetComponent<AttachedRoom>();
-        entrance.transform.parent = attachedRoomContainer.transform;
         exit = GameObject.Instantiate(newPuzzleRoom.entrance.gameObject).GetComponent<AttachedRoom>();
-        exit.transform.parent = attachedRoomContainer.transform;
         /* Link the duplicated attachedRooms to the new puzzleRoom */
         newPuzzleRoom.entrance = entrance;
         newPuzzleRoom.exit = exit;
@@ -327,21 +344,34 @@ public class GlobalRoomController : MonoBehaviour {
         
         /* Duplicate a waitingRoom */
         WaitingRoom newWaitingRoom = GameObject.Instantiate(waitingRoom.gameObject).GetComponent<WaitingRoom>();
-        newWaitingRoom.transform.parent = waitingRoomContainer.transform;
         /* Link the waitingRoom to the proper attachedRooms */
         newWaitingRoom.entranceRoom = puzzleRoom.exit;
         newWaitingRoom.exitRoom = entrance;
         
-        /* Force all the rooms to update themselves */
-        puzzleRoom.updateWalls = true;
-        puzzleRoom.Update();
+        /* Reorder the rooms in the heirarchy to reflect the position they are in the room order */
+        newPuzzleRoomObject.transform.parent = puzzleRoomContainer.transform;
+        newPuzzleRoomObject.transform.SetSiblingIndex(index + 1);
+        newWaitingRoom.transform.SetSiblingIndex(index + 1);
+        newWaitingRoom.transform.parent = waitingRoomContainer.transform;
+        entrance.transform.parent = attachedRoomContainer.transform;
+        exit.transform.parent = attachedRoomContainer.transform;
+        entrance.transform.SetSiblingIndex((index+1)*2);
+        exit.transform.SetSiblingIndex((index+1)*2 + 1);
+
+        /* Reset the arrays, names and links to all the rooms */
+        RepopulateArrays();
+        RenameRooms();
+        RelinkRooms();
+
+        /* Update the puzzleRooms to reflect their new positions */
         newPuzzleRoom.updateWalls = true;
         newPuzzleRoom.Update();
+        puzzleRoom.updateWalls = true;
+        puzzleRoom.Update();
+
+        /* Update the waitingRooms to match the new order they are in */
         newWaitingRoom.Start();
-        
-        /* Once the new room is created, repopulate the arrays and rename the rooms to reflect the change */
-        repopulateArrays = true;
-        resetNames = true;
+        waitingRooms[index + 1].Start();
     }
 
     private void RenameRooms() {
