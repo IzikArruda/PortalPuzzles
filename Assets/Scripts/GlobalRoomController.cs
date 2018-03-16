@@ -48,6 +48,9 @@ public class GlobalRoomController : MonoBehaviour {
     public int waitingRoomIndex;
     public Vector3 waitingRoomDistance;
 
+    /* Room deletion */
+    public int roomIndexToDelete = -1;
+    public bool deleteRoom;
 
 
     public bool AddRoom;
@@ -103,6 +106,12 @@ public class GlobalRoomController : MonoBehaviour {
             AddRoom = false;
             CreateNewRoom();
         }
+
+        /* Delete a room */
+        if(deleteRoom) {
+            deleteRoom = false;
+            DeleteRoomRequest();
+        }
     }
 
 
@@ -156,7 +165,7 @@ public class GlobalRoomController : MonoBehaviour {
          */
         bool validValues = true;
 
-        /* Checkl that the user has given a valid waitingRoom index */
+        /* Check that the user has given a valid waitingRoom index */
         if(waitingRoomIndex < 0 || waitingRoomIndex >= waitingRooms.Length) {
             validValues = false;
             Debug.Log("Warning: Given waitingRoom index is not a valid index");
@@ -229,6 +238,57 @@ public class GlobalRoomController : MonoBehaviour {
 
     /* ----------- Event Functions ------------------------------------------------------------- */
     
+    private void DeleteRoomRequest() {
+        /*
+         * Request to delete a puzzle room, a waiting room and two attachedRooms.
+         */
+        bool validValues = true;
+
+        /* Check if the index of the room that will be delete exists */
+        if(roomIndexToDelete < 0 || roomIndexToDelete > puzzleRooms.Length-1) {
+            validValues = false;
+            Debug.Log("Warning: The selected room index to delete does not exist");
+        }
+
+        /* Do not delete the last room */
+        else if(puzzleRooms.Length < 2) {
+            validValues = false;
+            Debug.Log("Warning: Cannot delete the final puzzleRoom");
+        }
+
+        /* If the request is valid, delete a set of rooms */
+        if(validValues) {
+            DeleteRoom(roomIndexToDelete);
+            roomIndexToDelete = -1;
+        }
+    }
+
+    private void DeleteRoom(int index) {
+        /*
+         * Delete the puzzleRoom along with it's waitingRoom and it's attachedRoom.
+         */
+
+        /* Delete the two attachedRooms connected to the puzzleRoom */
+        GameObject.DestroyImmediate(puzzleRooms[index].entrance.gameObject);
+        GameObject.DestroyImmediate(puzzleRooms[index].exit.gameObject);
+        
+        /* Delete the puzzleRoom at the given index */
+        GameObject.DestroyImmediate(puzzleRooms[index].transform.parent.gameObject);
+
+        /* Delete the waitingRoom at the given index */
+        GameObject.DestroyImmediate(waitingRooms[index].gameObject);
+
+        /* Repopulate, rename and relink the rooms of the game */
+        RepopulateArrays();
+        RenameRooms();
+        RelinkRooms();
+
+        /* If a center room is deleted, re-create a waitingRoom to reconnect the rooms */
+        if(index < waitingRooms.Length) {
+            waitingRooms[index].Start();
+        }
+    }
+
     private void CreateNewRoom() {
         /*
          * Create a new puzzle room and it's required waiting and attached rooms
