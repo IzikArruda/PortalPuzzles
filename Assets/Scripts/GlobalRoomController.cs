@@ -366,30 +366,29 @@ public class GlobalRoomController : MonoBehaviour {
          * Create a new puzzle room and it's required waiting and attached rooms
          */
         float waitingRoomSetWidth = 10f;
-        float waitingRoomSetLength = 15f;
+        float waitingRoomLength = 6f;
         PuzzleRoomEditor puzzleRoom = puzzleRooms[index];
         WaitingRoom waitingRoom = waitingRooms[index];
         
         /* Duplicate and position the puzzleRoom */
         GameObject newPuzzleRoomObject = GameObject.Instantiate(puzzleRoom.transform.parent.gameObject);
         PuzzleRoomEditor newPuzzleRoom = newPuzzleRoomObject.transform.GetChild(0).GetComponent<PuzzleRoomEditor>();
-        float previousPuzzleSize = puzzleRoom.puzzleRoomExitPoint.position.z - puzzleRoom.puzzleRoomEntrancePoint.position.z;
-        newPuzzleRoomObject.transform.position += new Vector3(waitingRoomSetWidth, 0, previousPuzzleSize + waitingRoomSetLength);
+        float previousPuzzleSize = puzzleRoom.exit.exitPointFront.position.z - puzzleRoom.entrance.exitPointBack.position.z;
+        newPuzzleRoomObject.transform.position += new Vector3(waitingRoomSetWidth, 0, previousPuzzleSize + waitingRoomLength);
         
         /* Duplicate two new attachedRooms from the exit of the previously duplicated puzzleRoom */
         AttachedRoom entrance, exit;
-        entrance = GameObject.Instantiate(newPuzzleRoom.entrance.gameObject).GetComponent<AttachedRoom>();
-        exit = GameObject.Instantiate(newPuzzleRoom.entrance.gameObject).GetComponent<AttachedRoom>();
-        /* Reset the puzzleRoomParent of the attachedRoom that was duplicated */
-        puzzleRoom.exit.puzzleRoomParent = puzzleRoom.transform.parent.gameObject;
-        /* Set the lengths of the attachedRooms to be of proper sizes */
-        entrance.roomLength = 1f;
-        exit.roomLength = 1f;
+        entrance = GameObject.Instantiate(puzzleRoom.entrance.gameObject).GetComponent<AttachedRoom>();
+        exit = GameObject.Instantiate(puzzleRoom.exit.gameObject).GetComponent<AttachedRoom>();
         /* Update the attachedRooms */
         exit.update = true;
         exit.Update();
         entrance.update = true;
         entrance.Update();
+        
+        /* Move any rooms ahead in the array to make room for the new room */
+        float newPuzzleRoomLength = newPuzzleRoom.exit.exitPointFront.position.z - newPuzzleRoom.entrance.exitPointBack.position.z;
+        RepositionMultipleRooms(index + 1, new Vector3(waitingRoomSetWidth, 0, newPuzzleRoomLength + waitingRoomLength));
         
         /* Duplicate a waitingRoom */
         WaitingRoom newWaitingRoom = GameObject.Instantiate(waitingRoom.gameObject).GetComponent<WaitingRoom>();
@@ -401,13 +400,9 @@ public class GlobalRoomController : MonoBehaviour {
         newWaitingRoom.transform.parent = waitingRoomContainer.transform;
         entrance.transform.parent = attachedRoomContainer.transform;
         exit.transform.parent = attachedRoomContainer.transform;
-        entrance.transform.SetSiblingIndex((index+1)*2);
-        exit.transform.SetSiblingIndex((index+1)*2 + 1);
-
-        /* Reset the arrays, names and links to all the rooms */
-        RepopulateArrays();
-        RenameRooms();
-        RelinkRooms();
+        //The index used for the entrance/exit's child position is NOT index+1. This is because of how exit/entrance is accesed once it is duplicated.
+        entrance.transform.SetSiblingIndex((index + 1)*2 + 1);
+        exit.transform.SetSiblingIndex((index + 1)*2 + 2);
 
         /* Update the puzzleRooms to reflect their new positions */
         newPuzzleRoom.updateWalls = true;
@@ -415,9 +410,15 @@ public class GlobalRoomController : MonoBehaviour {
         puzzleRoom.updateWalls = true;
         puzzleRoom.Update();
 
-        /* Update the waitingRooms to match the new order they are in */
-        newWaitingRoom.Start();
-        waitingRooms[index + 1].Start();
+        /* Reset the arrays, names and links to all the rooms */
+        RepopulateArrays();
+        RenameRooms();
+        RelinkRooms();
+
+        /* Recreate each waitingRoom as they require recreating after this for some reason */
+        for(int i = 0; i < waitingRooms.Length; i++) {
+            waitingRooms[i].Start();
+        }
     }
 
     private void RenameRooms() {
