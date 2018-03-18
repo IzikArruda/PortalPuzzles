@@ -154,7 +154,7 @@ public class PortalView : MonoBehaviour {
 
                 /* If it is using the last scoutCamera of the recursiveCamera list, apply a null texture */
                 else if(cameraScript.cameraDepth >= maxCameraDepth-1) {
-                    Debug.Log("WARNING: CAMERA RENDER DEPTH REACHED");
+                    //Debug.Log("WARNING: CAMERA RENDER DEPTH REACHED");
                     cameraScript.AssignMeshTo(gameObject, cameraView);
                 }
 
@@ -225,7 +225,7 @@ public class PortalView : MonoBehaviour {
         Vector4 clipPlane = CameraSpacePlane(viewingCamera, pos, normal, -1.0f);
         Matrix4x4 projection = viewingCamera.CalculateObliqueMatrix(clipPlane);
         scoutCamera.projectionMatrix = projection;
-        
+
         /* Cut out the scoutCamera's edges so it does not render anything outside the portal's view.
          * If the rect of the portal from the camera's view is very small, do not bother rendering it. */
         Rect boundingEdges = CalculateViewingRect(viewingCamera);
@@ -237,8 +237,8 @@ public class PortalView : MonoBehaviour {
             CustomPlayerController.renderedCameraCount++;
 
             /* Extract the scoutingCamera's view after rendering as a static texture */
-            Material[] materials = rend.sharedMaterials;
-            foreach(Material mat in materials) {
+            //Material[] materials = rend.sharedMaterials;
+            foreach(Material mat in rend.sharedMaterials) {
                 if(mat.HasProperty("_PortalTex")) {
                     mat.SetTexture("_PortalTex", cameraScript.renderTexture);
                     extractedView = mat.GetTexture("_PortalTex");

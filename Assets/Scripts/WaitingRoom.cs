@@ -138,6 +138,7 @@ public class WaitingRoom : ConnectedRoom {
         }
     }
 
+
     /* -------- Event Functions ---------------------------------------------------- */
 
     void UpdateRoom() {

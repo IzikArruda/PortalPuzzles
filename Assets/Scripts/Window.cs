@@ -72,7 +72,7 @@ public class Window : MonoBehaviour {
 
         /* To prevent the portals from being placed behind the room's walls, control it's offset */
         portalSet.portalOffset = new Vector3(0, 0, -0.01f);
-        Vector3 portalOffset = new Vector3(0, 0, -0.025f);
+        Vector3 portalOffset = new Vector3(0, 0, -frameDepth/4f);
 
         /* Ensure the window's portal's thickness is above 0 */
         portalSet.triggerThickness = 0.01f;
@@ -167,7 +167,7 @@ public class Window : MonoBehaviour {
         cubeScript = windowPieces[index].AddComponent<CubeCreator>();
         cubeScript.x = windowWidth;
         cubeScript.y = windowHeight;
-        cubeScript.z = frameDepth/1.5f;
+        cubeScript.z = frameDepth*0.9f;
         cubeScript.mainMaterial = glassMaterial;
         /* Set the scale and offset of the window */
         cubeScript.UVScale = new Vector2(0.5f, 0.5f);
