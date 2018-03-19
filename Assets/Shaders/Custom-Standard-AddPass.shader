@@ -98,11 +98,11 @@ Shader "Hidden/TerrainEngine/Splatmap/Custom-Standard-AddPass" {
 			//o.Smoothness = mixedDiffuse.a;
 			o.Smoothness = 0;
 			//o.Metallic = dot(splat_control, half4(_Metallic0, _Metallic1, _Metallic2, _Metallic3));
-			o.Metallic = 0;
+			//o.Metallic = 0;
 			o.Albedo = mixedDiffuse;
 		}
 		ENDCG
 	}
 
-	Fallback "Hidden/TerrainEngine/Splatmap/Diffuse-AddPass"
+	//Fallback "Hidden/TerrainEngine/Splatmap/Diffuse-AddPass"
 }

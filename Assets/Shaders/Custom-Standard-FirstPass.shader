@@ -109,5 +109,5 @@ Shader "Nature/Terrain/Custom-Standard" {
 	Dependency "AddPassShader" = "Hidden/TerrainEngine/Splatmap/Custom-Standard-AddPass"
 	Dependency "BaseMapShader" = "Hidden/TerrainEngine/Splatmap/Custom-Standard-Base"
 
-	Fallback "Nature/Terrain/Diffuse"
+	//Fallback "Nature/Terrain/Diffuse"
 }

@@ -30,15 +30,17 @@ Shader "Hidden/TerrainEngine/Splatmap/Custom-Standard-Base" {
 
 		void surf (Input IN, inout SurfaceOutputStandard o) {
 			half4 c = tex2D (_MainTex, IN.uv_MainTex);
-			o.Albedo = c.rgb;
-			o.Alpha = 1;
+			o.Albedo = 0;
+			o.Alpha = 0;
 			o.Smoothness = c.a;
+			o.Smoothness = 0;
 			o.Metallic = tex2D (_MetallicTex, IN.uv_MainTex).r;
-			o.Albedo = c;
+			o.Metallic = 0;
+			o.Albedo = 0;
 		}
 
 		ENDCG
 	}
 
-	FallBack "Diffuse"
+	//FallBack "Diffuse"
 }
