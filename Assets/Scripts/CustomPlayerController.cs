@@ -147,7 +147,7 @@ public class CustomPlayerController : MonoBehaviour {
     private bool outsideState = false;
 
     /* The far clipping plane of the player's camera. The portals will use this for their cameras. */
-    public static float cameraFarClippingPlane;
+    public static float cameraFarClippingPlane = 20000f;
 
     /* The type of step sound is played for the player footstep tracker */
     private int currentStepType = 0;
@@ -163,7 +163,9 @@ public class CustomPlayerController : MonoBehaviour {
         /*
          * Initilize required objects and set starting values for certain variables 
          */
-        cameraFarClippingPlane = playerCamera.farClipPlane;
+
+        /* Set the clipping plane of the player's camera while they are in the puzleRooms */
+        playerCamera.farClipPlane = 1000;
 
         /* Set the rendering layers of the camera so the player doesnt render the outside terrain */
         playerCamera.cullingMask = ~(1 << PortalSet.maxLayer + 2);
@@ -192,6 +194,7 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Reset the player's positional values and camera effects */
         ResetPlayer(false);
+
     }
     
     void FixedUpdate() {
@@ -1302,7 +1305,8 @@ public class CustomPlayerController : MonoBehaviour {
         /* Tell the player's sound script that they are now in the outside state */
         playerSoundsScript.EnteringOutside();
 
-        //Update the camera effect's maximum values to reflect the change
+        /* Update the player camera's rendering distance */
+        playerCamera.farClipPlane = cameraFarClippingPlane;
     }
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
