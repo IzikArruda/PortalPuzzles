@@ -265,7 +265,7 @@ public class CustomPlayerController : MonoBehaviour {
         before = System.DateTime.Now;
         
         //Print how many cams were rendered this frame
-        //Debug.Log(renderedCameraCount);
+        Debug.Log(renderedCameraCount);
         renderedCameraCount = 0;
 
 
