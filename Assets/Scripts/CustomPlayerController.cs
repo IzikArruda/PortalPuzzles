@@ -774,13 +774,14 @@ public class CustomPlayerController : MonoBehaviour {
         
         /* Alter the used movementSpeed relative to the player's falling speed */
         float usedMovementSpeed = movementSpeed;
-        /* Increase the player's base airborn movement up to double */
+        /* Increase the player's base airborn movement speed if they are falling */
         if(PlayerIsAirborn()) {
-            usedMovementSpeed += movementSpeed*Mathf.Clamp(Mathf.Abs(currentYVelocity)/maxYVelocity, 0, 1);
-        }
-        /* In the outside state, double the final movementSpeed */
-        if(outsideState) {
-            usedMovementSpeed *= 2;
+            usedMovementSpeed += 0.5f*movementSpeed*Mathf.Clamp(Mathf.Abs(currentYVelocity)/maxYVelocity, 0, 1);
+
+            /* While airborn and outside, increase the player's airborn movement  */
+            if(outsideState) {
+                usedMovementSpeed *= 4;
+            }
         }
 
         /* Add the player speed to the movement vector */
