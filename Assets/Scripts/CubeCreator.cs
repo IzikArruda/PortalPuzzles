@@ -40,6 +40,11 @@ public class CubeCreator : MonoBehaviour {
     public bool left;
     public bool right;
 
+    /* values used when creating the cube */
+    private float L;
+    private float H;
+    private float W;
+
     public bool updateCube;
 
     void OnValidate() {
@@ -83,6 +88,157 @@ public class CubeCreator : MonoBehaviour {
         gameObject.AddComponent<BoxCollider>();
     }
 
+
+
+
+
+
+
+
+
+    public Vector3 GetBoxVertice(int side, int vertex) {
+        /*
+         * Return the vector3 that defines the given side and vertex.
+         * Sides go from 0 - 5 : X+, X-, Y+, Y-, Z+, Z-
+         */
+        Vector3 vector;
+        int X = 1, Y = 1, Z = 1;
+
+        /* X+ */
+        if(side == 0) {
+            if(vertex == 0) {
+
+            }
+
+            else if(vertex == 1) {
+                Z *= -1;
+            }
+
+            else if(vertex == 2) {
+                Y *= -1;
+            }
+
+            else if(vertex == 3) {
+                Y *= -1;
+                Z *= -1;
+            }
+        }
+
+        /* X- */
+        else if(side == 1) {
+            if(vertex == 0) {
+                X *= -1;
+            }
+
+            else if(vertex == 1) {
+                X *= -1;
+                Z *= -1;
+            }
+
+            else if(vertex == 2) {
+                X *= -1;
+                Y *= -1;
+            }
+
+            else if(vertex == 3) {
+                X *= -1;
+                Y *= -1;
+                Z *= -1;
+            }
+        }
+
+        /* Y+ */
+        else if(side == 2) {
+            if(vertex == 0) {
+                Z *= -1;
+            }
+
+            else if(vertex == 1) {
+
+            }
+
+            else if(vertex == 2) {
+                X *= -1;
+                Z *= -1;
+            }
+
+            else if(vertex == 3) {
+                X *= -1;
+            }
+        }
+
+        /* Y- */
+        else if(side == 3) {
+            if(vertex == 0) {
+                Y *= -1;
+                Z *= -1;
+            }
+
+            else if(vertex == 1) {
+                Y *= -1;
+            }
+
+            else if(vertex == 2) {
+                Y *= -1;
+                X *= -1;
+                Z *= -1;
+            }
+
+            else if(vertex == 3) {
+                Y *= -1;
+                X *= -1;
+            }
+        }
+
+        /* Z+ */
+        else if(side == 4) {
+            if(vertex == 0) {
+
+            }
+
+            else if(vertex == 1) {
+                X *= -1;
+            }
+
+            else if(vertex == 2) {
+                Y *= -1;
+            }
+
+            else if(vertex == 3) {
+                X *= -1;
+                Y *= -1;
+            }
+        }
+
+        /* Z- */
+        else if(side == 5) {
+            if(vertex == 0) {
+                Z *= -1;
+            }
+
+            else if(vertex == 1) {
+                Z *= -1;
+                X *= -1;
+            }
+
+            else if(vertex == 2) {
+                Z *= -1;
+                Y *= -1;
+            }
+
+            else if(vertex == 3) {
+                Z *= -1;
+                X *= -1;
+                Y *= -1;
+            }
+        }
+
+        vector = new Vector3(L*X, H*Y, W*Z);
+
+        return vector;
+    }
+    
+
     public void UpdateBox() {
         /*
          * Create the mesh of the cube using it's set parameters.
@@ -93,48 +249,48 @@ public class CubeCreator : MonoBehaviour {
         int[] triangles = null, altTriangles = null;
 
         /* Get the distance each vertex of the cube will be from it's center */
-        float L = x/2f;
-        float H = y/2f;
-        float W = z/2f;
+        L = x/2f;
+        H = y/2f;
+        W = z/2f;
 
         /* Get the vertices that make up the cube */
         vertices = new Vector3[] {
             //X+ plane
-            new Vector3(L, H, W),
-            new Vector3(L, H, -W),
-            new Vector3(L, -H, W),
-            new Vector3(L, -H, -W),
+            GetBoxVertice(0, 0),
+            GetBoxVertice(0, 1),
+            GetBoxVertice(0, 2),
+            GetBoxVertice(0, 3),
             //X- plane
-            new Vector3(-L, H, W),
-            new Vector3(-L, H, -W),
-            new Vector3(-L, -H, W),
-            new Vector3(-L, -H, -W),
+            GetBoxVertice(1, 0),
+            GetBoxVertice(1, 1),
+            GetBoxVertice(1, 2),
+            GetBoxVertice(1, 3),
             //Y+ plane
-            new Vector3(L, H, -W),
-            new Vector3(L, H, W),
-            new Vector3(-L, H, -W),
-            new Vector3(-L, H, W),
+            GetBoxVertice(2, 0),
+            GetBoxVertice(2, 1),
+            GetBoxVertice(2, 2),
+            GetBoxVertice(2, 3),
             //Y- plane
-            new Vector3(L, -H, -W),
-            new Vector3(L, -H, W),
-            new Vector3(-L, -H, -W),
-            new Vector3(-L, -H, W),
+            GetBoxVertice(3, 0),
+            GetBoxVertice(3, 1),
+            GetBoxVertice(3, 2),
+            GetBoxVertice(3, 3),
             //Z+ plane
-            new Vector3(L, H, W),
-            new Vector3(-L, H, W),
-            new Vector3(L, -H, W),
-            new Vector3(-L, -H, W),
+            GetBoxVertice(4, 0),
+            GetBoxVertice(4, 1),
+            GetBoxVertice(4, 2),
+            GetBoxVertice(4, 3),
             //Z- plane
-            new Vector3(L, H, -W),
-            new Vector3(-L, H, -W),
-            new Vector3(L, -H, -W),
-            new Vector3(-L, -H, -W),
-            
+            GetBoxVertice(5, 0),
+            GetBoxVertice(5, 1),
+            GetBoxVertice(5, 2),
+            GetBoxVertice(5, 3),
+
             /* Place the center vectors of the top of the box */
-            new Vector3(L - edgeSize, H, -W + edgeSize),
+            /*new Vector3(L - edgeSize, H, -W + edgeSize),
             new Vector3(L - edgeSize, H, W - edgeSize),
             new Vector3(-L + edgeSize, H, -W + edgeSize),
-            new Vector3(-L + edgeSize, H, W - edgeSize)
+            new Vector3(-L + edgeSize, H, W - edgeSize)*/
         };
 
         /* Set up the polygons that form the cube */
@@ -150,10 +306,10 @@ public class CubeCreator : MonoBehaviour {
             //10+16, 9+16, 8+16, 10+16, 11+16, 9+16,
 
             //Render the edges of the surface
-            10, 11, 11+16, 11+16, 10+16, 10,
+            /*10, 11, 11+16, 11+16, 10+16, 10,
             11, 9, 9+16, 9+16, 11+16, 11,
             9, 8, 8+16, 8+16, 9+16, 9,
-            8, 10, 10+16, 10+16, 8+16, 8
+            8, 10, 10+16, 10+16, 8+16, 8*/
 
 
 
@@ -166,6 +322,7 @@ public class CubeCreator : MonoBehaviour {
             //Render the center
             10+16, 9+16, 8+16, 10+16, 11+16, 9+16,
         };
+        CreateTriangles(ref triangles, true);
 
         /* Apply an offset to the UVs */
         if(UVScale != null && (UVScale.x != 0 && UVScale.y != 0)) {
@@ -205,13 +362,13 @@ public class CubeCreator : MonoBehaviour {
             new Vector2(L, H) + ZNegativeOffset,
             new Vector2(-L, H) + ZNegativeOffset,
             new Vector2(L, -H) + ZNegativeOffset,
-            new Vector2(-L, -H) + ZNegativeOffset,
+            new Vector2(-L, -H) + ZNegativeOffset
 
             /* Set the UVs of the top part of the box */
-            new Vector2(W - edgeSize, L - edgeSize) + YPositiveOffset,
+            /*new Vector2(W - edgeSize, L - edgeSize) + YPositiveOffset,
             new Vector2(-W + edgeSize, L - edgeSize) + YPositiveOffset,
             new Vector2(W - edgeSize, -L + edgeSize) + YPositiveOffset,
-            new Vector2(-W + edgeSize, -L + edgeSize) + YPositiveOffset
+            new Vector2(-W + edgeSize, -L + edgeSize) + YPositiveOffset*/
         };
         
         /* Assign the mesh to the meshRenderer and update the box collider */
