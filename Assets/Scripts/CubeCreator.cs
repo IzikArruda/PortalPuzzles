@@ -16,6 +16,9 @@ public class CubeCreator : MonoBehaviour {
     private float previousY;
     private float previousZ;
 
+    /* The size of the edge of the cube */
+    public float edgeSize;
+
     /* Offset the position of the UV coordinates on the given face of the cube */
     public Vector2 XPositiveOffset;
     public Vector2 XNegativeOffset;
@@ -131,15 +134,41 @@ public class CubeCreator : MonoBehaviour {
             new Vector3(L, H, -W),
             new Vector3(-L, H, -W),
             new Vector3(L, -H, -W),
-            new Vector3(-L, -H, -W)
+            new Vector3(-L, -H, -W),
+            
+            /* Place the center vectors of the top of the box */
+            new Vector3(L - edgeSize, H, -W + edgeSize),
+            new Vector3(L - edgeSize, H, W - edgeSize),
+            new Vector3(-L + edgeSize, H, -W + edgeSize),
+            new Vector3(-L + edgeSize, H, W - edgeSize)
         };
 
         /* Set up the polygons that form the cube */
-        CreateTriangles(ref triangles, true);
+        /*CreateTriangles(ref triangles, true);
         if(usesSecondMat) {
             CreateTriangles(ref altTriangles, false);
-        }
-        
+        }*/
+        //Only create the triangles so it can test the edges
+        triangles = new int[] {
+            //How it was rendered before
+            //10, 9, 8, 10, 11, 9
+            //How the center is rendered
+            //10+16, 9+16, 8+16, 10+16, 11+16, 9+16,
+
+            //Render the edges of the surface
+            10, 11, 11+16, 11+16, 10+16, 10,
+            11, 9, 9+16, 9+16, 11+16, 11,
+            9, 8, 8+16, 8+16, 9+16, 9,
+            8, 10, 10+16, 10+16, 8+16, 8
+
+
+
+            //Render the interior side of the surface
+            //25, 26, 27, 25, 24, 27,
+            //Render the top side of the triangle using the new vertices
+            //10, 9, 8
+        };
+
         /* Apply an offset to the UVs */
         if(UVScale != null && (UVScale.x != 0 && UVScale.y != 0)) {
             L = UVScale.y;
@@ -178,7 +207,13 @@ public class CubeCreator : MonoBehaviour {
             new Vector2(L, H) + ZNegativeOffset,
             new Vector2(-L, H) + ZNegativeOffset,
             new Vector2(L, -H) + ZNegativeOffset,
-            new Vector2(-L, -H) + ZNegativeOffset
+            new Vector2(-L, -H) + ZNegativeOffset,
+
+            /* Set the UVs of the top part of the box */
+            new Vector2(W - edgeSize, L - edgeSize) + YPositiveOffset,
+            new Vector2(-W + edgeSize, L - edgeSize) + YPositiveOffset,
+            new Vector2(W - edgeSize, -L + edgeSize) + YPositiveOffset,
+            new Vector2(-W + edgeSize, -L + edgeSize) + YPositiveOffset
         };
         
         /* Assign the mesh to the meshRenderer and update the box collider */
