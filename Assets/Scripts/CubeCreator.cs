@@ -92,12 +92,6 @@ public class CubeCreator : MonoBehaviour {
         Vector2[] UV;
         int[] triangles = null, altTriangles = null;
 
-        /* Check if the cube is going to use the second material */
-        bool usesSecondMat = false;
-        if(secondMaterial != null && (top || bottom || forward || backward || left || right)) {
-            usesSecondMat = true;
-        }
-
         /* Get the distance each vertex of the cube will be from it's center */
         float L = x/2f;
         float H = y/2f;
@@ -149,7 +143,7 @@ public class CubeCreator : MonoBehaviour {
             CreateTriangles(ref altTriangles, false);
         }*/
         //Only create the triangles so it can test the edges
-        triangles = new int[] {
+        altTriangles = new int[] {
             //How it was rendered before
             //10, 9, 8, 10, 11, 9
             //How the center is rendered
@@ -167,6 +161,10 @@ public class CubeCreator : MonoBehaviour {
             //25, 26, 27, 25, 24, 27,
             //Render the top side of the triangle using the new vertices
             //10, 9, 8
+        };
+        triangles = new int[] {
+            //Render the center
+            10+16, 9+16, 8+16, 10+16, 11+16, 9+16,
         };
 
         /* Apply an offset to the UVs */
@@ -219,27 +217,35 @@ public class CubeCreator : MonoBehaviour {
         /* Assign the mesh to the meshRenderer and update the box collider */
         cubeMesh.vertices = vertices;
         cubeMesh.uv = UV;
-        if(usesSecondMat) {
-            cubeMesh.subMeshCount = 2;
-            cubeMesh.SetTriangles(triangles, 0);
-            cubeMesh.SetTriangles(altTriangles, 1);
-        }
-        else {
-            cubeMesh.subMeshCount = 1;
-            cubeMesh.triangles = triangles;
-        }
+        cubeMesh.subMeshCount = 2;
+        cubeMesh.SetTriangles(triangles, 0);
+        cubeMesh.SetTriangles(altTriangles, 1);
         cubeMesh.RecalculateNormals();
         InitializeComponents();
         GetComponent<MeshFilter>().mesh = cubeMesh;
         GetComponent<BoxCollider>().size = new Vector3(x, y, z);
 
         /* Only set the material if there are materials given */
-        if(mainMaterial != null && secondMaterial != null && usesSecondMat) {
-            GetComponent<MeshRenderer>().sharedMaterials = new Material[] { mainMaterial, secondMaterial };
-        }
-        else if(usesSecondMat != true && mainMaterial != null) {
-            GetComponent<MeshRenderer>().sharedMaterial = mainMaterial;
-        }
+        GetComponent<MeshRenderer>().sharedMaterials = new Material[] { mainMaterial, secondMaterial };
+
+
+        /* Set the two materials to the mesh */
+        /*cubeMesh.subMeshCount = 2;
+        cubeMesh.SetTriangles(triangles, 0);
+        cubeMesh.SetTriangles(altTriangles, 1);
+        GetComponent<MeshRenderer>().sharedMaterials = new Material[] { mainMaterial, secondMaterial };
+
+
+        /* Set the mesh's components */
+        /*cubeMesh.vertices = vertices;
+        cubeMesh.uv = UV;
+        cubeMesh.RecalculateNormals();
+        InitializeComponents();
+        GetComponent<MeshFilter>().mesh = cubeMesh;
+        GetComponent<BoxCollider>().size = new Vector3(x, y, z);*/
+
+
+
 
         /* Update the values of the box */
         previousX = x;

@@ -121,7 +121,7 @@ Material:
     m_Colors:
     - first:
         name: _BoxPos
-      second: {r: 0.264, g: -2.39, b: -2.8, a: 0}
+      second: {r: 0.264, g: 0.035, b: 3.19, a: 0}
     - first:
         name: _Color
       second: {r: 1, g: 1, b: 1, a: 1}
