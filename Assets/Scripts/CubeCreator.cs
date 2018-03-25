@@ -104,10 +104,12 @@ public class CubeCreator : MonoBehaviour {
         Vector3 vector;
         int X = 1, Y = 1, Z = 1;
 
+
+
         /* X+ */
         if(side == 0) {
+            Y *= -1;
             if(vertex == 0) {
-
             }
 
             else if(vertex == 1) {
@@ -126,22 +128,20 @@ public class CubeCreator : MonoBehaviour {
 
         /* X- */
         else if(side == 1) {
+            X *= -1;
             if(vertex == 0) {
-                X *= -1;
+
             }
 
             else if(vertex == 1) {
-                X *= -1;
                 Z *= -1;
             }
 
             else if(vertex == 2) {
-                X *= -1;
                 Y *= -1;
             }
 
             else if(vertex == 3) {
-                X *= -1;
                 Y *= -1;
                 Z *= -1;
             }
@@ -149,6 +149,7 @@ public class CubeCreator : MonoBehaviour {
 
         /* Y+ */
         else if(side == 2) {
+            Z *= -1;
             if(vertex == 0) {
                 Z *= -1;
             }
@@ -169,39 +170,38 @@ public class CubeCreator : MonoBehaviour {
 
         /* Y- */
         else if(side == 3) {
+            Y *= -1;
             if(vertex == 0) {
-                Y *= -1;
                 Z *= -1;
             }
 
             else if(vertex == 1) {
-                Y *= -1;
+
             }
 
             else if(vertex == 2) {
-                Y *= -1;
                 X *= -1;
                 Z *= -1;
             }
 
             else if(vertex == 3) {
-                Y *= -1;
                 X *= -1;
             }
         }
 
         /* Z+ */
         else if(side == 4) {
+            X *= -1;
             if(vertex == 0) {
 
             }
 
             else if(vertex == 1) {
-                X *= -1;
+                Y *= -1;
             }
 
             else if(vertex == 2) {
-                Y *= -1;
+                X *= -1;
             }
 
             else if(vertex == 3) {
@@ -212,22 +212,20 @@ public class CubeCreator : MonoBehaviour {
 
         /* Z- */
         else if(side == 5) {
+            Z *= -1;
             if(vertex == 0) {
-                Z *= -1;
+
             }
 
             else if(vertex == 1) {
-                Z *= -1;
-                X *= -1;
-            }
-
-            else if(vertex == 2) {
-                Z *= -1;
                 Y *= -1;
             }
 
+            else if(vertex == 2) {
+                X *= -1;
+            }
+
             else if(vertex == 3) {
-                Z *= -1;
                 X *= -1;
                 Y *= -1;
             }
@@ -444,13 +442,13 @@ public class CubeCreator : MonoBehaviour {
         triangles = new int[faceCount*6];
         int index = 0;
         if(firstMaterial ^ right) {
-            AddToTriangles(ref triangles, ref index, 2, 1, 0, 2, 3, 1);
+            AddToTriangles(ref triangles, ref index, 0, 1, 2, 1, 3, 2);
         }
         if(firstMaterial ^ left) {
             AddToTriangles(ref triangles, ref index, 4, 5, 6, 5, 7, 6);
         }
         if(firstMaterial ^ top) {
-            AddToTriangles(ref triangles, ref index, 10, 9, 8, 10, 11, 9);
+            AddToTriangles(ref triangles, ref index, 8, 9, 10, 9, 11, 10);
         }
         if(firstMaterial ^ bottom) {
             AddToTriangles(ref triangles, ref index, 12, 13, 14, 13, 15, 14);
@@ -459,7 +457,7 @@ public class CubeCreator : MonoBehaviour {
             AddToTriangles(ref triangles, ref index, 16, 17, 18, 17, 19, 18);
         }
         if(firstMaterial ^ backward) {
-            AddToTriangles(ref triangles, ref index, 22, 21, 20, 22, 23, 21);
+            AddToTriangles(ref triangles, ref index, 20, 21, 22, 21, 23, 22);
         }
     }
 
