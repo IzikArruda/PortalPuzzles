@@ -230,30 +230,6 @@ public class CubeCreator : MonoBehaviour {
         if(usesSecondMat) {
             CreateTriangles(ref altTriangles, false);
         }*/
-        //Only create the triangles so it can test the edges
-        altTriangles = new int[] {
-            //How it was rendered before
-            //10, 9, 8, 10, 11, 9
-            //How the center is rendered
-            //10+16, 9+16, 8+16, 10+16, 11+16, 9+16,
-
-            //Render the edges of the surface
-            /*10, 11, 11+16, 11+16, 10+16, 10,
-            11, 9, 9+16, 9+16, 11+16, 11,
-            9, 8, 8+16, 8+16, 9+16, 9,
-            8, 10, 10+16, 10+16, 8+16, 8*/
-
-
-
-            //Render the interior side of the surface
-            //25, 26, 27, 25, 24, 27,
-            //Render the top side of the triangle using the new vertices
-            //10, 9, 8
-        };
-        triangles = new int[] {
-            //Render the inner square of the positive X face
-            0+24, 1+24, 2+24, 1+24, 3+24, 2+24
-        };
         altTriangles = new int[] {
             //Render the outside edges of the positive X face
             0+24, 2+24, 2, 2, 0, 0+24,
@@ -261,7 +237,8 @@ public class CubeCreator : MonoBehaviour {
             2+24, 3+24, 3, 3, 2, 2+24,
             3+24, 1+24, 1, 1, 3, 3+24
         };
-        //CreateTriangles(ref triangles, true);
+        AddTrianglesCenterFace(ref triangles, true);
+        AddTrianglesOutterEdge(ref altTriangles, true);
 
         /* Apply an offset to the UVs */
         if(UVScale != null && (UVScale.x != 0 && UVScale.y != 0)) {
@@ -338,7 +315,7 @@ public class CubeCreator : MonoBehaviour {
         previousZ = z;
     }
 
-    public void CreateTriangles(ref int[] triangles, bool firstMaterial) {
+    public void AddTrianglesCenterFace(ref int[] triangles, bool firstMaterial) {
         /*
          * Create the triangles which are used by only one of the two materials.
          */
@@ -372,35 +349,123 @@ public class CubeCreator : MonoBehaviour {
         triangles = new int[faceCount*6];
         int index = 0;
         if(firstMaterial ^ right) {
-            AddToTriangles(ref triangles, ref index, 0, 1, 2, 1, 3, 2);
+            AddToTrianglesCenter(ref triangles, ref index, 0 + 24);
         }
         if(firstMaterial ^ left) {
-            AddToTriangles(ref triangles, ref index, 4, 5, 6, 5, 7, 6);
+            AddToTrianglesCenter(ref triangles, ref index, 4 + 24);
         }
         if(firstMaterial ^ top) {
-            AddToTriangles(ref triangles, ref index, 8, 9, 10, 9, 11, 10);
+            AddToTrianglesCenter(ref triangles, ref index, 8 + 24);
         }
         if(firstMaterial ^ bottom) {
-            AddToTriangles(ref triangles, ref index, 12, 13, 14, 13, 15, 14);
+            AddToTrianglesCenter(ref triangles, ref index, 12 + 24);
         }
         if(firstMaterial ^ forward) {
-            AddToTriangles(ref triangles, ref index, 16, 17, 18, 17, 19, 18);
+            AddToTrianglesCenter(ref triangles, ref index, 16 + 24);
         }
         if(firstMaterial ^ backward) {
-            AddToTriangles(ref triangles, ref index, 20, 21, 22, 21, 23, 22);
+            AddToTrianglesCenter(ref triangles, ref index, 20 + 24);
         }
     }
 
-    public void AddToTriangles(ref int[] triangles, ref int index, int i1, int i2, int i3, int i4, int i5, int i6) {
+    public void AddTrianglesOutterEdge(ref int[] triangles, bool firstMaterial) {
         /*
-         * Add the 6 given ints to the triangle from the given index
+         * Create the triangles which are used by only one of the two materials.
          */
 
-        triangles[index++] = i1;
-        triangles[index++] = i2;
-        triangles[index++] = i3;
-        triangles[index++] = i4;
-        triangles[index++] = i5;
-        triangles[index++] = i6;
+        /* Get how many faces this material will use */
+        int faceCount = 0;
+        if(forward) {
+            faceCount++;
+        }
+        if(backward) {
+            faceCount++;
+        }
+        if(top) {
+            faceCount++;
+        }
+        if(bottom) {
+            faceCount++;
+        }
+        if(left) {
+            faceCount++;
+        }
+        if(right) {
+            faceCount++;
+        }
+        if(firstMaterial) {
+            faceCount = 8 - faceCount;
+        }
+        faceCount = 8;
+
+        /* Populate the triangles array */
+        triangles = new int[faceCount*24];
+        int index = 0;
+        if(firstMaterial ^ right) {
+            AddToTrianglesOutter(ref triangles, ref index, 0);
+        }
+        if(firstMaterial ^ left) {
+            AddToTrianglesOutter(ref triangles, ref index, 4);
+        }
+        if(firstMaterial ^ top) {
+            AddToTrianglesOutter(ref triangles, ref index, 8);
+        }
+        if(firstMaterial ^ bottom) {
+            AddToTrianglesOutter(ref triangles, ref index, 12);
+        }
+        if(firstMaterial ^ forward) {
+            AddToTrianglesOutter(ref triangles, ref index, 16);
+        }
+        if(firstMaterial ^ backward) {
+            AddToTrianglesOutter(ref triangles, ref index, 20);
+        }
+    }
+
+
+    public void AddToTrianglesCenter(ref int[] triangles, ref int index, int surfaceIndex) {
+        /*
+         * Add the triangles used to render the inner square of the surface defined by surfaceIndex.
+         */
+
+        triangles[index++] = surfaceIndex;
+        triangles[index++] = surfaceIndex + 1;
+        triangles[index++] = surfaceIndex + 2;
+        triangles[index++] = surfaceIndex + 1;
+        triangles[index++] = surfaceIndex + 3;
+        triangles[index++] = surfaceIndex + 2;
+    }
+
+    public void AddToTrianglesOutter(ref int[] triangles, ref int index, int surfaceIndex) {
+        /*
+         * Add the triangles used to render the outter edges of the surface defined by surfaceIndex
+         */
+         
+        triangles[index++] = surfaceIndex+0 + 24;
+        triangles[index++] = surfaceIndex+2 + 24;
+        triangles[index++] = surfaceIndex+2;
+        triangles[index++] = surfaceIndex+2;
+        triangles[index++] = surfaceIndex+0;
+        triangles[index++] = surfaceIndex+0 + 24;
+
+        triangles[index++] = surfaceIndex+1 + 24;
+        triangles[index++] = surfaceIndex+0 + 24;
+        triangles[index++] = surfaceIndex+0;
+        triangles[index++] = surfaceIndex+0;
+        triangles[index++] = surfaceIndex+1;
+        triangles[index++] = surfaceIndex+1 + 24;
+
+        triangles[index++] = surfaceIndex+2 + 24;
+        triangles[index++] = surfaceIndex+3 + 24;
+        triangles[index++] = surfaceIndex+3;
+        triangles[index++] = surfaceIndex+3;
+        triangles[index++] = surfaceIndex+2;
+        triangles[index++] = surfaceIndex+2 + 24;
+
+        triangles[index++] = surfaceIndex+3 + 24;
+        triangles[index++] = surfaceIndex+1 + 24;
+        triangles[index++] = surfaceIndex+1;
+        triangles[index++] = surfaceIndex+1;
+        triangles[index++] = surfaceIndex+3;
+        triangles[index++] = surfaceIndex+3+ 24;
     }
 }
