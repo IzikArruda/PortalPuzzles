@@ -150,10 +150,25 @@ public class CubeCreator : MonoBehaviour {
             }
         }
         
-
         vector = new Vector3(L*X, H*Y, W*Z);
 
         return vector;
+    }
+
+
+    public Vector2 GetVerticeUVs(float x, float y, int verticeIndex, Vector2 offset) {
+        /*
+         * Return the UV of the 
+         */
+
+        if(verticeIndex % 2 != 0) {
+            y *= -1;
+        }
+        if(verticeIndex > 1) {
+            x *= -1;
+        }
+        
+        return new Vector2(x, y) + offset;
     }
     
 
@@ -172,44 +187,24 @@ public class CubeCreator : MonoBehaviour {
         W = z/2f;
 
         /* Get the vertices that make up the cube */
-        vertices = new Vector3[] {
-            //X+ plane
-            GetBoxVertice(0, 0),
-            GetBoxVertice(0, 1),
-            GetBoxVertice(0, 2),
-            GetBoxVertice(0, 3),
-            //X- plane
-            GetBoxVertice(1, 0),
-            GetBoxVertice(1, 1),
-            GetBoxVertice(1, 2),
-            GetBoxVertice(1, 3),
-            //Y+ plane
-            GetBoxVertice(2, 0),
-            GetBoxVertice(2, 1),
-            GetBoxVertice(2, 2),
-            GetBoxVertice(2, 3),
-            //Y- plane
-            GetBoxVertice(3, 0),
-            GetBoxVertice(3, 1),
-            GetBoxVertice(3, 2),
-            GetBoxVertice(3, 3),
-            //Z+ plane
-            GetBoxVertice(4, 0),
-            GetBoxVertice(4, 1),
-            GetBoxVertice(4, 2),
-            GetBoxVertice(4, 3),
-            //Z- plane
-            GetBoxVertice(5, 0),
-            GetBoxVertice(5, 1),
-            GetBoxVertice(5, 2),
-            GetBoxVertice(5, 3),
-
+        vertices = new Vector3[24];
+        /* Go through each face of the cube */
+        for(int i = 0; i < 6; i++) {
+            /* Go through each corner of the current face */
+            for(int ii = 0; ii < 4; ii++) {
+                vertices[i*4 + ii] = GetBoxVertice(i, ii);
+            }
+        }
+        
             /* Place the center vectors of the top of the box */
             /*new Vector3(L - edgeSize, H, -W + edgeSize),
             new Vector3(L - edgeSize, H, W - edgeSize),
             new Vector3(-L + edgeSize, H, -W + edgeSize),
             new Vector3(-L + edgeSize, H, W - edgeSize)*/
-        };
+
+
+
+
 
         /* Set up the polygons that form the cube */
         /*CreateTriangles(ref triangles, true);
@@ -249,45 +244,30 @@ public class CubeCreator : MonoBehaviour {
             ZNegativeOffset = new Vector2(L, H);
         }
 
-        /* Set the UVs of the cube */
-        UV = new Vector2[] {
-            //X+ plane
-            new Vector2(-H, -W) + XPositiveOffset,
-            new Vector2(-H, +W) + XPositiveOffset,
-            new Vector2(+H, -W) + XPositiveOffset,
-            new Vector2(+H, +W) + XPositiveOffset,
-            //X- plane
-            new Vector2(-H, -W) + XNegativeOffset,
-            new Vector2(-H, W) + XNegativeOffset,
-            new Vector2(H, -W) + XNegativeOffset,
-            new Vector2(H, W) + XNegativeOffset,
-            //Y+ plane
-            new Vector2(W, L) + YPositiveOffset,
-            new Vector2(-W, L) + YPositiveOffset,
-            new Vector2(W, -L) + YPositiveOffset,
-            new Vector2(-W, -L) + YPositiveOffset,
-            //Y- plane
-            new Vector2(-L, -W) + YNegativeOffset,
-            new Vector2(-L, W) + YNegativeOffset,
-            new Vector2(L, -W) + YNegativeOffset,
-            new Vector2(L, W) + YNegativeOffset,
-            //Z+ plane
-            new Vector2(-H, -L) + ZPositiveOffset,
-            new Vector2(-H, L) + ZPositiveOffset,
-            new Vector2(H, -L) + ZPositiveOffset,
-            new Vector2(H, L) + ZPositiveOffset,
-            //Z- plane
-            new Vector2(L, H) + ZNegativeOffset,
-            new Vector2(-L, H) + ZNegativeOffset,
-            new Vector2(L, -H) + ZNegativeOffset,
-            new Vector2(-L, -H) + ZNegativeOffset
 
+
+
+
+        /* Set the UVs of the cube */
+        UV = new Vector2[24];
+        float[] xPos = new float[] { H, H, L, L, L, L };
+        float[] yPos = new float[] { W, W, W, W, H, H };
+        Vector2[] offsets = new Vector2[] { XPositiveOffset, XNegativeOffset, YPositiveOffset, YNegativeOffset, ZPositiveOffset, ZNegativeOffset };
+        for(int i = 0; i < 6; i++) {
+            for(int ii = 0; ii < 4; ii++) {
+                UV[i*4 + ii] = GetVerticeUVs(xPos[i], yPos[i], ii, offsets[i]);
+            }
+        }
             /* Set the UVs of the top part of the box */
             /*new Vector2(W - edgeSize, L - edgeSize) + YPositiveOffset,
             new Vector2(-W + edgeSize, L - edgeSize) + YPositiveOffset,
             new Vector2(W - edgeSize, -L + edgeSize) + YPositiveOffset,
             new Vector2(-W + edgeSize, -L + edgeSize) + YPositiveOffset*/
-        };
+
+
+
+
+
         
         /* Assign the mesh to the meshRenderer and update the box collider */
         cubeMesh.vertices = vertices;
