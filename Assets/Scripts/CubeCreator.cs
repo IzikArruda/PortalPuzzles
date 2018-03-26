@@ -96,14 +96,14 @@ public class CubeCreator : MonoBehaviour {
 
 
 
-    public Vector3 GetBoxVertice(int side, int vertex) {
+    public Vector3 GetBoxVertice(int side, int vertex, bool inner) {
         /*
          * Return the vector3 that defines the given side and vertex.
          * Sides go from 0 - 5 : X+, X-, Y+, Y-, Z+, Z-
          */
         Vector3 vector;
         int X = 1, Y = 1, Z = 1;
-
+        
         /* X */
         if(side == 0 || side == 1) {
             if(vertex % 2 != 0) {
@@ -112,6 +112,7 @@ public class CubeCreator : MonoBehaviour {
             if(vertex > 1) {
                 Y *= -1;
             }
+
             if(side == 0) {
                 Y *= -1;
             }else {
@@ -127,6 +128,7 @@ public class CubeCreator : MonoBehaviour {
             if(vertex > 1) {
                 X *= -1;
             }
+
             if(side == 2) {
                 Z *= -1;
             }else {
@@ -142,6 +144,7 @@ public class CubeCreator : MonoBehaviour {
             if(vertex > 1) {
                 X *= -1;
             }
+
             if(side == 4) {
                 X *= -1;
             }
@@ -151,6 +154,21 @@ public class CubeCreator : MonoBehaviour {
         }
         
         vector = new Vector3(L*X, H*Y, W*Z);
+
+        /* Apply an offset to move the vertex to be on the inner edge of the face */
+        if(inner) {
+            Vector3 offset = Vector3.zero;
+            if(side == 0 || side == 1) {
+                offset = new Vector3(0, Mathf.Sign(vector.y)*-edgeSize, Mathf.Sign(vector.z)*-edgeSize);
+            }
+            else if(side == 2 || side == 3) {
+                offset = new Vector3(Mathf.Sign(vector.x)*-edgeSize, 0, Mathf.Sign(vector.z)*-edgeSize);
+            }
+            else if(side == 4 || side == 5) {
+                offset = new Vector3(Mathf.Sign(vector.x)*-edgeSize, Mathf.Sign(vector.y)*-edgeSize, 0);
+            }
+            vector += offset;
+        }
 
         return vector;
     }
@@ -187,20 +205,21 @@ public class CubeCreator : MonoBehaviour {
         W = z/2f;
 
         /* Get the vertices that make up the cube */
-        vertices = new Vector3[24];
+        vertices = new Vector3[48];
         /* Go through each face of the cube */
         for(int i = 0; i < 6; i++) {
             /* Go through each corner of the current face */
             for(int ii = 0; ii < 4; ii++) {
-                vertices[i*4 + ii] = GetBoxVertice(i, ii);
+                /* Add the outter edge vertice */
+                vertices[i*4 + ii] = GetBoxVertice(i, ii, false);
+
+                /* Add the inner edge vertice */
+                vertices[24 + i*4 + ii] = GetBoxVertice(i, ii, true);
             }
         }
         
             /* Place the center vectors of the top of the box */
-            /*new Vector3(L - edgeSize, H, -W + edgeSize),
-            new Vector3(L - edgeSize, H, W - edgeSize),
-            new Vector3(-L + edgeSize, H, -W + edgeSize),
-            new Vector3(-L + edgeSize, H, W - edgeSize)*/
+
 
 
 
@@ -232,10 +251,17 @@ public class CubeCreator : MonoBehaviour {
             //10, 9, 8
         };
         triangles = new int[] {
-            //Render the center
-            10+16, 9+16, 8+16, 10+16, 11+16, 9+16,
+            //Render the inner square of the positive X face
+            0+24, 1+24, 2+24, 1+24, 3+24, 2+24
         };
-        CreateTriangles(ref triangles, true);
+        altTriangles = new int[] {
+            //Render the outside edges of the positive X face
+            0+24, 2+24, 2, 2, 0, 0+24,
+            1+24, 0+24, 0, 0, 1, 1+24,
+            2+24, 3+24, 3, 3, 2, 2+24,
+            3+24, 1+24, 1, 1, 3, 3+24
+        };
+        //CreateTriangles(ref triangles, true);
 
         /* Apply an offset to the UVs */
         if(UVScale != null && (UVScale.x != 0 && UVScale.y != 0)) {
@@ -249,13 +275,17 @@ public class CubeCreator : MonoBehaviour {
 
 
         /* Set the UVs of the cube */
-        UV = new Vector2[24];
+        UV = new Vector2[48];
         float[] xPos = new float[] { H, H, L, L, L, L };
         float[] yPos = new float[] { W, W, W, W, H, H };
         Vector2[] offsets = new Vector2[] { XPositiveOffset, XNegativeOffset, YPositiveOffset, YNegativeOffset, ZPositiveOffset, ZNegativeOffset };
         for(int i = 0; i < 6; i++) {
             for(int ii = 0; ii < 4; ii++) {
+                /* UV of the outter edge */
                 UV[i*4 + ii] = GetVerticeUVs(xPos[i], yPos[i], ii, offsets[i]);
+
+                /* UV of the inner edge */
+                UV[24 + i*4 + ii] = GetVerticeUVs(xPos[i], yPos[i], ii, offsets[i]);
             }
         }
             /* Set the UVs of the top part of the box */
