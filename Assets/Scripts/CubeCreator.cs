@@ -104,132 +104,52 @@ public class CubeCreator : MonoBehaviour {
         Vector3 vector;
         int X = 1, Y = 1, Z = 1;
 
-
-
-        /* X+ */
-        if(side == 0) {
-            Y *= -1;
-            if(vertex == 0) {
-            }
-
-            else if(vertex == 1) {
+        /* X */
+        if(side == 0 || side == 1) {
+            if(vertex % 2 != 0) {
                 Z *= -1;
             }
-
-            else if(vertex == 2) {
+            if(vertex > 1) {
                 Y *= -1;
             }
-
-            else if(vertex == 3) {
+            if(side == 0) {
                 Y *= -1;
-                Z *= -1;
-            }
-        }
-
-        /* X- */
-        else if(side == 1) {
-            X *= -1;
-            if(vertex == 0) {
-
-            }
-
-            else if(vertex == 1) {
-                Z *= -1;
-            }
-
-            else if(vertex == 2) {
-                Y *= -1;
-            }
-
-            else if(vertex == 3) {
-                Y *= -1;
-                Z *= -1;
-            }
-        }
-
-        /* Y+ */
-        else if(side == 2) {
-            Z *= -1;
-            if(vertex == 0) {
-                Z *= -1;
-            }
-
-            else if(vertex == 1) {
-
-            }
-
-            else if(vertex == 2) {
-                X *= -1;
-                Z *= -1;
-            }
-
-            else if(vertex == 3) {
+            }else {
                 X *= -1;
             }
         }
 
-        /* Y- */
-        else if(side == 3) {
-            Y *= -1;
-            if(vertex == 0) {
+        /* Y */
+        if(side == 2 || side == 3) {
+            if(vertex % 2 == 0) {
                 Z *= -1;
             }
-
-            else if(vertex == 1) {
-
-            }
-
-            else if(vertex == 2) {
+            if(vertex > 1) {
                 X *= -1;
+            }
+            if(side == 2) {
+                Z *= -1;
+            }else {
+                Y *= -1;
+            }
+        }
+
+        /* Z */
+        if(side == 4 || side == 5) {
+            if(vertex % 2 != 0) {
+                Y *= -1;
+            }
+            if(vertex > 1) {
+                X *= -1;
+            }
+            if(side == 4) {
+                X *= -1;
+            }
+            else {
                 Z *= -1;
             }
-
-            else if(vertex == 3) {
-                X *= -1;
-            }
         }
-
-        /* Z+ */
-        else if(side == 4) {
-            X *= -1;
-            if(vertex == 0) {
-
-            }
-
-            else if(vertex == 1) {
-                Y *= -1;
-            }
-
-            else if(vertex == 2) {
-                X *= -1;
-            }
-
-            else if(vertex == 3) {
-                X *= -1;
-                Y *= -1;
-            }
-        }
-
-        /* Z- */
-        else if(side == 5) {
-            Z *= -1;
-            if(vertex == 0) {
-
-            }
-
-            else if(vertex == 1) {
-                Y *= -1;
-            }
-
-            else if(vertex == 2) {
-                X *= -1;
-            }
-
-            else if(vertex == 3) {
-                X *= -1;
-                Y *= -1;
-            }
-        }
+        
 
         vector = new Vector3(L*X, H*Y, W*Z);
 
