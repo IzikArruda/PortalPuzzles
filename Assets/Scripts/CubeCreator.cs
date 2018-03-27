@@ -18,6 +18,14 @@ public class CubeCreator : MonoBehaviour {
 
     /* The size of the edge of the cube */
     public float edgeSize;
+    /* The sizes of each face's edges */
+    private float[][] edgeSizes;
+    public float[] topEdgeSize = new float[4];
+    public float[] bottomEdgeSize = new float[4];
+    public float[] leftEdgeSize = new float[4];
+    public float[] rightEdgeSize = new float[4];
+    public float[] forwardEdgeSize = new float[4];
+    public float[] backEdgeSize = new float[4];
 
     /* Offset the position of the UV coordinates on the given face of the cube */
     public Vector2 XPositiveOffset;
@@ -70,6 +78,13 @@ public class CubeCreator : MonoBehaviour {
          */
          
         if(updateCube) {
+            edgeSizes = new float[6][];
+            edgeSizes[0] = rightEdgeSize;
+            edgeSizes[1] = leftEdgeSize;
+            edgeSizes[2] = topEdgeSize;
+            edgeSizes[3] = bottomEdgeSize;
+            edgeSizes[4] = forwardEdgeSize;
+            edgeSizes[5] = backEdgeSize;
             UpdateBox();
             updateCube = false;
         }
@@ -104,6 +119,9 @@ public class CubeCreator : MonoBehaviour {
         Vector3 vector;
         int X = 1, Y = 1, Z = 1;
         
+        /* Set the size of the edge depending on the given side and vertex */
+        float currentEdgeSize = edgeSizes[side][vertex];
+        
         /* X */
         if(side == 0 || side == 1) {
             if(vertex % 2 != 0) {
@@ -115,7 +133,8 @@ public class CubeCreator : MonoBehaviour {
 
             if(side == 0) {
                 Y *= -1;
-            }else {
+            }
+            else {
                 X *= -1;
             }
         }
@@ -159,13 +178,13 @@ public class CubeCreator : MonoBehaviour {
         if(inner) {
             Vector3 offset = Vector3.zero;
             if(side == 0 || side == 1) {
-                offset = new Vector3(0, Mathf.Sign(vector.y)*-edgeSize, Mathf.Sign(vector.z)*-edgeSize);
+                offset = new Vector3(0, Mathf.Sign(vector.y)*-currentEdgeSize, Mathf.Sign(vector.z)*-currentEdgeSize);
             }
             else if(side == 2 || side == 3) {
-                offset = new Vector3(Mathf.Sign(vector.x)*-edgeSize, 0, Mathf.Sign(vector.z)*-edgeSize);
+                offset = new Vector3(Mathf.Sign(vector.x)*-currentEdgeSize, 0, Mathf.Sign(vector.z)*-currentEdgeSize);
             }
             else if(side == 4 || side == 5) {
-                offset = new Vector3(Mathf.Sign(vector.x)*-edgeSize, Mathf.Sign(vector.y)*-edgeSize, 0);
+                offset = new Vector3(Mathf.Sign(vector.x)*-currentEdgeSize, Mathf.Sign(vector.y)*-currentEdgeSize, 0);
             }
             vector += offset;
         }
@@ -243,12 +262,6 @@ public class CubeCreator : MonoBehaviour {
                 UV[24 + i*4 + ii] = GetVerticeUVs(xPos[i] - Mathf.Sign(xPos[i])*edgeSize, yPos[i] - Mathf.Sign(yPos[i])*edgeSize, ii, offsets[i]);
             }
         }
-
-
-
-
-
-
         
         /* Assign the mesh to the meshRenderer and update the box collider */
         cubeMesh.vertices = vertices;
@@ -263,26 +276,7 @@ public class CubeCreator : MonoBehaviour {
 
         /* Only set the material if there are materials given */
         GetComponent<MeshRenderer>().sharedMaterials = new Material[] { mainMaterial, secondMaterial };
-
-
-        /* Set the two materials to the mesh */
-        /*cubeMesh.subMeshCount = 2;
-        cubeMesh.SetTriangles(triangles, 0);
-        cubeMesh.SetTriangles(altTriangles, 1);
-        GetComponent<MeshRenderer>().sharedMaterials = new Material[] { mainMaterial, secondMaterial };
-
-
-        /* Set the mesh's components */
-        /*cubeMesh.vertices = vertices;
-        cubeMesh.uv = UV;
-        cubeMesh.RecalculateNormals();
-        InitializeComponents();
-        GetComponent<MeshFilter>().mesh = cubeMesh;
-        GetComponent<BoxCollider>().size = new Vector3(x, y, z);*/
-
-
-
-
+        
         /* Update the values of the box */
         previousX = x;
         previousY = y;
