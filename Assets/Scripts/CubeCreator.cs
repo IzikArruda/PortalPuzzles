@@ -218,25 +218,7 @@ public class CubeCreator : MonoBehaviour {
             }
         }
         
-            /* Place the center vectors of the top of the box */
-
-
-
-
-
-
         /* Set up the polygons that form the cube */
-        /*CreateTriangles(ref triangles, true);
-        if(usesSecondMat) {
-            CreateTriangles(ref altTriangles, false);
-        }*/
-        altTriangles = new int[] {
-            //Render the outside edges of the positive X face
-            0+24, 2+24, 2, 2, 0, 0+24,
-            1+24, 0+24, 0, 0, 1, 1+24,
-            2+24, 3+24, 3, 3, 2, 2+24,
-            3+24, 1+24, 1, 1, 3, 3+24
-        };
         AddTrianglesCenterFace(ref triangles, true);
         AddTrianglesOutterEdge(ref altTriangles, true);
 
@@ -246,11 +228,7 @@ public class CubeCreator : MonoBehaviour {
             H = UVScale.x;
             ZNegativeOffset = new Vector2(L, H);
         }
-
-
-
-
-
+        
         /* Set the UVs of the cube */
         UV = new Vector2[48];
         float[] xPos = new float[] { H, H, L, L, L, L };
@@ -262,14 +240,10 @@ public class CubeCreator : MonoBehaviour {
                 UV[i*4 + ii] = GetVerticeUVs(xPos[i], yPos[i], ii, offsets[i]);
 
                 /* UV of the inner edge */
-                UV[24 + i*4 + ii] = GetVerticeUVs(xPos[i], yPos[i], ii, offsets[i]);
+                UV[24 + i*4 + ii] = GetVerticeUVs(xPos[i] - Mathf.Sign(xPos[i])*edgeSize, yPos[i] - Mathf.Sign(yPos[i])*edgeSize, ii, offsets[i]);
             }
         }
-            /* Set the UVs of the top part of the box */
-            /*new Vector2(W - edgeSize, L - edgeSize) + YPositiveOffset,
-            new Vector2(-W + edgeSize, L - edgeSize) + YPositiveOffset,
-            new Vector2(W - edgeSize, -L + edgeSize) + YPositiveOffset,
-            new Vector2(-W + edgeSize, -L + edgeSize) + YPositiveOffset*/
+
 
 
 
