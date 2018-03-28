@@ -102,15 +102,7 @@ public class CubeCreator : MonoBehaviour {
         gameObject.AddComponent<MeshRenderer>();
         gameObject.AddComponent<BoxCollider>();
     }
-
-
-
-
-
-
-
-
-
+    
     public Vector3 GetBoxVertice(int side, int vertex, bool inner) {
         /*
          * Return the vector3 that defines the given side and vertex.
@@ -208,20 +200,46 @@ public class CubeCreator : MonoBehaviour {
 
         return vector;
     }
-
-
-    public Vector2 GetVerticeUVs(float x, float y, int verticeIndex, Vector2 offset) {
+    
+    public Vector2 GetVerticeUVs(float x, float y, int side, int verticeIndex, Vector2 offset, bool innerEdge) {
         /*
-         * Return the UV of the 
+         * Return the UV of the given vertex
          */
 
+        /* Set the size of the edge depending on the given side and vertex */
+        float currentEdgeSize1 = 0;
+        float currentEdgeSize2 = 0;
+        if(innerEdge) {
+            if(verticeIndex == 0) {
+                currentEdgeSize1 = edgeSizes[side][0];
+                currentEdgeSize2 = edgeSizes[side][2];
+            }
+            else if(verticeIndex == 1) {
+                currentEdgeSize1 = edgeSizes[side][0];
+                currentEdgeSize2 = edgeSizes[side][3];
+            }
+            else if(verticeIndex == 2) {
+                currentEdgeSize1 = edgeSizes[side][1];
+                currentEdgeSize2 = edgeSizes[side][2];
+            }
+            else if(verticeIndex == 3) {
+                currentEdgeSize1 = edgeSizes[side][1];
+                currentEdgeSize2 = edgeSizes[side][3];
+            }
+        }
+        
+        /* Adjust the position of the vertex depending on the vertexIndex used */
         if(verticeIndex % 2 != 0) {
             y *= -1;
         }
         if(verticeIndex > 1) {
             x *= -1;
         }
-        
+
+        /* Apply an offset to the UV if it's on the inner edge */
+        y -= Mathf.Sign(y)*currentEdgeSize2;
+        x -= Mathf.Sign(x)*currentEdgeSize1;
+
         return new Vector2(x, y) + offset;
     }
     
@@ -273,10 +291,10 @@ public class CubeCreator : MonoBehaviour {
         for(int i = 0; i < 6; i++) {
             for(int ii = 0; ii < 4; ii++) {
                 /* UV of the outter edge */
-                UV[i*4 + ii] = GetVerticeUVs(xPos[i], yPos[i], ii, offsets[i]);
+                UV[i*4 + ii] = GetVerticeUVs(xPos[i], yPos[i], i, ii, offsets[i], false);
 
                 /* UV of the inner edge */
-                UV[24 + i*4 + ii] = GetVerticeUVs(xPos[i] - Mathf.Sign(xPos[i])*edgeSize, yPos[i] - Mathf.Sign(yPos[i])*edgeSize, ii, offsets[i]);
+                UV[24 + i*4 + ii] = GetVerticeUVs(xPos[i], yPos[i], i, ii, offsets[i], true);
             }
         }
         
