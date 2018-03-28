@@ -118,10 +118,27 @@ public class CubeCreator : MonoBehaviour {
          */
         Vector3 vector;
         int X = 1, Y = 1, Z = 1;
-        
+
         /* Set the size of the edge depending on the given side and vertex */
-        float currentEdgeSize = edgeSizes[side][vertex];
-        
+        float currentEdgeSize1 = 0;
+        float currentEdgeSize2 = 0;
+        if(vertex == 0) {
+            currentEdgeSize1 = edgeSizes[side][0];
+            currentEdgeSize2 = edgeSizes[side][2];
+        }
+        else if(vertex == 1) {
+            currentEdgeSize1 = edgeSizes[side][0];
+            currentEdgeSize2 = edgeSizes[side][3];
+        }
+        else if(vertex == 2) {
+            currentEdgeSize1 = edgeSizes[side][1];
+            currentEdgeSize2 = edgeSizes[side][2];
+        }
+        else if(vertex == 3) {
+            currentEdgeSize1 = edgeSizes[side][1];
+            currentEdgeSize2 = edgeSizes[side][3];
+        }
+
         /* X */
         if(side == 0 || side == 1) {
             if(vertex % 2 != 0) {
@@ -178,13 +195,13 @@ public class CubeCreator : MonoBehaviour {
         if(inner) {
             Vector3 offset = Vector3.zero;
             if(side == 0 || side == 1) {
-                offset = new Vector3(0, Mathf.Sign(vector.y)*-currentEdgeSize, Mathf.Sign(vector.z)*-currentEdgeSize);
+                offset = new Vector3(0, Mathf.Sign(vector.y)*-currentEdgeSize1, Mathf.Sign(vector.z)*-currentEdgeSize2);
             }
             else if(side == 2 || side == 3) {
-                offset = new Vector3(Mathf.Sign(vector.x)*-currentEdgeSize, 0, Mathf.Sign(vector.z)*-currentEdgeSize);
+                offset = new Vector3(Mathf.Sign(vector.x)*-currentEdgeSize1, 0, Mathf.Sign(vector.z)*-currentEdgeSize2);
             }
             else if(side == 4 || side == 5) {
-                offset = new Vector3(Mathf.Sign(vector.x)*-currentEdgeSize, Mathf.Sign(vector.y)*-currentEdgeSize, 0);
+                offset = new Vector3(Mathf.Sign(vector.x)*-currentEdgeSize1, Mathf.Sign(vector.y)*-currentEdgeSize2, 0);
             }
             vector += offset;
         }
