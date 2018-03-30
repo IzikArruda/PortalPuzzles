@@ -82,8 +82,6 @@ public class CubeCreator : MonoBehaviour {
          */
          
         if(updateCube) {
-            /* Take in the list of sides which need to only use the second material and make their edge sizes reach their max */
-            HackEdgeSizeOfFadedSides();
             edgeSizes = new float[6][];
             edgeSizes[0] = rightEdgeSize;
             edgeSizes[1] = leftEdgeSize;
@@ -111,35 +109,7 @@ public class CubeCreator : MonoBehaviour {
         gameObject.AddComponent<MeshRenderer>();
         gameObject.AddComponent<BoxCollider>();
     }
-
-    public void HackEdgeSizeOfFadedSides() {
-        /* 
-         * As a quick hack, when the user wants to use the second material on a specific side,
-         * make it so the sizes of the edges on that side cover the whole face.
-         */
-
-        if(top) {
-            topEdgeSize = new float[] { x/2f, x/2f, z/2f, z/2f };
-        }
-        if(bottom) {
-            bottomEdgeSize = new float[] { x/2f, x/2f, z/2f, z/2f };
-        }
-
-        if(left) {
-            leftEdgeSize = new float[] { y/2f, y/2f, z/2f, z/2f };
-        }
-        if(right) {
-            rightEdgeSize = new float[] { y/2f, y/2f, z/2f, z/2f };
-        }
-
-        if(forward) {
-            forwardEdgeSize = new float[] { x/2f, x/2f, y/2f, y/2f };
-        }
-        if(backward) {
-            backEdgeSize = new float[] { x/2f, x/2f, y/2f, y/2f };
-        }
-    }
-
+    
     public void UpdateBox() {
         /*
          * Create the mesh of the cube using it's set parameters.
@@ -147,7 +117,7 @@ public class CubeCreator : MonoBehaviour {
         Mesh cubeMesh = new Mesh();
         Vector3[] vertices;
         Vector2[] UV;
-        int[] triangles = null, altTriangles = null;
+        int[] brightTriangles = null, darkTriangles = null, edgeTriangles = null;
 
         /* Get the distance each vertex of the cube will be from it's center */
         L = x/2f;
@@ -169,8 +139,12 @@ public class CubeCreator : MonoBehaviour {
         }
 
         /* Set up the polygons that form the cube */
-        AddTrianglesCenterFace(ref triangles, true);
-        AddTrianglesOutterEdge(ref altTriangles, true);
+        //triangles = new int[0];
+        //CenterTriangles(ref triangles);
+        //AddTrianglesCenterFace(ref triangles, true);
+        //AddTrianglesOutterEdge(ref altTriangles, false);
+        SquareFaceTriangles(ref brightTriangles, true);
+        SquareFaceTriangles(ref darkTriangles, false);
 
         /* Apply an offset to the UVs */
         if(UVScale != null && (UVScale.x != 0 && UVScale.y != 0)) {
@@ -198,8 +172,8 @@ public class CubeCreator : MonoBehaviour {
         cubeMesh.vertices = vertices;
         cubeMesh.uv = UV;
         cubeMesh.subMeshCount = 2;
-        cubeMesh.SetTriangles(triangles, 0);
-        cubeMesh.SetTriangles(altTriangles, 1);
+        cubeMesh.SetTriangles(brightTriangles, 0);
+        cubeMesh.SetTriangles(darkTriangles, 1);
         cubeMesh.RecalculateNormals();
         InitializeComponents();
         GetComponent<MeshFilter>().mesh = cubeMesh;
@@ -359,112 +333,6 @@ public class CubeCreator : MonoBehaviour {
 
 
     /* -------- Triangle Setting Functions ---------------------------------------------------- */
-
-    public void AddTrianglesCenterFace(ref int[] triangles, bool firstMaterial) {
-        /*
-         * Create the triangles which are used by only one of the two materials.
-         */
-
-        /* Get how many faces this material will use */
-        int faceCount = 0;
-        if(forward) {
-            faceCount++;
-        }
-        if(backward) {
-            faceCount++;
-        }
-        if(top) {
-            faceCount++;
-        }
-        if(bottom) {
-            faceCount++;
-        }
-        if(left) {
-            faceCount++;
-        }
-        if(right) {
-            faceCount++;
-        }
-        if(firstMaterial) {
-            faceCount = 8 - faceCount;
-        }
-        faceCount = 8;
-
-        /* Populate the triangles array */
-        triangles = new int[faceCount*6];
-        int index = 0;
-        if(firstMaterial ^ right) {
-            AddToTrianglesCenter(ref triangles, ref index, 0 + 24);
-        }
-        if(firstMaterial ^ left) {
-            AddToTrianglesCenter(ref triangles, ref index, 4 + 24);
-        }
-        if(firstMaterial ^ top) {
-            AddToTrianglesCenter(ref triangles, ref index, 8 + 24);
-        }
-        if(firstMaterial ^ bottom) {
-            AddToTrianglesCenter(ref triangles, ref index, 12 + 24);
-        }
-        if(firstMaterial ^ forward) {
-            AddToTrianglesCenter(ref triangles, ref index, 16 + 24);
-        }
-        if(firstMaterial ^ backward) {
-            AddToTrianglesCenter(ref triangles, ref index, 20 + 24);
-        }
-    }
-
-    public void AddTrianglesOutterEdge(ref int[] triangles, bool firstMaterial) {
-        /*
-         * Create the triangles which are used by only one of the two materials.
-         */
-
-        /* Get how many faces this material will use */
-        int faceCount = 0;
-        if(forward) {
-            faceCount++;
-        }
-        if(backward) {
-            faceCount++;
-        }
-        if(top) {
-            faceCount++;
-        }
-        if(bottom) {
-            faceCount++;
-        }
-        if(left) {
-            faceCount++;
-        }
-        if(right) {
-            faceCount++;
-        }
-        if(firstMaterial) {
-            faceCount = 8 - faceCount;
-        }
-        faceCount = 8;
-
-        /* Populate the triangles array */
-        triangles = new int[faceCount*24];
-        int index = 0;
-        if(firstMaterial ^ right) {
-            AddToTrianglesOutter(ref triangles, ref index, 0);
-        }
-        if(firstMaterial ^ left) {
-            AddToTrianglesOutter(ref triangles, ref index, 4);
-        }
-        if(firstMaterial ^ top) {
-            AddToTrianglesOutter(ref triangles, ref index, 8);
-        }
-        if(firstMaterial ^ bottom) {
-            AddToTrianglesOutter(ref triangles, ref index, 12);
-        }
-        if(firstMaterial ^ forward) {
-            AddToTrianglesOutter(ref triangles, ref index, 16);
-        }
-        if(firstMaterial ^ backward) {
-            AddToTrianglesOutter(ref triangles, ref index, 20);
-        }
-    }
     
     public void AddToTrianglesCenter(ref int[] triangles, ref int index, int surfaceIndex) {
         /*
@@ -478,38 +346,57 @@ public class CubeCreator : MonoBehaviour {
         triangles[index++] = surfaceIndex + 3;
         triangles[index++] = surfaceIndex + 2;
     }
-
-    public void AddToTrianglesOutter(ref int[] triangles, ref int index, int surfaceIndex) {
+    
+    public void SquareFaceTriangles(ref int[] triangles, bool ignoreEdges) {
         /*
-         * Add the triangles used to render the outter edges of the surface defined by surfaceIndex
+         * Create the array and add the triangles needed to form the desired surface. If ignoreEdges
+         * is false, the face's center square is used, which is effected by the face's edge sizes.
+         * If ignoreEdges is true, then the edge sizes are ignored and the triangles use the entire face
          */
-         
-        triangles[index++] = surfaceIndex+0 + 24;
-        triangles[index++] = surfaceIndex+2 + 24;
-        triangles[index++] = surfaceIndex+2;
-        triangles[index++] = surfaceIndex+2;
-        triangles[index++] = surfaceIndex+0;
-        triangles[index++] = surfaceIndex+0 + 24;
+        int surfaceOffset = 0;
+        if(ignoreEdges) { surfaceOffset = 24; }
 
-        triangles[index++] = surfaceIndex+1 + 24;
-        triangles[index++] = surfaceIndex+0 + 24;
-        triangles[index++] = surfaceIndex+0;
-        triangles[index++] = surfaceIndex+0;
-        triangles[index++] = surfaceIndex+1;
-        triangles[index++] = surfaceIndex+1 + 24;
+        /* Get how many faces this material will use */
+        int faceCount = 0;
+        if(ignoreEdges ^ forward) {
+            faceCount++;
+        }
+        if(ignoreEdges ^ backward) {
+            faceCount++;
+        }
+        if(ignoreEdges ^ top) {
+            faceCount++;
+        }
+        if(ignoreEdges ^ bottom) {
+            faceCount++;
+        }
+        if(ignoreEdges ^ left) {
+            faceCount++;
+        }
+        if(ignoreEdges ^ right) {
+            faceCount++;
+        }
 
-        triangles[index++] = surfaceIndex+2 + 24;
-        triangles[index++] = surfaceIndex+3 + 24;
-        triangles[index++] = surfaceIndex+3;
-        triangles[index++] = surfaceIndex+3;
-        triangles[index++] = surfaceIndex+2;
-        triangles[index++] = surfaceIndex+2 + 24;
-
-        triangles[index++] = surfaceIndex+3 + 24;
-        triangles[index++] = surfaceIndex+1 + 24;
-        triangles[index++] = surfaceIndex+1;
-        triangles[index++] = surfaceIndex+1;
-        triangles[index++] = surfaceIndex+3;
-        triangles[index++] = surfaceIndex+3+ 24;
+        /* Populate the triangles array */
+        triangles = new int[faceCount*6];
+        int index = 0;
+        if(ignoreEdges ^ right) {
+            AddToTrianglesCenter(ref triangles, ref index, 0 + surfaceOffset);
+        }
+        if(ignoreEdges ^ left) {
+            AddToTrianglesCenter(ref triangles, ref index, 4 + surfaceOffset);
+        }
+        if(ignoreEdges ^ top) {
+            AddToTrianglesCenter(ref triangles, ref index, 8 + surfaceOffset);
+        }
+        if(ignoreEdges ^ bottom) {
+            AddToTrianglesCenter(ref triangles, ref index, 12 + surfaceOffset);
+        }
+        if(ignoreEdges ^ forward) {
+            AddToTrianglesCenter(ref triangles, ref index, 16 + surfaceOffset);
+        }
+        if(ignoreEdges ^ backward) {
+            AddToTrianglesCenter(ref triangles, ref index, 20 + surfaceOffset);
+        }
     }
 }
