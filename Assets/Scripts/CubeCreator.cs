@@ -53,7 +53,11 @@ public class CubeCreator : MonoBehaviour {
     private float H;
     private float W;
 
+    /* Set to true to force the cube to re-create itself */
     public bool updateCube;
+
+
+    /* -------- Built-in Unity Functions ---------------------------------------------------- */
 
     void OnValidate() {
         /*
@@ -92,6 +96,9 @@ public class CubeCreator : MonoBehaviour {
         }
     }
 
+
+    /* -------- Main Update Functions ---------------------------------------------------- */
+
     void InitializeComponents() {
         /*
          * Reset the required components
@@ -104,7 +111,112 @@ public class CubeCreator : MonoBehaviour {
         gameObject.AddComponent<MeshRenderer>();
         gameObject.AddComponent<BoxCollider>();
     }
-    
+
+    public void HackEdgeSizeOfFadedSides() {
+        /* 
+         * As a quick hack, when the user wants to use the second material on a specific side,
+         * make it so the sizes of the edges on that side cover the whole face.
+         */
+
+        if(top) {
+            topEdgeSize = new float[] { x/2f, x/2f, z/2f, z/2f };
+        }
+        if(bottom) {
+            bottomEdgeSize = new float[] { x/2f, x/2f, z/2f, z/2f };
+        }
+
+        if(left) {
+            leftEdgeSize = new float[] { y/2f, y/2f, z/2f, z/2f };
+        }
+        if(right) {
+            rightEdgeSize = new float[] { y/2f, y/2f, z/2f, z/2f };
+        }
+
+        if(forward) {
+            forwardEdgeSize = new float[] { x/2f, x/2f, y/2f, y/2f };
+        }
+        if(backward) {
+            backEdgeSize = new float[] { x/2f, x/2f, y/2f, y/2f };
+        }
+    }
+
+    public void UpdateBox() {
+        /*
+         * Create the mesh of the cube using it's set parameters.
+         */
+        Mesh cubeMesh = new Mesh();
+        Vector3[] vertices;
+        Vector2[] UV;
+        int[] triangles = null, altTriangles = null;
+
+        /* Get the distance each vertex of the cube will be from it's center */
+        L = x/2f;
+        H = y/2f;
+        W = z/2f;
+
+        /* Get the vertices that make up the cube */
+        vertices = new Vector3[48];
+        /* Go through each face of the cube */
+        for(int i = 0; i < 6; i++) {
+            /* Go through each corner of the current face */
+            for(int ii = 0; ii < 4; ii++) {
+                /* Add the outter edge vertice */
+                vertices[i*4 + ii] = GetBoxVertice(i, ii, false);
+
+                /* Add the inner edge vertice */
+                vertices[24 + i*4 + ii] = GetBoxVertice(i, ii, true);
+            }
+        }
+
+        /* Set up the polygons that form the cube */
+        AddTrianglesCenterFace(ref triangles, true);
+        AddTrianglesOutterEdge(ref altTriangles, true);
+
+        /* Apply an offset to the UVs */
+        if(UVScale != null && (UVScale.x != 0 && UVScale.y != 0)) {
+            L = UVScale.y;
+            H = UVScale.x;
+            ZNegativeOffset = new Vector2(L, H);
+        }
+
+        /* Set the UVs of the cube */
+        UV = new Vector2[48];
+        float[] xPos = new float[] { H, H, L, L, L, L };
+        float[] yPos = new float[] { W, W, W, W, H, H };
+        Vector2[] offsets = new Vector2[] { XPositiveOffset, XNegativeOffset, YPositiveOffset, YNegativeOffset, ZPositiveOffset, ZNegativeOffset };
+        for(int i = 0; i < 6; i++) {
+            for(int ii = 0; ii < 4; ii++) {
+                /* UV of the outter edge */
+                UV[i*4 + ii] = GetVerticeUVs(xPos[i], yPos[i], i, ii, offsets[i], false);
+
+                /* UV of the inner edge */
+                UV[24 + i*4 + ii] = GetVerticeUVs(xPos[i], yPos[i], i, ii, offsets[i], true);
+            }
+        }
+
+        /* Assign the mesh to the meshRenderer and update the box collider */
+        cubeMesh.vertices = vertices;
+        cubeMesh.uv = UV;
+        cubeMesh.subMeshCount = 2;
+        cubeMesh.SetTriangles(triangles, 0);
+        cubeMesh.SetTriangles(altTriangles, 1);
+        cubeMesh.RecalculateNormals();
+        InitializeComponents();
+        GetComponent<MeshFilter>().mesh = cubeMesh;
+        GetComponent<BoxCollider>().size = new Vector3(x, y, z);
+
+        /* Only set the material if there are materials given */
+        GetComponent<MeshRenderer>().sharedMaterials = new Material[] { mainMaterial, secondMaterial };
+
+        /* Update the values of the box */
+        previousX = x;
+        previousY = y;
+        previousZ = z;
+    }
+
+
+    /* -------- Vertice/UV Setting Functions ---------------------------------------------------- */
+
     public Vector3 GetBoxVertice(int side, int vertex, bool inner) {
         /*
          * Return the vector3 that defines the given side and vertex.
@@ -244,80 +356,9 @@ public class CubeCreator : MonoBehaviour {
 
         return new Vector2(x, y) + offset;
     }
-    
-    public void UpdateBox() {
-        /*
-         * Create the mesh of the cube using it's set parameters.
-         */
-        Mesh cubeMesh = new Mesh();
-        Vector3[] vertices;
-        Vector2[] UV;
-        int[] triangles = null, altTriangles = null;
 
-        /* Get the distance each vertex of the cube will be from it's center */
-        L = x/2f;
-        H = y/2f;
-        W = z/2f;
 
-        /* Get the vertices that make up the cube */
-        vertices = new Vector3[48];
-        /* Go through each face of the cube */
-        for(int i = 0; i < 6; i++) {
-            /* Go through each corner of the current face */
-            for(int ii = 0; ii < 4; ii++) {
-                /* Add the outter edge vertice */
-                vertices[i*4 + ii] = GetBoxVertice(i, ii, false);
-
-                /* Add the inner edge vertice */
-                vertices[24 + i*4 + ii] = GetBoxVertice(i, ii, true);
-            }
-        }
-        
-        /* Set up the polygons that form the cube */
-        AddTrianglesCenterFace(ref triangles, true);
-        AddTrianglesOutterEdge(ref altTriangles, false);
-
-        /* Apply an offset to the UVs */
-        if(UVScale != null && (UVScale.x != 0 && UVScale.y != 0)) {
-            L = UVScale.y;
-            H = UVScale.x;
-            ZNegativeOffset = new Vector2(L, H);
-        }
-        
-        /* Set the UVs of the cube */
-        UV = new Vector2[48];
-        float[] xPos = new float[] { H, H, L, L, L, L };
-        float[] yPos = new float[] { W, W, W, W, H, H };
-        Vector2[] offsets = new Vector2[] { XPositiveOffset, XNegativeOffset, YPositiveOffset, YNegativeOffset, ZPositiveOffset, ZNegativeOffset };
-        for(int i = 0; i < 6; i++) {
-            for(int ii = 0; ii < 4; ii++) {
-                /* UV of the outter edge */
-                UV[i*4 + ii] = GetVerticeUVs(xPos[i], yPos[i], i, ii, offsets[i], false);
-
-                /* UV of the inner edge */
-                UV[24 + i*4 + ii] = GetVerticeUVs(xPos[i], yPos[i], i, ii, offsets[i], true);
-            }
-        }
-        
-        /* Assign the mesh to the meshRenderer and update the box collider */
-        cubeMesh.vertices = vertices;
-        cubeMesh.uv = UV;
-        cubeMesh.subMeshCount = 2;
-        cubeMesh.SetTriangles(triangles, 0);
-        cubeMesh.SetTriangles(altTriangles, 1);
-        cubeMesh.RecalculateNormals();
-        InitializeComponents();
-        GetComponent<MeshFilter>().mesh = cubeMesh;
-        GetComponent<BoxCollider>().size = new Vector3(x, y, z);
-
-        /* Only set the material if there are materials given */
-        GetComponent<MeshRenderer>().sharedMaterials = new Material[] { mainMaterial, secondMaterial };
-        
-        /* Update the values of the box */
-        previousX = x;
-        previousY = y;
-        previousZ = z;
-    }
+    /* -------- Triangle Setting Functions ---------------------------------------------------- */
 
     public void AddTrianglesCenterFace(ref int[] triangles, bool firstMaterial) {
         /*
@@ -470,33 +511,5 @@ public class CubeCreator : MonoBehaviour {
         triangles[index++] = surfaceIndex+1;
         triangles[index++] = surfaceIndex+3;
         triangles[index++] = surfaceIndex+3+ 24;
-    }
-
-    public void HackEdgeSizeOfFadedSides() {
-        /* 
-         * As a quick hack, when the user wants to use the second material on a specific side,
-         * make it so the sizes of the edges on that side cover the whole face.
-         */
-
-        if(top) {
-            topEdgeSize = new float[] { x/2f, x/2f, z/2f, z/2f };
-        }
-        if(bottom) {
-            bottomEdgeSize = new float[] { x/2f, x/2f, z/2f, z/2f };
-        }
-
-        if(left) {
-            leftEdgeSize = new float[] { y/2f, y/2f, z/2f, z/2f };
-        }
-        if(right) {
-            rightEdgeSize = new float[] { y/2f, y/2f, z/2f, z/2f };
-        }
-
-        if(forward) {
-            forwardEdgeSize = new float[] { x/2f, x/2f, y/2f, y/2f };
-        }
-        if(backward) {
-            backEdgeSize = new float[] { x/2f, x/2f, y/2f, y/2f };
-        }
     }
 }
