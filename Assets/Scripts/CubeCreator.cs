@@ -78,6 +78,8 @@ public class CubeCreator : MonoBehaviour {
          */
          
         if(updateCube) {
+            /* Take in the list of sides which need to only use the second material and make their edge sizes reach their max */
+            HackEdgeSizeOfFadedSides();
             edgeSizes = new float[6][];
             edgeSizes[0] = rightEdgeSize;
             edgeSizes[1] = leftEdgeSize;
@@ -243,7 +245,6 @@ public class CubeCreator : MonoBehaviour {
         return new Vector2(x, y) + offset;
     }
     
-
     public void UpdateBox() {
         /*
          * Create the mesh of the cube using it's set parameters.
@@ -274,7 +275,7 @@ public class CubeCreator : MonoBehaviour {
         
         /* Set up the polygons that form the cube */
         AddTrianglesCenterFace(ref triangles, true);
-        AddTrianglesOutterEdge(ref altTriangles, true);
+        AddTrianglesOutterEdge(ref altTriangles, false);
 
         /* Apply an offset to the UVs */
         if(UVScale != null && (UVScale.x != 0 && UVScale.y != 0)) {
@@ -423,8 +424,7 @@ public class CubeCreator : MonoBehaviour {
             AddToTrianglesOutter(ref triangles, ref index, 20);
         }
     }
-
-
+    
     public void AddToTrianglesCenter(ref int[] triangles, ref int index, int surfaceIndex) {
         /*
          * Add the triangles used to render the inner square of the surface defined by surfaceIndex.
@@ -470,5 +470,33 @@ public class CubeCreator : MonoBehaviour {
         triangles[index++] = surfaceIndex+1;
         triangles[index++] = surfaceIndex+3;
         triangles[index++] = surfaceIndex+3+ 24;
+    }
+
+    public void HackEdgeSizeOfFadedSides() {
+        /* 
+         * As a quick hack, when the user wants to use the second material on a specific side,
+         * make it so the sizes of the edges on that side cover the whole face.
+         */
+
+        if(top) {
+            topEdgeSize = new float[] { x/2f, x/2f, z/2f, z/2f };
+        }
+        if(bottom) {
+            bottomEdgeSize = new float[] { x/2f, x/2f, z/2f, z/2f };
+        }
+
+        if(left) {
+            leftEdgeSize = new float[] { y/2f, y/2f, z/2f, z/2f };
+        }
+        if(right) {
+            rightEdgeSize = new float[] { y/2f, y/2f, z/2f, z/2f };
+        }
+
+        if(forward) {
+            forwardEdgeSize = new float[] { x/2f, x/2f, y/2f, y/2f };
+        }
+        if(backward) {
+            backEdgeSize = new float[] { x/2f, x/2f, y/2f, y/2f };
+        }
     }
 }
