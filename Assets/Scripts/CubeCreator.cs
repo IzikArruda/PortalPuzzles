@@ -168,9 +168,9 @@ public class CubeCreator : MonoBehaviour {
                 /* UVs of the corners used by the first two materials */
                 UV[i*4 + ii] = GetVerticeUVs(xPos[i], yPos[i], i, ii, offsets[i], false);
                 UV[24 + i*4 + ii] = GetVerticeUVs(xPos[i], yPos[i], i, ii, offsets[i], true);
-
+                
                 /* UVs for the vertices used by the third material */
-                UV[48 + i*4 + ii] = new Vector2(0, 0);
+                UV[48 + i*4 + ii] = new Vector2(1, 1);
                 UV[72 + i*4 + ii] = new Vector2(0, 0);
             }
         }
@@ -441,22 +441,22 @@ public class CubeCreator : MonoBehaviour {
         triangles = new int[faceCount*24];
         int index = 0;
         if(!right) {
-            AddToTrianglesOutter(ref triangles, ref index, 0);
+            AddToTrianglesOutter(ref triangles, ref index, 48 + 0);
         }
         if(!left) {
-            AddToTrianglesOutter(ref triangles, ref index, 4);
+            AddToTrianglesOutter(ref triangles, ref index, 48 + 4);
         }
         if(!top) {
-            AddToTrianglesOutter(ref triangles, ref index, 8);
+            AddToTrianglesOutter(ref triangles, ref index, 48 + 8);
         }
         if(!bottom) {
-            AddToTrianglesOutter(ref triangles, ref index, 12);
+            AddToTrianglesOutter(ref triangles, ref index, 48 + 12);
         }
         if(!forward) {
-            AddToTrianglesOutter(ref triangles, ref index, 16);
+            AddToTrianglesOutter(ref triangles, ref index, 48 + 16);
         }
         if(!backward) {
-            AddToTrianglesOutter(ref triangles, ref index, 20);
+            AddToTrianglesOutter(ref triangles, ref index, 48 + 20);
         }
     }
 
