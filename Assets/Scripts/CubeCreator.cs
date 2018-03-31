@@ -125,6 +125,11 @@ public class CubeCreator : MonoBehaviour {
         H = y/2f;
         W = z/2f;
 
+
+
+
+
+
         /* Get the vertices that make up the cube */
         vertices = new Vector3[48];
         /* Go through each face of the cube */
@@ -138,37 +143,42 @@ public class CubeCreator : MonoBehaviour {
                 vertices[24 + i*4 + ii] = GetBoxVertice(i, ii, true);
             }
         }
+        
+        /* Set the vertices used by the cube */
+        vertices = new Vector3[96];
+        for(int i = 0; i < 6; i++) {
+            for(int ii = 0; ii < 4; ii++) {
+                /* Add the vertices used for the first and second material */
+                vertices[i*4 + ii] = GetBoxVertice(i, ii, false);
+                vertices[24 + i*4 + ii] = GetBoxVertice(i, ii, true);
 
-        /* Set up the polygons that form the cube */
-        //triangles = new int[0];
-        //CenterTriangles(ref triangles);
-        //AddTrianglesCenterFace(ref triangles, true);
-        //AddTrianglesOutterEdge(ref altTriangles, false);
-        SquareFaceTriangles(ref brightTriangles, true);
-        SquareFaceTriangles(ref darkTriangles, false);
-        EdgeTriangles(ref edgeTriangles);
-
-        /* Apply an offset to the UVs */
-        if(UVScale != null && (UVScale.x != 0 && UVScale.y != 0)) {
-            L = UVScale.y;
-            H = UVScale.x;
-            ZNegativeOffset = new Vector2(L, H);
+                /* Add the vertices used for the third/edge material */
+                vertices[48 + i*4 + ii] = GetBoxVertice(i, ii, false);
+                vertices[72 + i*4 + ii] = GetBoxVertice(i, ii, true);
+            }
         }
-
+        
         /* Set the UVs of the cube */
-        UV = new Vector2[48];
+        UV = new Vector2[96];
         float[] xPos = new float[] { H, H, L, L, L, L };
         float[] yPos = new float[] { W, W, W, W, H, H };
         Vector2[] offsets = new Vector2[] { XPositiveOffset, XNegativeOffset, YPositiveOffset, YNegativeOffset, ZPositiveOffset, ZNegativeOffset };
         for(int i = 0; i < 6; i++) {
             for(int ii = 0; ii < 4; ii++) {
-                /* UV of the outter edge */
+                /* UVs of the corners used by the first two materials */
                 UV[i*4 + ii] = GetVerticeUVs(xPos[i], yPos[i], i, ii, offsets[i], false);
-
-                /* UV of the inner edge */
                 UV[24 + i*4 + ii] = GetVerticeUVs(xPos[i], yPos[i], i, ii, offsets[i], true);
+
+                /* UVs for the vertices used by the third material */
+                UV[48 + i*4 + ii] = new Vector2(0, 0);
+                UV[72 + i*4 + ii] = new Vector2(0, 0);
             }
         }
+
+        /* Set up the polygons that form the cube */
+        SquareFaceTriangles(ref brightTriangles, true);
+        SquareFaceTriangles(ref darkTriangles, false);
+        EdgeTriangles(ref edgeTriangles);
 
         /* Assign the mesh to the meshRenderer and update the box collider */
         cubeMesh.vertices = vertices;

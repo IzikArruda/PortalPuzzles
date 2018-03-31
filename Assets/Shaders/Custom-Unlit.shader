@@ -52,7 +52,15 @@
 				// sample the texture
 				fixed4 col = tex2D(_MainTex, i.uv);
 
-				col.a = 0.5f;
+
+				/* GOAL THAT WE NEED TO ACHIEVE: have a value go from 0 when close to center and 1 when further away */
+				//Can we get a value such as it's position on the face of the point in a surface function?
+
+
+
+
+
+				col.a = i.uv.x/4;
 
 				return col;
 			}
