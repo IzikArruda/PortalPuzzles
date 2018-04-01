@@ -117,7 +117,7 @@ public class CubeCreator : MonoBehaviour {
          */
         Mesh cubeMesh = new Mesh();
         Vector3[] vertices;
-        Vector2[] UV;
+        Vector2[] UV, UV2;
         int[] brightTriangles = null, darkTriangles = null, edgeTriangles = null;
 
         /* Get the distance each vertex of the cube will be from it's center */
@@ -160,6 +160,7 @@ public class CubeCreator : MonoBehaviour {
         
         /* Set the UVs of the cube */
         UV = new Vector2[96];
+        UV2 = new Vector2[96];
         float[] xPos = new float[] { H, H, L, L, L, L };
         float[] yPos = new float[] { W, W, W, W, H, H };
         Vector2[] offsets = new Vector2[] { XPositiveOffset, XNegativeOffset, YPositiveOffset, YNegativeOffset, ZPositiveOffset, ZNegativeOffset };
@@ -170,8 +171,14 @@ public class CubeCreator : MonoBehaviour {
                 UV[24 + i*4 + ii] = GetVerticeUVs(xPos[i], yPos[i], i, ii, offsets[i], true);
                 
                 /* UVs for the vertices used by the third material */
-                UV[48 + i*4 + ii] = new Vector2(1, 1);
-                UV[72 + i*4 + ii] = new Vector2(0, 0);
+                UV[48 + i*4 + ii] = GetVerticeUVs(xPos[i], yPos[i], i, ii, offsets[i], false);
+                UV[72 + i*4 + ii] = GetVerticeUVs(xPos[i], yPos[i], i, ii, offsets[i], true);
+
+                /* Set the UVs that determine the fading value of the edges */
+                UV2[0 + i*4 + ii] = new Vector2(0, 0);
+                UV2[24 + i*4 + ii] = new Vector2(0, 0);
+                UV2[48 + i*4 + ii] = new Vector2(1, 1);
+                UV2[72 + i*4 + ii] = new Vector2(0, 0);
             }
         }
 
@@ -183,6 +190,7 @@ public class CubeCreator : MonoBehaviour {
         /* Assign the mesh to the meshRenderer and update the box collider */
         cubeMesh.vertices = vertices;
         cubeMesh.uv = UV;
+        cubeMesh.uv2 = UV2;
         cubeMesh.subMeshCount = 3;
         cubeMesh.SetTriangles(brightTriangles, 0);
         cubeMesh.SetTriangles(darkTriangles, 1);
