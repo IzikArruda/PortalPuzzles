@@ -124,12 +124,7 @@ public class CubeCreator : MonoBehaviour {
         L = x/2f;
         H = y/2f;
         W = z/2f;
-
-
-
-
-
-
+        
         /* Get the vertices that make up the cube */
         vertices = new Vector3[48];
         /* Go through each face of the cube */
@@ -201,6 +196,8 @@ public class CubeCreator : MonoBehaviour {
         GetComponent<BoxCollider>().size = new Vector3(x, y, z);
 
         /* Only set the material if there are materials given */
+        thirdMaterial.SetTexture("_MainTex", mainMaterial.GetTexture("_MainTex"));
+        thirdMaterial.SetTexture("_SecondTex", secondMaterial.GetTexture("_MainTex"));
         GetComponent<MeshRenderer>().sharedMaterials = new Material[] { mainMaterial, secondMaterial, thirdMaterial };
 
         /* Update the values of the box */
