@@ -170,7 +170,8 @@ public class Window : MonoBehaviour {
         cubeScript.z = frameDepth*0.9f;
         cubeScript.mainMaterial = glassMaterial;
         /* Set the scale and offset of the window */
-        cubeScript.UVScale = new Vector2(0.5f, 0.5f);
+        cubeScript.UVScale = new Vector2(1f/windowWidth, 1f/windowHeight);
+        cubeScript.ZNegativeOffset = new Vector2(0.5f, 0.5f);
         cubeScript.updateCube = true;
         index++;
     }

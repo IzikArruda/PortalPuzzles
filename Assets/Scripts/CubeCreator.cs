@@ -109,6 +109,14 @@ public class CubeCreator : MonoBehaviour {
         gameObject.AddComponent<MeshFilter>();
         gameObject.AddComponent<MeshRenderer>();
         gameObject.AddComponent<BoxCollider>();
+
+        /* If certain materials are not set, simply use the main material as their replacement */
+        if(secondMaterial == null) {
+            secondMaterial = mainMaterial;
+        }
+        if(thirdMaterial == null) {
+            thirdMaterial = mainMaterial;
+        }
     }
     
     public void UpdateBox() {
@@ -172,7 +180,7 @@ public class CubeCreator : MonoBehaviour {
                 /* Set the UVs that determine the fading value of the edges */
                 UV2[0 + i*4 + ii] = new Vector2(0, 0);
                 UV2[24 + i*4 + ii] = new Vector2(0, 0);
-                UV2[48 + i*4 + ii] = new Vector2(1, 1);
+                UV2[48 + i*4 + ii] = new Vector2(1.025f, 1.025f);
                 UV2[72 + i*4 + ii] = new Vector2(0, 0);
             }
         }
@@ -346,7 +354,7 @@ public class CubeCreator : MonoBehaviour {
         y -= Mathf.Sign(y)*currentEdgeSize2;
         x -= Mathf.Sign(x)*currentEdgeSize1;
 
-        return new Vector2(x, y) + offset;
+        return new Vector2(x*UVScale.x, y*UVScale.y) + offset;
     }
 
 
