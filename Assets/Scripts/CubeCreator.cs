@@ -117,6 +117,10 @@ public class CubeCreator : MonoBehaviour {
         if(thirdMaterial == null) {
             thirdMaterial = mainMaterial;
         }
+        
+        /* The third material's textures are based off the first two materials */
+        thirdMaterial.SetTexture("_MainTex", mainMaterial.GetTexture("_MainTex"));
+        thirdMaterial.SetTexture("_SecondTex", secondMaterial.GetTexture("_MainTex"));
     }
     
     public void UpdateBox() {
@@ -194,19 +198,15 @@ public class CubeCreator : MonoBehaviour {
         cubeMesh.vertices = vertices;
         cubeMesh.uv = UV;
         cubeMesh.uv2 = UV2;
-        cubeMesh.subMeshCount = 3;
-        cubeMesh.SetTriangles(brightTriangles, 0);
-        cubeMesh.SetTriangles(darkTriangles, 1);
-        cubeMesh.SetTriangles(edgeTriangles, 2);
-        cubeMesh.RecalculateNormals();
+
+        /* Link the triangles and the materials to the mesh */
         InitializeComponents();
+        MeshTrianglesAndMaterials(ref cubeMesh, brightTriangles, darkTriangles, edgeTriangles);
+        cubeMesh.RecalculateNormals();
+
+        /* Update the components of the cube */
         GetComponent<MeshFilter>().mesh = cubeMesh;
         GetComponent<BoxCollider>().size = new Vector3(x, y, z);
-
-        /* Only set the material if there are materials given */
-        thirdMaterial.SetTexture("_MainTex", mainMaterial.GetTexture("_MainTex"));
-        thirdMaterial.SetTexture("_SecondTex", secondMaterial.GetTexture("_MainTex"));
-        GetComponent<MeshRenderer>().sharedMaterials = new Material[] { mainMaterial, secondMaterial, thirdMaterial };
 
         /* Update the values of the box */
         previousX = x;
@@ -505,5 +505,31 @@ public class CubeCreator : MonoBehaviour {
         triangles[index++] = surfaceIndex+1;
         triangles[index++] = surfaceIndex+3;
         triangles[index++] = surfaceIndex+3+ 24;
+    }
+
+    public void MeshTrianglesAndMaterials(ref Mesh cubeMesh, int[] brightTris, int[] darkTris, int[] edgeTris) {
+        /*
+         * Assign the triangles and their materials to the mesh. If an array does not have any triangles,
+         * do not use it in the mesh.
+         */
+        int meshCount = ((brightTris.Length > 0) ? 1 : 0) + ((brightTris.Length > 0) ? 1 : 0) + ((brightTris.Length > 0) ? 1 : 0);
+        cubeMesh.subMeshCount = meshCount;
+        Debug.Log(meshCount);
+        Material[] usedMaterials = new Material[meshCount];
+        meshCount = 0;
+
+        if(brightTris.Length > 0) {
+            usedMaterials[meshCount] = mainMaterial;
+            cubeMesh.SetTriangles(brightTris, meshCount++);
+        }
+        if(darkTris.Length > 0) {
+            usedMaterials[meshCount] = secondMaterial;
+            cubeMesh.SetTriangles(darkTris, meshCount++);
+        }
+        if(edgeTris.Length > 0) {
+            usedMaterials[meshCount] = thirdMaterial;
+            cubeMesh.SetTriangles(edgeTris, meshCount++);
+        }
+        GetComponent<MeshRenderer>().sharedMaterials = usedMaterials;
     }
 }
