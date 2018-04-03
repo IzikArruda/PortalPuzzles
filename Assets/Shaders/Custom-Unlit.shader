@@ -41,6 +41,7 @@
 			float blend = IN.blendUV;
 
 			o.Albedo = blend*tex2D(_SecondTex, IN.uv_MainTex) + (1 - blend)*tex2D(_MainTex, IN.uv_MainTex);
+			o.Albedo = 1;
 		}
 		ENDCG
 	}

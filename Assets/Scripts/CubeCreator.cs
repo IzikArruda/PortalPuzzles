@@ -83,6 +83,7 @@ public class CubeCreator : MonoBehaviour {
          */
          
         if(updateCube) {
+            /* Set the edge array for easy access to the edge values */
             edgeSizes = new float[6][];
             edgeSizes[0] = rightEdgeSize;
             edgeSizes[1] = leftEdgeSize;
@@ -90,6 +91,16 @@ public class CubeCreator : MonoBehaviour {
             edgeSizes[3] = bottomEdgeSize;
             edgeSizes[4] = forwardEdgeSize;
             edgeSizes[5] = backEdgeSize;
+
+            /* Do not let the UV scale be at or bellow 0 */
+            if(UVScale.x <= 0) {
+                UVScale = new Vector2(1, UVScale.y);
+            }
+            if(UVScale.y <= 0) {
+                UVScale = new Vector2(UVScale.x, 1);
+            }
+
+            /* Update the box */
             UpdateBox();
             updateCube = false;
         }
@@ -116,11 +127,12 @@ public class CubeCreator : MonoBehaviour {
         }
         if(thirdMaterial == null) {
             thirdMaterial = mainMaterial;
+        }else {
+            /* The third material's textures are based off the first two materials */
+            thirdMaterial.SetTexture("_MainTex", mainMaterial.GetTexture("_MainTex"));
+            thirdMaterial.SetTexture("_SecondTex", secondMaterial.GetTexture("_MainTex"));
         }
         
-        /* The third material's textures are based off the first two materials */
-        thirdMaterial.SetTexture("_MainTex", mainMaterial.GetTexture("_MainTex"));
-        thirdMaterial.SetTexture("_SecondTex", secondMaterial.GetTexture("_MainTex"));
     }
     
     public void UpdateBox() {
@@ -136,20 +148,6 @@ public class CubeCreator : MonoBehaviour {
         L = x/2f;
         H = y/2f;
         W = z/2f;
-        
-        /* Get the vertices that make up the cube */
-        vertices = new Vector3[48];
-        /* Go through each face of the cube */
-        for(int i = 0; i < 6; i++) {
-            /* Go through each corner of the current face */
-            for(int ii = 0; ii < 4; ii++) {
-                /* Add the outter edge vertice */
-                vertices[i*4 + ii] = GetBoxVertice(i, ii, false);
-
-                /* Add the inner edge vertice */
-                vertices[24 + i*4 + ii] = GetBoxVertice(i, ii, true);
-            }
-        }
         
         /* Set the vertices used by the cube */
         vertices = new Vector3[96];
@@ -512,12 +510,11 @@ public class CubeCreator : MonoBehaviour {
          * Assign the triangles and their materials to the mesh. If an array does not have any triangles,
          * do not use it in the mesh.
          */
-        int meshCount = ((brightTris.Length > 0) ? 1 : 0) + ((brightTris.Length > 0) ? 1 : 0) + ((brightTris.Length > 0) ? 1 : 0);
+        int meshCount = ((brightTris.Length > 0) ? 1 : 0) + ((darkTris.Length > 0) ? 1 : 0) + ((edgeTris.Length > 0) ? 1 : 0);
         cubeMesh.subMeshCount = meshCount;
-        Debug.Log(meshCount);
         Material[] usedMaterials = new Material[meshCount];
         meshCount = 0;
-
+        
         if(brightTris.Length > 0) {
             usedMaterials[meshCount] = mainMaterial;
             cubeMesh.SetTriangles(brightTris, meshCount++);
