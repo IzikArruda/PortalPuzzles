@@ -10,7 +10,7 @@
 		Tags { "RenderType"="Opaque" }
 		LOD 100
 
-		ZWrite Off
+		//ZWrite Off
 		Blend SrcAlpha OneMinusSrcAlpha
 		CGPROGRAM
 		#pragma surface surf Unlit vertex:vert
@@ -38,10 +38,10 @@
 
 		/* Use the UV's X value to control the texture of the surface */
 		void surf(Input IN, inout SurfaceOutput o) {
-			float blend = IN.blendUV;
+			/* Flip the blend/texture if the UV value is negative */
+			float blend = (IN.blendUV < 0) ? (1 - -IN.blendUV) : IN.blendUV;
 
 			o.Albedo = blend*tex2D(_SecondTex, IN.uv_MainTex) + (1 - blend)*tex2D(_MainTex, IN.uv_MainTex);
-			o.Albedo = 1;
 		}
 		ENDCG
 	}
