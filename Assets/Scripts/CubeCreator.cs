@@ -181,8 +181,8 @@ public class CubeCreator : MonoBehaviour {
                 /* Set the UVs that determine the fading value of the edges */
                 UV2[0 + i*4 + ii] = new Vector2(0, 0);
                 UV2[24 + i*4 + ii] = new Vector2(0, 0);
-                UV2[48 + i*4 + ii] = ((flipEdges) ? - 1 : 1) * new Vector2(1.025f, 1.025f);
-                UV2[72 + i*4 + ii] = new Vector2(0, 0);
+                UV2[48 + i*4 + ii] = new Vector2(1.025f, ((flipEdges) ? -1 : 1));
+                UV2[72 + i*4 + ii] = new Vector2(0, ((flipEdges) ? -1 : 1));
             }
         }
 
