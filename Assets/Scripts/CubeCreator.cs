@@ -120,18 +120,13 @@ public class CubeCreator : MonoBehaviour {
         gameObject.AddComponent<MeshRenderer>();
         gameObject.AddComponent<BoxCollider>();
 
+        //THIS SETS THE TEXTURE FOR THE MATERIAL AS A WHOLE, SO DO NOT ACTUALLY DO THIS (unless we want to reset the materail's textures)
         /* If certain materials are not set, simply use the main material as their replacement */
-        if(secondMaterial == null) {
-            secondMaterial = mainMaterial;
-        }
-        if(thirdMaterial == null) {
-            thirdMaterial = mainMaterial;
-        }else {
+        if(mainMaterial != null && secondMaterial != null && thirdMaterial != null) {
             /* The third material's textures are based off the first two materials */
-            thirdMaterial.SetTexture("_MainTex", mainMaterial.GetTexture("_MainTex"));
-            thirdMaterial.SetTexture("_SecondTex", secondMaterial.GetTexture("_MainTex"));
+            //thirdMaterial.SetTexture("_MainTex", mainMaterial.GetTexture("_MainTex"));
+            //thirdMaterial.SetTexture("_SecondTex", secondMaterial.GetTexture("_MainTex"));
         }
-        
     }
     
     public void UpdateBox() {
