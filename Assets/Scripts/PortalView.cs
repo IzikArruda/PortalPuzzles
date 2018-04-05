@@ -37,7 +37,7 @@ public class PortalView : MonoBehaviour {
     private GameObject[] recursiveCameras;
 
     /* The max viewing depth for recursive portal calls */
-    private static int maxCameraDepth = 1;
+    private static int maxCameraDepth = 5;
 
     /* Values that track what the camera's culling layers will be */
     private int cameraIgnoreLayer = -1;
