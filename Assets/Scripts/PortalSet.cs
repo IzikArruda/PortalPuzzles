@@ -133,7 +133,8 @@ public class PortalSet : MonoBehaviour {
          * This only occurs if this portalSet is double sided.
          */
 
-        if(doubleSided) {    
+        if(doubleSided) {
+            Debug.Log("DISABLED DOUBLE SIDED");  
                 
             /* Relenquish control over it's current layers */
             if(occupiedLayer1 != -1) {
