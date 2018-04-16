@@ -424,7 +424,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
          */
         Mesh wallMesh = new Mesh();
         Vector3[] vertices = null;
-        Vector2[] UV;
+        Vector2[] UV, UV2;
         int[] triangles = null;
 
         /* Use the meshCreator function to create the basics of the wall */
@@ -432,17 +432,24 @@ public class PuzzleRoomEditor : MonoBehaviour {
 
         /* Set the UVs of the plane */
         UV = new Vector2[vertices.Length];
+        UV2 = new Vector2[vertices.Length];
         for(int i = 0; i < vertices.Length/4; i++) {
             UV[i*4 + 0] = new Vector2(vertices[i*4 + 0].x, vertices[i*4 + 0].z);
             UV[i*4 + 1] = new Vector2(vertices[i*4 + 1].x, vertices[i*4 + 1].z);
             UV[i*4 + 2] = new Vector2(vertices[i*4 + 2].x, vertices[i*4 + 2].z);
             UV[i*4 + 3] = new Vector2(vertices[i*4 + 3].x, vertices[i*4 + 3].z);
+            UV2[i*4 + 0] = new Vector2(0, vertices[i*4 + 0].z);
+            UV2[i*4 + 1] = new Vector2(0, vertices[i*4 + 1].z);
+            UV2[i*4 + 2] = new Vector2(0, vertices[i*4 + 2].z);
+            UV2[i*4 + 3] = new Vector2(0, vertices[i*4 + 3].z);
         }
+
         
         /* Assign the parameters to the mesh */
         wallMesh.vertices = vertices;
         wallMesh.triangles = triangles;
         wallMesh.uv = UV;
+        wallMesh.uv2 = UV2;
         wallMesh.RecalculateNormals();
 
         /* Add a meshFilter and a meshRenderer to be able to draw the wall */
