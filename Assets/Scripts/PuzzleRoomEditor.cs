@@ -439,7 +439,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
          */
         Mesh wallMesh = new Mesh();
         Vector3[] vertices = null;
-        Vector2[] UV, UV2;
+        Vector2[] UV, UV2, UV3;
         int[] triangles = null;
 
         /* Use the meshCreator function to create the basics of the wall */
@@ -448,26 +448,36 @@ public class PuzzleRoomEditor : MonoBehaviour {
         /* Set the UVs of the plane */
         UV = new Vector2[vertices.Length];
         UV2 = new Vector2[vertices.Length];
+        UV3 = new Vector2[vertices.Length];
         float fadeAmount = 1f/fadeLength;
         float wallUVStretch = 1f/wallStretch;
         for(int i = 0; i < vertices.Length/4; i++) {
+            /* The UV is the UV of the main texture */
             UV[i*4 + 0] = new Vector2(wallUVStretch*(vertices[i*4 + 0].x + objectPos.x), wallUVStretch*(vertices[i*4 + 0].y + objectPos.y));
             UV[i*4 + 1] = new Vector2(wallUVStretch*(vertices[i*4 + 1].x + objectPos.x), wallUVStretch*(vertices[i*4 + 1].y + objectPos.y));
             UV[i*4 + 2] = new Vector2(wallUVStretch*(vertices[i*4 + 2].x + objectPos.x), wallUVStretch*(vertices[i*4 + 2].y + objectPos.y));
             UV[i*4 + 3] = new Vector2(wallUVStretch*(vertices[i*4 + 3].x + objectPos.x), wallUVStretch*(vertices[i*4 + 3].y + objectPos.y));
 
-            /* The UV2 is calculated using the height of the vertex in the world position */
-            UV2[i*4 + 0] = new Vector2(0, fadeAmount*(fadeOffset + Mathf.Abs(objectPos.y + vertices[i*4 + 0].y) - preFadeLength));
-            UV2[i*4 + 1] = new Vector2(0, fadeAmount*(fadeOffset + Mathf.Abs(objectPos.y + vertices[i*4 + 1].y) - preFadeLength));
-            UV2[i*4 + 2] = new Vector2(0, fadeAmount*(fadeOffset + Mathf.Abs(objectPos.y + vertices[i*4 + 2].y) - preFadeLength));
-            UV2[i*4 + 3] = new Vector2(0, fadeAmount*(fadeOffset + Mathf.Abs(objectPos.y + vertices[i*4 + 3].y) - preFadeLength));
+            /* The UV2 is the UV of the second texture */
+            UV2[i*4 + 0] = new Vector2(wallUVStretch*(vertices[i*4 + 0].x + objectPos.x), wallUVStretch*(vertices[i*4 + 0].y + objectPos.y));
+            UV2[i*4 + 1] = new Vector2(wallUVStretch*(vertices[i*4 + 1].x + objectPos.x), wallUVStretch*(vertices[i*4 + 1].y + objectPos.y));
+            UV2[i*4 + 2] = new Vector2(wallUVStretch*(vertices[i*4 + 2].x + objectPos.x), wallUVStretch*(vertices[i*4 + 2].y + objectPos.y));
+            UV2[i*4 + 3] = new Vector2(wallUVStretch*(vertices[i*4 + 3].x + objectPos.x), wallUVStretch*(vertices[i*4 + 3].y + objectPos.y));
+
+            /* The UV3 is calculated using the height of the vertex in the world position */
+            UV3[i*4 + 0] = new Vector2(0, fadeAmount*(fadeOffset + Mathf.Abs(objectPos.y + vertices[i*4 + 0].y) - preFadeLength));
+            UV3[i*4 + 1] = new Vector2(0, fadeAmount*(fadeOffset + Mathf.Abs(objectPos.y + vertices[i*4 + 1].y) - preFadeLength));
+            UV3[i*4 + 2] = new Vector2(0, fadeAmount*(fadeOffset + Mathf.Abs(objectPos.y + vertices[i*4 + 2].y) - preFadeLength));
+            UV3[i*4 + 3] = new Vector2(0, fadeAmount*(fadeOffset + Mathf.Abs(objectPos.y + vertices[i*4 + 3].y) - preFadeLength));
+
         }
-        
+
         /* Assign the parameters to the mesh */
         wallMesh.vertices = vertices;
         wallMesh.triangles = triangles;
         wallMesh.uv = UV;
         wallMesh.uv2 = UV2;
+        wallMesh.uv3 = UV3;
         wallMesh.RecalculateNormals();
 
         /* Add a meshFilter and a meshRenderer to be able to draw the wall */
