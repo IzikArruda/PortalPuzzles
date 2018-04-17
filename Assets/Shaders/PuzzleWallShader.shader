@@ -39,7 +39,7 @@
 		/* Use the UV's X value to control the texture of the surface */
 		void surf(Input IN, inout SurfaceOutput o) {
 
-			float blend = IN.gradientUV;
+			float blend = saturate(IN.gradientUV);
 
 			/* Depending on gradientUV, blend between the mainTex and SecondTex */
 			o.Albedo = blend*tex2D(_MainTex, IN.uv_MainTex) + (1 - blend)*tex2D(_SecondTex, IN.uv_MainTex);
