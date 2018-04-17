@@ -60,6 +60,15 @@ public class PuzzleRoomEditor : MonoBehaviour {
     /* Set this value to true to update the walls */
     public bool updateWalls;
 
+    /* How much distance the walls will fade. Higher means slower fade over distance */
+    public float fadeLength;
+
+    /* How much distance the texture needs to travel before it begins fading. Expected to be positive. */
+    public float preFadeLength;
+
+    /* Height offset of the fade */
+    public float fadeOffset;
+
 
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
 
@@ -433,17 +442,18 @@ public class PuzzleRoomEditor : MonoBehaviour {
         /* Set the UVs of the plane */
         UV = new Vector2[vertices.Length];
         UV2 = new Vector2[vertices.Length];
+        float fadeAmount = 1f/fadeLength;
         for(int i = 0; i < vertices.Length/4; i++) {
             UV[i*4 + 0] = new Vector2(vertices[i*4 + 0].x, vertices[i*4 + 0].y);
             UV[i*4 + 1] = new Vector2(vertices[i*4 + 1].x, vertices[i*4 + 1].y);
             UV[i*4 + 2] = new Vector2(vertices[i*4 + 2].x, vertices[i*4 + 2].y);
             UV[i*4 + 3] = new Vector2(vertices[i*4 + 3].x, vertices[i*4 + 3].y);
 
-            /* The UV2 is calculated using the height of the  */
-            UV2[i*4 + 0] = new Vector2(0, 0.04f*(objectPos.y + vertices[i*4 + 0].y));
-            UV2[i*4 + 1] = new Vector2(0, 0.04f*(objectPos.y + vertices[i*4 + 1].y));
-            UV2[i*4 + 2] = new Vector2(0, 0.04f*(objectPos.y + vertices[i*4 + 2].y));
-            UV2[i*4 + 3] = new Vector2(0, 0.04f*(objectPos.y + vertices[i*4 + 3].y));
+            /* The UV2 is calculated using the height of the vertex in the world position */
+            UV2[i*4 + 0] = new Vector2(0, fadeAmount*(fadeOffset + Mathf.Abs(objectPos.y + vertices[i*4 + 0].y) - preFadeLength));
+            UV2[i*4 + 1] = new Vector2(0, fadeAmount*(fadeOffset + Mathf.Abs(objectPos.y + vertices[i*4 + 1].y) - preFadeLength));
+            UV2[i*4 + 2] = new Vector2(0, fadeAmount*(fadeOffset + Mathf.Abs(objectPos.y + vertices[i*4 + 2].y) - preFadeLength));
+            UV2[i*4 + 3] = new Vector2(0, fadeAmount*(fadeOffset + Mathf.Abs(objectPos.y + vertices[i*4 + 3].y) - preFadeLength));
         }
         
         /* Assign the parameters to the mesh */
