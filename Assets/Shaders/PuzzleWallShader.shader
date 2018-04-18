@@ -19,6 +19,7 @@
 		struct Input {
 			float2 uv_MainTex;
 			float2 uv_SecondTex;
+			float2 uv_RepeatingNoiseTex;
 			float gradientUV;
 		};
 		sampler2D _MainTex;
@@ -28,7 +29,7 @@
 		/* Get the UV2 from the mesh */
 		void vert(inout appdata_full v, out Input o) {
 			UNITY_INITIALIZE_OUTPUT(Input, o);
-			o.gradientUV = v.texcoord2.y;
+			o.gradientUV = v.texcoord3.y;
 		}
 
 		/* Remove the lighting from the texture */
@@ -47,34 +48,22 @@
 			float gradPriority;
 			fixed3 gradient;
 
-
-
-
-
-			//Next step: pass in the proper UV of the second tex. We want two different UVs.
-
-
-
-
-
 			/* Adjust the main texture to use the gradient to make it seem not as obviously tilled */
 			/* Gradient controls how hard and often the re-scaled version of the texture is used */
 			fixed3 tex1 = tex2D(_MainTex, IN.uv_MainTex);
 			float largerTexUVScale = -0.4;
 			gradPriority = 0.1;
 			gradScale = 1;
-			gradient = tex2D(_RepeatingNoiseTex, gradScale*IN.uv_MainTex) + gradPriority;
+			gradient = tex2D(_RepeatingNoiseTex, gradScale*IN.uv_RepeatingNoiseTex) + gradPriority;
 			tex1 = tex1*saturate(1 - (gradient)) + tex2D(_MainTex, largerTexUVScale*IN.uv_MainTex)*saturate(gradient);
-
 
 			/* The second texture is multiplied by the gradient texture and the gradientUV to smoothly fade between the textures */
 			/* Gradient controls how hard and often the second texture is used above the main texture/wall */
-			fixed3 tex2 = tex2D(_SecondTex, IN.uv_MainTex);
+			fixed3 tex2 = tex2D(_SecondTex, IN.uv_SecondTex);
 			gradPriority = 0.5;
 			gradScale = 0.2;
-			gradient = tex2D(_RepeatingNoiseTex, gradScale*IN.uv_SecondTex) + gradPriority;
+			gradient = tex2D(_RepeatingNoiseTex, gradScale*IN.uv_RepeatingNoiseTex) + gradPriority;
 			tex2 = tex1*saturate(1 - (gradient)) + tex2*saturate(gradient);
-
 
 			/* Depending on gradientUV, blend between the mainTex and SecondTex */
 			float blend = saturate(IN.gradientUV);
