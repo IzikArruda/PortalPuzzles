@@ -71,7 +71,12 @@ public class PuzzleRoomEditor : MonoBehaviour {
 
     /* Scales the size of the UVs of the walls. */
     public float wallStretch;
-
+    
+    /* How much the UVs of each texture is animated */
+    public Vector2 mainTexAnim;
+    public Vector2 secondTexAnim;
+    public Vector2 noiseTexAnim;
+    
 
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
 
@@ -112,6 +117,9 @@ public class PuzzleRoomEditor : MonoBehaviour {
             
             updateWalls = false;
         }
+
+        /* Update the UVs of the textures that need animation */
+        AnimateUVS();
 
         /* Update the position of the clouds using cloudOffset */
         UpdateClouds();
@@ -260,6 +268,42 @@ public class PuzzleRoomEditor : MonoBehaviour {
         clouds.GetComponent<MeshFilter>().sharedMesh.uv = cloudUVs;
     }
 
+    public void AnimateUVS() {
+        /*
+         * Use the given texAnim values to animate the UVs of the textures
+         */
+        Vector2[] UV;
+
+        for(int i = 0; i < walls.Length; i++) {
+            if(mainTexAnim.magnitude != 0) {
+                UV = walls[i].GetComponent<MeshFilter>().mesh.uv;
+                AnimateUV(ref UV, mainTexAnim);
+                walls[i].GetComponent<MeshFilter>().mesh.uv = UV;
+            }
+
+            if(secondTexAnim.magnitude != 0) {
+                UV = walls[i].GetComponent<MeshFilter>().mesh.uv2;
+                AnimateUV(ref UV, secondTexAnim);
+                walls[i].GetComponent<MeshFilter>().mesh.uv2 = UV;
+            }
+
+            if(noiseTexAnim.magnitude != 0) {
+                UV = walls[i].GetComponent<MeshFilter>().mesh.uv3;
+                AnimateUV(ref UV, noiseTexAnim);
+                walls[i].GetComponent<MeshFilter>().mesh.uv3 = UV;
+            }
+        }
+    }
+
+    public void AnimateUV(ref Vector2[] UV, Vector2 animation) {
+        /*
+         * Given the reference to an array of UV values, update each of them with the given animation amount.
+         */
+
+        for(int i = 0; i < UV.Length; i++) {
+            UV[i] += animation;
+        }
+    }
 
     /* -------- Initilizing Functions ---------------------------------------------------- */
 
@@ -464,21 +508,18 @@ public class PuzzleRoomEditor : MonoBehaviour {
             UV2[i*4 + 1] = new Vector2(wallUVStretch*(vertices[i*4 + 1].x + objectPos.x), wallUVStretch*(vertices[i*4 + 1].y + objectPos.y));
             UV2[i*4 + 2] = new Vector2(wallUVStretch*(vertices[i*4 + 2].x + objectPos.x), wallUVStretch*(vertices[i*4 + 2].y + objectPos.y));
             UV2[i*4 + 3] = new Vector2(wallUVStretch*(vertices[i*4 + 3].x + objectPos.x), wallUVStretch*(vertices[i*4 + 3].y + objectPos.y));
-
-
-            /* The UV4 is calculated using the height of the vertex in the world position */
-            UV4[i*4 + 0] = new Vector2(0, fadeAmount*(fadeOffset + Mathf.Abs(objectPos.y + vertices[i*4 + 0].y) - preFadeLength));
-            UV4[i*4 + 1] = new Vector2(0, fadeAmount*(fadeOffset + Mathf.Abs(objectPos.y + vertices[i*4 + 1].y) - preFadeLength));
-            UV4[i*4 + 2] = new Vector2(0, fadeAmount*(fadeOffset + Mathf.Abs(objectPos.y + vertices[i*4 + 2].y) - preFadeLength));
-            UV4[i*4 + 3] = new Vector2(0, fadeAmount*(fadeOffset + Mathf.Abs(objectPos.y + vertices[i*4 + 3].y) - preFadeLength));
-
-
+            
             /* The UV3 is the UV of the noise texture */
             UV3[i*4 + 0] = new Vector2(wallUVStretch*(vertices[i*4 + 0].x + objectPos.x), wallUVStretch*(vertices[i*4 + 0].y + objectPos.y));
             UV3[i*4 + 1] = new Vector2(wallUVStretch*(vertices[i*4 + 1].x + objectPos.x), wallUVStretch*(vertices[i*4 + 1].y + objectPos.y));
             UV3[i*4 + 2] = new Vector2(wallUVStretch*(vertices[i*4 + 2].x + objectPos.x), wallUVStretch*(vertices[i*4 + 2].y + objectPos.y));
             UV3[i*4 + 3] = new Vector2(wallUVStretch*(vertices[i*4 + 3].x + objectPos.x), wallUVStretch*(vertices[i*4 + 3].y + objectPos.y));
 
+            /* The UV4 is calculated using the height of the vertex in the world position */
+            UV4[i*4 + 0] = new Vector2(0, fadeAmount*(fadeOffset + Mathf.Abs(objectPos.y + vertices[i*4 + 0].y) - preFadeLength));
+            UV4[i*4 + 1] = new Vector2(0, fadeAmount*(fadeOffset + Mathf.Abs(objectPos.y + vertices[i*4 + 1].y) - preFadeLength));
+            UV4[i*4 + 2] = new Vector2(0, fadeAmount*(fadeOffset + Mathf.Abs(objectPos.y + vertices[i*4 + 2].y) - preFadeLength));
+            UV4[i*4 + 3] = new Vector2(0, fadeAmount*(fadeOffset + Mathf.Abs(objectPos.y + vertices[i*4 + 3].y) - preFadeLength));
         }
 
         /* Assign the parameters to the mesh */
