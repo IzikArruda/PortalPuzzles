@@ -272,26 +272,26 @@ public class PuzzleRoomEditor : MonoBehaviour {
         /*
          * Use the given texAnim values to animate the UVs of the textures
          */
-        Vector2[] UV;
+        Vector2[] UV, UV2, UV3;
+        Mesh mesh;
+        float deltaTime = Time.deltaTime;
 
         for(int i = 0; i < walls.Length; i++) {
-            if(mainTexAnim.magnitude != 0) {
-                UV = walls[i].GetComponent<MeshFilter>().mesh.uv;
-                AnimateUV(ref UV, mainTexAnim);
-                walls[i].GetComponent<MeshFilter>().mesh.uv = UV;
-            }
+            mesh = walls[i].GetComponent<MeshFilter>().sharedMesh;
+            UV = mesh.uv;
+            UV2 = mesh.uv2;
+            UV3 = mesh.uv3;
 
-            if(secondTexAnim.magnitude != 0) {
-                UV = walls[i].GetComponent<MeshFilter>().mesh.uv2;
-                AnimateUV(ref UV, secondTexAnim);
-                walls[i].GetComponent<MeshFilter>().mesh.uv2 = UV;
-            }
+            /* Update the UVs to change the texture in-game */
+            if(mainTexAnim.magnitude != 0) { AnimateUV(ref UV, mainTexAnim); }
+            if(secondTexAnim.magnitude != 0) { AnimateUV(ref UV2, secondTexAnim); }
+            if(noiseTexAnim.magnitude != 0) { AnimateUV(ref UV3, noiseTexAnim); }
 
-            if(noiseTexAnim.magnitude != 0) {
-                UV = walls[i].GetComponent<MeshFilter>().mesh.uv3;
-                AnimateUV(ref UV, noiseTexAnim);
-                walls[i].GetComponent<MeshFilter>().mesh.uv3 = UV;
-            }
+            /* Apply the changes to the mesh */
+            mesh.uv = UV;
+            mesh.uv2 = UV2;
+            mesh.uv3 = UV3;
+            walls[i].GetComponent<MeshFilter>().sharedMesh = mesh;
         }
     }
 
@@ -496,6 +496,8 @@ public class PuzzleRoomEditor : MonoBehaviour {
         UV4 = new Vector2[vertices.Length];
         float fadeAmount = 1f/fadeLength;
         float wallUVStretch = 1f/wallStretch;
+        float wallUV2Stretch = 10*1f/wallStretch;
+        float wallUV3Stretch = 10*1f/wallStretch;
         for(int i = 0; i < vertices.Length/4; i++) {
             /* The UV is the UV of the main texture */
             UV[i*4 + 0] = new Vector2(wallUVStretch*(vertices[i*4 + 0].x + objectPos.x), wallUVStretch*(vertices[i*4 + 0].y + objectPos.y));
@@ -504,16 +506,16 @@ public class PuzzleRoomEditor : MonoBehaviour {
             UV[i*4 + 3] = new Vector2(wallUVStretch*(vertices[i*4 + 3].x + objectPos.x), wallUVStretch*(vertices[i*4 + 3].y + objectPos.y));
 
             /* The UV2 is the UV of the second texture */
-            UV2[i*4 + 0] = new Vector2(wallUVStretch*(vertices[i*4 + 0].x + objectPos.x), wallUVStretch*(vertices[i*4 + 0].y + objectPos.y));
-            UV2[i*4 + 1] = new Vector2(wallUVStretch*(vertices[i*4 + 1].x + objectPos.x), wallUVStretch*(vertices[i*4 + 1].y + objectPos.y));
-            UV2[i*4 + 2] = new Vector2(wallUVStretch*(vertices[i*4 + 2].x + objectPos.x), wallUVStretch*(vertices[i*4 + 2].y + objectPos.y));
-            UV2[i*4 + 3] = new Vector2(wallUVStretch*(vertices[i*4 + 3].x + objectPos.x), wallUVStretch*(vertices[i*4 + 3].y + objectPos.y));
-            
+            UV2[i*4 + 0] = new Vector2(wallUV2Stretch*(vertices[i*4 + 0].x + objectPos.x), wallUV2Stretch*(vertices[i*4 + 0].y + objectPos.y));
+            UV2[i*4 + 1] = new Vector2(wallUV2Stretch*(vertices[i*4 + 1].x + objectPos.x), wallUV2Stretch*(vertices[i*4 + 1].y + objectPos.y));
+            UV2[i*4 + 2] = new Vector2(wallUV2Stretch*(vertices[i*4 + 2].x + objectPos.x), wallUV2Stretch*(vertices[i*4 + 2].y + objectPos.y));
+            UV2[i*4 + 3] = new Vector2(wallUV2Stretch*(vertices[i*4 + 3].x + objectPos.x), wallUV2Stretch*(vertices[i*4 + 3].y + objectPos.y));
+
             /* The UV3 is the UV of the noise texture */
-            UV3[i*4 + 0] = new Vector2(wallUVStretch*(vertices[i*4 + 0].x + objectPos.x), wallUVStretch*(vertices[i*4 + 0].y + objectPos.y));
-            UV3[i*4 + 1] = new Vector2(wallUVStretch*(vertices[i*4 + 1].x + objectPos.x), wallUVStretch*(vertices[i*4 + 1].y + objectPos.y));
-            UV3[i*4 + 2] = new Vector2(wallUVStretch*(vertices[i*4 + 2].x + objectPos.x), wallUVStretch*(vertices[i*4 + 2].y + objectPos.y));
-            UV3[i*4 + 3] = new Vector2(wallUVStretch*(vertices[i*4 + 3].x + objectPos.x), wallUVStretch*(vertices[i*4 + 3].y + objectPos.y));
+            UV3[i*4 + 0] = new Vector2(wallUV3Stretch*(vertices[i*4 + 0].x + objectPos.x), wallUV3Stretch*(vertices[i*4 + 0].y + objectPos.y));
+            UV3[i*4 + 1] = new Vector2(wallUV3Stretch*(vertices[i*4 + 1].x + objectPos.x), wallUV3Stretch*(vertices[i*4 + 1].y + objectPos.y));
+            UV3[i*4 + 2] = new Vector2(wallUV3Stretch*(vertices[i*4 + 2].x + objectPos.x), wallUV3Stretch*(vertices[i*4 + 2].y + objectPos.y));
+            UV3[i*4 + 3] = new Vector2(wallUV3Stretch*(vertices[i*4 + 3].x + objectPos.x), wallUV3Stretch*(vertices[i*4 + 3].y + objectPos.y));
 
             /* The UV4 is calculated using the height of the vertex in the world position */
             UV4[i*4 + 0] = new Vector2(0, fadeAmount*(fadeOffset + Mathf.Abs(objectPos.y + vertices[i*4 + 0].y) - preFadeLength));

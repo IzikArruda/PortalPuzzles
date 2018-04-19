@@ -18,15 +18,15 @@
 
 		struct Input {
 			float2 uv_MainTex;
-			float2 uv_SecondTex;
-			float2 uv_RepeatingNoiseTex;
+			float2 uv2_SecondTex;
+			float2 uv3_RepeatingNoiseTex;
 			float gradientUV;
 		};
 		sampler2D _MainTex;
 		sampler2D _SecondTex;
 		sampler2D _RepeatingNoiseTex;
 
-		/* Get the UV2 from the mesh */
+		/* Get the UV2, UV3 and UV4 from the mesh */
 		void vert(inout appdata_full v, out Input o) {
 			UNITY_INITIALIZE_OUTPUT(Input, o);
 			o.gradientUV = v.texcoord3.y;
@@ -54,15 +54,15 @@
 			float largerTexUVScale = -0.4;
 			gradPriority = 0.1;
 			gradScale = 1;
-			gradient = tex2D(_RepeatingNoiseTex, gradScale*IN.uv_RepeatingNoiseTex) + gradPriority;
+			gradient = tex2D(_RepeatingNoiseTex, gradScale*IN.uv3_RepeatingNoiseTex) + gradPriority;
 			tex1 = tex1*saturate(1 - (gradient)) + tex2D(_MainTex, largerTexUVScale*IN.uv_MainTex)*saturate(gradient);
 
 			/* The second texture is multiplied by the gradient texture and the gradientUV to smoothly fade between the textures */
 			/* Gradient controls how hard and often the second texture is used above the main texture/wall */
-			fixed3 tex2 = tex2D(_SecondTex, IN.uv_SecondTex);
+			fixed3 tex2 = tex2D(_SecondTex, IN.uv2_SecondTex);
 			gradPriority = 0.5;
 			gradScale = 0.2;
-			gradient = tex2D(_RepeatingNoiseTex, gradScale*IN.uv_RepeatingNoiseTex) + gradPriority;
+			gradient = tex2D(_RepeatingNoiseTex, gradScale*IN.uv3_RepeatingNoiseTex) + gradPriority;
 			tex2 = tex1*saturate(1 - (gradient)) + tex2*saturate(gradient);
 
 			/* Depending on gradientUV, blend between the mainTex and SecondTex */
