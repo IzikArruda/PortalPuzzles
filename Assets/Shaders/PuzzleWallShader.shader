@@ -44,17 +44,17 @@
 		void surf(Input IN, inout SurfaceOutput o) {
 			//The UV scale of the gradient. Larger value means the gradient changes faster.
 			float gradScale;
-			//The power of the gradient's direct value. >1 means the gradient will get stronger
+			//The power of the gradient's direct value (default 0). 1 is only use grad, -1 is never use grad.
 			float gradPriority;
 			fixed3 gradient;
 
 			/* Adjust the main texture to use the gradient to make it seem not as obviously tilled */
 			/* Gradient controls how hard and often the re-scaled version of the texture is used */
 			fixed3 tex1 = tex2D(_MainTex, IN.uv_MainTex);
-			float largerTexUVScale = -0.4;
-			gradPriority = 0.1;
-			gradScale = 1;
-			gradient = tex2D(_RepeatingNoiseTex, gradScale*IN.uv3_RepeatingNoiseTex) + gradPriority;
+			float largerTexUVScale = -0.2;
+			gradPriority = 0.15;
+			gradScale = 2;
+			gradient = saturate(tex2D(_RepeatingNoiseTex, gradScale*IN.uv3_RepeatingNoiseTex) + gradPriority);
 			tex1 = tex1*saturate(1 - (gradient)) + tex2D(_MainTex, largerTexUVScale*IN.uv_MainTex)*saturate(gradient);
 
 			/* The second texture is multiplied by the gradient texture and the gradientUV to smoothly fade between the textures */
