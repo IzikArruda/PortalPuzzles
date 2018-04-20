@@ -391,7 +391,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
             UVYOffset = 0;
         }
         else {
-            UVYOffset = entrancePlacement.y*1.5f;
+            UVYOffset = entrance.exitHeight*1.5f + entrancePlacement.y*1.5f;
         }
         CreateWallMesh(walls[4], entrance.exitWidth, roomHeight/2f - entrance.exitHeight - entrancePlacement.y, false, pos, UVYOffset);
 
@@ -405,7 +405,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
             UVYOffset = 0;
         }
         else {
-            UVYOffset = exitPlacement.y*1.5f;
+            UVYOffset = exit.exitHeight*1.5f + exitPlacement.y*1.5f;
         }
         CreateWallMesh(walls[5], exit.exitWidth, roomHeight/2f - exit.exitHeight - exitPlacement.y, false, walls[5].transform.position, UVYOffset);
 

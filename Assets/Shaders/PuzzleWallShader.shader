@@ -60,7 +60,7 @@
 			/* The second texture is multiplied by the gradient texture and the gradientUV to smoothly fade between the textures */
 			/* Gradient controls how hard and often the second texture is used above the main texture/wall */
 			fixed3 tex2 = tex2D(_SecondTex, IN.uv2_SecondTex);
-			gradPriority = 0.5;
+			gradPriority = 0.1;
 			gradScale = 0.2;
 			gradient = tex2D(_RepeatingNoiseTex, gradScale*IN.uv3_RepeatingNoiseTex) + gradPriority;
 			tex2 = tex1*saturate(1 - (gradient)) + tex2*saturate(gradient);
