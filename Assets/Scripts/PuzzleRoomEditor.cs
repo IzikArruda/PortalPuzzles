@@ -22,9 +22,13 @@ public class PuzzleRoomEditor : MonoBehaviour {
     public GameObject puzzleRoomClouds;
 
     /* The materials used in the puzzleRoom */
-    public Material wallMaterial;
-    public Material cloudMaterial;
+    private Material wallMaterial;
     private Material cloudBlockerMaterial;
+    public Material cloudMaterial;
+    public Texture2D mainWallTexture;
+    public Texture2D secondWallTexture;
+    public Texture2D noiseWallTexture;
+
 
     /* The walls that make up the puzzle room. Each wall has a specific place in the array and the room */
     [HideInInspector]
@@ -269,6 +273,20 @@ public class PuzzleRoomEditor : MonoBehaviour {
         clouds.GetComponent<MeshFilter>().sharedMesh.uv = cloudUVs;
     }
 
+    public void UpdateMaterial() {
+        /*
+         * Update the material used by this wall
+         */
+
+        /* Re-create the material with the proper shader */
+        wallMaterial = new Material(Shader.Find("Unlit/PuzzleWallShader"));
+
+        /* Assign the textures to the new material */
+        wallMaterial.SetTexture("_MainTex", mainWallTexture);
+        wallMaterial.SetTexture("_SecondTex", secondWallTexture);
+        wallMaterial.SetTexture("_RepeatingNoiseTex", noiseWallTexture);
+    }
+
     public void AnimateUVS() {
         /*
          * Use the given texAnim values to animate the UVs of the textures
@@ -319,6 +337,9 @@ public class PuzzleRoomEditor : MonoBehaviour {
 
         /* Reposition the attached rooms to fit the puzzle room's exit and entrance points */
         UpdateAttachedRooms();
+
+        /* Update the material used by this room's walls */
+        UpdateMaterial();
 
         /* Ensure the walls array is emptied before creating new ones */
         if(walls != null) {
