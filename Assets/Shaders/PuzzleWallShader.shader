@@ -21,6 +21,7 @@
 			float2 uv2_SecondTex;
 			float2 uv3_RepeatingNoiseTex;
 			float gradientUV;
+			float gradPrioritySecondTex;
 		};
 		sampler2D _MainTex;
 		sampler2D _SecondTex;
@@ -30,6 +31,7 @@
 		void vert(inout appdata_full v, out Input o) {
 			UNITY_INITIALIZE_OUTPUT(Input, o);
 			o.gradientUV = v.texcoord3.y;
+			o.gradPrioritySecondTex = v.texcoord3.x;
 		}
 
 		/* Remove the lighting from the texture */
@@ -60,7 +62,7 @@
 			/* The second texture is multiplied by the gradient texture and the gradientUV to smoothly fade between the textures */
 			/* Gradient controls how hard and often the second texture is used above the main texture/wall */
 			fixed3 tex2 = tex2D(_SecondTex, IN.uv2_SecondTex);
-			gradPriority = 0.1;
+			gradPriority = IN.gradPrioritySecondTex;
 			gradScale = 0.2;
 			gradient = tex2D(_RepeatingNoiseTex, gradScale*IN.uv3_RepeatingNoiseTex) + gradPriority;
 			tex2 = tex1*saturate(1 - (gradient)) + tex2*saturate(gradient);

@@ -22,13 +22,18 @@ public class PuzzleRoomEditor : MonoBehaviour {
     public GameObject puzzleRoomClouds;
 
     /* The materials used in the puzzleRoom */
-    private Material wallMaterial;
+    public Material wallMaterial;
     private Material cloudBlockerMaterial;
     public Material cloudMaterial;
     public Texture2D mainWallTexture;
     public Texture2D secondWallTexture;
     public Texture2D noiseWallTexture;
-
+    /* The extra priority added into the noise function */
+    public float gradPriority;
+    /* Scaling of the main, second and noise wall textures on the wall material */
+    public Vector2 mainScale;
+    public Vector2 secondScale;
+    public Vector2 noiseScale;
 
     /* The walls that make up the puzzle room. Each wall has a specific place in the array and the room */
     [HideInInspector]
@@ -280,11 +285,17 @@ public class PuzzleRoomEditor : MonoBehaviour {
 
         /* Re-create the material with the proper shader */
         wallMaterial = new Material(Shader.Find("Unlit/PuzzleWallShader"));
+        wallMaterial.name = transform.parent.name + " Wall Material";
 
         /* Assign the textures to the new material */
         wallMaterial.SetTexture("_MainTex", mainWallTexture);
         wallMaterial.SetTexture("_SecondTex", secondWallTexture);
         wallMaterial.SetTexture("_RepeatingNoiseTex", noiseWallTexture);
+
+        /* Apply the scaling to each texture */
+        wallMaterial.SetTextureScale("_MainTex", mainScale);
+        wallMaterial.SetTextureScale("_SecondTex", secondScale);
+        wallMaterial.SetTextureScale("_RepeatingNoiseTex", noiseScale);
     }
 
     public void AnimateUVS() {
@@ -566,10 +577,10 @@ public class PuzzleRoomEditor : MonoBehaviour {
             UV3[i*4 + 3] = new Vector2(1f/wallUV3Stretch*(vertices[i*4 + 3].x + objectPos.x), 1f/wallUV3Stretch*(vertices[i*4 + 3].y + objectPos.y));
 
             /* The UV4 is calculated using the height of the vertex in the world position */
-            UV4[i*4 + 0] = new Vector2(0, fadeAmount*(fadeOffset + Mathf.Abs(objectPos.y + vertices[i*4 + 0].y) + UV4YOffset - preFadeLength));
-            UV4[i*4 + 1] = new Vector2(0, fadeAmount*(fadeOffset + Mathf.Abs(objectPos.y + vertices[i*4 + 1].y) + UV4YOffset - preFadeLength));
-            UV4[i*4 + 2] = new Vector2(0, fadeAmount*(fadeOffset + Mathf.Abs(objectPos.y + vertices[i*4 + 2].y) + UV4YOffset - preFadeLength));
-            UV4[i*4 + 3] = new Vector2(0, fadeAmount*(fadeOffset + Mathf.Abs(objectPos.y + vertices[i*4 + 3].y) + UV4YOffset - preFadeLength));
+            UV4[i*4 + 0] = new Vector2(gradPriority, fadeAmount*(fadeOffset + Mathf.Abs(objectPos.y + vertices[i*4 + 0].y) + UV4YOffset - preFadeLength));
+            UV4[i*4 + 1] = new Vector2(gradPriority, fadeAmount*(fadeOffset + Mathf.Abs(objectPos.y + vertices[i*4 + 1].y) + UV4YOffset - preFadeLength));
+            UV4[i*4 + 2] = new Vector2(gradPriority, fadeAmount*(fadeOffset + Mathf.Abs(objectPos.y + vertices[i*4 + 2].y) + UV4YOffset - preFadeLength));
+            UV4[i*4 + 3] = new Vector2(gradPriority, fadeAmount*(fadeOffset + Mathf.Abs(objectPos.y + vertices[i*4 + 3].y) + UV4YOffset - preFadeLength));
         }
 
         /* Assign the parameters to the mesh */
