@@ -17,6 +17,7 @@ using System.Collections;
  * speed and terminal velocity. 
  */
 public enum PlayerStates{
+    Intro,
     Standing,
     Landing,
 	Falling,
@@ -220,7 +221,10 @@ public class CustomPlayerController : MonoBehaviour {
         }
 
         /* From the player's current position, execute a step check to see if they need to move along their Y axis */
-        StepPlayer();
+        /* Do not use steps if the player is in menus */
+        if(!PlayerIsInMenu()) {
+            StepPlayer();
+        }
 
         /* Move the player using their given input and the gravity vector */
         UpdateInputVector();
@@ -322,14 +326,10 @@ public class CustomPlayerController : MonoBehaviour {
          * --------
          */
          
-        /* Use player inputs to rotate the player's view */
-        if(state == (int) PlayerStates.Standing ||
-                state == (int) PlayerStates.Landing ||
-                state == (int) PlayerStates.Falling ||
-                state == (int) PlayerStates.FastFalling) {
+        /* Update the camera's view with the mouse input when NOT in the menu states */
+        if(!PlayerIsInMenu()) {
             AdjustCameraRotation();
         }
-
 
         /* Reposition the camera into it's expected position. Goes through portals. */
         if(state == (int) PlayerStates.Landing) {
@@ -421,6 +421,9 @@ public class CustomPlayerController : MonoBehaviour {
         }
         else if(PlayerIsAirborn()) {
             StepPlayerAirborn();
+        }
+        else if(PlayerIsInMenu()) {
+            //Do not step the player if they are in a menu
         }
         else {
             Debug.Log("Warning: state " + state + " does not handle player stepping");
@@ -726,6 +729,7 @@ public class CustomPlayerController : MonoBehaviour {
         /* Releasing the jump key will attempt to make the player jump */
         else if(jumpKeyCurrent == false && jumpKeyPrevious == true) {
             JumpAttempt();
+            jumpPrimed = false;
         }
     }
 
@@ -760,6 +764,15 @@ public class CustomPlayerController : MonoBehaviour {
                 currentLegLength += -currentYVelocity;
             }
 		}
+
+        /* Don't change the leg lengths while in menus */
+        else if(PlayerIsInMenu()) {
+
+        }
+
+        else {
+            Debug.Log("WARNING: current state does not handle UpdateLegLengths");
+        }
     }
 
     public void UpdateInputVector() {
@@ -771,13 +784,14 @@ public class CustomPlayerController : MonoBehaviour {
         inputVector = new Vector3((1-sliding)*inputs.playerMovementXRaw + sliding*inputs.playerMovementX,
                 0, (1-sliding)*inputs.playerMovementYRaw + sliding*inputs.playerMovementY);
 
-        /* Keep the movement's maginitude from going above 1 */
+        /* Keep the movement's magnitude from going above 1 */
         if(inputVector.magnitude > 1) {
             inputVector.Normalize();
         }
         
         /* Alter the used movementSpeed relative to the player's falling speed */
         float usedMovementSpeed = movementSpeed;
+
         /* Increase the player's base airborn movement speed if they are falling */
         if(PlayerIsAirborn()) {
             usedMovementSpeed += 0.5f*movementSpeed*Mathf.Clamp(Mathf.Abs(currentYVelocity)/maxYVelocity, 0, 1);
@@ -786,6 +800,10 @@ public class CustomPlayerController : MonoBehaviour {
             if(outsideState) {
                 usedMovementSpeed *= 4;
             }
+        }
+        /* If the player is in the Intro state, do not accept any movements from keyboard or mouse */
+        else if(PlayerIsInMenu()) {
+            inputVector = Vector3.zero;
         }
 
         /* Add the player speed to the movement vector */
@@ -820,9 +838,9 @@ public class CustomPlayerController : MonoBehaviour {
         playerStepTracker.ResetStrideProgress();
         playerStepTracker.ResetStepBuffer();
 
-        /* Start the player in the standing state so they can link themselves to the floor */
+        /* Start the player in the Intro state so they cannot move */
         state = -1;
-        ChangeState((int) PlayerStates.Standing);
+        ChangeState((int) PlayerStates.Intro);
 
         /* Empty the arraylist of vectors that track the player's upcomming movement */
         if(expectedMovements != null) { expectedMovements.Clear(); }
@@ -873,7 +891,7 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Start the player in the standing state so they can link themselves to the floor */
         state = -1;
-        ChangeState((int) PlayerStates.Standing);
+        ChangeState((int) PlayerStates.Intro);
 
         /* Empty the arraylist of vectors that track the player's upcomming movement */
         if(expectedMovements != null) { expectedMovements.Clear(); }
@@ -892,9 +910,12 @@ public class CustomPlayerController : MonoBehaviour {
         /* Adjust the player model's position to reflect the player's body and leg length */
         currentFootPosition = transform.position;
         transform.localPosition += new Vector3(0, playerBodyLength/2f + givenLegLength, 0);
-
+        
         /* Have the player facing towards the window */
         transform.localEulerAngles = new Vector3(0, 180, 0);
+
+        /* The player starts immobile */
+        lastStepMovement = Vector3.zero;
     }
 
     void StartPlayerReset() {
@@ -967,12 +988,12 @@ public class CustomPlayerController : MonoBehaviour {
          * Change the player's current state to the given newState. Run certain lines if
          * certain states change into other specific states (fast falling > standing)
          */
-         
+
         /* Dont change anything if the player is already in the new state */
         if(state != newState) {
 
             /* Going from FastFalling to a grounded state... */
-            if(state == (int) PlayerStates.FastFalling && !StateIsAirborn(newState)) {
+            if(state == (int) PlayerStates.FastFalling && StateIsGrounded(newState)) {
                 /*... Will have the player undergo a hard landing. */
                 if(outsideState) {
                     /* If the player is outside, a hard landing will play a normal landing sound */
@@ -985,7 +1006,7 @@ public class CustomPlayerController : MonoBehaviour {
             }
 
             /* Going from an airborn state to a grounded state... */
-            if(StateIsAirborn(state) && !StateIsAirborn(newState)) {
+            if(StateIsAirborn(state) && StateIsGrounded(newState)) {
 
                 /*... Will inform the footstep tracker of the landing. */
                 playerStepTracker.PlayLanding(-currentYVelocity/maxYVelocity);
@@ -1039,6 +1060,7 @@ public class CustomPlayerController : MonoBehaviour {
     void JumpAttempt() {
         /*
     	 * Try to make the player jump. A jump must be primed (jumpPrimed == true) for the player to jump.
+         * 
     	 */
 
         if(jumpPrimed == true && PlayerIsGrounded()) {
@@ -1190,6 +1212,15 @@ public class CustomPlayerController : MonoBehaviour {
         /* Reset the player's yVelocity if they are grounded */
         else if(PlayerIsGrounded()) {
             currentYVelocity = 0;
+        }
+
+        /* Reset the player's yVelocity if they are in a menu */
+        else if(PlayerIsInMenu()) {
+            currentYVelocity = 0;
+        }
+
+        else {
+            Debug.Log("WARNING: CURRENT STATE DOES NOT HANDLE GRAVITY VECTOR");
         }
 
         return gravityVector;
@@ -1441,14 +1472,53 @@ public class CustomPlayerController : MonoBehaviour {
         return totalRotation;
     }
     
-    bool PlayerIsGrounded(){
-    	/*
-    	 * Return true if the player is in a grounded state with theor legs linked to an object
+    bool StateIsGrounded(int givenState){
+        /*
+    	 * Return true if the player is in a grounded state with their legs linked to an object
     	 */
-    
-    	return !StateIsAirborn(state);
+        bool isGrounded = false;
+
+        if(givenState == (int) PlayerStates.Standing || givenState == (int) PlayerStates.Landing) {
+            isGrounded = true;
+        }
+
+        return isGrounded;
     }
-    
+
+    bool StateIsAirborn(int givenState) {
+        /* 
+    	 * Return true if the given state is airborn, with their legs not connected to an object
+    	 */
+        bool isFalling = false;
+
+        if(givenState == (int) PlayerStates.Falling || givenState == (int) PlayerStates.FastFalling) {
+            isFalling = true;
+        }
+
+        return isFalling;
+    }
+
+    bool StateIsMenu(int givenState) {
+        /*
+         * Return true if the player is in a "menu" state. So far the only menu state is Intro
+         */
+        bool isMenuing = false;
+
+        if(givenState == (int) PlayerStates.Intro) {
+            isMenuing = true;
+        }
+
+        return isMenuing;
+    }
+
+    bool PlayerIsGrounded() {
+        /*
+         * Return true of the player is in the grounded state.
+         */
+
+        return StateIsGrounded(state);
+    }
+
     bool PlayerIsAirborn(){
     	/*
     	 * Return true if the player is in a freefall state/legs do not connect to an object
@@ -1457,20 +1527,14 @@ public class CustomPlayerController : MonoBehaviour {
     	return StateIsAirborn(state);
     }
     
-    bool StateIsAirborn(int givenState){
-    	/* 
-    	 * Return true if the given state is airborn. So far, a state 
-    	 * can only either be airborn or grounded (not airborn).
-    	 */
-    	bool isFalling = false;
-    
-    	if(givenState == (int) PlayerStates.Falling || givenState == (int) PlayerStates.FastFalling){
-    		isFalling = true;
-    	}
-    
-    	return isFalling;
+    bool PlayerIsInMenu() {
+        /*
+         * Return true if the player is in one of the "menu" states
+         */
+
+        return StateIsMenu(state);
     }
-    
+
     public static float RatioWithinRange(float min, float max, float value) {
         /*
          * Return the ratio of the value between min and max. Returns 0 if
