@@ -54,11 +54,11 @@ public class WaitingRoom : ConnectedRoom {
          */
 
         /* do not disable the rooms if it is in the editor */
-        if(!Application.isEditor) {
+        /*if(!Application.isEditor) {
             entranceRoom.DisablePuzzleRoom();
             exitRoom.DisablePuzzleRoom();
             DisableRoom();
-        }
+        }*/
     }
 
     public void Start() {
@@ -368,6 +368,7 @@ public class WaitingRoom : ConnectedRoom {
          */
 
         roomTrigger.enabled = false;
+        gameObject.SetActive(false);
         windowContainer.gameObject.SetActive(false);
         roomObjectsContainer.gameObject.SetActive(false);
         skySphere.gameObject.SetActive(false);
@@ -384,6 +385,7 @@ public class WaitingRoom : ConnectedRoom {
          */
          
         roomTrigger.enabled = true;
+        gameObject.SetActive(true);
         windowContainer.gameObject.SetActive(true);
         roomObjectsContainer.gameObject.SetActive(true);
         skySphere.gameObject.SetActive(true);
@@ -404,6 +406,7 @@ public class WaitingRoom : ConnectedRoom {
          */
 
         roomTrigger.enabled = true;
+        gameObject.SetActive(true);
         windowContainer.gameObject.SetActive(true);
         roomObjectsContainer.gameObject.SetActive(true);
         skySphere.gameObject.SetActive(true);

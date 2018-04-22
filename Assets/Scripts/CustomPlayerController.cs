@@ -137,8 +137,11 @@ public class CustomPlayerController : MonoBehaviour {
     /* The last attached room the player was in. Must be set in the editor before starting. */
     public AttachedRoom lastRoom;
 
-    /* The WaitingRoom the player will first encounter/start in. This room will be enabled on startup. */
-    public WaitingRoom startingRoom;
+    /* The WaitingRoom the player will first encounter from the startingRoom. This room will be enabled on startup. */
+    public WaitingRoom firstWaitingRoom;
+
+    /* The StartingRoom script of the game's startingRoom. This will control the player's starting position. */
+    public StartingRoom startingRoom;
 
     /* The last collider that was hit. Used when calling Raytrace and we want to save the collider the ray hits */
     private Collider lastHitCollider;
@@ -188,13 +191,14 @@ public class CustomPlayerController : MonoBehaviour {
         /* Adjust the player's height and width */
         GetComponent<CapsuleCollider>().height = playerBodyLength;
         GetComponent<CapsuleCollider>().radius = playerBodyRadius;
-
-        /* Enable the starting waiting room */
-        startingRoom.EnableRoom();
+        
+        /* Enable the waitingRoom that connects the game's startingRoom. This will also enable the startingRoom. */
+        firstWaitingRoom.EnableRoom();
 
         /* Reset the player's positional values and camera effects */
-        ResetPlayer(false);
-
+        //ResetPlayer(false);
+        /* Place the player in  the startingRoom, facing the window */
+        SetupPlayer();
     }
     
     void FixedUpdate() {
@@ -852,6 +856,45 @@ public class CustomPlayerController : MonoBehaviour {
         /* The player starts immobile */
         lastStepMovement = Vector3.zero;
 
+    }
+
+    void SetupPlayer() {
+        /*
+         * Runs on startup, it properly positions the player and puts them in the proper state 
+         * for the startup of the game.
+         */
+        //Copy certain lines from the ResetPlayer function.
+
+
+        /* Reset the step tracker */
+        playerStepTracker.ResetFootTiming();
+        playerStepTracker.ResetStrideProgress();
+        playerStepTracker.ResetStepBuffer();
+
+        /* Start the player in the standing state so they can link themselves to the floor */
+        state = -1;
+        ChangeState((int) PlayerStates.Standing);
+
+        /* Empty the arraylist of vectors that track the player's upcomming movement */
+        if(expectedMovements != null) { expectedMovements.Clear(); }
+        expectedMovements = new ArrayList();
+
+        /* Reset the camera's effects and any extra animations it has */
+        cameraEffectsScript.ResetCameraEffects();
+        currentResetTime = -1;
+
+        /* Set the camera's offset to it's natural default value */
+        cameraYOffset = 0;
+
+        /* Place the player to be standing on the top of the startingRoom's stairs */
+        transform.position = startingRoom.exit.exitPointBack.transform.position;
+
+        /* Adjust the player model's position to reflect the player's body and leg length */
+        currentFootPosition = transform.position;
+        transform.localPosition += new Vector3(0, playerBodyLength/2f + givenLegLength, 0);
+
+        /* Have the player facing towards the window */
+        transform.localEulerAngles = new Vector3(0, 180, 0);
     }
 
     void StartPlayerReset() {
