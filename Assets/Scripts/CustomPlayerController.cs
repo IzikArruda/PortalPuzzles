@@ -156,6 +156,14 @@ public class CustomPlayerController : MonoBehaviour {
     /* The type of step sound is played for the player footstep tracker */
     private int currentStepType = 0;
 
+
+    /* Menu Animation values */
+    private Vector3 camDestinationPos;
+    private Quaternion camDestinationRot;
+
+    private float introCamDistance = -1;
+
+
     /* Debugging trackers */
     public static int renderedCameraCount = 0;
     private System.DateTime before;
@@ -330,8 +338,8 @@ public class CustomPlayerController : MonoBehaviour {
         if(!PlayerIsInMenu()) {
             AdjustCameraRotation();
         }
-
-        /* Reposition the camera into it's expected position. Goes through portals. */
+        
+        /* Update currentCameraTransform to control the transform of the camera, depending on the current state */
         if(state == (int) PlayerStates.Landing) {
             /* Apply an animation to the camera while in the landing state */
             AnimatedCameraLanding();
@@ -340,16 +348,19 @@ public class CustomPlayerController : MonoBehaviour {
             /* Apply an animation to the camera while in the fastFalling state */
             AnimateCameraFastFalling();
         }
-        /* While in a menu, take control over the camera's position */
         else if(PlayerIsInMenu()) {
+            /* While in a menu, take control over the camera's position */
             AnimatedCameraInMenus();
         }
         else {
             /* Any other state simply places the camera into it's default position */
             AdjustCameraPosition(GetCameraHeight());
         }
-
         
+        /* Update the player's camera's transform to reflect the changes to currentCameraTransform */
+        playerCamera.transform.position = currentCameraTransform.position;
+        playerCamera.transform.rotation = currentCameraTransform.rotation;
+
         /* Apply any needed special effects to the camera. Runs everytime the camera renders */
         cameraEffectsScript.UpdateCameraEffects();
     }
@@ -584,7 +595,7 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Apply the rotations to the camera's default transform */
         currentCameraTransform.rotation *= Quaternion.Euler(-cameraYRotation, -cameraXRotation, 0);
-        playerCamera.transform.rotation = currentCameraTransform.rotation;
+        //playerCamera.transform.rotation = currentCameraTransform.rotation;
     }
 
     void AdjustCameraPosition(float cameraHeight) {
@@ -639,8 +650,8 @@ public class CustomPlayerController : MonoBehaviour {
         /* Use the new position and rotation to find the camera's final position and rotation */
         currentCameraTransform.position = cameraPosition;
         currentCameraTransform.rotation = rotationDifference*currentCameraTransform.rotation;
-        playerCamera.transform.position = currentCameraTransform.position;
-        playerCamera.transform.rotation = currentCameraTransform.rotation;
+        //playerCamera.transform.position = currentCameraTransform.position;
+        //playerCamera.transform.rotation = currentCameraTransform.rotation;
     }
 
     void AnimatedCameraLanding() {
@@ -711,26 +722,49 @@ public class CustomPlayerController : MonoBehaviour {
         /* Apply a random rotation effect to the camera */
         currentCameraTransform.rotation *= Quaternion.Euler(
                 Random.Range(-r, r), Random.Range(-r, r), Random.Range(-r, r));
-        playerCamera.transform.rotation = currentCameraTransform.rotation;
+        //playerCamera.transform.rotation = currentCameraTransform.rotation;
     }
 
     void AnimatedCameraInMenus() {
         /*
-         * While in one of the "Menus" state, take control over the camera.
+         * While in one of the "Menus" state, take control over the camera. 
          */
 
+        /* Reduce the introCamDistance distance every frame during this intro animation.
+         * The amount that gets reduced is relative to the amount of distance remaining. */
+        float consistentReduction = Time.deltaTime;
+        float var1 = 2f;
+        float var2 = 0.9f;
+        if(introCamDistance > var1) {
+            introCamDistance -= consistentReduction;
+        }else {
+            introCamDistance -= (introCamDistance/var1)*(consistentReduction*var2) + (consistentReduction*(1 - var2));
+        }
+        
+        /* If the cam distance reaches 0, have the player enter the standing state as they are done the intro animation */
+        if(introCamDistance <= 0) {
+            currentCameraTransform.position = camDestinationPos;
+            currentCameraTransform.rotation = camDestinationRot;
+            ChangeState((int) PlayerStates.Standing);
+        }
 
-        /* Use this to get the position the camera needs to end on */
-        AdjustCameraPosition(GetCameraHeight());
-        //currentCameraTransform is now at the proper end position
-
-
-
-
-        //For now, pressing T will leave the state
+        /* Update the position of the camera to reflect the change in introCamDistance */
+        else {
+            //Make sure the position undergoes the proper reeflection and translation from a teleporter
+            Vector3 currentCameraPosition = camDestinationPos;
+            Quaternion currentCameraRotation = camDestinationRot;
+            float cameraDistance = introCamDistance;
+            bool temp = false;
+            RayTrace(ref currentCameraPosition, ref currentCameraRotation, ref cameraDistance, ref temp, true, false, false);
+            currentCameraTransform.rotation = currentCameraRotation;
+            currentCameraTransform.position = currentCameraPosition;
+        }
+        
         /* Pressing T moves the player to a standing state if they are in the intro */
         if(Input.GetKeyDown("t")) {
             if(state == (int) PlayerStates.Intro) {
+                currentCameraTransform.position = camDestinationPos;
+                currentCameraTransform.rotation = camDestinationRot;
                 ChangeState((int) PlayerStates.Standing);
             }
         }
@@ -906,18 +940,12 @@ public class CustomPlayerController : MonoBehaviour {
          * Runs on startup, it properly positions the player and puts them in the proper state 
          * for the startup of the game.
          */
-        //Copy certain lines from the ResetPlayer function.
-
 
         /* Reset the step tracker */
         playerStepTracker.ResetFootTiming();
         playerStepTracker.ResetStrideProgress();
         playerStepTracker.ResetStepBuffer();
-
-        /* Start the player in the standing state so they can link themselves to the floor */
-        state = -1;
-        ChangeState((int) PlayerStates.Intro);
-
+        
         /* Empty the arraylist of vectors that track the player's upcomming movement */
         if(expectedMovements != null) { expectedMovements.Clear(); }
         expectedMovements = new ArrayList();
@@ -925,10 +953,7 @@ public class CustomPlayerController : MonoBehaviour {
         /* Reset the camera's effects and any extra animations it has */
         cameraEffectsScript.ResetCameraEffects();
         currentResetTime = -1;
-
-        /* Set the camera's offset to it's natural default value */
-        cameraYOffset = 0;
-
+        
         /* Place the player to be standing on the top of the startingRoom's stairs.
          * Add the leg gap distance so the player is not stepping on the stairs. */
         transform.position = startingRoom.exit.exitPointBack.transform.position + new Vector3(0, 0, legGap*playerBodyRadius);
@@ -942,6 +967,18 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* The player starts immobile */
         lastStepMovement = Vector3.zero;
+
+        /* Set the camera's offset to it's natural default value */
+        cameraYOffset = 0;
+
+        /* Start the player in the intro state */
+        state = -1;
+        ChangeState((int) PlayerStates.Intro);
+        //After entering the intro state, we want to update certain values that will be used with the intro animation
+        AdjustCameraPosition(GetCameraHeight());
+        camDestinationPos = currentCameraTransform.position;
+        camDestinationRot = currentCameraTransform.rotation;
+        introCamDistance = 11f;
     }
 
     void StartPlayerReset() {
@@ -1422,15 +1459,15 @@ public class CustomPlayerController : MonoBehaviour {
          * the position and rotation to the hit trigger's partner using it's teleportParameters function.
          * teleportTrigger Collisions with detectTeleportTriggers as false will be ignored.
          * 
-         * detect other Colliders as true will cause any collision with any other trigger to cause
+         * detectOtherColliders as true will cause any collision with any non-teleporter trigger to cause
          * the position to stop at the point of collision and reduce the distance amount respectively.
          * these type of collisions will be ignored if detectOtherColliders is false.
          * 
          * The teleported reference will be set to false if no teleporter was encountered. It will be
          * set to true if it collides with a teleporter and moves the position and rotation.
          * 
-         * The saveCollider boolean will be true if we want to save a reference to the collider
-         * the ray trace collides into. If nothing is hit while saveCollider is true, set it to null.
+         * If saveCollider is set to true, then colliding with a non-teleporter collider will update the 
+         * global lastHitCollider to be the collider that was hit. Do not change lastHitCollider if nothing was hit.
          */
         Quaternion totalRotation = Quaternion.identity;
         Quaternion rotationDifference;
@@ -1473,7 +1510,7 @@ public class CustomPlayerController : MonoBehaviour {
                 else if(!hitInfo.collider.isTrigger) {
                     stopRayTrace = true;
 
-                    /* Save the collider hit if needed. Do not save the collider if it was a teleport trigger */
+                    /* Save the collider hit if needed. Does not save the collider if it was a teleport trigger */
                     if(saveCollider) {
                         lastHitCollider = hitInfo.collider;
                     }
