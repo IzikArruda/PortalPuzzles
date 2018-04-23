@@ -729,6 +729,11 @@ public class CustomPlayerController : MonoBehaviour {
         /*
          * While in one of the "Menus" state, take control over the camera. 
          */
+         
+        /* Get the distance from the camDestinationPos to the startingRoom's portal. 
+         * This is to prevent the near-clipping plane from cutting off the portal. */
+        Vector3 portalPos = startingRoom.window.portalSet.EntrancePortal.transform.position;
+        float camToPortalDist = Mathf.Abs(camDestinationPos.z - (portalPos.z + 0));
 
         /* Reduce the introCamDistance distance every frame during this intro animation.
          * The amount that gets reduced is relative to the amount of distance remaining. */
@@ -1487,6 +1492,9 @@ public class CustomPlayerController : MonoBehaviour {
         while(distance > 0 && stopRayTrace == false) {
             //reduce the distance every loop to prevent infinite loops
             distance -= 0.001f;
+            if(distance < 0) {
+                Debug.Log("DISTANCE IS LESS THAN 0. MAYBE THIS CAUSES THE NON-TELEPORT GLITCH?");
+            }
 
             /* Check for any collisions from the current position towards the current direction */
             if(Physics.Raycast(position, rotation*Vector3.forward, out hitInfo, distance, rayLayerMask)) {

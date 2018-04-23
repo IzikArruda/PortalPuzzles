@@ -78,6 +78,7 @@ public class PortalObjects : MonoBehaviour {
         teleporterEnterTrigger.transform.localPosition = new Vector3(-width/2f, height/2f, 0) + offSet;
         teleporterEnterTrigger.GetComponent<BoxCollider>().center = new Vector3(0, 0, 0);
         teleporterEnterTrigger.GetComponent<BoxCollider>().size = new Vector3(width, height, depth);
+        teleporterEnterTrigger.layer = LayerMask.NameToLayer("Portal Trigger");
     }
     
     public void SetBorder(GameObject borderObject) {
