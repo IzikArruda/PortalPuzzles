@@ -340,6 +340,10 @@ public class CustomPlayerController : MonoBehaviour {
             /* Apply an animation to the camera while in the fastFalling state */
             AnimateCameraFastFalling();
         }
+        /* While in a menu, take control over the camera's position */
+        else if(PlayerIsInMenu()) {
+            AnimatedCameraInMenus();
+        }
         else {
             /* Any other state simply places the camera into it's default position */
             AdjustCameraPosition(GetCameraHeight());
@@ -423,7 +427,7 @@ public class CustomPlayerController : MonoBehaviour {
             StepPlayerAirborn();
         }
         else if(PlayerIsInMenu()) {
-            //Do not step the player if they are in a menu
+            //Freeze the player in their current spot when in a menu
         }
         else {
             Debug.Log("Warning: state " + state + " does not handle player stepping");
@@ -710,9 +714,30 @@ public class CustomPlayerController : MonoBehaviour {
         playerCamera.transform.rotation = currentCameraTransform.rotation;
     }
 
+    void AnimatedCameraInMenus() {
+        /*
+         * While in one of the "Menus" state, take control over the camera.
+         */
+
+
+        /* Use this to get the position the camera needs to end on */
+        AdjustCameraPosition(GetCameraHeight());
+        //currentCameraTransform is now at the proper end position
+
+
+
+
+        //For now, pressing T will leave the state
+        /* Pressing T moves the player to a standing state if they are in the intro */
+        if(Input.GetKeyDown("t")) {
+            if(state == (int) PlayerStates.Intro) {
+                ChangeState((int) PlayerStates.Standing);
+            }
+        }
+    }
 
     /* ----------------- Value Updating Functions ------------------------------------------------------------- */
-    
+
     void PrimeJumpingValue() {
         /*
          * Prime a jump if the jump key was recently pressed. Also check if the player
@@ -904,8 +929,9 @@ public class CustomPlayerController : MonoBehaviour {
         /* Set the camera's offset to it's natural default value */
         cameraYOffset = 0;
 
-        /* Place the player to be standing on the top of the startingRoom's stairs */
-        transform.position = startingRoom.exit.exitPointBack.transform.position;
+        /* Place the player to be standing on the top of the startingRoom's stairs.
+         * Add the leg gap distance so the player is not stepping on the stairs. */
+        transform.position = startingRoom.exit.exitPointBack.transform.position + new Vector3(0, 0, legGap*playerBodyRadius);
 
         /* Adjust the player model's position to reflect the player's body and leg length */
         currentFootPosition = transform.position;
