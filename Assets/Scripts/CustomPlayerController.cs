@@ -17,7 +17,8 @@ using System.Collections;
  * speed and terminal velocity. 
  */
 public enum PlayerStates{
-    Intro,
+    InMenu,
+    LeavingMenu,
     Standing,
     Landing,
 	Falling,
@@ -178,9 +179,6 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Set the clipping plane of the player's camera while they are in the puzleRooms */
         playerCamera.farClipPlane = 1000;
-
-        /* Set the rendering layers of the camera so the player doesnt render the outside terrain */
-        playerCamera.cullingMask = ~(1 << PortalSet.maxLayer + 2);
 
         /* Link the player's step tracker to their sound script */
         playerStepTracker.SetSoundsScript(playerSoundsScript);
@@ -348,9 +346,16 @@ public class CustomPlayerController : MonoBehaviour {
             /* Apply an animation to the camera while in the fastFalling state */
             AnimateCameraFastFalling();
         }
-        else if(PlayerIsInMenu()) {
-            /* While in a menu, take control over the camera's position */
-            AnimatedCameraInMenus();
+        else if(PlayerIsInMenu()) {       
+            /* Depending on the menu state the player is in, re-position the camera */
+            if(state == (int) PlayerStates.InMenu) {
+                /* While in the menu, leave the camera immobile */
+                AnimatedCameraInMenu();
+            }
+            else if(state == (int) PlayerStates.LeavingMenu) {
+                /* Move the camera back to the player's default camera position, then give them control */
+                AnimatedCameraLeavingMenu();
+            }
         }
         else {
             /* Any other state simply places the camera into it's default position */
@@ -725,7 +730,21 @@ public class CustomPlayerController : MonoBehaviour {
         //playerCamera.transform.rotation = currentCameraTransform.rotation;
     }
 
-    void AnimatedCameraInMenus() {
+    void AnimatedCameraInMenu() {
+        /*
+         * While in a menu, the camera will remain immobile
+         */
+
+        /* Fire a ray from the player's current position */
+        FireCameraRayInMenuState();
+
+        /* Pressing T changes to the LeavingMenu state */
+        if(Input.GetKeyDown("t")) {
+            ChangeState((int) PlayerStates.LeavingMenu);
+        }
+    }
+
+    void AnimatedCameraLeavingMenu() {
         /*
          * While in one of the "Menus" state, take control over the camera. 
          */
@@ -746,33 +765,36 @@ public class CustomPlayerController : MonoBehaviour {
             introCamDistance -= (introCamDistance/var1)*(consistentReduction*var2) + (consistentReduction*(1 - var2));
         }
         
+        /* Update the position of the camera to reflect the change in introCamDistance */
+        if(introCamDistance > 0) {
+            /* Fire a ray to reposition the camera using the new introCamDistance */
+            FireCameraRayInMenuState();
+        }
+
         /* If the cam distance reaches 0, have the player enter the standing state as they are done the intro animation */
-        if(introCamDistance <= 0) {
+        else {
             currentCameraTransform.position = camDestinationPos;
             currentCameraTransform.rotation = camDestinationRot;
             ChangeState((int) PlayerStates.Standing);
         }
+    }
 
-        /* Update the position of the camera to reflect the change in introCamDistance */
-        else {
-            //Make sure the position undergoes the proper reeflection and translation from a teleporter
-            Vector3 currentCameraPosition = camDestinationPos;
-            Quaternion currentCameraRotation = camDestinationRot;
-            float cameraDistance = introCamDistance;
-            bool temp = false;
-            RayTrace(ref currentCameraPosition, ref currentCameraRotation, ref cameraDistance, ref temp, true, false, false);
-            currentCameraTransform.rotation = currentCameraRotation;
-            currentCameraTransform.position = currentCameraPosition;
-        }
-        
-        /* Pressing T moves the player to a standing state if they are in the intro */
-        if(Input.GetKeyDown("t")) {
-            if(state == (int) PlayerStates.Intro) {
-                currentCameraTransform.position = camDestinationPos;
-                currentCameraTransform.rotation = camDestinationRot;
-                ChangeState((int) PlayerStates.Standing);
-            }
-        }
+    private void FireCameraRayInMenuState() {
+        /*
+         * A unified function used by multiple "Menus" state.
+         */
+
+        /* Set the parameters required for the ray trace */
+        Vector3 currentCameraPosition = camDestinationPos;
+        Quaternion currentCameraRotation = camDestinationRot;
+        float cameraDistance = introCamDistance;
+        bool teleported = false;
+        RayTrace(ref currentCameraPosition, ref currentCameraRotation, ref cameraDistance, ref teleported, true, false, false);
+        currentCameraTransform.rotation = currentCameraRotation;
+        currentCameraTransform.position = currentCameraPosition;
+
+        /* Depending on whether the camera has teleported or not, handle whether the camera will render terrain */
+        PlayerRenderTerrain(teleported);
     }
 
     /* ----------------- Value Updating Functions ------------------------------------------------------------- */
@@ -904,7 +926,7 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Start the player in the Intro state so they cannot move */
         state = -1;
-        ChangeState((int) PlayerStates.Intro);
+        ChangeState((int) PlayerStates.LeavingMenu);
 
         /* Empty the arraylist of vectors that track the player's upcomming movement */
         if(expectedMovements != null) { expectedMovements.Clear(); }
@@ -970,15 +992,18 @@ public class CustomPlayerController : MonoBehaviour {
         /* Have the player facing towards the window */
         transform.localEulerAngles = new Vector3(0, 180, 0);
 
+        /* Have the camera render the outside terrain as the camera will be outside on startup */
+        PlayerRenderTerrain(true);
+
         /* The player starts immobile */
         lastStepMovement = Vector3.zero;
 
         /* Set the camera's offset to it's natural default value */
         cameraYOffset = 0;
 
-        /* Start the player in the intro state */
+        /* Start the player in the "InMenu" state */
         state = -1;
-        ChangeState((int) PlayerStates.Intro);
+        ChangeState((int) PlayerStates.InMenu);
         //After entering the intro state, we want to update certain values that will be used with the intro animation
         AdjustCameraPosition(GetCameraHeight());
         camDestinationPos = currentCameraTransform.position;
@@ -1440,7 +1465,7 @@ public class CustomPlayerController : MonoBehaviour {
         playerCamera.nearClipPlane = 0.1f;
 
         /* Change the player camera's layers so that they are rendering the terrain layer */
-        playerCamera.cullingMask = -1;
+        PlayerRenderTerrain(true);
 
         /* The player's steps will now be stepping on soft ground */
         currentStepType = 1;
@@ -1575,7 +1600,7 @@ public class CustomPlayerController : MonoBehaviour {
          */
         bool isMenuing = false;
 
-        if(givenState == (int) PlayerStates.Intro) {
+        if(givenState == (int) PlayerStates.LeavingMenu || givenState == (int) PlayerStates.InMenu) {
             isMenuing = true;
         }
 
@@ -1623,5 +1648,19 @@ public class CustomPlayerController : MonoBehaviour {
         }
 
         return ratio;
+    }
+
+    public void PlayerRenderTerrain(bool renderTerrain) {
+        /*
+         * Calling this function will change the culling mask of the player's camera.
+         * True will have the camera render all layers. False will render all but the terrain layer.
+         */
+
+        if(renderTerrain) {
+            playerCamera.cullingMask = -1;
+        }
+        else {
+            playerCamera.cullingMask = ~(1 << PortalSet.maxLayer + 2);
+        }
     }
 }
