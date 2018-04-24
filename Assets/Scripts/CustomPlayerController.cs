@@ -156,13 +156,13 @@ public class CustomPlayerController : MonoBehaviour {
 
     /* The type of step sound is played for the player footstep tracker */
     private int currentStepType = 0;
-
-
+    
     /* Menu Animation values */
     private Vector3 camDestinationPos;
     private Quaternion camDestinationRot;
-
     private float introCamDistance = -1;
+    private float menuWindowStrafeSpeed = 0.05f;
+
 
 
     /* Debugging trackers */
@@ -783,6 +783,11 @@ public class CustomPlayerController : MonoBehaviour {
         /*
          * A unified function used by multiple "Menus" state.
          */
+
+        /* Animate the menu's background by moving the startingRoom window's exit point to the side during this state */
+        startingRoom.windowExit.position = startingRoom.windowExit.position + new Vector3(menuWindowStrafeSpeed, 0, 0);
+        startingRoom.windowExitExtraHeight = 7;
+        startingRoom.UpdateOutsideWindowPositon();
 
         /* Set the parameters required for the ray trace */
         Vector3 currentCameraPosition = camDestinationPos;

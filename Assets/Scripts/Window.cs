@@ -69,21 +69,12 @@ public class Window : MonoBehaviour {
 
         /* Force the portal to be centered */
         portalSet.portalsCentered = true;
-
-        /* To prevent the portals from being placed behind the room's walls, control it's offset */
-        portalSet.portalOffset = new Vector3(0, 0, -0.01f);
-        Vector3 portalOffset = new Vector3(0, 0, -frameDepth/4f);
-
+        
         /* Ensure the window's portal's thickness is above 0 */
         portalSet.triggerThickness = 0.01f;
 
-        /* Place the portals at their proper locations */
-        portalSet.EntrancePortal.transform.position = insidePos;
-        portalSet.EntrancePortal.transform.eulerAngles = insideRot;
-        portalSet.EntrancePortal.transform.position += portalSet.EntrancePortal.transform.rotation*portalOffset;
-        portalSet.ExitPortal.transform.position = outsidePos;
-        portalSet.ExitPortal.transform.eulerAngles = outsideRot;
-        portalSet.ExitPortal.transform.position -= portalSet.ExitPortal.transform.rotation*portalOffset;
+        /* Properly position the windows in the world */
+        UpdateWindowPosition();
 
         /* Update the portal's meshCollider with these new values */
         portalSet.updatePortal = true;
@@ -97,13 +88,7 @@ public class Window : MonoBehaviour {
         /* Create the window containers if they have not yet been created */
         if(insideWindowContainer == null) { CreateEmptyObject(ref insideWindowContainer, "Inside Window", transform); }
         if(outsideWindowContainer == null) { CreateEmptyObject(ref outsideWindowContainer, "Outside Window", transform); }
-
-        /* Place and rotate the inside and outside windows */
-        insideWindowContainer.transform.position = insidePos;
-        insideWindowContainer.transform.eulerAngles = insideRot;
-        outsideWindowContainer.transform.position = outsidePos;
-        outsideWindowContainer.transform.eulerAngles = outsideRot;
-
+        
         /* Initialize the array of GameObjects that make up the windows */
         int index = 0;
         CreateObjectsArray(ref windowPieces, 10, Vector3.zero);
@@ -203,5 +188,28 @@ public class Window : MonoBehaviour {
         gameObject.transform.localPosition = new Vector3(0, 0, 0);
         gameObject.transform.localEulerAngles = new Vector3(0, 0, 0);
         gameObject.transform.localScale = new Vector3(1, 1, 1);
+    }
+
+    public void UpdateWindowPosition() {
+        /*
+         * Update the position of the windows in the world
+         */
+
+        /* Place and rotate the inside and outside windows */
+        insideWindowContainer.transform.position = insidePos;
+        insideWindowContainer.transform.eulerAngles = insideRot;
+        outsideWindowContainer.transform.position = outsidePos;
+        outsideWindowContainer.transform.eulerAngles = outsideRot;
+
+        /* To prevent the portals from being placed behind the room's walls, control it's offset */
+        portalSet.portalOffset = new Vector3(0, 0, -0.01f);
+        Vector3 portalOffset = new Vector3(0, 0, -frameDepth/4f);
+        /* Place the portals at their proper locations */
+        portalSet.EntrancePortal.transform.position = insidePos;
+        portalSet.EntrancePortal.transform.eulerAngles = insideRot;
+        portalSet.EntrancePortal.transform.position += portalSet.EntrancePortal.transform.rotation*portalOffset;
+        portalSet.ExitPortal.transform.position = outsidePos;
+        portalSet.ExitPortal.transform.eulerAngles = outsideRot;
+        portalSet.ExitPortal.transform.position -= portalSet.ExitPortal.transform.rotation*portalOffset;
     }
 }

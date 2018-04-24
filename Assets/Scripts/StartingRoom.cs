@@ -36,6 +36,8 @@ public class StartingRoom : ConnectedRoom {
     public float frameDepth;
     public float windowFromWall;
     public Transform windowExit;
+    [HideInInspector]
+    public float windowExitExtraHeight;
     public Material windowFrameMaterial;
     public Material windowGlassMaterial;
     public Texture skySphereTexture;
@@ -58,13 +60,8 @@ public class StartingRoom : ConnectedRoom {
          * On startup, build the walls of the room
          */
 
-        /* Run the terrainController's start function to create the noise provider */
+        /* Run the terrainController's start function to create the noise provider, used with placing the outside window. */
         outsideTerrain.StartAlt();
-        
-        /* Place the window directly above the terrain bellow it */
-        float terrainHeight = outsideTerrain.GetTerrainHeightAt(windowExit.transform.position.x, windowExit.transform.position.y)*outsideTerrain.height;
-        /* Place the window's exit at a distance just outside the player's view distance, ensuring they cannot see the rooms */
-        windowExit.transform.position = new Vector3(0, terrainHeight + 2, -CustomPlayerController.cameraFarClippingPlane/2f);
         
         UpdateWalls();
         UpdateWindow();
@@ -202,14 +199,12 @@ public class StartingRoom : ConnectedRoom {
         window.windowHeight = fullRoomHeight - frameThickness*2 - windowFromWall;
         window.windowWidth = roomWidth - frameThickness*2 - windowFromWall;
 
-        /* Place the window's entrance on the room's back wall */
+        /* Set the window's positions and call it's function to reposition them in the world */
         Vector3 backWallCenter = exit.exitPointBack.position + new Vector3(0, -roomBellowHeight + frameThickness + windowFromWall/2f, -roomDepth);
         window.insidePos = backWallCenter;
         window.insideRot = new Vector3(0, 180, 0);
-        
-        /* Place the outside window/exit portal using the windowExit transform given to this script  */
-        window.outsidePos = windowExit.position;
-        window.outsideRot = windowExit.eulerAngles;
+        windowExitExtraHeight = 0;
+        UpdateOutsideWindowPositon();
 
         /* Set the materials that the window will use */
         window.frameMaterial = windowFrameMaterial;
@@ -286,6 +281,20 @@ public class StartingRoom : ConnectedRoom {
 
     /* -------- Event Functions ---------------------------------------------------- */
 
+    public void UpdateOutsideWindowPositon() {
+        /*
+         * Re-position the outside window to match the position of windowExit. This can be run in real-time.
+         */
+         
+        /* Place the window directly above the terrain bellow it */
+        float terrainHeight = outsideTerrain.GetTerrainHeightAt(windowExit.transform.position.x, windowExit.transform.position.z)*outsideTerrain.height;
+        /* Place the window's exit at a distance just outside the player's view distance, ensuring they cannot see the rooms */
+        windowExit.transform.position = new Vector3(windowExit.transform.position.x, terrainHeight + 0, -CustomPlayerController.cameraFarClippingPlane/2f);
+        
+        window.outsidePos = windowExit.position;
+        window.outsideRot = windowExit.eulerAngles;
+        window.UpdateWindowPosition();
+    }
 
     public void BreakGlass(GameObject playerObject) {
         /*
