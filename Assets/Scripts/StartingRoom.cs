@@ -58,10 +58,14 @@ public class StartingRoom : ConnectedRoom {
          * On startup, build the walls of the room
          */
 
+        /* Run the terrainController's start function to create the noise provider */
+        outsideTerrain.StartAlt();
+        
+        /* Place the window directly above the terrain bellow it */
+        float terrainHeight = outsideTerrain.GetTerrainHeightAt(windowExit.transform.position.x, windowExit.transform.position.y)*outsideTerrain.height;
         /* Place the window's exit at a distance just outside the player's view distance, ensuring they cannot see the rooms */
-        windowExit.transform.position = -new Vector3(0, 0, CustomPlayerController.cameraFarClippingPlane/2f + exit.transform.position.z);
-        windowExit.transform.position = new Vector3(0, 500, 0);
-
+        windowExit.transform.position = new Vector3(0, terrainHeight + 2, -CustomPlayerController.cameraFarClippingPlane/2f);
+        
         UpdateWalls();
         UpdateWindow();
         UpdateCollider();

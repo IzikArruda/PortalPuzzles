@@ -55,7 +55,10 @@ public class TerrainController : MonoBehaviour {
 
     /* ----------- Built-in Functions ------------------------------------------------------------- */
 
-    void Start() {
+    public void StartAlt() {
+        /*
+         * Acts as unity's built-in Start function, but is instead called by the StartingRoom's Start function. 
+         */
 
         /* Initialize any objects that will be used */
         InitializeVariables();
@@ -248,5 +251,16 @@ public class TerrainController : MonoBehaviour {
         int z = (int) Mathf.Floor(worldPosition.z / chunkSettings.Length);
 
         return new Vector2(x, z);
+    }
+
+    public float GetTerrainHeightAt(float x, float y) {
+        /*
+         * Given an X and Y coordinate, return the height of the terrain in the cache.
+         */
+        float terrainHeight = 0;
+
+        terrainHeight = noiseProvider.GetNoise(x, y);
+
+        return terrainHeight;
     }
 }

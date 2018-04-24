@@ -983,7 +983,7 @@ public class CustomPlayerController : MonoBehaviour {
         AdjustCameraPosition(GetCameraHeight());
         camDestinationPos = currentCameraTransform.position;
         camDestinationRot = currentCameraTransform.rotation;
-        introCamDistance = 11f;
+        introCamDistance = 15f;
     }
 
     void StartPlayerReset() {
