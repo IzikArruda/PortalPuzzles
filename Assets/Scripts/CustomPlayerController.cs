@@ -161,7 +161,7 @@ public class CustomPlayerController : MonoBehaviour {
     private Vector3 camDestinationPos;
     private Quaternion camDestinationRot;
     private float introCamDistance = -1;
-    private float menuWindowStrafeSpeed = 0.05f;
+    private float menuWindowStrafeSpeed = 0.25f;
 
 
 
@@ -785,9 +785,10 @@ public class CustomPlayerController : MonoBehaviour {
          */
 
         /* Animate the menu's background by moving the startingRoom window's exit point to the side during this state */
-        startingRoom.windowExit.position = startingRoom.windowExit.position + new Vector3(menuWindowStrafeSpeed, 0, 0);
-        startingRoom.windowExitExtraHeight = 5;
-        startingRoom.UpdateOutsideWindowPositon();
+        if(state == (int) PlayerStates.InMenu) {
+            startingRoom.windowExit.position = startingRoom.windowExit.position + new Vector3(menuWindowStrafeSpeed, 0, 0);
+        }
+        startingRoom.UpdateOutsideWindowPositon(false);
 
         /* Set the parameters required for the ray trace */
         Vector3 currentCameraPosition = camDestinationPos;

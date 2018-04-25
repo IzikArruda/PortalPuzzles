@@ -36,8 +36,6 @@ public class StartingRoom : ConnectedRoom {
     public float frameDepth;
     public float windowFromWall;
     public Transform windowExit;
-    [HideInInspector]
-    public float windowExitExtraHeight;
     public Material windowFrameMaterial;
     public Material windowGlassMaterial;
     public Texture skySphereTexture;
@@ -51,6 +49,10 @@ public class StartingRoom : ConnectedRoom {
 
     /* The terrainGenerator that generates the world for the outside window */
     public TerrainController outsideTerrain;
+
+    /* How high the outside window aims to be above the ground */
+    [HideInInspector]
+    public float windowExitExtraHeight;
 
 
     /* -------- Built-In Functions ---------------------------------------------------- */
@@ -203,10 +205,11 @@ public class StartingRoom : ConnectedRoom {
         Vector3 backWallCenter = exit.exitPointBack.position + new Vector3(0, -roomBellowHeight + frameThickness + windowFromWall/2f, -roomDepth);
         window.insidePos = backWallCenter;
         window.insideRot = new Vector3(0, 180, 0);
-        windowExitExtraHeight = 0;
+        /* Place the window's exit at a distance just outside the player's view distance, ensuring they cannot see the rooms */
         windowExit.position = new Vector3(0, 0, -CustomPlayerController.cameraFarClippingPlane/2f);
         windowExit.position = new Vector3(0, 0, 0);
-        UpdateOutsideWindowPositon();
+        windowExitExtraHeight = 25;
+        UpdateOutsideWindowPositon(true);
 
         /* Set the materials that the window will use */
         window.frameMaterial = windowFrameMaterial;
@@ -283,16 +286,26 @@ public class StartingRoom : ConnectedRoom {
 
     /* -------- Event Functions ---------------------------------------------------- */
 
-    public void UpdateOutsideWindowPositon() {
+    public void UpdateOutsideWindowPositon(bool instantUpdate) {
         /*
          * Re-position the outside window to match the position of windowExit. This can be run in real-time.
+         * 
+         * instantUpdate controls how the position is updated. If it's true, we simply set the window's height 
+         * to it's proper value. If it's false, then take into account the current window placement and slowly
+         * adjust the window's height to reach the proper height after multiple calls to this function.
          */
          
-        /* Place the window directly above the terrain bellow it */
-        float terrainHeight = outsideTerrain.GetTerrainHeightAt(windowExit.position.x, windowExit.position.z)*outsideTerrain.height;
-        /* Place the window's exit at a distance just outside the player's view distance, ensuring they cannot see the rooms */
-        windowExit.transform.position = new Vector3(windowExit.position.x, terrainHeight + windowExitExtraHeight, windowExit.position.z);
-        
+        /* Get the expected height of the window relative to the terrain bellow it */
+        float terrainHeight = outsideTerrain.GetTerrainHeightAt(windowExit.position.x, windowExit.position.z)*outsideTerrain.height + windowExitExtraHeight;
+        float heightDifference = terrainHeight - windowExit.transform.position.y;
+        Debug.Log(heightDifference);
+
+        /* Add a portion of the heightDifference to the current window to have it smoothly adjust to the height changes */
+        if(!instantUpdate) {
+            terrainHeight = windowExit.transform.position.y + heightDifference*0.05f;
+        }
+
+        windowExit.transform.position = new Vector3(windowExit.position.x, terrainHeight, windowExit.position.z);
         window.outsidePos = windowExit.position;
         window.outsideRot = windowExit.eulerAngles;
         window.UpdateWindowPosition();
