@@ -153,11 +153,7 @@ public class TerrainChunk : MonoBehaviour{
         float[,] newHeightMap = new float[settings.HeightmapResolution, settings.HeightmapResolution];
         for(int z = 0; z < settings.HeightmapResolution; z++) {
             for(int x = 0; x < settings.HeightmapResolution; x++) {
-                float lengthModifier = settings.Length/1000f;
-                float xCoord = lengthModifier*(X + (float) x / (settings.HeightmapResolution - 1));
-                float zCoord = lengthModifier*(Z + (float) z / (settings.HeightmapResolution - 1));
-
-                newHeightMap[z, x] = noise.GetNoise(xCoord, zCoord);
+                newHeightMap[z, x] = noise.GetHeightFromChunkCoords(X, Z, x, z);
             }
         }
 
@@ -181,7 +177,7 @@ public class TerrainChunk : MonoBehaviour{
             for(int x = 0; x < settings.AlphamapResolution; x++) {
 
                 /* Each biome is assigned two textures. Switch between them depending in the steepness */
-                lengthModifier = settings.Length/1000f;
+                lengthModifier = settings.Length/settings.terrainStretch;
                 xCoord = lengthModifier*(X + (float) x / (settings.AlphamapResolution - 1));
                 zCoord = lengthModifier*(Z + (float) z / (settings.AlphamapResolution - 1));
                 for(int i = 0; i < biomeTextureCount/2; i++) {

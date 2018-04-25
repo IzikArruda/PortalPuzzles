@@ -11,6 +11,7 @@ using System.Collections;
  */
 public class NoiseProvider {
 
+    private TerrainChunkSettings chunkSettings;
     private float frequency;
     private int octave;
 
@@ -43,13 +44,14 @@ public class NoiseProvider {
 
     /* ----------- Constructor Functions ------------------------------------------------------------- */
 
-    public NoiseProvider(float freq, int oct, float maxHeight) {
+    public NoiseProvider(float freq, int oct, float maxHeight, TerrainChunkSettings settings) {
         /*
-         * Set the frequency and octave of the noise when this object is created
+         * Set the frequency and octave of the noise when this object is created.
          */
         frequency = freq;
         octave = oct;
         maxTerrainHeight = maxHeight;
+        chunkSettings = settings;
 
 
         //Create a texture to show what the noise looks like
@@ -323,5 +325,33 @@ public class NoiseProvider {
             }
         }
         texture.Apply();
+    }
+
+    public float GetHeightFromWorldPos(float x, float z) {
+        /*
+         * Given a position in the world, translate it to a format that can be handled similar to
+         * how the terrainChunks parse for terrain height.
+         */
+        
+        /* Map the given coords relative to the heightmap resolution without using a chunk coordinate */
+        float mapX = (x / chunkSettings.Length)*chunkSettings.HeightmapResolution;
+        float mapZ = (z / chunkSettings.Length)*chunkSettings.HeightmapResolution;
+
+        return GetHeightFromChunkCoords(0, 0, mapX, mapZ);
+    }
+
+    public float GetHeightFromChunkCoords(int chunkX, int chunkZ, float mapX, float mapZ) {
+        /*
+         * Given the coordinates of a chunk and the position in it, return the height of the terrain.
+         * 
+         * chunkX and chunkZ are the coordinates of the chunk.
+         * mapX and mapZ are the coordinates within the chunk's heightMap.
+         */
+
+        float lengthModifier = chunkSettings.Length/chunkSettings.terrainStretch;
+        float xCoord = lengthModifier*(chunkX + (float) mapX / (chunkSettings.HeightmapResolution - 1));
+        float zCoord = lengthModifier*(chunkZ + (float) mapZ / (chunkSettings.HeightmapResolution - 1));
+
+        return GetNoise(xCoord, zCoord);
     }
 }

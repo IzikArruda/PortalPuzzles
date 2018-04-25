@@ -15,9 +15,12 @@ public class TerrainChunkSettings {
     public Material terrainMaterial;
     public Texture2D[] terrainTextures;
 
+    /* Determines how quickly the noise function changes. Larger values means faster changes */
+    public float terrainStretch;
+
 
     public void SetSettings(int mapResolution, int length, int height, Transform container, 
-            Material terrain, Texture2D[] textures, int layer) {
+            Material terrain, Texture2D[] textures, int layer, float stretch) {
         /*
          * Set the settings of this script to the given values
          */
@@ -30,5 +33,6 @@ public class TerrainChunkSettings {
         terrainTextures = textures;
         terrainLayer = layer;
         terrainMaterial = terrain;
+        terrainStretch = stretch;
     }
 }
