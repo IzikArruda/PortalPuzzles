@@ -253,14 +253,22 @@ public class TerrainController : MonoBehaviour {
         return new Vector2(x, z);
     }
 
-    public float GetTerrainHeightAt(float x, float y) {
+    public float GetTerrainHeightAt(float x, float z) {
         /*
-         * Given an X and Y coordinate, return the height of the terrain in the cache.
+         * Given an X and Z coordinate, return the height of the terrain in the cache.
          */
         float terrainHeight = 0;
 
-        terrainHeight = noiseProvider.GetNoise(x, y);
+        /* Make the X and Z coordinate relative to the heightMap resolution to properly place it in the noise */
+        float properX = (x / chunkSettings.Length)*chunkSettings.HeightmapResolution;
+        float properZ = (z / chunkSettings.Length)*chunkSettings.HeightmapResolution;
 
+        /* Parse the noiseProvider in the same maner as the terrain chunks */
+        float lengthModifier = chunkSettings.Length/1000f;
+        float xCoord = lengthModifier*((float) properX / (chunkSettings.HeightmapResolution - 1));
+        float zCoord = lengthModifier*((float) properZ / (chunkSettings.HeightmapResolution - 1));
+        terrainHeight = noiseProvider.GetNoise(xCoord, zCoord);
+        
         return terrainHeight;
     }
 }

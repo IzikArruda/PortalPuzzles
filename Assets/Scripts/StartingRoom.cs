@@ -204,6 +204,8 @@ public class StartingRoom : ConnectedRoom {
         window.insidePos = backWallCenter;
         window.insideRot = new Vector3(0, 180, 0);
         windowExitExtraHeight = 0;
+        windowExit.position = new Vector3(0, 0, -CustomPlayerController.cameraFarClippingPlane/2f);
+        windowExit.position = new Vector3(0, 0, 0);
         UpdateOutsideWindowPositon();
 
         /* Set the materials that the window will use */
@@ -287,9 +289,9 @@ public class StartingRoom : ConnectedRoom {
          */
          
         /* Place the window directly above the terrain bellow it */
-        float terrainHeight = outsideTerrain.GetTerrainHeightAt(windowExit.transform.position.x, windowExit.transform.position.z)*outsideTerrain.height;
+        float terrainHeight = outsideTerrain.GetTerrainHeightAt(windowExit.position.x, windowExit.position.z)*outsideTerrain.height;
         /* Place the window's exit at a distance just outside the player's view distance, ensuring they cannot see the rooms */
-        windowExit.transform.position = new Vector3(windowExit.transform.position.x, terrainHeight + 0, -CustomPlayerController.cameraFarClippingPlane/2f);
+        windowExit.transform.position = new Vector3(windowExit.position.x, terrainHeight + windowExitExtraHeight, windowExit.position.z);
         
         window.outsidePos = windowExit.position;
         window.outsideRot = windowExit.eulerAngles;

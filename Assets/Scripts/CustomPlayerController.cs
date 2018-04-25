@@ -786,7 +786,7 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Animate the menu's background by moving the startingRoom window's exit point to the side during this state */
         startingRoom.windowExit.position = startingRoom.windowExit.position + new Vector3(menuWindowStrafeSpeed, 0, 0);
-        startingRoom.windowExitExtraHeight = 7;
+        startingRoom.windowExitExtraHeight = 5;
         startingRoom.UpdateOutsideWindowPositon();
 
         /* Set the parameters required for the ray trace */
