@@ -158,6 +158,7 @@ public class CustomPlayerController : MonoBehaviour {
     private int currentStepType = 0;
 
     /* --- Menu Variables --------------------------- */
+    private Menu playerMenu;
     /* Camera position values */
     private Vector3 camDestinationPos;
     private Quaternion camDestinationRot;
@@ -182,6 +183,10 @@ public class CustomPlayerController : MonoBehaviour {
         /*
          * Initilize required objects and set starting values for certain variables 
          */
+
+        /* Set-up the menu used by the player */
+        playerMenu = GetComponent<Menu>();
+        if(playerMenu != null) { playerMenu.Initialize(this); }
 
         /* Set the clipping plane of the player's camera while they are in the puzleRooms */
         playerCamera.farClipPlane = 1000;
@@ -289,7 +294,8 @@ public class CustomPlayerController : MonoBehaviour {
         renderedCameraCount = 0;
 
 
-
+        /* Update values relevent to the menu */
+        UpdateMenuValues();
 
         /* Update the player's inputs and stateTime */
         inputs.UpdateInputs();
@@ -743,28 +749,6 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Fire a ray from the player's current position */
         FireCameraRayInMenuState();
-
-
-        /////These lines should have their own function and shoudl probably not be linked to the LateUpdate() function
-        /* Handle the menu inputs while in the menu */
-        if(!currentlyLeavingInMenu) {
-            /* For now, pressing T will simulate the effect of pressing the start button */
-            if(Input.GetKeyDown("t")) {
-                /* Start a timer for when we will leave the inMenu state */
-                currentlyLeavingInMenu = true;
-                remainingInMenuTime = timeToLeaveMenu;
-            }
-        }
-        
-        /* Do not handle any menu inputs if we are leaving the menu */
-        else {
-            /* Decrease remainingInMenuTime */
-            remainingInMenuTime -= Time.deltaTime;
-            if(remainingInMenuTime <= 0) {
-                /* When time runs out, change to the leavingMenu state */
-                ChangeState((int) PlayerStates.LeavingMenu);
-            }
-        }
     }
 
     void AnimatedCameraLeavingMenu() {
@@ -1095,7 +1079,7 @@ public class CustomPlayerController : MonoBehaviour {
             }
         }
     }
-
+    
     void StopResetAnimation() {
         /*
          * Stop the reset animation for the player and the camera before it finishes.
@@ -1451,6 +1435,39 @@ public class CustomPlayerController : MonoBehaviour {
         }
     }
 
+
+
+
+    void UpdateMenuValues() {
+        /*
+         * Runs on every Update call, it is used to contain and update all values pertinent to the menu
+         */
+
+        /* If we are leaving the InMenu state, decrement remainingInMenuTime */
+        if(currentlyLeavingInMenu) {
+            /* Decrease remainingInMenuTime */
+            remainingInMenuTime -= Time.deltaTime;
+            if(remainingInMenuTime <= 0) {
+                /* When time runs out, change to the leavingMenu state */
+                ChangeState((int) PlayerStates.LeavingMenu);
+            }
+        }
+    }
+
+    public void StartButtonPressed() {
+        /*
+         * This is run when the player presses the start button on the main menu
+         */
+
+        /* The player must not already be leaving the menu */
+        if(!currentlyLeavingInMenu) {
+
+            /* Start a timer for when we will leave the inMenu state */
+            currentlyLeavingInMenu = true;
+            remainingInMenuTime = timeToLeaveMenu;
+            Debug.Log("UPDATED THE THING");
+        }
+    }
 
     /* ----------- Outside Called Functions ------------------------------------------------------------- */
 

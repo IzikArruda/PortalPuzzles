@@ -299,7 +299,6 @@ public class StartingRoom : ConnectedRoom {
         /* Get the expected height of the window relative to the terrain bellow it */
         float terrainHeight = outsideTerrain.GetTerrainHeightAt(windowExit.position.x, windowExit.position.z)*outsideTerrain.height + windowExitExtraHeight;
         float heightDifference = terrainHeight - windowExit.transform.position.y;
-        Debug.Log(heightDifference);
 
         /* Add a portion of the heightDifference to the current window to have it smoothly adjust to the height changes */
         /* Only add a portion of heightDifference if the portion is large enough */
