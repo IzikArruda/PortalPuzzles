@@ -156,13 +156,19 @@ public class CustomPlayerController : MonoBehaviour {
 
     /* The type of step sound is played for the player footstep tracker */
     private int currentStepType = 0;
-    
-    /* Menu Animation values */
+
+    /* --- Menu Variables --------------------------- */
+    /* Camera position values */
     private Vector3 camDestinationPos;
     private Quaternion camDestinationRot;
     private float introCamDistance = -1;
-    private float menuWindowStrafeSpeed = 0.25f;
 
+    /* Menu Animation values */
+    private float menuWindowStrafeSpeed = 0.25f;
+    //Used to smoothly transition between inMenu and LeavingMenu
+    private float remainingInMenuTime;
+    private bool currentlyLeavingInMenu = false;
+    private float timeToLeaveMenu = 3;
 
 
     /* Debugging trackers */
@@ -738,9 +744,26 @@ public class CustomPlayerController : MonoBehaviour {
         /* Fire a ray from the player's current position */
         FireCameraRayInMenuState();
 
-        /* Pressing T changes to the LeavingMenu state */
-        if(Input.GetKeyDown("t")) {
-            ChangeState((int) PlayerStates.LeavingMenu);
+
+        /////These lines should have their own function and shoudl probably not be linked to the LateUpdate() function
+        /* Handle the menu inputs while in the menu */
+        if(!currentlyLeavingInMenu) {
+            /* For now, pressing T will simulate the effect of pressing the start button */
+            if(Input.GetKeyDown("t")) {
+                /* Start a timer for when we will leave the inMenu state */
+                currentlyLeavingInMenu = true;
+                remainingInMenuTime = timeToLeaveMenu;
+            }
+        }
+        
+        /* Do not handle any menu inputs if we are leaving the menu */
+        else {
+            /* Decrease remainingInMenuTime */
+            remainingInMenuTime -= Time.deltaTime;
+            if(remainingInMenuTime <= 0) {
+                /* When time runs out, change to the leavingMenu state */
+                ChangeState((int) PlayerStates.LeavingMenu);
+            }
         }
     }
 
@@ -783,12 +806,22 @@ public class CustomPlayerController : MonoBehaviour {
         /*
          * A unified function used by multiple "Menus" state.
          */
+        float strafeSpeed = menuWindowStrafeSpeed;
 
+        /* If the player is about the leave the menu, reduce window's strafing speed */
+        if(currentlyLeavingInMenu) {
+            float earlyTimeToStop = 0.5f;
+            float remainingTimeRatio = (remainingInMenuTime / (timeToLeaveMenu - earlyTimeToStop));
+            if(remainingTimeRatio < 0) { remainingTimeRatio = 0; }
+            strafeSpeed *= remainingTimeRatio;
+        }
+        
         /* Animate the menu's background by moving the startingRoom window's exit point to the side during this state */
         if(state == (int) PlayerStates.InMenu) {
-            startingRoom.windowExit.position = startingRoom.windowExit.position + new Vector3(menuWindowStrafeSpeed, 0, 0);
+            startingRoom.windowExit.position = startingRoom.windowExit.position + new Vector3(strafeSpeed, 0, 0);
         }
         startingRoom.UpdateOutsideWindowPositon(false);
+
 
         /* Set the parameters required for the ray trace */
         Vector3 currentCameraPosition = camDestinationPos;

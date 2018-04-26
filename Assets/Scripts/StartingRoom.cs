@@ -293,6 +293,7 @@ public class StartingRoom : ConnectedRoom {
          * instantUpdate controls how the position is updated. If it's true, we simply set the window's height 
          * to it's proper value. If it's false, then take into account the current window placement and slowly
          * adjust the window's height to reach the proper height after multiple calls to this function.
+         * This will make the window smoothly adjust to it's expected height.
          */
          
         /* Get the expected height of the window relative to the terrain bellow it */
@@ -301,10 +302,12 @@ public class StartingRoom : ConnectedRoom {
         Debug.Log(heightDifference);
 
         /* Add a portion of the heightDifference to the current window to have it smoothly adjust to the height changes */
-        if(!instantUpdate) {
+        /* Only add a portion of heightDifference if the portion is large enough */
+        if(!instantUpdate && Mathf.Abs(heightDifference) > 0.025f) {
             terrainHeight = windowExit.transform.position.y + heightDifference*0.05f;
         }
 
+        /* Update the window's world positions */
         windowExit.transform.position = new Vector3(windowExit.position.x, terrainHeight, windowExit.position.z);
         window.outsidePos = windowExit.position;
         window.outsideRot = windowExit.eulerAngles;
