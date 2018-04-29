@@ -25,7 +25,7 @@ public class Menu : MonoBehaviour {
     public RectTransform startButtonRect;
     private bool isHover = false;
     private float currentHoverTime = 0;
-    private float maxHoverTime = 0.6f;
+    private float maxHoverTime = 0.8f;
     private bool pressedStartButton = false;
     private float pressedStartCurrentTime = 0;
     private float pressedStartMaxTime = 1f;
@@ -43,12 +43,8 @@ public class Menu : MonoBehaviour {
          * Run checks that will be done on each frame, such as window resizing and button hovering
          */
 
-        /* Update the new sizes and update the menu's positions */
-        if(screenWidth != Screen.width || screenHeight != Screen.height) {
-            screenWidth = Screen.width;
-            screenHeight = Screen.height;
-            Reposition();
-        }
+        /* Reposition the buttons every frame */
+        Reposition();
 
         /* Run the main update function for each button */
         UpdateStartButton();
@@ -82,6 +78,13 @@ public class Menu : MonoBehaviour {
         /* Set the outlines for the text. There will be two outlines used for each text. */
         if(text.gameObject.GetComponent<Outline>() == null) { text.gameObject.AddComponent<Outline>(); text.gameObject.AddComponent<Outline>(); }
         Outline[] outlines = text.gameObject.GetComponents<Outline>();
+
+        /* Set size relative values for the text */
+        text.alignment = TextAnchor.MiddleRight;
+        text.resizeTextForBestFit = true;
+        text.resizeTextMinSize = 1;
+        text.resizeTextMaxSize = 300;
+
     }
 
     public void SetupButtonEvents(Button button, UnityAction mouseEnter, UnityAction mouseExit) {
@@ -110,7 +113,6 @@ public class Menu : MonoBehaviour {
 
         /* Set the sizes and content of the button */
         SetupText(startButton.GetComponentInChildren<Text>());
-        startButtonRect.sizeDelta = new Vector2(400, 125);
         startButton.GetComponentInChildren<Text>().text = "START";
         startButton.GetComponentInChildren<Text>().fontSize = 100;
 
@@ -170,10 +172,27 @@ public class Menu : MonoBehaviour {
 
     public void Reposition() {
         /*
-         * Reposition the components of the menu relative to the screen size
+         * Reposition the components of the menu relative to the screen size. The size of the text
+         * is relative to the screen size. The height of the text also has a min and max limit.
+         * Depending on the current hover value of the buttons, add horizontal size to the button.
+         * 
+         * Note: The width of the buttons are completely relative to the text and font used. 
+         * Each button's width will be set through trial and error of the min and max sizes.
          */
+        float minHeight = 25;
+        float maxHeight = 200;
+        float startWidthRatio = 3;
+        float startHoverRatio = (Mathf.Sin(Mathf.PI*currentHoverTime/maxHoverTime - 0.5f*Mathf.PI)+1)/2f;
 
-        startButtonRect.position = new Vector3(startButtonRect.sizeDelta.x/2f, canvasRect.position.y, 0);
+        /* Set the height of the buttons and adjust the extra width values */
+        float buttonHeight = Screen.height*0.2f;
+        if(buttonHeight < minHeight) { buttonHeight = minHeight; }
+        else if(buttonHeight > maxHeight) { buttonHeight = maxHeight; }
+        float startExtraWidth = startHoverRatio*buttonHeight*0.5f;
+        
+        /* Place the start button near the center left of the screen. Be 50% larger than other buttons. */
+        startButtonRect.sizeDelta = 1.5f*new Vector2(buttonHeight*startWidthRatio + startExtraWidth, buttonHeight);
+        startButtonRect.position = new Vector3(startButtonRect.sizeDelta.x/2f, canvasRect.position.y + buttonHeight/2f, 0);
     }
 
 
