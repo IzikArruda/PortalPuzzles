@@ -4,11 +4,29 @@ using UnityEngine.Events;
 using UnityEngine.EventSystems;
 using System.Collections;
 
+/*  
+ * The potential states the menu can be in.
+ */
+public enum MenuStates {
+    Empty,
+    EmptyToMain,
+    Main,
+};
+
 /*
  * The menu used by the player during the game. It expected each component to be 
  * already created and assigned in a canvas.
  */
 public class Menu : MonoBehaviour {
+    private MenuStates state;
+
+    /* Button height to width ratios. Set manually and is unique for each font + text content. */
+    private float startWidthRatio = 3;
+
+    /* Global values used for sizes of UI elements */
+    private float minHeight = 25;
+    private float maxHeight = 200;
+    private float buttonHeight;
 
     /* A link to the player's controller */
     public CustomPlayerController playerController;
@@ -29,8 +47,7 @@ public class Menu : MonoBehaviour {
     private bool pressedStartButton = false;
     private float pressedStartCurrentTime = 0;
     private float pressedStartMaxTime = 1f;
-
-
+    
     /* Previous resolutions of the window */
     public float screenWidth;
     public float screenHeight;
@@ -38,16 +55,38 @@ public class Menu : MonoBehaviour {
 
     /* ----------- Built-in Functions ------------------------------------------------------------- */
 
+    void Start() {
+        /*  
+         * Start the menu in the empty state
+         */
+        state = MenuStates.Main;
+    }
+
     void Update() {
         /*
-         * Run checks that will be done on each frame, such as window resizing and button hovering
+         * Check if the screen has been resized and run any per-frame update calls for any UI elements
          */
 
-        /* Reposition the buttons every frame */
-        Reposition();
-
-        /* Run the main update function for each button */
-        UpdateStartButton();
+        /* Check if the screen has been resized */
+        if(Screen.width != screenWidth || Screen.height != screenHeight) {
+            Resize();
+        }
+        
+        /* Start button */
+        if(IsStartVisible()) {
+            UStartButtonValues();
+            switch(state) {
+                case MenuStates.EmptyToMain:
+                    UStartButtonEmptyToMain();
+                    break;
+                case MenuStates.Main:
+                    UStartButtonMain();
+                    break;
+                default:
+                    Debug.Log("ERROR: Menu item does not handle current state");
+                    break;
+            }
+        }
     }
 
 
@@ -118,85 +157,76 @@ public class Menu : MonoBehaviour {
 
         /* Add an event trigger for when the mosue hovers over the button */
         SetupButtonEvents(startButton, StartButtonMouseEnter, StartButtonMouseExit);
-        
-        /* Run the first update call for the button */
-        UpdateStartButton();
+    }
+
+    public void Resize() {
+        /*
+         * Update the sizes of the ui to reflect the current screen size.
+         */
+        screenWidth = Screen.width;
+        screenHeight = Screen.height;
+
+        /* Update the buttonHeight value used by all buttons */
+        buttonHeight = Mathf.Clamp(screenHeight*0.2f, minHeight, maxHeight);
     }
     
 
     /* ----------- Update Functions ------------------------------------------------------------- */
 
-    void UpdateStartButton() {
+    #region Start Button Updates
+    void UStartButtonValues() {
         /*
-         * Update the start button. Includes updating values which will control visual elements of the button.
+         * Update values used by the start button.
          */
-
-        /* Increase or decrease specific per-frame updated values */
+         
+        /* Update the value when the user has pressed the start button. Will be removed with a new state. */
         if(pressedStartButton == true) {
             pressedStartCurrentTime += Time.deltaTime;
             if(pressedStartCurrentTime > pressedStartMaxTime) { pressedStartCurrentTime = pressedStartMaxTime; }
         }
 
+        /* Update the hover value when the mouse is/isin't over the button */
         if(isHover) { currentHoverTime += Time.deltaTime; }
         else { currentHoverTime -= Time.deltaTime; }
         if(currentHoverTime < 0) { currentHoverTime = 0; }
         else if(currentHoverTime > maxHoverTime) { currentHoverTime = maxHoverTime; }
-
-        /* Update the visuals of the button */
-        UpdateStartButtonVisuals();
     }
-    
-    public void UpdateStartButtonVisuals() {
+
+    void UStartButtonEmptyToMain() {
         /*
-         * Update the visuals of the start button. This includes the outlines used. Adjust the visuals
-         * depending on whether animatingStartButton is true or not and how much startButtonRemainingTime is left.
+         * Update the start button while in the EmptyToMain state. 
+         */
+
+        /* For now, do the same as the normal Menu state */
+        UStartButtonMain();
+    }
+
+    void UStartButtonMain() {
+        /*
+         * Update the start button while in the Main state.
          */
         Outline[] outlines = startButton.GetComponentInChildren<Text>().gameObject.GetComponents<Outline>();
-        float clickFade = pressedStartCurrentTime/pressedStartMaxTime;
-        float hoverFade = currentHoverTime/maxHoverTime;
+        float hoverRatio = (Mathf.Sin(Mathf.PI*currentHoverTime/maxHoverTime - 0.5f*Mathf.PI)+1)/2f;
+        float extraHoverWidth = hoverRatio*buttonHeight*0.5f;
 
-        /* Clicking the button controls the outline distance and overall opacity */
+        /* The position is effected by the current hover value */
+        startButtonRect.sizeDelta = 1.5f*new Vector2(buttonHeight*startWidthRatio + extraHoverWidth, buttonHeight);
+        startButtonRect.position = new Vector3(startButtonRect.sizeDelta.x/2f, canvasRect.position.y + buttonHeight/2f, 0);
+
+        /* The color is controlled by the current hover value AND click value(will be removed later) */
+        float clickFade = pressedStartCurrentTime/pressedStartMaxTime;
         startButton.GetComponentInChildren<Text>().color = new Color(1, 1, 1, 1 - clickFade);
         outlines[0].effectColor = new Color(0, 0, 0, 0.5f - 0.75f*clickFade);
         outlines[1].effectColor = new Color(0, 0, 0, 0.5f - 0.5f*clickFade);
         outlines[0].effectDistance = new Vector2(0.5f + 45f*clickFade, 0.5f + 45f*clickFade);
         outlines[1].effectDistance = new Vector2(0.5f + 30f*clickFade, 0.5f + 30f*clickFade);
-
-        /* Hovering over the button controls it's color */
-        float hovCol = 1f - 0.25f*hoverFade;
+        float hovCol = 1f - 0.25f*hoverRatio;
         startButton.GetComponentInChildren<Text>().color = new Color(hovCol, hovCol, hovCol, startButton.GetComponentInChildren<Text>().color.a);
     }
+    #endregion
+
     
-
-    /* ----------- Screen Position Functions ------------------------------------------------------------- */
-
-    public void Reposition() {
-        /*
-         * Reposition the components of the menu relative to the screen size. The size of the text
-         * is relative to the screen size. The height of the text also has a min and max limit.
-         * Depending on the current hover value of the buttons, add horizontal size to the button.
-         * 
-         * Note: The width of the buttons are completely relative to the text and font used. 
-         * Each button's width will be set through trial and error of the min and max sizes.
-         */
-        float minHeight = 25;
-        float maxHeight = 200;
-        float startWidthRatio = 3;
-        float startHoverRatio = (Mathf.Sin(Mathf.PI*currentHoverTime/maxHoverTime - 0.5f*Mathf.PI)+1)/2f;
-
-        /* Set the height of the buttons and adjust the extra width values */
-        float buttonHeight = Screen.height*0.2f;
-        if(buttonHeight < minHeight) { buttonHeight = minHeight; }
-        else if(buttonHeight > maxHeight) { buttonHeight = maxHeight; }
-        float startExtraWidth = startHoverRatio*buttonHeight*0.5f;
-        
-        /* Place the start button near the center left of the screen. Be 50% larger than other buttons. */
-        startButtonRect.sizeDelta = 1.5f*new Vector2(buttonHeight*startWidthRatio + startExtraWidth, buttonHeight);
-        startButtonRect.position = new Vector3(startButtonRect.sizeDelta.x/2f, canvasRect.position.y + buttonHeight/2f, 0);
-    }
-
-
-    /* ----------- Listener Functions ------------------------------------------------------------- */
+    /* ----------- Event/Listener Functions ------------------------------------------------------------- */
 
     public void StartButtonClick() {
         /*
@@ -226,5 +256,21 @@ public class Menu : MonoBehaviour {
 
         Debug.Log("unhovered");
         isHover = false;
+    }
+
+
+    /* ----------- Helper Functions ------------------------------------------------------------- */
+
+    bool IsStartVisible() {
+        /*
+         * Return true if the current state shows the start button
+         */
+        bool visible = false;
+
+        if(state == MenuStates.EmptyToMain || state == MenuStates.Main) {
+            visible = true;
+        }
+
+        return visible;
     }
 }
