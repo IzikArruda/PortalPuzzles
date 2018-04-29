@@ -186,7 +186,7 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Set-up the menu used by the player */
         playerMenu = GetComponent<Menu>();
-        if(playerMenu != null) { playerMenu.Initialize(this); }
+        if(playerMenu != null) { playerMenu.InitializeMenu(this); }
 
         /* Set the clipping plane of the player's camera while they are in the puzleRooms */
         playerCamera.farClipPlane = 1000;

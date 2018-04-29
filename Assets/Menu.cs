@@ -23,8 +23,12 @@ public class Menu : MonoBehaviour {
     /* The main "Start" button */
     public Button startButton;
     public RectTransform startButtonRect;
-    private bool animatingStartButton = false;
-    private float startButtonRemainingTime;
+    private bool isHover = false;
+    private float currentHoverTime = 0;
+    private float maxHoverTime = 0.6f;
+    private bool pressedStartButton = false;
+    private float pressedStartCurrentTime = 0;
+    private float pressedStartMaxTime = 1f;
 
 
     /* Previous resolutions of the window */
@@ -36,29 +40,24 @@ public class Menu : MonoBehaviour {
 
     void Update() {
         /*
-         * Check if there was a change in the current window size
+         * Run checks that will be done on each frame, such as window resizing and button hovering
          */
 
+        /* Update the new sizes and update the menu's positions */
         if(screenWidth != Screen.width || screenHeight != Screen.height) {
-
-            /* Update the new sizes and update the menu's positions */
             screenWidth = Screen.width;
             screenHeight = Screen.height;
-            UpdatePositions();
+            Reposition();
         }
 
-        /* Update the start button's visuals */
-        if(animatingStartButton == true) {
-            startButtonRemainingTime -= Time.deltaTime;
-            UpdateStartButtonVisuals();
-        }
+        /* Run the main update function for each button */
+        UpdateStartButton();
     }
 
 
     /* ----------- Set-up Functions ------------------------------------------------------------- */
 
-
-    public void Initialize(CustomPlayerController controller) {
+    public void InitializeMenu(CustomPlayerController controller) {
         /*
          * Sets up the main menu. Requires a link to the playerController to add functionallity to the buttons
          */
@@ -85,6 +84,21 @@ public class Menu : MonoBehaviour {
         Outline[] outlines = text.gameObject.GetComponents<Outline>();
     }
 
+    public void SetupButtonEvents(Button button, UnityAction mouseEnter, UnityAction mouseExit) {
+        /*
+         * Attach the hover events to the given button
+         */
+        EventTrigger startButtonTrigger = startButton.gameObject.AddComponent<EventTrigger>();
+        EventTrigger.Entry startButtonEnter = new EventTrigger.Entry();
+        startButtonEnter.eventID = EventTriggerType.PointerEnter;
+        startButtonEnter.callback.AddListener((data) => { mouseEnter(); });
+        startButtonTrigger.triggers.Add(startButtonEnter);
+        EventTrigger.Entry startButtonExit = new EventTrigger.Entry();
+        startButtonExit.eventID = EventTriggerType.PointerExit;
+        startButtonExit.callback.AddListener((data) => { mouseExit(); });
+        startButtonTrigger.triggers.Add(startButtonExit);
+    }
+
     public void SetupStartButton() {
         /*
          * Set the values and variables needed for the start button
@@ -94,61 +108,67 @@ public class Menu : MonoBehaviour {
         startButton.onClick.AddListener(StartButtonClick);
         startButtonRect = startButton.GetComponent<RectTransform>();
 
-        /* Add an event trigger for when the mosue hovers over */
-        EventTrigger startButtonTrigger = startButton.gameObject.AddComponent<EventTrigger>();
-        EventTrigger.Entry startButtonEntry = new EventTrigger.Entry();
-        startButtonEntry.eventID = EventTriggerType.PointerEnter;
-        startButtonEntry.callback.AddListener((data) => { StartButtonMouseEnter(); });
-        startButtonTrigger.triggers.Add(startButtonEntry);
-
         /* Set the sizes and content of the button */
         SetupText(startButton.GetComponentInChildren<Text>());
         startButtonRect.sizeDelta = new Vector2(400, 125);
         startButton.GetComponentInChildren<Text>().text = "START";
         startButton.GetComponentInChildren<Text>().fontSize = 100;
+
+        /* Add an event trigger for when the mosue hovers over the button */
+        SetupButtonEvents(startButton, StartButtonMouseEnter, StartButtonMouseExit);
         
+        /* Run the first update call for the button */
+        UpdateStartButton();
+    }
+    
+
+    /* ----------- Update Functions ------------------------------------------------------------- */
+
+    void UpdateStartButton() {
+        /*
+         * Update the start button. Includes updating values which will control visual elements of the button.
+         */
+
+        /* Increase or decrease specific per-frame updated values */
+        if(pressedStartButton == true) {
+            pressedStartCurrentTime += Time.deltaTime;
+            if(pressedStartCurrentTime > pressedStartMaxTime) { pressedStartCurrentTime = pressedStartMaxTime; }
+        }
+
+        if(isHover) { currentHoverTime += Time.deltaTime; }
+        else { currentHoverTime -= Time.deltaTime; }
+        if(currentHoverTime < 0) { currentHoverTime = 0; }
+        else if(currentHoverTime > maxHoverTime) { currentHoverTime = maxHoverTime; }
+
         /* Update the visuals of the button */
         UpdateStartButtonVisuals();
     }
-
-
-    /* ----------- Visual Functions ------------------------------------------------------------- */
-
+    
     public void UpdateStartButtonVisuals() {
         /*
          * Update the visuals of the start button. This includes the outlines used. Adjust the visuals
          * depending on whether animatingStartButton is true or not and how much startButtonRemainingTime is left.
          */
-
         Outline[] outlines = startButton.GetComponentInChildren<Text>().gameObject.GetComponents<Outline>();
+        float clickFade = pressedStartCurrentTime/pressedStartMaxTime;
+        float hoverFade = currentHoverTime/maxHoverTime;
 
-        /* Leave the button as normal */
-        if(animatingStartButton == false) {
-            startButton.GetComponentInChildren<Text>().color = new Color(1, 1, 1, 1);
-            outlines[0].effectColor = new Color(0, 0, 0, 0.3f);
-            outlines[0].effectDistance = new Vector2(1.5f, 1.5f);
-            outlines[1].effectColor = new Color(0, 0, 0, 0.3f);
-            outlines[1].effectDistance = new Vector2(1.5f, 1.5f);
-        }
+        /* Clicking the button controls the outline distance and overall opacity */
+        startButton.GetComponentInChildren<Text>().color = new Color(1, 1, 1, 1 - clickFade);
+        outlines[0].effectColor = new Color(0, 0, 0, 0.5f - 0.75f*clickFade);
+        outlines[1].effectColor = new Color(0, 0, 0, 0.5f - 0.5f*clickFade);
+        outlines[0].effectDistance = new Vector2(0.5f + 45f*clickFade, 0.5f + 45f*clickFade);
+        outlines[1].effectDistance = new Vector2(0.5f + 30f*clickFade, 0.5f + 30f*clickFade);
 
-        /* Animate the button fading away */
-        else {
-            float ratio = startButtonRemainingTime/5f;
-            if(ratio < 0) { ratio = 0; }
-            Debug.Log(ratio);
-
-            startButton.GetComponentInChildren<Text>().color = new Color(1, 1, 1, ratio*1);
-            outlines[0].effectColor = new Color(0, 0, 0, ratio*0.3f);
-            outlines[0].effectDistance = new Vector2(1.5f, 1.5f);
-            outlines[1].effectColor = new Color(0, 0, 0, ratio*0.3f);
-            outlines[1].effectDistance = new Vector2(1.5f, 1.5f);
-        }
+        /* Hovering over the button controls it's color */
+        float hovCol = 1f - 0.25f*hoverFade;
+        startButton.GetComponentInChildren<Text>().color = new Color(hovCol, hovCol, hovCol, startButton.GetComponentInChildren<Text>().color.a);
     }
     
 
     /* ----------- Screen Position Functions ------------------------------------------------------------- */
 
-    public void UpdatePositions() {
+    public void Reposition() {
         /*
          * Reposition the components of the menu relative to the screen size
          */
@@ -164,9 +184,9 @@ public class Menu : MonoBehaviour {
          * Runs when the user presses the start button
          */
 
-        if(animatingStartButton == false) {
-            animatingStartButton = true;
-            startButtonRemainingTime = 5;
+        if(pressedStartButton == false) {
+            pressedStartButton = true;
+            pressedStartCurrentTime = 0;
         }
 
         playerController.StartButtonPressed();
@@ -177,6 +197,15 @@ public class Menu : MonoBehaviour {
          * The mouse entered the startButton's clickable area
          */
 
-        Debug.Log("Mouse enterd area");
+        isHover = true;
+    }
+
+    public void StartButtonMouseExit() {
+        /*
+         * The mouse entered the startButton's clickable area
+         */
+
+        Debug.Log("unhovered");
+        isHover = false;
     }
 }
