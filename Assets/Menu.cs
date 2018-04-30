@@ -13,6 +13,7 @@ public enum MenuStates {
     EmptyToMain,
     Main,
     MainToIntro,
+    MainToQuit
 };
 
 /*
@@ -22,6 +23,13 @@ public enum MenuStates {
 public enum Buttons {
     Start,
     Quit
+}
+
+/*
+ * Each panel used by the menu
+ */
+public enum Panels {
+    Cover
 }
 
 /*
@@ -42,9 +50,10 @@ public class Menu : MonoBehaviour {
     
     /* A link to the player's controller */
     private CustomPlayerController playerController;
-
-    /* A basic button object with a text child */
+    
+    /* A basic button with a text child and an empty panel. Must be set before running. */
     public GameObject buttonReference;
+    public GameObject panelReference;
 
     /* The font used for the text of the game */
     public Font usedFont;
@@ -57,9 +66,14 @@ public class Menu : MonoBehaviour {
     public Button[] buttons;
     public RectTransform[] buttonRects;
 
+    /* An array of panels used by the menu */
+    public RectTransform[] panelRects;
+
     /* The timing values of the transition states */
     private float mainToIntroMax = 0.8f;
     private float mainToIntroRemaining;
+    private float mainToQuitMax = 1.5f;
+    private float mainToQuitRemaining;
 
     /* Arrays that hold the hover values. Each index is a different button's hover time */
     private bool[] currentHoverState = new bool[] { false, false, false };
@@ -69,7 +83,16 @@ public class Menu : MonoBehaviour {
     /* Previous resolutions of the window */
     public float screenWidth;
     public float screenHeight;
-    
+
+    /* 
+     * Other menu variables 
+     */
+    /* Values used when trying to quit the game */
+    float quitValueCurrent = 0;
+    float quitValueIncrease = 0.15f;
+    float quitValueDecreaseMod = 0.3f;
+    float quitValueMax = 1;
+
 
     /* ----------- Built-in Functions ------------------------------------------------------------- */
 
@@ -97,9 +120,9 @@ public class Menu : MonoBehaviour {
 
         /* Update the transition values. Only change states once the per-frame updates are done. */
         UpdateTransitionValues();
-
+        
         /* 
-         * Run the per-frame update functions of each button 
+         * Run the per-frame update functions of each UI element 
          */
         /* Start button */
         if(IsStartVisible()) {
@@ -113,6 +136,9 @@ public class Menu : MonoBehaviour {
                 case MenuStates.MainToIntro:
                     UStartButtonMainToIntro();
                     break;
+                case MenuStates.MainToQuit:
+                    UStartButtonMainToQuit();
+                    break;
                 default:
                     Debug.Log("ERROR: Menu item does not handle current state");
                     break;
@@ -121,11 +147,28 @@ public class Menu : MonoBehaviour {
         /* Quit button */
         if(isQuitVisible()) {
             switch(state) {
+                case MenuStates.EmptyToMain:
+                    UQuitButtonEmptyToMain();
+                    break;
                 case MenuStates.Main:
                     UQuitButtonMain();
                     break;
                 case MenuStates.MainToIntro:
                     UQuitButtonMainToIntro();
+                    break;
+                case MenuStates.MainToQuit:
+                    UQuitButtonMainToQuit();
+                    break;
+                default:
+                    Debug.Log("ERROR: Menu item does not handle current state");
+                    break;
+            }
+        }
+        /* Cover panel */
+        if(isCoverPanelVisible()) {
+            switch(state) {
+                case MenuStates.MainToQuit:
+                    UCoverPanelMainToQuit();
                     break;
                 default:
                     Debug.Log("ERROR: Menu item does not handle current state");
@@ -138,7 +181,7 @@ public class Menu : MonoBehaviour {
     }
 
 
-    /* ----------- Set-up Functions ------------------------------------------------------------- */
+    /* ----------- Initialization Functions ------------------------------------------------------------- */
 
     public void InitializeMenu(CustomPlayerController controller) {
         /*
@@ -149,7 +192,16 @@ public class Menu : MonoBehaviour {
         /* Link the global variables of the script */
         playerController = controller;
         canvasRect = canvas.GetComponent<RectTransform>();
-        
+
+        /* Create and populate the array of panels used by the UI */
+        panelRects = new RectTransform[System.Enum.GetValues(typeof(Panels)).Length];
+        for(int i = 0; i < panelRects.Length; i++) {
+            panelRects[i] = CreatePanel().GetComponent<RectTransform>();
+        }
+
+        /* Run the initialSetup functions for each panel */
+        SetupCoverPanel();
+
         /* Create and populate the buttons and hover arrays */
         buttons = new Button[System.Enum.GetValues(typeof(Buttons)).Length];
         buttonRects = new RectTransform[System.Enum.GetValues(typeof(Buttons)).Length];
@@ -163,9 +215,60 @@ public class Menu : MonoBehaviour {
         }
 
         /* Run the initialSetup functions for each of the buttons */
-        SetupStartButton(ref buttons[(int) Buttons.Start]);
-        SetupQuitButton(ref buttons[(int) Buttons.Quit]);
+        SetupStartButton();
+        SetupQuitButton();
+
+        /* Re-order the hierarchy so that certain objects are rendered ontop of others */
+        ReorderHeirarchy();
     }
+
+    public GameObject CreatePanel() {
+        /*
+         * Duplicate and return the panel reference
+         */
+        GameObject panelObject = Instantiate(panelReference);
+        panelObject.transform.SetParent(canvas.transform);
+        panelObject.SetActive(true);
+
+        /* Let the mouse cursor select objects behind the panel */
+        panelObject.GetComponent<Image>().raycastTarget = false;
+
+        return panelObject;
+    }
+
+    public GameObject CreateButton() {
+        /*
+         * Duplicate and return the button reference
+         */
+        GameObject buttonObject = Instantiate(buttonReference);
+        buttonObject.transform.SetParent(canvas.transform);
+        buttonObject.SetActive(true);
+        
+        return buttonObject;
+    }
+
+    public void Resize() {
+        /*
+         * Update the sizes of the ui to reflect the current screen size.
+         */
+        screenWidth = Screen.width;
+        screenHeight = Screen.height;
+
+        /* Update the buttonHeight value used by all buttons */
+        buttonHeight = Mathf.Clamp(screenHeight*0.2f, minHeight, maxHeight);
+    }
+    
+    void ReorderHeirarchy() {
+        /*
+         * Reorder the hierarchy of the canvas.
+         */
+
+        /* So far, simply have the cover panel above all else */
+        panelRects[(int) Panels.Cover].transform.SetAsLastSibling();
+    }
+
+
+    /* ----------- Set-up Functions ------------------------------------------------------------- */
 
     public void SetupText(Text text) {
         /*
@@ -209,34 +312,28 @@ public class Menu : MonoBehaviour {
         buttonTrigger.triggers.Add(buttonExit);
     }
 
-    public GameObject CreateButton() {
+    void SetupCoverPanel() {
         /*
-         * Duplicate and return the button reference
+         * Setup the cover panel that covers the whole screen
          */
-        GameObject buttonObject = Instantiate(buttonReference);
-        buttonObject.transform.SetParent(canvas.transform);
-        buttonObject.SetActive(true);
+        RectTransform mainPanel = panelRects[(int) Panels.Cover];
+        mainPanel.name = "Cover panel";
 
+        /* Set the sizes to match the screen size */
+        mainPanel.anchoredPosition = new Vector3(0, 0, 0);
+        mainPanel.sizeDelta = new Vector2(0, 0);
 
-        return buttonObject;
+        /* Set the color so that the panel is invisible */
+        mainPanel.GetComponent<Image>().color = new Color(0, 0, 0, 0);
     }
 
-    public void Resize() {
-        /*
-         * Update the sizes of the ui to reflect the current screen size.
-         */
-        screenWidth = Screen.width;
-        screenHeight = Screen.height;
-
-        /* Update the buttonHeight value used by all buttons */
-        buttonHeight = Mathf.Clamp(screenHeight*0.2f, minHeight, maxHeight);
-    }
-    
-    void SetupStartButton(ref Button button) {
+    void SetupStartButton() {
         /*
          * Set the variables of the button that makes it the "Start" button
          */
-        
+        Button button = buttons[(int) Buttons.Start];
+        button.name = "Start button";
+
         /* Setup the text of the button */
         SetupText(button.GetComponentInChildren<Text>());
         button.GetComponentInChildren<Text>().text = "START";
@@ -246,10 +343,12 @@ public class Menu : MonoBehaviour {
         SetupButtonEvents(ref button, StartButtonMouseEnter, StartButtonMouseExit);
     }
 
-    void SetupQuitButton(ref Button button) {
+    void SetupQuitButton() {
         /*
          * Set the variables of the button that makes it the "Quit" button
          */
+        Button button = buttons[(int) Buttons.Quit];
+        button.name = "Quit button";
 
         /* Setup the text of the button */
         SetupText(button.GetComponentInChildren<Text>());
@@ -269,12 +368,34 @@ public class Menu : MonoBehaviour {
          * Do not update the state as we want the per-frame update functions to atleast run 
          * once the transition states have reached 0.
          */
-
+         
+        /* Update the generic StateTransition values */
         switch(state) {
             case MenuStates.MainToIntro:
-                mainToIntroRemaining -= Time.deltaTime;
-                if(mainToIntroRemaining < 0) { mainToIntroRemaining = 0; }
+                UpdateTransitionValue(ref mainToIntroRemaining);
                 break;
+            case MenuStates.MainToQuit:
+                UpdateTransitionValue(ref mainToQuitRemaining);
+                break;
+        }
+
+        /* Update the more unique per-frame update values */
+        switch(state) {
+            case MenuStates.Main:
+                quitValueCurrent -= Time.deltaTime*quitValueDecreaseMod;
+                if(quitValueCurrent < 0) { quitValueCurrent = 0; }
+                break;
+        }
+    }
+
+    void UpdateTransitionValue(ref float current) {
+        /*
+         * Update the given transition value and prevent it from going bellow 0
+         */
+
+        current -= Time.deltaTime;
+        if(current < 0) {
+            current = 0;
         }
     }
 
@@ -288,8 +409,29 @@ public class Menu : MonoBehaviour {
             case MenuStates.MainToIntro:
                 if(mainToIntroRemaining == 0) { ChangeState(MenuStates.Empty); }
                 break;
+            case MenuStates.MainToQuit:
+                if(mainToQuitRemaining == 0) { QuitGame(); }
+                break;
+            case MenuStates.Main:
+                if(quitValueCurrent >= quitValueMax) { ChangeState(MenuStates.MainToQuit); }
+                break;
         }
     }
+
+    #region Cover Panel Updates
+    void UCoverPanelMainToQuit() {
+        /*
+         * While the game is about to quit, Change the color of the cover panel to block the view.
+         */
+        int panelEnum = (int) Panels.Cover;
+        Image rectImage = panelRects[panelEnum].GetComponent<Image>();
+        //The transition face value starts fading 25% into the transition and finishes 80% in
+        float transitionFade = AdjustRatio((mainToQuitMax - mainToQuitRemaining) / mainToQuitMax, 0.25f, 0.8f);
+
+        /* Fade the color out relative to the remaining time before the game closes */
+        rectImage.color = new Color(0, 0, 0, transitionFade);
+    }
+    #endregion
 
     #region Start Button Updates
     void UStartButtonEmptyToMain() {
@@ -334,6 +476,21 @@ public class Menu : MonoBehaviour {
         outlines[0].effectDistance = new Vector2(0.5f + 45f*transitionFade, 0.5f + 45f*transitionFade);
         outlines[1].effectDistance = new Vector2(0.5f + 30f*transitionFade, 0.5f + 30f*transitionFade);
     }
+
+    void UStartButtonMainToQuit() {
+        /*
+         * Animate the button slidding off the left side of the screen as the game quits
+         */
+        int buttonEnum = (int) Buttons.Start;
+        RectTransform rect = buttonRects[buttonEnum];
+        //The transition fade values aims to go from 0 to 2 over the transition state.
+        float transitionFade = 2*(mainToQuitMax - mainToQuitRemaining) / mainToQuitMax;
+        //Clamp the values from going above 1
+        transitionFade = Mathf.Clamp(transitionFade, 0, 1);
+
+        /* Move the button out to the left side of the screen */
+        rect.position = new Vector3(rect.sizeDelta.x/2f - rect.sizeDelta.x*transitionFade, rect.position.y, 0);
+    }
     #endregion
 
     #region Quit Button Updates
@@ -365,8 +522,11 @@ public class Menu : MonoBehaviour {
         rect.position = new Vector3(rect.sizeDelta.x/2f, relativeHeight, 0);
         float hoverColor = 1f - 0.25f*hoverRatio;
         button.GetComponentInChildren<Text>().color = new Color(hoverColor, hoverColor, hoverColor, 1);
+
+        /* Depending on the quitValueCurrent value, update a visual element around the mouse */
+        //Add a circle around the mouse depending on the quitValueCurrent/quitValueMax ratio
     }
-    
+
     void UQuitButtonMainToIntro() {
         /*
          * Animate the quit button when entering the intro. The quit button slides out to the left
@@ -375,6 +535,21 @@ public class Menu : MonoBehaviour {
         RectTransform rect = buttonRects[buttonEnum];
         //The transition fade values aims to go from 0 to 2 over the transition state.
         float transitionFade = 2*(mainToIntroMax - mainToIntroRemaining) / mainToIntroMax;
+        //Clamp the values from going above 1
+        transitionFade = Mathf.Clamp(transitionFade, 0, 1);
+
+        /* Move the button out to the left side of the screen */
+        rect.position = new Vector3(rect.sizeDelta.x/2f - rect.sizeDelta.x*transitionFade, rect.position.y, 0);
+    }
+    
+    void UQuitButtonMainToQuit() {
+        /*
+         * Animate the button slidding off the left side of the screen as the game quits
+         */
+        int buttonEnum = (int) Buttons.Quit;
+        RectTransform rect = buttonRects[buttonEnum];
+        //The transition fade values aims to go from 0 to 2 over the transition state.
+        float transitionFade = 2*(mainToQuitMax - mainToQuitRemaining) / mainToQuitMax;
         //Clamp the values from going above 1
         transitionFade = Mathf.Clamp(transitionFade, 0, 1);
 
@@ -395,9 +570,19 @@ public class Menu : MonoBehaviour {
         /* Make sure the state being changed to is actually a new state */
         if(state != newState) {
 
-            /* Going into the MainToIntro state will start it's transition value */
+            /* Entering MainToIntro will start it's transition value */
             if(newState == MenuStates.MainToIntro) {
                 mainToIntroRemaining = mainToIntroMax;
+            }
+
+            /* Entering Main will reset the quitValueCurrent */
+            else if(newState == MenuStates.Main) {
+                quitValueCurrent = 0;
+            }
+
+            /* Entering MainToQuit will start the time to quit transition value */
+            else if(newState == MenuStates.MainToQuit) {
+                mainToQuitRemaining = mainToQuitMax;
             }
 
             /* Change the current state */
@@ -405,7 +590,16 @@ public class Menu : MonoBehaviour {
         }
     }
 
-    public void StartButtonClick() {
+    void QuitGame() {
+        /*
+         * Called when the game needs to quit. 
+         */
+
+        Application.Quit();
+        UnityEditor.EditorApplication.isPlaying = false;
+    }
+
+    void StartButtonClick() {
         /*
          * When the user presses the start key during the Menu state, change into the MenuToIntro state.
          */
@@ -416,7 +610,7 @@ public class Menu : MonoBehaviour {
         }
     }
 
-    public void StartButtonMouseEnter() {
+    void StartButtonMouseEnter() {
         /*
          * The mouse entered the start Button's clickable area
          */
@@ -424,7 +618,7 @@ public class Menu : MonoBehaviour {
         currentHoverState[(int) Buttons.Start] = true;
     }
 
-    public void StartButtonMouseExit() {
+    void StartButtonMouseExit() {
         /*
          * The mouse entered the start Button's clickable area
          */
@@ -432,17 +626,21 @@ public class Menu : MonoBehaviour {
         currentHoverState[(int) Buttons.Start] = false;
     }
 
-    public void QuitButtonClick() {
+    void QuitButtonClick() {
         /*
-         * When clicking on the quit button in the Main state, quit teh application
+         * When clicking on the quit button in the Main state, Increase currentQuitValue.
          */
 
         if(state == MenuStates.Main) {
-            Debug.Log("QUIT APPLICATION");
+            if(quitValueCurrent == 0) {
+                quitValueCurrent += quitValueIncrease*3;
+            }else {
+                quitValueCurrent += quitValueIncrease;
+            }
         }
     }
 
-    public void QuitButtonMouseEnter() {
+    void QuitButtonMouseEnter() {
         /*
          * The mouse entered the quit button's clickable area
          */
@@ -450,7 +648,7 @@ public class Menu : MonoBehaviour {
         currentHoverState[(int) Buttons.Quit] = true;
     }
 
-    public void QuitButtonMouseExit() {
+    void QuitButtonMouseExit() {
         /*
          * The mouse entered the start Button's clickable area
          */
@@ -461,13 +659,35 @@ public class Menu : MonoBehaviour {
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
 
+    float AdjustRatio(float value, float min, float max) {
+        /*
+         * Given a value that ranges from [0, 1], change it's minimum and max limits,
+         * then saturate it so it returns to a [0, 1] range. Example:
+         * RealTime:
+         * 0.0 -- 1.0 -- 2.0 -- 3.0 -- 4.0 -- 5.0
+         * Normal Value:
+         * 0.0 -- 0.2 -- 0.4 -- 0.6 -- 0.8 -- 1.0
+         * After AdjustRatio(normal value, 0.2, 0.8):
+         * 0.0 -- 0.0 -- 0.3 -- 0.6 -- 1.0 -- 1.0
+         */
+        float adjustedValue = 0;
+        float limitRange = max - min;
+        
+        adjustedValue = Mathf.Clamp((value - min) / limitRange, 0, 1);
+
+        return adjustedValue;
+    }
+
     bool IsStartVisible() {
         /*
          * Return true if the current state shows the start button
          */
         bool visible = false;
 
-        if(state == MenuStates.EmptyToMain || state == MenuStates.Main || state == MenuStates.MainToIntro) {
+        if(state == MenuStates.EmptyToMain || 
+            state == MenuStates.Main || 
+            state == MenuStates.MainToIntro || 
+            state == MenuStates.MainToQuit) {
             visible = true;
         }
 
@@ -480,7 +700,23 @@ public class Menu : MonoBehaviour {
          */
         bool visible = false;
 
-        if(state == MenuStates.EmptyToMain || state == MenuStates.Main || state == MenuStates.MainToIntro) {
+        if(state == MenuStates.EmptyToMain || 
+            state == MenuStates.Main || 
+            state == MenuStates.MainToIntro ||
+            state == MenuStates.MainToQuit) {
+            visible = true;
+        }
+
+        return visible;
+    }
+
+    bool isCoverPanelVisible() {
+        /*
+         * Return true if the cover panel is used
+         */
+        bool visible = false;
+
+        if(state == MenuStates.MainToQuit) {
             visible = true;
         }
 
