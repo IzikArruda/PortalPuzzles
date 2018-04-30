@@ -5,13 +5,23 @@ using UnityEngine.EventSystems;
 using System.Collections;
 
 /*  
- * The potential states the menu can be in.
+ * The potential states the menu can be in. Some states are transition states
+ * that require a certain amount of time to pass until it reaches another state.
  */
 public enum MenuStates {
     Empty,
     EmptyToMain,
     Main,
+    MainToIntro,
 };
+
+/*
+ * Each button used in the menu. They are placed in an enum so each one will 
+ * have their own index in an array.
+ */
+public enum Buttons {
+    Start
+}
 
 /*
  * The menu used by the player during the game. It expected each component to be 
@@ -27,9 +37,12 @@ public class Menu : MonoBehaviour {
     private float minHeight = 25;
     private float maxHeight = 200;
     private float buttonHeight;
-
+    
     /* A link to the player's controller */
-    public CustomPlayerController playerController;
+    private CustomPlayerController playerController;
+
+    /* A basic button object with a text child */
+    public GameObject buttonReference;
 
     /* The font used for the text of the game */
     public Font usedFont;
@@ -38,30 +51,33 @@ public class Menu : MonoBehaviour {
     public Canvas canvas;
     public RectTransform canvasRect;
 
+    /* An array that holds the main buttons of the UI. Each index has it's own button */
+    public Button[] buttons;
+
+    /* The timing values of the transition states */
+    private float mainToIntroMax = 0.8f;
+    private float mainToIntroRemaining;
+
+
+
+
+
     /* The main "Start" button */
     public Button startButton;
     public RectTransform startButtonRect;
-    private bool isHover = false;
-    private float currentHoverTime = 0;
+
+    /* Arrays that hold the hover values. Each index is a different button's hover time */
+    private bool[] currentHoverState = new bool[] { false, false, false };
+    private float[] currentHoverTime = new float[] { 0, 0, 0 };
     private float maxHoverTime = 0.8f;
-    private bool pressedStartButton = false;
-    private float pressedStartCurrentTime = 0;
-    private float pressedStartMaxTime = 1f;
-    
+
     /* Previous resolutions of the window */
     public float screenWidth;
     public float screenHeight;
 
 
     /* ----------- Built-in Functions ------------------------------------------------------------- */
-
-    void Start() {
-        /*  
-         * Start the menu in the empty state
-         */
-        state = MenuStates.Main;
-    }
-
+    
     void Update() {
         /*
          * Check if the screen has been resized and run any per-frame update calls for any UI elements
@@ -71,10 +87,27 @@ public class Menu : MonoBehaviour {
         if(Screen.width != screenWidth || Screen.height != screenHeight) {
             Resize();
         }
-        
+
+        /* Update the hover values */
+        for(int i = 0; i < currentHoverState.Length; i++) {
+            if(currentHoverState[i]) {
+                currentHoverTime[i] += Time.deltaTime;
+                if(currentHoverTime[i] > maxHoverTime) { currentHoverTime[i] = maxHoverTime; }
+            }
+            else {
+                currentHoverTime[i] -= Time.deltaTime;
+                if(currentHoverTime[i] < 0) { currentHoverTime[i] = 0; }
+            }
+        }
+
+        /* Update the transition values. Only change states once the per-frame updates are done. */
+        UpdateTransitionValues();
+
+        /* 
+         * Run the per-frame update functions of each button 
+         */
         /* Start button */
         if(IsStartVisible()) {
-            UStartButtonValues();
             switch(state) {
                 case MenuStates.EmptyToMain:
                     UStartButtonEmptyToMain();
@@ -82,11 +115,17 @@ public class Menu : MonoBehaviour {
                 case MenuStates.Main:
                     UStartButtonMain();
                     break;
+                case MenuStates.MainToIntro:
+                    UStartButtonMainToIntro();
+                    break;
                 default:
                     Debug.Log("ERROR: Menu item does not handle current state");
                     break;
             }
         }
+        
+        /* Change the current state if needed after all the per-frame update functions are done */
+        UpdateCurrentState();
     }
 
 
@@ -96,12 +135,23 @@ public class Menu : MonoBehaviour {
         /*
          * Sets up the main menu. Requires a link to the playerController to add functionallity to the buttons
          */
+        state = MenuStates.Main;
 
         /* Link the global variables of the script */
         playerController = controller;
         canvasRect = canvas.GetComponent<RectTransform>();
+        
+        /* Create and populate the buttons and hover arrays */
+        buttons = new Button[System.Enum.GetValues(typeof(Buttons)).Length];
+        currentHoverState = new bool[System.Enum.GetValues(typeof(Buttons)).Length];
+        currentHoverTime = new float[System.Enum.GetValues(typeof(Buttons)).Length];
+        for(int i = 0; i < buttons.Length; i++) {
+            buttons[i] = CreateButton().GetComponent<Button>();
+            currentHoverState[i] = false;
+            currentHoverTime[i] = 0;
+        }
 
-        /* Run the initialSetup functions for the buttons */
+        /* Run the initialSetup functions for each of the buttons */
         SetupStartButton();
     }
 
@@ -146,6 +196,9 @@ public class Menu : MonoBehaviour {
          * Set the values and variables needed for the start button
          */
 
+        /* Create the button */
+        startButton = CreateButton().GetComponent<Button>();
+
         /* Get the components used on the button */
         startButton.onClick.AddListener(StartButtonClick);
         startButtonRect = startButton.GetComponent<RectTransform>();
@@ -157,6 +210,16 @@ public class Menu : MonoBehaviour {
 
         /* Add an event trigger for when the mosue hovers over the button */
         SetupButtonEvents(startButton, StartButtonMouseEnter, StartButtonMouseExit);
+    }
+
+    public GameObject CreateButton() {
+        /*
+         * Duplicate and return the button reference
+         */
+        GameObject buttonObject = Instantiate(buttonReference);
+        buttonObject.transform.parent = canvas.transform;
+        
+        return buttonObject;
     }
 
     public void Resize() {
@@ -173,25 +236,35 @@ public class Menu : MonoBehaviour {
 
     /* ----------- Update Functions ------------------------------------------------------------- */
 
-    #region Start Button Updates
-    void UStartButtonValues() {
+    void UpdateTransitionValues() {
         /*
-         * Update values used by the start button.
+         * Update transition values and prevent them from going past their lower limit of 0. 
+         * Do not update the state as we want the per-frame update functions to atleast run 
+         * once the transition states have reached 0.
          */
-         
-        /* Update the value when the user has pressed the start button. Will be removed with a new state. */
-        if(pressedStartButton == true) {
-            pressedStartCurrentTime += Time.deltaTime;
-            if(pressedStartCurrentTime > pressedStartMaxTime) { pressedStartCurrentTime = pressedStartMaxTime; }
-        }
 
-        /* Update the hover value when the mouse is/isin't over the button */
-        if(isHover) { currentHoverTime += Time.deltaTime; }
-        else { currentHoverTime -= Time.deltaTime; }
-        if(currentHoverTime < 0) { currentHoverTime = 0; }
-        else if(currentHoverTime > maxHoverTime) { currentHoverTime = maxHoverTime; }
+        switch(state) {
+            case MenuStates.MainToIntro:
+                mainToIntroRemaining -= Time.deltaTime;
+                if(mainToIntroRemaining < 0) { mainToIntroRemaining = 0; }
+                break;
+        }
     }
 
+    void UpdateCurrentState() {
+        /*
+         * Check the current state and the transition values. Transition values will either be
+         * at or above 0. Once they are at 0, we can transition to the next state.
+         */
+
+        switch(state) {
+            case MenuStates.MainToIntro:
+                if(mainToIntroRemaining == 0) { ChangeState(MenuStates.Empty); }
+                break;
+        }
+    }
+
+    #region Start Button Updates
     void UStartButtonEmptyToMain() {
         /*
          * Update the start button while in the EmptyToMain state. 
@@ -206,39 +279,63 @@ public class Menu : MonoBehaviour {
          * Update the start button while in the Main state.
          */
         Outline[] outlines = startButton.GetComponentInChildren<Text>().gameObject.GetComponents<Outline>();
-        float hoverRatio = (Mathf.Sin(Mathf.PI*currentHoverTime/maxHoverTime - 0.5f*Mathf.PI)+1)/2f;
+        float hoverRatio = (Mathf.Sin(Mathf.PI*currentHoverTime[(int) Buttons.Start]/maxHoverTime - 0.5f*Mathf.PI)+1)/2f;
         float extraHoverWidth = hoverRatio*buttonHeight*0.5f;
 
-        /* The position is effected by the current hover value */
+        /* The position and color is effected by the current hover value */
         startButtonRect.sizeDelta = 1.5f*new Vector2(buttonHeight*startWidthRatio + extraHoverWidth, buttonHeight);
         startButtonRect.position = new Vector3(startButtonRect.sizeDelta.x/2f, canvasRect.position.y + buttonHeight/2f, 0);
+        float hoverColor = 1f - 0.25f*hoverRatio;
+        startButton.GetComponentInChildren<Text>().color = new Color(hoverColor, hoverColor, hoverColor, 1);
+    }
 
-        /* The color is controlled by the current hover value AND click value(will be removed later) */
-        float clickFade = pressedStartCurrentTime/pressedStartMaxTime;
-        startButton.GetComponentInChildren<Text>().color = new Color(1, 1, 1, 1 - clickFade);
-        outlines[0].effectColor = new Color(0, 0, 0, 0.5f - 0.75f*clickFade);
-        outlines[1].effectColor = new Color(0, 0, 0, 0.5f - 0.5f*clickFade);
-        outlines[0].effectDistance = new Vector2(0.5f + 45f*clickFade, 0.5f + 45f*clickFade);
-        outlines[1].effectDistance = new Vector2(0.5f + 30f*clickFade, 0.5f + 30f*clickFade);
-        float hovCol = 1f - 0.25f*hoverRatio;
-        startButton.GetComponentInChildren<Text>().color = new Color(hovCol, hovCol, hovCol, startButton.GetComponentInChildren<Text>().color.a);
+    void UStartButtonMainToIntro() {
+        /*
+         * Update the start button while in the Main to Intro state. This state will not move the button
+         * but it will change the opacity of the text along with the outline's distances.
+         */
+        Outline[] outlines = startButton.GetComponentInChildren<Text>().gameObject.GetComponents<Outline>();
+        float transitionFade = 1 - (mainToIntroRemaining / mainToIntroMax);
+
+        /* Change the color of the text and change the outline's distance */
+        startButton.GetComponentInChildren<Text>().color = new Color(1, 1, 1, 1 - transitionFade);
+        outlines[0].effectDistance = new Vector2(0.5f + 45f*transitionFade, 0.5f + 45f*transitionFade);
+        outlines[1].effectDistance = new Vector2(0.5f + 30f*transitionFade, 0.5f + 30f*transitionFade);
     }
     #endregion
 
     
     /* ----------- Event/Listener Functions ------------------------------------------------------------- */
 
-    public void StartButtonClick() {
+    void ChangeState(MenuStates newState) {
         /*
-         * Runs when the user presses the start button
+         * This is called when changing the states of the menu. This used so that
+         * any values that need to be reset upon state change can be adjusted in one function.
          */
 
-        if(pressedStartButton == false) {
-            pressedStartButton = true;
-            pressedStartCurrentTime = 0;
+        /* Make sure the state being changed to is actually a new state */
+        if(state != newState) {
+
+            /* Going into the MainToIntro state will start it's transition value */
+            if(newState == MenuStates.MainToIntro) {
+                mainToIntroRemaining = mainToIntroMax;
+            }
+
+            /* Change the current state */
+            state = newState;
+        }
+    }
+
+    public void StartButtonClick() {
+        /*
+         * When the user presses the start key during the Menu state, change into the MenuToIntro state.
+         */
+
+        if(state == MenuStates.Main) {
+            ChangeState(MenuStates.MainToIntro);
+            playerController.StartButtonPressed();
         }
 
-        playerController.StartButtonPressed();
     }
 
     public void StartButtonMouseEnter() {
@@ -246,7 +343,7 @@ public class Menu : MonoBehaviour {
          * The mouse entered the startButton's clickable area
          */
 
-        isHover = true;
+        currentHoverState[(int) Buttons.Start] = true;
     }
 
     public void StartButtonMouseExit() {
@@ -254,8 +351,7 @@ public class Menu : MonoBehaviour {
          * The mouse entered the startButton's clickable area
          */
 
-        Debug.Log("unhovered");
-        isHover = false;
+        currentHoverState[(int) Buttons.Start] = false;
     }
 
 
@@ -267,7 +363,7 @@ public class Menu : MonoBehaviour {
          */
         bool visible = false;
 
-        if(state == MenuStates.EmptyToMain || state == MenuStates.Main) {
+        if(state == MenuStates.EmptyToMain || state == MenuStates.Main || state == MenuStates.MainToIntro) {
             visible = true;
         }
 
