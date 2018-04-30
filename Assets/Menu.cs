@@ -20,7 +20,8 @@ public enum MenuStates {
  * have their own index in an array.
  */
 public enum Buttons {
-    Start
+    Start,
+    Quit
 }
 
 /*
@@ -32,6 +33,7 @@ public class Menu : MonoBehaviour {
 
     /* Button height to width ratios. Set manually and is unique for each font + text content. */
     private float startWidthRatio = 3;
+    private float quitWidthRatio = 2.25f;
 
     /* Global values used for sizes of UI elements */
     private float minHeight = 25;
@@ -53,18 +55,11 @@ public class Menu : MonoBehaviour {
 
     /* An array that holds the main buttons of the UI. Each index has it's own button */
     public Button[] buttons;
+    public RectTransform[] buttonRects;
 
     /* The timing values of the transition states */
     private float mainToIntroMax = 0.8f;
     private float mainToIntroRemaining;
-
-
-
-
-
-    /* The main "Start" button */
-    public Button startButton;
-    public RectTransform startButtonRect;
 
     /* Arrays that hold the hover values. Each index is a different button's hover time */
     private bool[] currentHoverState = new bool[] { false, false, false };
@@ -74,10 +69,10 @@ public class Menu : MonoBehaviour {
     /* Previous resolutions of the window */
     public float screenWidth;
     public float screenHeight;
-
+    
 
     /* ----------- Built-in Functions ------------------------------------------------------------- */
-    
+
     void Update() {
         /*
          * Check if the screen has been resized and run any per-frame update calls for any UI elements
@@ -123,7 +118,21 @@ public class Menu : MonoBehaviour {
                     break;
             }
         }
-        
+        /* Quit button */
+        if(isQuitVisible()) {
+            switch(state) {
+                case MenuStates.Main:
+                    UQuitButtonMain();
+                    break;
+                case MenuStates.MainToIntro:
+                    UQuitButtonMainToIntro();
+                    break;
+                default:
+                    Debug.Log("ERROR: Menu item does not handle current state");
+                    break;
+            }
+        }
+
         /* Change the current state if needed after all the per-frame update functions are done */
         UpdateCurrentState();
     }
@@ -143,16 +152,19 @@ public class Menu : MonoBehaviour {
         
         /* Create and populate the buttons and hover arrays */
         buttons = new Button[System.Enum.GetValues(typeof(Buttons)).Length];
+        buttonRects = new RectTransform[System.Enum.GetValues(typeof(Buttons)).Length];
         currentHoverState = new bool[System.Enum.GetValues(typeof(Buttons)).Length];
         currentHoverTime = new float[System.Enum.GetValues(typeof(Buttons)).Length];
         for(int i = 0; i < buttons.Length; i++) {
             buttons[i] = CreateButton().GetComponent<Button>();
+            buttonRects[i] = buttons[i].GetComponent<RectTransform>();
             currentHoverState[i] = false;
             currentHoverTime[i] = 0;
         }
 
         /* Run the initialSetup functions for each of the buttons */
-        SetupStartButton();
+        SetupStartButton(ref buttons[(int) Buttons.Start]);
+        SetupQuitButton(ref buttons[(int) Buttons.Quit]);
     }
 
     public void SetupText(Text text) {
@@ -176,40 +188,25 @@ public class Menu : MonoBehaviour {
 
     }
 
-    public void SetupButtonEvents(Button button, UnityAction mouseEnter, UnityAction mouseExit) {
+    public void SetupButtonEvents(ref Button button, UnityAction mouseEnter, UnityAction mouseExit) {
         /*
          * Attach the hover events to the given button
          */
-        EventTrigger startButtonTrigger = startButton.gameObject.AddComponent<EventTrigger>();
-        EventTrigger.Entry startButtonEnter = new EventTrigger.Entry();
-        startButtonEnter.eventID = EventTriggerType.PointerEnter;
-        startButtonEnter.callback.AddListener((data) => { mouseEnter(); });
-        startButtonTrigger.triggers.Add(startButtonEnter);
-        EventTrigger.Entry startButtonExit = new EventTrigger.Entry();
-        startButtonExit.eventID = EventTriggerType.PointerExit;
-        startButtonExit.callback.AddListener((data) => { mouseExit(); });
-        startButtonTrigger.triggers.Add(startButtonExit);
-    }
 
-    public void SetupStartButton() {
-        /*
-         * Set the values and variables needed for the start button
-         */
+        /* Create the trigger events */
+        EventTrigger buttonTrigger = button.gameObject.AddComponent<EventTrigger>();
+        EventTrigger.Entry buttonEnter = new EventTrigger.Entry();
+        EventTrigger.Entry buttonExit = new EventTrigger.Entry();
 
-        /* Create the button */
-        startButton = CreateButton().GetComponent<Button>();
+        /* Link the given functions to the mouse events */
+        buttonEnter.eventID = EventTriggerType.PointerEnter;
+        buttonExit.eventID = EventTriggerType.PointerExit;
+        buttonEnter.callback.AddListener((data) => { mouseEnter(); });
+        buttonExit.callback.AddListener((data) => { mouseExit(); });
 
-        /* Get the components used on the button */
-        startButton.onClick.AddListener(StartButtonClick);
-        startButtonRect = startButton.GetComponent<RectTransform>();
-
-        /* Set the sizes and content of the button */
-        SetupText(startButton.GetComponentInChildren<Text>());
-        startButton.GetComponentInChildren<Text>().text = "START";
-        startButton.GetComponentInChildren<Text>().fontSize = 100;
-
-        /* Add an event trigger for when the mosue hovers over the button */
-        SetupButtonEvents(startButton, StartButtonMouseEnter, StartButtonMouseExit);
+        /* Add the events to the triggers */
+        buttonTrigger.triggers.Add(buttonEnter);
+        buttonTrigger.triggers.Add(buttonExit);
     }
 
     public GameObject CreateButton() {
@@ -217,8 +214,10 @@ public class Menu : MonoBehaviour {
          * Duplicate and return the button reference
          */
         GameObject buttonObject = Instantiate(buttonReference);
-        buttonObject.transform.parent = canvas.transform;
-        
+        buttonObject.transform.SetParent(canvas.transform);
+        buttonObject.SetActive(true);
+
+
         return buttonObject;
     }
 
@@ -233,6 +232,34 @@ public class Menu : MonoBehaviour {
         buttonHeight = Mathf.Clamp(screenHeight*0.2f, minHeight, maxHeight);
     }
     
+    void SetupStartButton(ref Button button) {
+        /*
+         * Set the variables of the button that makes it the "Start" button
+         */
+        
+        /* Setup the text of the button */
+        SetupText(button.GetComponentInChildren<Text>());
+        button.GetComponentInChildren<Text>().text = "START";
+
+        /* Setup the event triggers for mouse clicks and hovers */
+        button.onClick.AddListener(StartButtonClick);
+        SetupButtonEvents(ref button, StartButtonMouseEnter, StartButtonMouseExit);
+    }
+
+    void SetupQuitButton(ref Button button) {
+        /*
+         * Set the variables of the button that makes it the "Quit" button
+         */
+
+        /* Setup the text of the button */
+        SetupText(button.GetComponentInChildren<Text>());
+        button.GetComponentInChildren<Text>().text = "QUIT";
+
+        /* Setup the event triggers for mouse clicks and hovers */
+        button.onClick.AddListener(QuitButtonClick);
+        SetupButtonEvents(ref button, QuitButtonMouseEnter, QuitButtonMouseExit);
+    }
+
 
     /* ----------- Update Functions ------------------------------------------------------------- */
 
@@ -278,15 +305,18 @@ public class Menu : MonoBehaviour {
         /*
          * Update the start button while in the Main state.
          */
-        Outline[] outlines = startButton.GetComponentInChildren<Text>().gameObject.GetComponents<Outline>();
-        float hoverRatio = (Mathf.Sin(Mathf.PI*currentHoverTime[(int) Buttons.Start]/maxHoverTime - 0.5f*Mathf.PI)+1)/2f;
+        int buttonEnum = (int) Buttons.Start;
+        Button button = buttons[buttonEnum];
+        RectTransform rect = buttonRects[buttonEnum];
+        Outline[] outlines = button.GetComponentInChildren<Text>().gameObject.GetComponents<Outline>();
+        float hoverRatio = (Mathf.Sin(Mathf.PI*currentHoverTime[buttonEnum]/maxHoverTime - 0.5f*Mathf.PI)+1)/2f;
         float extraHoverWidth = hoverRatio*buttonHeight*0.5f;
 
         /* The position and color is effected by the current hover value */
-        startButtonRect.sizeDelta = 1.5f*new Vector2(buttonHeight*startWidthRatio + extraHoverWidth, buttonHeight);
-        startButtonRect.position = new Vector3(startButtonRect.sizeDelta.x/2f, canvasRect.position.y + buttonHeight/2f, 0);
+        rect.sizeDelta = new Vector2(1.5f*buttonHeight*startWidthRatio + extraHoverWidth, 1.5f*buttonHeight);
+        rect.position = new Vector3(rect.sizeDelta.x/2f, canvasRect.position.y + buttonHeight/2f, 0);
         float hoverColor = 1f - 0.25f*hoverRatio;
-        startButton.GetComponentInChildren<Text>().color = new Color(hoverColor, hoverColor, hoverColor, 1);
+        button.GetComponentInChildren<Text>().color = new Color(hoverColor, hoverColor, hoverColor, 1);
     }
 
     void UStartButtonMainToIntro() {
@@ -294,17 +324,66 @@ public class Menu : MonoBehaviour {
          * Update the start button while in the Main to Intro state. This state will not move the button
          * but it will change the opacity of the text along with the outline's distances.
          */
-        Outline[] outlines = startButton.GetComponentInChildren<Text>().gameObject.GetComponents<Outline>();
+        int buttonEnum = (int) Buttons.Start;
+        Button button = buttons[buttonEnum];
+        Outline[] outlines = button.GetComponentInChildren<Text>().gameObject.GetComponents<Outline>();
         float transitionFade = 1 - (mainToIntroRemaining / mainToIntroMax);
 
         /* Change the color of the text and change the outline's distance */
-        startButton.GetComponentInChildren<Text>().color = new Color(1, 1, 1, 1 - transitionFade);
+        button.GetComponentInChildren<Text>().color = new Color(1, 1, 1, 1 - transitionFade);
         outlines[0].effectDistance = new Vector2(0.5f + 45f*transitionFade, 0.5f + 45f*transitionFade);
         outlines[1].effectDistance = new Vector2(0.5f + 30f*transitionFade, 0.5f + 30f*transitionFade);
     }
     #endregion
 
+    #region Quit Button Updates
+    void UQuitButtonEmptyToMain() {
+        /*
+         * Update the quit button as the menu enters the main from empty
+         */
+
+        /* For now, do the same as the normal Menu state */
+        UQuitButtonMain();
+    }
+
+    void UQuitButtonMain() {
+        /*
+         * Update the quit button while in the Main state.
+         */
+        int buttonEnum = (int) Buttons.Quit;
+        Button button = buttons[buttonEnum];
+        RectTransform rect = buttonRects[buttonEnum];
+        Outline[] outlines = button.GetComponentInChildren<Text>().gameObject.GetComponents<Outline>();
+        float hoverRatio = (Mathf.Sin(Mathf.PI*currentHoverTime[buttonEnum]/maxHoverTime - 0.5f*Mathf.PI)+1)/2f;
+        float extraHoverWidth = hoverRatio*buttonHeight*0.5f;
+        /* The button that this quit button will be placed bellow */
+        RectTransform aboveButton = buttonRects[(int) Buttons.Start];
+
+        /* The position and color is effected by it's hover values and the button above it */
+        rect.sizeDelta = new Vector2(buttonHeight*quitWidthRatio + extraHoverWidth, buttonHeight);
+        float relativeHeight = aboveButton.position.y - aboveButton.sizeDelta.y/2f - buttonHeight/2f;
+        rect.position = new Vector3(rect.sizeDelta.x/2f, relativeHeight, 0);
+        float hoverColor = 1f - 0.25f*hoverRatio;
+        button.GetComponentInChildren<Text>().color = new Color(hoverColor, hoverColor, hoverColor, 1);
+    }
     
+    void UQuitButtonMainToIntro() {
+        /*
+         * Animate the quit button when entering the intro. The quit button slides out to the left
+         */
+        int buttonEnum = (int) Buttons.Quit;
+        RectTransform rect = buttonRects[buttonEnum];
+        //The transition fade values aims to go from 0 to 2 over the transition state.
+        float transitionFade = 2*(mainToIntroMax - mainToIntroRemaining) / mainToIntroMax;
+        //Clamp the values from going above 1
+        transitionFade = Mathf.Clamp(transitionFade, 0, 1);
+
+        /* Move the button out to the left side of the screen */
+        rect.position = new Vector3(rect.sizeDelta.x/2f - rect.sizeDelta.x*transitionFade, rect.position.y, 0);
+    }
+    #endregion
+
+
     /* ----------- Event/Listener Functions ------------------------------------------------------------- */
 
     void ChangeState(MenuStates newState) {
@@ -335,12 +414,11 @@ public class Menu : MonoBehaviour {
             ChangeState(MenuStates.MainToIntro);
             playerController.StartButtonPressed();
         }
-
     }
 
     public void StartButtonMouseEnter() {
         /*
-         * The mouse entered the startButton's clickable area
+         * The mouse entered the start Button's clickable area
          */
 
         currentHoverState[(int) Buttons.Start] = true;
@@ -348,10 +426,36 @@ public class Menu : MonoBehaviour {
 
     public void StartButtonMouseExit() {
         /*
-         * The mouse entered the startButton's clickable area
+         * The mouse entered the start Button's clickable area
          */
 
         currentHoverState[(int) Buttons.Start] = false;
+    }
+
+    public void QuitButtonClick() {
+        /*
+         * When clicking on the quit button in the Main state, quit teh application
+         */
+
+        if(state == MenuStates.Main) {
+            Debug.Log("QUIT APPLICATION");
+        }
+    }
+
+    public void QuitButtonMouseEnter() {
+        /*
+         * The mouse entered the quit button's clickable area
+         */
+
+        currentHoverState[(int) Buttons.Quit] = true;
+    }
+
+    public void QuitButtonMouseExit() {
+        /*
+         * The mouse entered the start Button's clickable area
+         */
+
+        currentHoverState[(int) Buttons.Quit] = false;
     }
 
 
@@ -360,6 +464,19 @@ public class Menu : MonoBehaviour {
     bool IsStartVisible() {
         /*
          * Return true if the current state shows the start button
+         */
+        bool visible = false;
+
+        if(state == MenuStates.EmptyToMain || state == MenuStates.Main || state == MenuStates.MainToIntro) {
+            visible = true;
+        }
+
+        return visible;
+    }
+
+    bool isQuitVisible() {
+        /*
+         * Return true if the current state shows the quit button
          */
         bool visible = false;
 
