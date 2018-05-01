@@ -42,6 +42,7 @@ public class Menu : MonoBehaviour {
 
     /* Button height to width ratios. Set manually and is unique for each font + text content. */
     private float startWidthRatio = 3;
+    private float continueWidthRatio = 4.65f;
     private float quitWidthRatio = 2.25f;
 
     /* Global values used for sizes of UI elements */
@@ -98,6 +99,9 @@ public class Menu : MonoBehaviour {
     float quitValueDecreaseMod = 0.3f;
     float quitValueMax = 1;
 
+    /* Values used with the start button and once the game has begun */
+    bool startButtonState = true;
+
 
     /* ----------- Built-in Functions ------------------------------------------------------------- */
 
@@ -105,6 +109,15 @@ public class Menu : MonoBehaviour {
         /*
          * Check if the screen has been resized and run any per-frame update calls for any UI elements
          */
+
+
+        //Pressing Y will try to open up the menu again if in the empty state
+        if(state == MenuStates.Empty) {
+            if(Input.GetKeyDown("y")) {
+                ChangeState(MenuStates.Main);
+            }
+        }
+        Debug.Log(state);
 
         /* Check if the screen has been resized */
         if(Screen.width != screenWidth || Screen.height != screenHeight) {
@@ -484,7 +497,7 @@ public class Menu : MonoBehaviour {
         RectTransform rect = buttonRects[buttonEnum];
         Outline[] outlines = button.GetComponentInChildren<Text>().gameObject.GetComponents<Outline>();
         //Start fading in the button 50% into the intro, finish 90% in
-        float transitionFade = AdjustRatio((startupMax - startupRemaining) / startupMax, 0.5f, 0.9f);
+        float transitionFade = AdjustRatio(TimeRatio(startupRemaining, startupMax), 0.5f, 0.9f);
 
         /* Leave the positions as their default intro positions */
         rect.sizeDelta = new Vector2(1.5f*buttonHeight*startWidthRatio, 1.5f*buttonHeight);
@@ -494,6 +507,12 @@ public class Menu : MonoBehaviour {
 
         /* Change the opacity to reflect the transition state */
         button.GetComponentInChildren<Text>().color = new Color(1, 1, 1, transitionFade);
+
+        /////////////////////////
+        //Make the button clickable once the startup is in it's final update
+        if(startupRemaining == 0) {
+            button.GetComponent<Image>().raycastTarget = true;
+        }
     }
 
     void UStartButtonEmptyToMain() {
@@ -502,7 +521,7 @@ public class Menu : MonoBehaviour {
          */
         int buttonEnum = (int) Buttons.Start;
         RectTransform rect = buttonRects[buttonEnum];
-        float transitionFade = Mathf.Sin((Mathf.PI/2f)*(emptyToMainMax - emptyToMainRemaining) / emptyToMainMax);
+        float transitionFade = Mathf.Sin((Mathf.PI/2f)*TimeRatio(emptyToMainRemaining, emptyToMainMax));
         float hoverRatio = (Mathf.Sin(Mathf.PI*currentHoverTime[buttonEnum]/maxHoverTime - 0.5f*Mathf.PI)+1)/2f;
         float extraHoverWidth = hoverRatio*buttonHeight*0.5f;
 
@@ -536,13 +555,24 @@ public class Menu : MonoBehaviour {
          */
         int buttonEnum = (int) Buttons.Start;
         Button button = buttons[buttonEnum];
+        RectTransform rect = buttonRects[buttonEnum];
         Outline[] outlines = button.GetComponentInChildren<Text>().gameObject.GetComponents<Outline>();
-        float transitionFade = 1 - (mainToIntroRemaining / mainToIntroMax);
+        float transitionFade = TimeRatio(mainToIntroRemaining, mainToIntroMax);
 
         /* Change the color of the text and change the outline's distance */
         button.GetComponentInChildren<Text>().color = new Color(1, 1, 1, 1 - transitionFade);
         outlines[0].effectDistance = new Vector2(0.5f + 45f*transitionFade, 0.5f + 45f*transitionFade);
         outlines[1].effectDistance = new Vector2(0.5f + 30f*transitionFade, 0.5f + 30f*transitionFade);
+
+        /* Place the button off the screen on the final frame in the MainToIntro state */
+        if(mainToIntroRemaining == 0) {
+            /* Position the button off screen */
+            rect.position = new Vector3(-rect.sizeDelta.x/2f, canvasRect.position.y + buttonHeight/2f, 0);
+
+            /* Reset the outlines of the button */
+            outlines[0].effectDistance = new Vector2(0.5f, 0.5f);
+            outlines[1].effectDistance = new Vector2(0.5f, 0.5f);
+        }
     }
 
     void UStartButtonMainToQuit() {
@@ -551,10 +581,8 @@ public class Menu : MonoBehaviour {
          */
         int buttonEnum = (int) Buttons.Start;
         RectTransform rect = buttonRects[buttonEnum];
-        //The transition fade values aims to go from 0 to 2 over the transition state.
-        float transitionFade = 2*(mainToQuitMax - mainToQuitRemaining) / mainToQuitMax;
-        //Clamp the values from going above 1
-        transitionFade = Mathf.Clamp(transitionFade, 0, 1);
+        //The transition starts fading the button at the start and ends 50% through
+        float transitionFade = AdjustRatio(TimeRatio(mainToQuitRemaining, mainToQuitMax), 0, 0.5f);
 
         /* Move the button out to the left side of the screen */
         rect.position = new Vector3(rect.sizeDelta.x/2f - rect.sizeDelta.x*transitionFade, rect.position.y, 0);
@@ -573,7 +601,7 @@ public class Menu : MonoBehaviour {
         /* The button that this quit button will be placed bellow */
         RectTransform aboveButton = buttonRects[(int) Buttons.Start];
         //Start fading in the button 60% into the intro, finish 100% in
-        float transitionFade = AdjustRatio((startupMax - startupRemaining) / startupMax, 0.6f, 1.0f);
+        float transitionFade = AdjustRatio(TimeRatio(startupRemaining, startupMax), 0.6f, 1.0f);
 
         /* Leave the positions as their default intro positions */
         rect.sizeDelta = new Vector2(buttonHeight*quitWidthRatio, buttonHeight);
@@ -592,9 +620,9 @@ public class Menu : MonoBehaviour {
          */
         int buttonEnum = (int) Buttons.Quit;
         RectTransform rect = buttonRects[buttonEnum];
-        float transitionFade = Mathf.Sin((Mathf.PI/2f)*(emptyToMainMax - emptyToMainRemaining) / emptyToMainMax);
         float hoverRatio = (Mathf.Sin(Mathf.PI*currentHoverTime[buttonEnum]/maxHoverTime - 0.5f*Mathf.PI)+1)/2f;
         float extraHoverWidth = hoverRatio*buttonHeight*0.5f;
+        float transitionFade = Mathf.Sin((Mathf.PI/2f)*TimeRatio(emptyToMainRemaining, emptyToMainMax));
         /* The button that this quit button will be placed bellow */
         RectTransform aboveButton = buttonRects[(int) Buttons.Start];
 
@@ -635,9 +663,7 @@ public class Menu : MonoBehaviour {
         int buttonEnum = (int) Buttons.Quit;
         RectTransform rect = buttonRects[buttonEnum];
         //The transition fade values aims to go from 0 to 2 over the transition state.
-        float transitionFade = 2*(mainToIntroMax - mainToIntroRemaining) / mainToIntroMax;
-        //Clamp the values from going above 1
-        transitionFade = Mathf.Clamp(transitionFade, 0, 1);
+        float transitionFade = TimeRatio(mainToIntroRemaining, mainToIntroMax);
 
         /* Move the button out to the left side of the screen */
         rect.position = new Vector3(rect.sizeDelta.x/2f - rect.sizeDelta.x*transitionFade, rect.position.y, 0);
@@ -649,10 +675,8 @@ public class Menu : MonoBehaviour {
          */
         int buttonEnum = (int) Buttons.Quit;
         RectTransform rect = buttonRects[buttonEnum];
-        //The transition fade values aims to go from 0 to 2 over the transition state.
-        float transitionFade = 2*(mainToQuitMax - mainToQuitRemaining) / mainToQuitMax;
-        //Clamp the values from going above 1
-        transitionFade = Mathf.Clamp(transitionFade, 0, 1);
+        //The transition starts fading at the start and ends 50% through
+        float transitionFade = AdjustRatio(TimeRatio(mainToQuitRemaining, mainToQuitMax), 0, 0.5f);
 
         /* Move the button out to the left side of the screen */
         rect.position = new Vector3(rect.sizeDelta.x/2f - rect.sizeDelta.x*transitionFade, rect.position.y, 0);
@@ -677,7 +701,7 @@ public class Menu : MonoBehaviour {
             }
 
             /* Entering EmptyToMain will start it's transition value */
-            if(newState == MenuStates.EmptyToMain) {
+            else if(newState == MenuStates.EmptyToMain) {
                 emptyToMainRemaining = emptyToMainMax;
             }
 
@@ -695,6 +719,15 @@ public class Menu : MonoBehaviour {
             else if(newState == MenuStates.MainToQuit) {
                 mainToQuitRemaining = mainToQuitMax;
             }
+
+
+            /* Leaving the MainToIntro state will change the start button */
+            if(state == MenuStates.MainToIntro) {
+                buttons[(int) Buttons.Start].GetComponentInChildren<Text>().text = "CONTINUE";
+                startWidthRatio = continueWidthRatio;
+                startButtonState = false;
+            }
+
 
             /* Change the current state */
             state = newState;
@@ -715,9 +748,19 @@ public class Menu : MonoBehaviour {
          * When the user presses the start key during the Menu state, change into the MenuToIntro state.
          */
 
+
         if(state == MenuStates.Main) {
-            ChangeState(MenuStates.MainToIntro);
-            playerController.StartButtonPressed();
+
+            /* Start the game by entering the intro state */
+            if(startButtonState) {
+                ChangeState(MenuStates.MainToIntro);
+                playerController.StartButtonPressed();
+            }
+            else {
+                /* Continue the game by entering the empty state */
+                ChangeState(MenuStates.Empty);
+            }
+
         }
     }
 
@@ -769,6 +812,15 @@ public class Menu : MonoBehaviour {
 
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
+
+    float TimeRatio(float remainingTime, float maxTime) {
+        /*
+         * Given a current time which starts at the given max and ends at 0, get the
+         * ratio of it's current time on a [0, 1] range.
+         */
+
+        return (maxTime - remainingTime) / maxTime;
+    }
 
     float AdjustRatio(float value, float min, float max) {
         /*
