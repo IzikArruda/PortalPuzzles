@@ -9,6 +9,7 @@ using System.Collections;
  * that require a certain amount of time to pass until it reaches another state.
  */
 public enum MenuStates {
+    Startup,
     Empty,
     EmptyToMain,
     Main,
@@ -70,14 +71,18 @@ public class Menu : MonoBehaviour {
     public RectTransform[] panelRects;
 
     /* The timing values of the transition states */
+    private float startupMax = 3;
+    private float startupRemaining;
+    private float emptyToMainMax = 1.2f;
+    private float emptyToMainRemaining;
     private float mainToIntroMax = 0.8f;
     private float mainToIntroRemaining;
     private float mainToQuitMax = 1.5f;
     private float mainToQuitRemaining;
 
     /* Arrays that hold the hover values. Each index is a different button's hover time */
-    private bool[] currentHoverState = new bool[] { false, false, false };
-    private float[] currentHoverTime = new float[] { 0, 0, 0 };
+    private bool[] currentHoverState;
+    private float[] currentHoverTime;
     private float maxHoverTime = 0.8f;
 
     /* Previous resolutions of the window */
@@ -127,6 +132,9 @@ public class Menu : MonoBehaviour {
         /* Start button */
         if(IsStartVisible()) {
             switch(state) {
+                case MenuStates.Startup:
+                    UStartButtonStartup();
+                    break;
                 case MenuStates.EmptyToMain:
                     UStartButtonEmptyToMain();
                     break;
@@ -147,6 +155,9 @@ public class Menu : MonoBehaviour {
         /* Quit button */
         if(isQuitVisible()) {
             switch(state) {
+                case MenuStates.Startup:
+                    UQuitButtonStartup();
+                    break;
                 case MenuStates.EmptyToMain:
                     UQuitButtonEmptyToMain();
                     break;
@@ -167,6 +178,9 @@ public class Menu : MonoBehaviour {
         /* Cover panel */
         if(isCoverPanelVisible()) {
             switch(state) {
+                case MenuStates.Startup:
+                    UCoverPanelStartup();
+                    break;
                 case MenuStates.MainToQuit:
                     UCoverPanelMainToQuit();
                     break;
@@ -185,10 +199,12 @@ public class Menu : MonoBehaviour {
 
     public void InitializeMenu(CustomPlayerController controller) {
         /*
-         * Sets up the main menu. Requires a link to the playerController to add functionallity to the buttons
+         * Sets up the main menu. Requires a link to the playerController to add functionallity to the buttons.
+         * Start the game in the IntroToMain transition state.
          */
-        state = MenuStates.Main;
-
+        state = MenuStates.Empty;
+        ChangeState(MenuStates.Startup);
+        
         /* Link the global variables of the script */
         playerController = controller;
         canvasRect = canvas.GetComponent<RectTransform>();
@@ -371,6 +387,12 @@ public class Menu : MonoBehaviour {
          
         /* Update the generic StateTransition values */
         switch(state) {
+            case MenuStates.Startup:
+                UpdateTransitionValue(ref startupRemaining);
+                break;
+            case MenuStates.EmptyToMain:
+                UpdateTransitionValue(ref emptyToMainRemaining);
+                break;
             case MenuStates.MainToIntro:
                 UpdateTransitionValue(ref mainToIntroRemaining);
                 break;
@@ -406,6 +428,12 @@ public class Menu : MonoBehaviour {
          */
 
         switch(state) {
+            case MenuStates.Startup:
+                if(startupRemaining == 0) { ChangeState(MenuStates.Main); }
+                break;
+            case MenuStates.EmptyToMain:
+                if(emptyToMainRemaining == 0) { ChangeState(MenuStates.Main); }
+                break;
             case MenuStates.MainToIntro:
                 if(mainToIntroRemaining == 0) { ChangeState(MenuStates.Empty); }
                 break;
@@ -419,6 +447,19 @@ public class Menu : MonoBehaviour {
     }
 
     #region Cover Panel Updates
+    void UCoverPanelStartup() {
+        /*
+         * Do nothing with this for now
+         */
+        int panelEnum = (int) Panels.Cover;
+        Image rectImage = panelRects[panelEnum].GetComponent<Image>();
+        //Start fading 10% into the startup and end 80% into it
+        float transitionFade = AdjustRatio((startupMax - startupRemaining) / startupMax, 0.1f, 0.8f);
+
+        /* Fade the color out relative to the remaining time before the game closes */
+        rectImage.color = new Color(0, 0, 0, 1 - transitionFade);
+    }
+
     void UCoverPanelMainToQuit() {
         /*
          * While the game is about to quit, Change the color of the cover panel to block the view.
@@ -434,13 +475,40 @@ public class Menu : MonoBehaviour {
     #endregion
 
     #region Start Button Updates
+    void UStartButtonStartup() {
+        /*
+         * Fade the button into view. Have it already placed in it's main menu position
+         */
+        int buttonEnum = (int) Buttons.Start;
+        Button button = buttons[buttonEnum];
+        RectTransform rect = buttonRects[buttonEnum];
+        Outline[] outlines = button.GetComponentInChildren<Text>().gameObject.GetComponents<Outline>();
+        //Start fading in the button 50% into the intro, finish 90% in
+        float transitionFade = AdjustRatio((startupMax - startupRemaining) / startupMax, 0.5f, 0.9f);
+
+        /* Leave the positions as their default intro positions */
+        rect.sizeDelta = new Vector2(1.5f*buttonHeight*startWidthRatio, 1.5f*buttonHeight);
+        rect.position = new Vector3(rect.sizeDelta.x/2f, canvasRect.position.y + buttonHeight/2f, 0);
+        outlines[0].effectDistance = new Vector2(0.5f, 0.5f);
+        outlines[1].effectDistance = new Vector2(0.5f, 0.5f);
+
+        /* Change the opacity to reflect the transition state */
+        button.GetComponentInChildren<Text>().color = new Color(1, 1, 1, transitionFade);
+    }
+
     void UStartButtonEmptyToMain() {
         /*
-         * Update the start button while in the EmptyToMain state. 
+         * During this transition state, move the button so it's back onto the screen
          */
+        int buttonEnum = (int) Buttons.Start;
+        RectTransform rect = buttonRects[buttonEnum];
+        float transitionFade = Mathf.Sin((Mathf.PI/2f)*(emptyToMainMax - emptyToMainRemaining) / emptyToMainMax);
+        float hoverRatio = (Mathf.Sin(Mathf.PI*currentHoverTime[buttonEnum]/maxHoverTime - 0.5f*Mathf.PI)+1)/2f;
+        float extraHoverWidth = hoverRatio*buttonHeight*0.5f;
 
-        /* For now, do the same as the normal Menu state */
-        UStartButtonMain();
+        /* Animate the button slidding in from the left side */
+        rect.sizeDelta = new Vector2(1.5f*buttonHeight*startWidthRatio + extraHoverWidth, 1.5f*buttonHeight);
+        rect.position = new Vector3(-rect.sizeDelta.x/2f + rect.sizeDelta.x*transitionFade, canvasRect.position.y + buttonHeight/2f, 0);
     }
 
     void UStartButtonMain() {
@@ -494,13 +562,46 @@ public class Menu : MonoBehaviour {
     #endregion
 
     #region Quit Button Updates
+    void UQuitButtonStartup() {
+        /*
+         * Fade the button into view. Have it already placed in it's main menu position
+         */
+        int buttonEnum = (int) Buttons.Quit;
+        Button button = buttons[buttonEnum];
+        RectTransform rect = buttonRects[buttonEnum];
+        Outline[] outlines = button.GetComponentInChildren<Text>().gameObject.GetComponents<Outline>();
+        /* The button that this quit button will be placed bellow */
+        RectTransform aboveButton = buttonRects[(int) Buttons.Start];
+        //Start fading in the button 60% into the intro, finish 100% in
+        float transitionFade = AdjustRatio((startupMax - startupRemaining) / startupMax, 0.6f, 1.0f);
+
+        /* Leave the positions as their default intro positions */
+        rect.sizeDelta = new Vector2(buttonHeight*quitWidthRatio, buttonHeight);
+        float relativeHeight = aboveButton.position.y - aboveButton.sizeDelta.y/2f - buttonHeight/2f;
+        rect.position = new Vector3(rect.sizeDelta.x/2f, relativeHeight, 0);
+        outlines[0].effectDistance = new Vector2(0.5f, 0.5f);
+        outlines[1].effectDistance = new Vector2(0.5f, 0.5f);
+
+        /* Change the opacity to reflect the transition state */
+        button.GetComponentInChildren<Text>().color = new Color(1, 1, 1, transitionFade);
+    }
+
     void UQuitButtonEmptyToMain() {
         /*
          * Update the quit button as the menu enters the main from empty
          */
+        int buttonEnum = (int) Buttons.Quit;
+        RectTransform rect = buttonRects[buttonEnum];
+        float transitionFade = Mathf.Sin((Mathf.PI/2f)*(emptyToMainMax - emptyToMainRemaining) / emptyToMainMax);
+        float hoverRatio = (Mathf.Sin(Mathf.PI*currentHoverTime[buttonEnum]/maxHoverTime - 0.5f*Mathf.PI)+1)/2f;
+        float extraHoverWidth = hoverRatio*buttonHeight*0.5f;
+        /* The button that this quit button will be placed bellow */
+        RectTransform aboveButton = buttonRects[(int) Buttons.Start];
 
         /* For now, do the same as the normal Menu state */
-        UQuitButtonMain();
+        rect.sizeDelta = new Vector2(buttonHeight*quitWidthRatio + extraHoverWidth, buttonHeight);
+        float relativeHeight = aboveButton.position.y - aboveButton.sizeDelta.y/2f - buttonHeight/2f;
+        rect.position = new Vector3(-rect.sizeDelta.x/2f + rect.sizeDelta.x*transitionFade, relativeHeight, 0);
     }
 
     void UQuitButtonMain() {
@@ -570,8 +671,18 @@ public class Menu : MonoBehaviour {
         /* Make sure the state being changed to is actually a new state */
         if(state != newState) {
 
+            /* Entering Startup will start it's transition value */
+            if(newState == MenuStates.Startup) {
+                startupRemaining = startupMax;
+            }
+
+            /* Entering EmptyToMain will start it's transition value */
+            if(newState == MenuStates.EmptyToMain) {
+                emptyToMainRemaining = emptyToMainMax;
+            }
+
             /* Entering MainToIntro will start it's transition value */
-            if(newState == MenuStates.MainToIntro) {
+            else if(newState == MenuStates.MainToIntro) {
                 mainToIntroRemaining = mainToIntroMax;
             }
 
@@ -684,7 +795,8 @@ public class Menu : MonoBehaviour {
          */
         bool visible = false;
 
-        if(state == MenuStates.EmptyToMain || 
+        if(state == MenuStates.Startup ||
+            state == MenuStates.EmptyToMain || 
             state == MenuStates.Main || 
             state == MenuStates.MainToIntro || 
             state == MenuStates.MainToQuit) {
@@ -700,7 +812,8 @@ public class Menu : MonoBehaviour {
          */
         bool visible = false;
 
-        if(state == MenuStates.EmptyToMain || 
+        if(state == MenuStates.Startup ||
+            state == MenuStates.EmptyToMain || 
             state == MenuStates.Main || 
             state == MenuStates.MainToIntro ||
             state == MenuStates.MainToQuit) {
@@ -716,7 +829,8 @@ public class Menu : MonoBehaviour {
          */
         bool visible = false;
 
-        if(state == MenuStates.MainToQuit) {
+        if(state == MenuStates.Startup ||
+            state == MenuStates.MainToQuit) {
             visible = true;
         }
 
