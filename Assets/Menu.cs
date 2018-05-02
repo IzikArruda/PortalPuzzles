@@ -7,12 +7,24 @@ using System.Collections;
 /*  
  * The potential states the menu can be in. Some states are transition states
  * that require a certain amount of time to pass until it reaches another state.
+ * 
+ * Adding a new state requires:
+ * - Adding to the IsVisble___() functions
+ * - Add the states to the Update functions
+ * - Add the functions to be run with the new Update calls
+ * 
+ * If its a transition state: 
+ * - Add a max/remaining set of values
+ * - Update the transition value in UpdateTransitionValues
+ * - Add to UpdateCurrentState with the new transitional values
+ * - Add to ChangeState to set the remainingTime
  */
 public enum MenuStates {
     Startup,
     Empty,
     EmptyToMain,
     Main,
+    MainToEmpty,
     MainToIntro,
     MainToQuit
 };
@@ -76,12 +88,14 @@ public class Menu : MonoBehaviour {
     private float startupRemaining;
     private float emptyToMainMax = 1.2f;
     private float emptyToMainRemaining;
+    private float mainToEmptyMax = 0.2f;
+    private float mainToEmptyRemaining;
     private float mainToIntroMax = 0.8f;
     private float mainToIntroRemaining;
     private float mainToQuitMax = 1.5f;
     private float mainToQuitRemaining;
 
-    /* Arrays that hold the hover values. Each index is a different button's hover time */
+    /* Arrays that hold the hover values. Each index is a different button's hover time. True = hovered */
     private bool[] currentHoverState;
     private float[] currentHoverTime;
     private float maxHoverTime = 0.8f;
@@ -109,32 +123,17 @@ public class Menu : MonoBehaviour {
         /*
          * Check if the screen has been resized and run any per-frame update calls for any UI elements
          */
-
-
-        //Pressing Y will try to open up the menu again if in the empty state
-        if(state == MenuStates.Empty) {
-            if(Input.GetKeyDown("y")) {
-                ChangeState(MenuStates.Main);
-            }
-        }
         Debug.Log(state);
 
+
+        
         /* Check if the screen has been resized */
         if(Screen.width != screenWidth || Screen.height != screenHeight) {
             Resize();
         }
 
-        /* Update the hover values */
-        for(int i = 0; i < currentHoverState.Length; i++) {
-            if(currentHoverState[i]) {
-                currentHoverTime[i] += Time.deltaTime;
-                if(currentHoverTime[i] > maxHoverTime) { currentHoverTime[i] = maxHoverTime; }
-            }
-            else {
-                currentHoverTime[i] -= Time.deltaTime;
-                if(currentHoverTime[i] < 0) { currentHoverTime[i] = 0; }
-            }
-        }
+        /* Update the hover values of the buttons */
+        UpdateHoverValues();
 
         /* Update the transition values. Only change states once the per-frame updates are done. */
         UpdateTransitionValues();
@@ -153,6 +152,9 @@ public class Menu : MonoBehaviour {
                     break;
                 case MenuStates.Main:
                     UStartButtonMain();
+                    break;
+                case MenuStates.MainToEmpty:
+                    UStartButtonMainToEmpty();
                     break;
                 case MenuStates.MainToIntro:
                     UStartButtonMainToIntro();
@@ -176,6 +178,9 @@ public class Menu : MonoBehaviour {
                     break;
                 case MenuStates.Main:
                     UQuitButtonMain();
+                    break;
+                case MenuStates.MainToEmpty:
+                    UQuitButtonMainToEmpty();
                     break;
                 case MenuStates.MainToIntro:
                     UQuitButtonMainToIntro();
@@ -406,6 +411,9 @@ public class Menu : MonoBehaviour {
             case MenuStates.EmptyToMain:
                 UpdateTransitionValue(ref emptyToMainRemaining);
                 break;
+            case MenuStates.MainToEmpty:
+                UpdateTransitionValue(ref mainToEmptyRemaining);
+                break;
             case MenuStates.MainToIntro:
                 UpdateTransitionValue(ref mainToIntroRemaining);
                 break;
@@ -447,6 +455,9 @@ public class Menu : MonoBehaviour {
             case MenuStates.EmptyToMain:
                 if(emptyToMainRemaining == 0) { ChangeState(MenuStates.Main); }
                 break;
+            case MenuStates.MainToEmpty:
+                if(mainToEmptyRemaining == 0) { ChangeState(MenuStates.Empty); }
+                break;
             case MenuStates.MainToIntro:
                 if(mainToIntroRemaining == 0) { ChangeState(MenuStates.Empty); }
                 break;
@@ -458,6 +469,29 @@ public class Menu : MonoBehaviour {
                 break;
         }
     }
+
+    void UpdateHoverValues() {
+        /*
+         * Update the hover values in currentHoverTime. Only increase the values when the button is clickable
+         */
+
+        for(int i = 0; i < System.Enum.GetValues(typeof(Buttons)).Length; i++) {
+            /* Increase the hover value if the button is clickable AND it's being hovered */
+            if(IsButtonClickable((Buttons) i) && currentHoverState[i]) {
+                currentHoverTime[i] += Time.deltaTime;
+                if(currentHoverTime[i] > maxHoverTime) { currentHoverTime[i] = maxHoverTime; }
+            }
+
+            /*  Decrease the hover value if it's not being increased */
+            else {
+                currentHoverTime[i] -= Time.deltaTime;
+                if(currentHoverTime[i] < 0) { currentHoverTime[i] = 0; }
+            }
+        }
+    }
+
+
+    /* ----------- UI Element Update Functions ------------------------------------------------------------- */
 
     #region Cover Panel Updates
     void UCoverPanelStartup() {
@@ -528,6 +562,21 @@ public class Menu : MonoBehaviour {
         /* Animate the button slidding in from the left side */
         rect.sizeDelta = new Vector2(1.5f*buttonHeight*startWidthRatio + extraHoverWidth, 1.5f*buttonHeight);
         rect.position = new Vector3(-rect.sizeDelta.x/2f + rect.sizeDelta.x*transitionFade, canvasRect.position.y + buttonHeight/2f, 0);
+    }
+
+    void UStartButtonMainToEmpty() {
+        /*
+         * During this transition state, Quickly move the button off-screen
+         */
+        int buttonEnum = (int) Buttons.Start;
+        RectTransform rect = buttonRects[buttonEnum];
+        float transitionFade = Mathf.Sin((Mathf.PI/2f)*TimeRatio(mainToEmptyRemaining, mainToEmptyMax));
+        float hoverRatio = (Mathf.Sin(Mathf.PI*currentHoverTime[buttonEnum]/maxHoverTime - 0.5f*Mathf.PI)+1)/2f;
+        float extraHoverWidth = hoverRatio*buttonHeight*0.5f;
+
+        /* Animate the button slidding in from the left side */
+        rect.sizeDelta = new Vector2(1.5f*buttonHeight*startWidthRatio + extraHoverWidth, 1.5f*buttonHeight);
+        rect.position = new Vector3(rect.sizeDelta.x/2f - rect.sizeDelta.x*transitionFade, canvasRect.position.y + buttonHeight/2f, 0);
     }
 
     void UStartButtonMain() {
@@ -632,6 +681,24 @@ public class Menu : MonoBehaviour {
         rect.position = new Vector3(-rect.sizeDelta.x/2f + rect.sizeDelta.x*transitionFade, relativeHeight, 0);
     }
 
+    void UQuitButtonMainToEmpty() {
+        /*
+         * Update the quit button as the menu quickly closes
+         */
+        int buttonEnum = (int) Buttons.Quit;
+        RectTransform rect = buttonRects[buttonEnum];
+        float hoverRatio = (Mathf.Sin(Mathf.PI*currentHoverTime[buttonEnum]/maxHoverTime - 0.5f*Mathf.PI)+1)/2f;
+        float extraHoverWidth = hoverRatio*buttonHeight*0.5f;
+        float transitionFade = Mathf.Sin((Mathf.PI/2f)*TimeRatio(mainToEmptyRemaining, mainToEmptyMax));
+        /* The button that this quit button will be placed bellow */
+        RectTransform aboveButton = buttonRects[(int) Buttons.Start];
+
+        /* For now, do the same as the normal Menu state */
+        rect.sizeDelta = new Vector2(buttonHeight*quitWidthRatio + extraHoverWidth, buttonHeight);
+        float relativeHeight = aboveButton.position.y - aboveButton.sizeDelta.y/2f - buttonHeight/2f;
+        rect.position = new Vector3(rect.sizeDelta.x/2f - rect.sizeDelta.x*transitionFade, relativeHeight, 0);
+    }
+
     void UQuitButtonMain() {
         /*
          * Update the quit button while in the Main state.
@@ -686,6 +753,23 @@ public class Menu : MonoBehaviour {
 
     /* ----------- Event/Listener Functions ------------------------------------------------------------- */
 
+    public void PlayerRequestMenuChange() {
+        /*
+         * The player sent a request to change the menu. This will either 
+         * close the menu if it's open or open the menu if it's closed.
+         */
+
+        /* If the menu is empty, bring it to the main menu */
+        if(state == MenuStates.Empty) {
+            ChangeState(MenuStates.Main);
+        }
+
+        /* If the menu is not empty, empty it */
+        else {
+            ChangeState(MenuStates.MainToEmpty);
+        }
+    }
+
     void ChangeState(MenuStates newState) {
         /*
          * This is called when changing the states of the menu. This used so that
@@ -703,6 +787,11 @@ public class Menu : MonoBehaviour {
             /* Entering EmptyToMain will start it's transition value */
             else if(newState == MenuStates.EmptyToMain) {
                 emptyToMainRemaining = emptyToMainMax;
+            }
+
+            /* Entering MainToEmpty will start it's transition value */
+            else if(newState == MenuStates.MainToEmpty) {
+                mainToEmptyRemaining = mainToEmptyMax;
             }
 
             /* Entering MainToIntro will start it's transition value */
@@ -747,8 +836,7 @@ public class Menu : MonoBehaviour {
         /*
          * When the user presses the start key during the Menu state, change into the MenuToIntro state.
          */
-
-
+         
         if(state == MenuStates.Main) {
 
             /* Start the game by entering the intro state */
@@ -756,8 +844,9 @@ public class Menu : MonoBehaviour {
                 ChangeState(MenuStates.MainToIntro);
                 playerController.StartButtonPressed();
             }
+
+            /* Continue the game by entering the empty state */
             else {
-                /* Continue the game by entering the empty state */
                 ChangeState(MenuStates.Empty);
             }
 
@@ -810,7 +899,7 @@ public class Menu : MonoBehaviour {
         currentHoverState[(int) Buttons.Quit] = false;
     }
 
-
+    
     /* ----------- Helper Functions ------------------------------------------------------------- */
 
     float TimeRatio(float remainingTime, float maxTime) {
@@ -841,6 +930,9 @@ public class Menu : MonoBehaviour {
         return adjustedValue;
     }
 
+
+    /* ----------- Helper IsVisible Functions ------------------------------------------------------------- */
+
     bool IsStartVisible() {
         /*
          * Return true if the current state shows the start button
@@ -848,7 +940,8 @@ public class Menu : MonoBehaviour {
         bool visible = false;
 
         if(state == MenuStates.Startup ||
-            state == MenuStates.EmptyToMain || 
+            state == MenuStates.EmptyToMain ||
+            state == MenuStates.MainToEmpty ||
             state == MenuStates.Main || 
             state == MenuStates.MainToIntro || 
             state == MenuStates.MainToQuit) {
@@ -865,7 +958,8 @@ public class Menu : MonoBehaviour {
         bool visible = false;
 
         if(state == MenuStates.Startup ||
-            state == MenuStates.EmptyToMain || 
+            state == MenuStates.EmptyToMain ||
+            state == MenuStates.MainToEmpty ||
             state == MenuStates.Main || 
             state == MenuStates.MainToIntro ||
             state == MenuStates.MainToQuit) {
@@ -887,5 +981,50 @@ public class Menu : MonoBehaviour {
         }
 
         return visible;
+    }
+
+    
+    /* ----------- Helper IsClickable Functions ------------------------------------------------------------- */
+
+    bool IsButtonClickable(Buttons button) {
+        /*
+         * Return true if the current state can click on the given button
+         */
+        bool clickable = false;
+
+        /* Start button... */
+        if(button == Buttons.Start) {
+            /* ...Is only clickable in the main state */
+            if(state == MenuStates.Main) {
+                clickable = true;
+            }
+        }
+
+        /* Quit button... */
+        else if(button == Buttons.Quit) {
+            /* ...Is only clickable in the main state */
+            if(state == MenuStates.Main) {
+                clickable = true;
+            }
+        }
+        
+        else {
+            Debug.Log("WARNING: button not handled in IsButtonClickable");
+        }
+
+        return clickable;
+    }
+
+    bool IsQuitClickable() {
+        /*
+         * Return true if the current state can click on the quit button
+         */
+        bool clickable = false;
+
+        if(state == MenuStates.Main) {
+            clickable = true;
+        }
+
+        return clickable;
     }
 }

@@ -294,6 +294,9 @@ public class CustomPlayerController : MonoBehaviour {
         renderedCameraCount = 0;
 
 
+        /* Pressing the escape button will send a request to the menu and either open/close the menu */
+        MenuKey();
+
         /* Update values relevent to the menu */
         UpdateMenuValues();
 
@@ -1435,7 +1438,16 @@ public class CustomPlayerController : MonoBehaviour {
         }
     }
 
+    void MenuKey() {
+        /*
+         * Handle the act of sending requests to the menu about opening or closing the menu
+         */
 
+        /* The escape key is used to open or close the menu */
+        if(Input.GetKeyDown(KeyCode.Escape)) {
+            playerMenu.PlayerRequestMenuChange();
+        }
+    }
 
 
     void UpdateMenuValues() {
