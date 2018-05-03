@@ -7,27 +7,21 @@ using System.Collections;
 /*  
  * The potential states the menu can be in. Some states are transition states
  * that require a certain amount of time to pass until it reaches another state.
- * 
- * Adding a new state requires:
- * - Adding to the IsVisble___() functions
- * - Add the states to the Update functions
- * - Add the functions to be run with the new Update calls
- * 
- * If its a transition state: 
- * - Add a max/remaining set of values
- * - Update the transition value in UpdateTransitionValues
- * - Add to UpdateCurrentState with the new transitional values
- * - Add to ChangeState to set the remainingTime
+ * When a new state is added, a new entry in each visible element of the state is needed.
+ * When a transitional state is added, it must have it's own entry in transitionStates.
  */
 public enum MenuStates {
-    Startup,
-    Empty,
-    EmptyToMain,
+    //Idle states
     Main,
+    Empty,
+    //Transitional states
+    Startup,
+    EmptyToMain,
     MainToEmpty,
     MainToIntro,
     MainToQuit
 };
+
 
 /*
  * Each button used in the menu. They are placed in an enum so each one will 
@@ -46,11 +40,81 @@ public enum Panels {
 }
 
 /*
+ * A class that points a state to a function. These are used with UI elements to point
+ * to what function is used to update them depending on the current state of the menu.
+ */
+public class StateFunction {
+    public MenuStates state;
+    public UnityAction function;
+
+    public StateFunction(MenuStates s, UnityAction f) {
+        state = s;
+        function = f;
+    }
+}
+
+/*
+ * A transition is a state that after a certain time limit will transition into a new state
+ */
+public class Transition {
+    /* The current state that it will begin with */
+    public MenuStates from;
+    /* The state that will be transitionned to */
+    public MenuStates to;
+    /* The timings of the transition */
+    public float timeMax;
+    public float timeRemaining;
+
+    public Transition(MenuStates f, MenuStates t, float tm, float tr) {
+        from = f;
+        to = t;
+        timeMax = tm;
+        timeRemaining = tr;
+    }
+}
+
+
+/*
  * The menu used by the player during the game. It expected each component to be 
  * already created and assigned in a canvas.
  */
 public class Menu : MonoBehaviour {
     private MenuStates state;
+
+    /*
+     * Each transitional state and it's Transition object.
+     * If a state will transition into a more unique condition (such as MainToQuit),
+     * make the state transition into itself as it will be handlede manually in UpdateCurrentState().
+     */
+    Transition[] transitionStates = {
+        new Transition(MenuStates.Startup, MenuStates.Empty, 3f, 0f),
+        new Transition(MenuStates.EmptyToMain, MenuStates.Main, 3f, 0f),
+        new Transition(MenuStates.MainToEmpty, MenuStates.Empty, 3f, 0f),
+        new Transition(MenuStates.MainToIntro, MenuStates.Empty, 3f, 0f),
+        new Transition(MenuStates.MainToQuit, MenuStates.MainToQuit, 3f, 0f)
+    };
+
+    /*
+     * Set the state functions for each UI element and every state. Each element requires
+     * a state function for each state that the element is visible in.
+     */
+    StateFunction[] startButtonTransitions;
+    StateFunction[] quitButtonTransitions;
+    StateFunction[] coverPanelTransitions;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     /* Button height to width ratios. Set manually and is unique for each font + text content. */
     private float startWidthRatio = 3;
@@ -61,10 +125,10 @@ public class Menu : MonoBehaviour {
     private float minHeight = 25;
     private float maxHeight = 200;
     private float buttonHeight;
-    
+
     /* A link to the player's controller */
     private CustomPlayerController playerController;
-    
+
     /* A basic button with a text child and an empty panel. Must be set before running. */
     public GameObject buttonReference;
     public GameObject panelReference;
@@ -82,18 +146,6 @@ public class Menu : MonoBehaviour {
 
     /* An array of panels used by the menu */
     public RectTransform[] panelRects;
-
-    /* The timing values of the transition states */
-    private float startupMax = 3;
-    private float startupRemaining;
-    private float emptyToMainMax = 1.2f;
-    private float emptyToMainRemaining;
-    private float mainToEmptyMax = 0.2f;
-    private float mainToEmptyRemaining;
-    private float mainToIntroMax = 0.8f;
-    private float mainToIntroRemaining;
-    private float mainToQuitMax = 1.5f;
-    private float mainToQuitRemaining;
 
     /* Arrays that hold the hover values. Each index is a different button's hover time. True = hovered */
     private bool[] currentHoverState;
@@ -124,8 +176,6 @@ public class Menu : MonoBehaviour {
          * Check if the screen has been resized and run any per-frame update calls for any UI elements
          */
         Debug.Log(state);
-
-
         
         /* Check if the screen has been resized */
         if(Screen.width != screenWidth || Screen.height != screenHeight) {
@@ -137,76 +187,16 @@ public class Menu : MonoBehaviour {
 
         /* Update the transition values. Only change states once the per-frame updates are done. */
         UpdateTransitionValues();
-        
+
         /* 
          * Run the per-frame update functions of each UI element 
          */
         /* Start button */
-        if(IsStartVisible()) {
-            switch(state) {
-                case MenuStates.Startup:
-                    UStartButtonStartup();
-                    break;
-                case MenuStates.EmptyToMain:
-                    UStartButtonEmptyToMain();
-                    break;
-                case MenuStates.Main:
-                    UStartButtonMain();
-                    break;
-                case MenuStates.MainToEmpty:
-                    UStartButtonMainToEmpty();
-                    break;
-                case MenuStates.MainToIntro:
-                    UStartButtonMainToIntro();
-                    break;
-                case MenuStates.MainToQuit:
-                    UStartButtonMainToQuit();
-                    break;
-                default:
-                    Debug.Log("ERROR: Menu item does not handle current state");
-                    break;
-            }
-        }
+        ExecuteElementFunctions(startButtonTransitions);
         /* Quit button */
-        if(isQuitVisible()) {
-            switch(state) {
-                case MenuStates.Startup:
-                    UQuitButtonStartup();
-                    break;
-                case MenuStates.EmptyToMain:
-                    UQuitButtonEmptyToMain();
-                    break;
-                case MenuStates.Main:
-                    UQuitButtonMain();
-                    break;
-                case MenuStates.MainToEmpty:
-                    UQuitButtonMainToEmpty();
-                    break;
-                case MenuStates.MainToIntro:
-                    UQuitButtonMainToIntro();
-                    break;
-                case MenuStates.MainToQuit:
-                    UQuitButtonMainToQuit();
-                    break;
-                default:
-                    Debug.Log("ERROR: Menu item does not handle current state");
-                    break;
-            }
-        }
+        ExecuteElementFunctions(quitButtonTransitions);
         /* Cover panel */
-        if(isCoverPanelVisible()) {
-            switch(state) {
-                case MenuStates.Startup:
-                    UCoverPanelStartup();
-                    break;
-                case MenuStates.MainToQuit:
-                    UCoverPanelMainToQuit();
-                    break;
-                default:
-                    Debug.Log("ERROR: Menu item does not handle current state");
-                    break;
-            }
-        }
+        ExecuteElementFunctions(coverPanelTransitions);
 
         /* Change the current state if needed after all the per-frame update functions are done */
         UpdateCurrentState();
@@ -220,8 +210,15 @@ public class Menu : MonoBehaviour {
          * Sets up the main menu. Requires a link to the playerController to add functionallity to the buttons.
          * Start the game in the IntroToMain transition state.
          */
+
+        /* Populate the StateFunction arrays before anything else */
+        StateFunctionInit();
+
+        /* Update the current starting state */
         state = MenuStates.Empty;
         ChangeState(MenuStates.Startup);
+
+
         
         /* Link the global variables of the script */
         playerController = controller;
@@ -254,6 +251,22 @@ public class Menu : MonoBehaviour {
 
         /* Re-order the hierarchy so that certain objects are rendered ontop of others */
         ReorderHeirarchy();
+    }
+
+    public void StateFunctionInit() {
+        /*
+         * Set the state functions for each UI element and every state. Each element requires
+         * a state function for each state that the element is visible in.
+         */
+        StateFunction[] startButtonTransitions = {
+            new StateFunction(MenuStates.Main, UStartButtonMain)
+        };
+        StateFunction[] quitButtonTransitions = {
+            new StateFunction(MenuStates.Main, UQuitButtonMain)
+        };
+        StateFunction[] coverPanelTransitions = {
+
+        };
     }
 
     public GameObject CreatePanel() {
@@ -396,6 +409,18 @@ public class Menu : MonoBehaviour {
 
     /* ----------- Update Functions ------------------------------------------------------------- */
 
+    void ExecuteElementFunctions(StateFunction[] stateFunction) {
+        /*
+         * Given an array of stateFunctions, run the function that is linked to the current state
+         */
+
+        for(int i = 0; i < stateFunction.Length; i++) {
+            if(state == stateFunction[i].state) {
+                stateFunction[i].function();
+            }
+        }
+    }
+
     void UpdateTransitionValues() {
         /*
          * Update transition values and prevent them from going past their lower limit of 0. 
@@ -403,25 +428,15 @@ public class Menu : MonoBehaviour {
          * once the transition states have reached 0.
          */
          
-        /* Update the generic StateTransition values */
-        switch(state) {
-            case MenuStates.Startup:
-                UpdateTransitionValue(ref startupRemaining);
-                break;
-            case MenuStates.EmptyToMain:
-                UpdateTransitionValue(ref emptyToMainRemaining);
-                break;
-            case MenuStates.MainToEmpty:
-                UpdateTransitionValue(ref mainToEmptyRemaining);
-                break;
-            case MenuStates.MainToIntro:
-                UpdateTransitionValue(ref mainToIntroRemaining);
-                break;
-            case MenuStates.MainToQuit:
-                UpdateTransitionValue(ref mainToQuitRemaining);
-                break;
+        for(int i = 0; i < transitionStates.Length; i++) {
+            /* Find the transition that links to the current state we are in */
+            if(state == transitionStates[i].from) {
+                /* Update the current transition value */
+                UpdateTransitionValue(ref transitionStates[i].timeRemaining);
+                i = transitionStates.Length;
+            }
         }
-
+        
         /* Update the more unique per-frame update values */
         switch(state) {
             case MenuStates.Main:
@@ -447,24 +462,22 @@ public class Menu : MonoBehaviour {
          * Check the current state and the transition values. Transition values will either be
          * at or above 0. Once they are at 0, we can transition to the next state.
          */
-
+         
+        for(int i = 0; i < transitionStates.Length; i++) {
+            /* Find the transition that links to the current state we are in */
+            if(state == transitionStates[i].from) {
+                /* Check if the remaining time requires us to transition the next state */
+                if(transitionStates[i].timeRemaining == 0) {
+                    ChangeState(transitionStates[i].to);
+                }
+                i = transitionStates.Length;
+            }
+        }
+        
+        /* Check for the more unique transitions using non-Transition object values */
         switch(state) {
-            case MenuStates.Startup:
-                if(startupRemaining == 0) { ChangeState(MenuStates.Main); }
-                break;
-            case MenuStates.EmptyToMain:
-                if(emptyToMainRemaining == 0) { ChangeState(MenuStates.Main); }
-                break;
-            case MenuStates.MainToEmpty:
-                if(mainToEmptyRemaining == 0) { ChangeState(MenuStates.Empty); }
-                break;
-            case MenuStates.MainToIntro:
-                if(mainToIntroRemaining == 0) { ChangeState(MenuStates.Empty); }
-                break;
-            case MenuStates.MainToQuit:
-                if(mainToQuitRemaining == 0) { QuitGame(); }
-                break;
             case MenuStates.Main:
+                /* Check if the player clicked the quit button enough */
                 if(quitValueCurrent >= quitValueMax) { ChangeState(MenuStates.MainToQuit); }
                 break;
         }
@@ -774,6 +787,10 @@ public class Menu : MonoBehaviour {
         /*
          * This is called when changing the states of the menu. This used so that
          * any values that need to be reset upon state change can be adjusted in one function.
+         * 
+         * When ChangeState is called using the same state that the menu is currently in, 
+         * a more unique function may be run. This is mostly to get certain functions
+         * to run once a transition state ends, such as ending the game after MainToQuit ends.
          */
 
         /* Make sure the state being changed to is actually a new state */
@@ -781,22 +798,22 @@ public class Menu : MonoBehaviour {
 
             /* Entering Startup will start it's transition value */
             if(newState == MenuStates.Startup) {
-                startupRemaining = startupMax;
+                ResetRemainingTime(newState);
             }
 
             /* Entering EmptyToMain will start it's transition value */
             else if(newState == MenuStates.EmptyToMain) {
-                emptyToMainRemaining = emptyToMainMax;
+                ResetRemainingTime(newState);
             }
 
             /* Entering MainToEmpty will start it's transition value */
             else if(newState == MenuStates.MainToEmpty) {
-                mainToEmptyRemaining = mainToEmptyMax;
+                ResetRemainingTime(newState);
             }
 
             /* Entering MainToIntro will start it's transition value */
             else if(newState == MenuStates.MainToIntro) {
-                mainToIntroRemaining = mainToIntroMax;
+                ResetRemainingTime(newState);
             }
 
             /* Entering Main will reset the quitValueCurrent */
@@ -806,7 +823,7 @@ public class Menu : MonoBehaviour {
 
             /* Entering MainToQuit will start the time to quit transition value */
             else if(newState == MenuStates.MainToQuit) {
-                mainToQuitRemaining = mainToQuitMax;
+                ResetRemainingTime(newState);
             }
 
 
@@ -820,6 +837,29 @@ public class Menu : MonoBehaviour {
 
             /* Change the current state */
             state = newState;
+        }
+
+        /* More unique events will end up calling for a state change into it's current state */
+        else {
+
+            /* Quit the game once MainToQuit finishes it's transition */
+            if(state == MenuStates.MainToQuit) {
+                QuitGame();
+            }
+        }
+    }
+
+    void ResetRemainingTime(MenuStates givenState) {
+        /*
+         * Given a menu state, find the transition object of said state and reset
+         * it's remainingTime back to it's max.
+         */
+
+        for(int i = 0; i < transitionStates.Length; i++) {
+            if(givenState == transitionStates[i].from) {
+                /* Reset it's current transition time */
+                transitionStates[i].timeRemaining = transitionStates[i].timeMax;
+            }
         }
     }
 
