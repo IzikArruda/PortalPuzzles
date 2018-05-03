@@ -87,7 +87,7 @@ public class Menu : MonoBehaviour {
      * make the state transition into itself as it will be handlede manually in UpdateCurrentState().
      */
     Transition[] transitionStates = {
-        new Transition(MenuStates.Startup, MenuStates.Empty, 3f, 0f),
+        new Transition(MenuStates.Startup, MenuStates.Main, 3f, 0f),
         new Transition(MenuStates.EmptyToMain, MenuStates.Main, 3f, 0f),
         new Transition(MenuStates.MainToEmpty, MenuStates.Empty, 3f, 0f),
         new Transition(MenuStates.MainToIntro, MenuStates.Empty, 3f, 0f),
@@ -101,21 +101,7 @@ public class Menu : MonoBehaviour {
     StateFunction[] startButtonTransitions;
     StateFunction[] quitButtonTransitions;
     StateFunction[] coverPanelTransitions;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    
     /* Button height to width ratios. Set manually and is unique for each font + text content. */
     private float startWidthRatio = 3;
     private float continueWidthRatio = 4.65f;
@@ -258,14 +244,25 @@ public class Menu : MonoBehaviour {
          * Set the state functions for each UI element and every state. Each element requires
          * a state function for each state that the element is visible in.
          */
-        StateFunction[] startButtonTransitions = {
-            new StateFunction(MenuStates.Main, UStartButtonMain)
+        startButtonTransitions = new StateFunction[] {
+            new StateFunction(MenuStates.Startup, UStartButtonStartup),
+            new StateFunction(MenuStates.EmptyToMain, UStartButtonEmptyToMain),
+            new StateFunction(MenuStates.MainToEmpty, UStartButtonMainToEmpty),
+            new StateFunction(MenuStates.Main, UStartButtonMain),
+            new StateFunction(MenuStates.MainToIntro, UStartButtonMainToIntro),
+            new StateFunction(MenuStates.MainToQuit, UStartButtonMainToQuit)
         };
-        StateFunction[] quitButtonTransitions = {
-            new StateFunction(MenuStates.Main, UQuitButtonMain)
+        quitButtonTransitions = new StateFunction[] {
+            new StateFunction(MenuStates.Startup, UQuitButtonStartup),
+            new StateFunction(MenuStates.EmptyToMain, UQuitButtonEmptyToMain),
+            new StateFunction(MenuStates.MainToEmpty, UQuitButtonMainToEmpty),
+            new StateFunction(MenuStates.Main, UQuitButtonMain),
+            new StateFunction(MenuStates.MainToIntro, UQuitButtonMainToIntro),
+            new StateFunction(MenuStates.MainToQuit, UQuitButtonMainToQuit)
         };
-        StateFunction[] coverPanelTransitions = {
-
+        coverPanelTransitions = new StateFunction[] {
+            new StateFunction(MenuStates.Startup, UCoverPanelStartup),
+            new StateFunction(MenuStates.MainToQuit, UCoverPanelMainToQuit)
         };
     }
 
@@ -514,7 +511,8 @@ public class Menu : MonoBehaviour {
         int panelEnum = (int) Panels.Cover;
         Image rectImage = panelRects[panelEnum].GetComponent<Image>();
         //Start fading 10% into the startup and end 80% into it
-        float transitionFade = AdjustRatio((startupMax - startupRemaining) / startupMax, 0.1f, 0.8f);
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.1f, 0.8f);
 
         /* Fade the color out relative to the remaining time before the game closes */
         rectImage.color = new Color(0, 0, 0, 1 - transitionFade);
@@ -527,7 +525,8 @@ public class Menu : MonoBehaviour {
         int panelEnum = (int) Panels.Cover;
         Image rectImage = panelRects[panelEnum].GetComponent<Image>();
         //The transition face value starts fading 25% into the transition and finishes 80% in
-        float transitionFade = AdjustRatio((mainToQuitMax - mainToQuitRemaining) / mainToQuitMax, 0.25f, 0.8f);
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.25f, 0.8f);
 
         /* Fade the color out relative to the remaining time before the game closes */
         rectImage.color = new Color(0, 0, 0, transitionFade);
@@ -544,7 +543,8 @@ public class Menu : MonoBehaviour {
         RectTransform rect = buttonRects[buttonEnum];
         Outline[] outlines = button.GetComponentInChildren<Text>().gameObject.GetComponents<Outline>();
         //Start fading in the button 50% into the intro, finish 90% in
-        float transitionFade = AdjustRatio(TimeRatio(startupRemaining, startupMax), 0.5f, 0.9f);
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.5f, 0.9f);
 
         /* Leave the positions as their default intro positions */
         rect.sizeDelta = new Vector2(1.5f*buttonHeight*startWidthRatio, 1.5f*buttonHeight);
@@ -557,7 +557,7 @@ public class Menu : MonoBehaviour {
 
         /////////////////////////
         //Make the button clickable once the startup is in it's final update
-        if(startupRemaining == 0) {
+        if(transition.timeRemaining == 0) {
             button.GetComponent<Image>().raycastTarget = true;
         }
     }
@@ -568,9 +568,11 @@ public class Menu : MonoBehaviour {
          */
         int buttonEnum = (int) Buttons.Start;
         RectTransform rect = buttonRects[buttonEnum];
-        float transitionFade = Mathf.Sin((Mathf.PI/2f)*TimeRatio(emptyToMainRemaining, emptyToMainMax));
         float hoverRatio = (Mathf.Sin(Mathf.PI*currentHoverTime[buttonEnum]/maxHoverTime - 0.5f*Mathf.PI)+1)/2f;
         float extraHoverWidth = hoverRatio*buttonHeight*0.5f;
+        //Use a custom sin function to smooth the transition fade value
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = Mathf.Sin((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax));
 
         /* Animate the button slidding in from the left side */
         rect.sizeDelta = new Vector2(1.5f*buttonHeight*startWidthRatio + extraHoverWidth, 1.5f*buttonHeight);
@@ -583,9 +585,11 @@ public class Menu : MonoBehaviour {
          */
         int buttonEnum = (int) Buttons.Start;
         RectTransform rect = buttonRects[buttonEnum];
-        float transitionFade = Mathf.Sin((Mathf.PI/2f)*TimeRatio(mainToEmptyRemaining, mainToEmptyMax));
         float hoverRatio = (Mathf.Sin(Mathf.PI*currentHoverTime[buttonEnum]/maxHoverTime - 0.5f*Mathf.PI)+1)/2f;
         float extraHoverWidth = hoverRatio*buttonHeight*0.5f;
+        //Use a custom sin function to smooth the transition fade value
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = Mathf.Sin((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax));
 
         /* Animate the button slidding in from the left side */
         rect.sizeDelta = new Vector2(1.5f*buttonHeight*startWidthRatio + extraHoverWidth, 1.5f*buttonHeight);
@@ -619,7 +623,9 @@ public class Menu : MonoBehaviour {
         Button button = buttons[buttonEnum];
         RectTransform rect = buttonRects[buttonEnum];
         Outline[] outlines = button.GetComponentInChildren<Text>().gameObject.GetComponents<Outline>();
-        float transitionFade = TimeRatio(mainToIntroRemaining, mainToIntroMax);
+        //Use the transition value very basically
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = TimeRatio(transition.timeRemaining, transition.timeMax);
 
         /* Change the color of the text and change the outline's distance */
         button.GetComponentInChildren<Text>().color = new Color(1, 1, 1, 1 - transitionFade);
@@ -627,7 +633,7 @@ public class Menu : MonoBehaviour {
         outlines[1].effectDistance = new Vector2(0.5f + 30f*transitionFade, 0.5f + 30f*transitionFade);
 
         /* Place the button off the screen on the final frame in the MainToIntro state */
-        if(mainToIntroRemaining == 0) {
+        if(transition.timeRemaining == 0) {
             /* Position the button off screen */
             rect.position = new Vector3(-rect.sizeDelta.x/2f, canvasRect.position.y + buttonHeight/2f, 0);
 
@@ -644,7 +650,8 @@ public class Menu : MonoBehaviour {
         int buttonEnum = (int) Buttons.Start;
         RectTransform rect = buttonRects[buttonEnum];
         //The transition starts fading the button at the start and ends 50% through
-        float transitionFade = AdjustRatio(TimeRatio(mainToQuitRemaining, mainToQuitMax), 0, 0.5f);
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 0.5f);
 
         /* Move the button out to the left side of the screen */
         rect.position = new Vector3(rect.sizeDelta.x/2f - rect.sizeDelta.x*transitionFade, rect.position.y, 0);
@@ -663,7 +670,8 @@ public class Menu : MonoBehaviour {
         /* The button that this quit button will be placed bellow */
         RectTransform aboveButton = buttonRects[(int) Buttons.Start];
         //Start fading in the button 60% into the intro, finish 100% in
-        float transitionFade = AdjustRatio(TimeRatio(startupRemaining, startupMax), 0.6f, 1.0f);
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.6f, 1.0f);
 
         /* Leave the positions as their default intro positions */
         rect.sizeDelta = new Vector2(buttonHeight*quitWidthRatio, buttonHeight);
@@ -684,9 +692,11 @@ public class Menu : MonoBehaviour {
         RectTransform rect = buttonRects[buttonEnum];
         float hoverRatio = (Mathf.Sin(Mathf.PI*currentHoverTime[buttonEnum]/maxHoverTime - 0.5f*Mathf.PI)+1)/2f;
         float extraHoverWidth = hoverRatio*buttonHeight*0.5f;
-        float transitionFade = Mathf.Sin((Mathf.PI/2f)*TimeRatio(emptyToMainRemaining, emptyToMainMax));
         /* The button that this quit button will be placed bellow */
         RectTransform aboveButton = buttonRects[(int) Buttons.Start];
+        //Use a sin function to smooth out the transition value
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = Mathf.Sin((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax));
 
         /* For now, do the same as the normal Menu state */
         rect.sizeDelta = new Vector2(buttonHeight*quitWidthRatio + extraHoverWidth, buttonHeight);
@@ -702,9 +712,11 @@ public class Menu : MonoBehaviour {
         RectTransform rect = buttonRects[buttonEnum];
         float hoverRatio = (Mathf.Sin(Mathf.PI*currentHoverTime[buttonEnum]/maxHoverTime - 0.5f*Mathf.PI)+1)/2f;
         float extraHoverWidth = hoverRatio*buttonHeight*0.5f;
-        float transitionFade = Mathf.Sin((Mathf.PI/2f)*TimeRatio(mainToEmptyRemaining, mainToEmptyMax));
         /* The button that this quit button will be placed bellow */
         RectTransform aboveButton = buttonRects[(int) Buttons.Start];
+        //Use a sin function to smooth out the transition value
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = Mathf.Sin((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax));
 
         /* For now, do the same as the normal Menu state */
         rect.sizeDelta = new Vector2(buttonHeight*quitWidthRatio + extraHoverWidth, buttonHeight);
@@ -743,7 +755,8 @@ public class Menu : MonoBehaviour {
         int buttonEnum = (int) Buttons.Quit;
         RectTransform rect = buttonRects[buttonEnum];
         //The transition fade values aims to go from 0 to 2 over the transition state.
-        float transitionFade = TimeRatio(mainToIntroRemaining, mainToIntroMax);
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = TimeRatio(transition.timeRemaining, transition.timeMax);
 
         /* Move the button out to the left side of the screen */
         rect.position = new Vector3(rect.sizeDelta.x/2f - rect.sizeDelta.x*transitionFade, rect.position.y, 0);
@@ -756,7 +769,8 @@ public class Menu : MonoBehaviour {
         int buttonEnum = (int) Buttons.Quit;
         RectTransform rect = buttonRects[buttonEnum];
         //The transition starts fading at the start and ends 50% through
-        float transitionFade = AdjustRatio(TimeRatio(mainToQuitRemaining, mainToQuitMax), 0, 0.5f);
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 0.5f);
 
         /* Move the button out to the left side of the screen */
         rect.position = new Vector3(rect.sizeDelta.x/2f - rect.sizeDelta.x*transitionFade, rect.position.y, 0);
@@ -765,6 +779,26 @@ public class Menu : MonoBehaviour {
 
 
     /* ----------- Event/Listener Functions ------------------------------------------------------------- */
+
+    Transition GetTransitionFromState(MenuStates givenState) {
+        /*
+         * Return the Transition that is used for the given state
+         */
+        Transition transition = null;
+
+        for(int i = 0; i < transitionStates.Length; i++) {
+            if(givenState == transitionStates[i].from) {
+                transition = transitionStates[i];
+                i = transitionStates.Length;
+            }
+        }
+
+        if(transition == null) {
+            Debug.Log("WARNING: GetTransitionFromState returning null");
+        }
+
+        return transition;
+    }
 
     public void PlayerRequestMenuChange() {
         /*
