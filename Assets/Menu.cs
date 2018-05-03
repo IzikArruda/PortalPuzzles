@@ -88,8 +88,8 @@ public class Menu : MonoBehaviour {
      */
     Transition[] transitionStates = {
         new Transition(MenuStates.Startup, MenuStates.Main, 3f, 0f),
-        new Transition(MenuStates.EmptyToMain, MenuStates.Main, 3f, 0f),
-        new Transition(MenuStates.MainToEmpty, MenuStates.Empty, 3f, 0f),
+        new Transition(MenuStates.EmptyToMain, MenuStates.Main, 0.5f, 0f),
+        new Transition(MenuStates.MainToEmpty, MenuStates.Empty, 0.5f, 0f),
         new Transition(MenuStates.MainToIntro, MenuStates.Empty, 3f, 0f),
         new Transition(MenuStates.MainToQuit, MenuStates.MainToQuit, 3f, 0f)
     };
@@ -136,7 +136,7 @@ public class Menu : MonoBehaviour {
     /* Arrays that hold the hover values. Each index is a different button's hover time. True = hovered */
     private bool[] currentHoverState;
     private float[] currentHoverTime;
-    private float maxHoverTime = 0.8f;
+    private float maxHoverTime = 0.5f;
 
     /* Previous resolutions of the window */
     public float screenWidth;
@@ -541,25 +541,18 @@ public class Menu : MonoBehaviour {
         int buttonEnum = (int) Buttons.Start;
         Button button = buttons[buttonEnum];
         RectTransform rect = buttonRects[buttonEnum];
-        Outline[] outlines = button.GetComponentInChildren<Text>().gameObject.GetComponents<Outline>();
+        //Set the size and color of the button to reflect the current hover value
+        StartButtonHoverUpdate();
         //Start fading in the button 50% into the intro, finish 90% in
         Transition transition = GetTransitionFromState(state);
         float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.5f, 0.9f);
 
         /* Leave the positions as their default intro positions */
-        rect.sizeDelta = new Vector2(1.5f*buttonHeight*startWidthRatio, 1.5f*buttonHeight);
         rect.position = new Vector3(rect.sizeDelta.x/2f, canvasRect.position.y + buttonHeight/2f, 0);
-        outlines[0].effectDistance = new Vector2(0.5f, 0.5f);
-        outlines[1].effectDistance = new Vector2(0.5f, 0.5f);
 
         /* Change the opacity to reflect the transition state */
-        button.GetComponentInChildren<Text>().color = new Color(1, 1, 1, transitionFade);
-
-        /////////////////////////
-        //Make the button clickable once the startup is in it's final update
-        if(transition.timeRemaining == 0) {
-            button.GetComponent<Image>().raycastTarget = true;
-        }
+        Color col = button.GetComponentInChildren<Text>().color;
+        button.GetComponentInChildren<Text>().color = new Color(col.r, col.g, col.b, transitionFade);
     }
 
     void UStartButtonEmptyToMain() {
@@ -568,14 +561,13 @@ public class Menu : MonoBehaviour {
          */
         int buttonEnum = (int) Buttons.Start;
         RectTransform rect = buttonRects[buttonEnum];
-        float hoverRatio = (Mathf.Sin(Mathf.PI*currentHoverTime[buttonEnum]/maxHoverTime - 0.5f*Mathf.PI)+1)/2f;
-        float extraHoverWidth = hoverRatio*buttonHeight*0.5f;
+        //Set the size and color of the button to reflect the current hover value
+        StartButtonHoverUpdate();
         //Use a custom sin function to smooth the transition fade value
         Transition transition = GetTransitionFromState(state);
         float transitionFade = Mathf.Sin((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax));
 
         /* Animate the button slidding in from the left side */
-        rect.sizeDelta = new Vector2(1.5f*buttonHeight*startWidthRatio + extraHoverWidth, 1.5f*buttonHeight);
         rect.position = new Vector3(-rect.sizeDelta.x/2f + rect.sizeDelta.x*transitionFade, canvasRect.position.y + buttonHeight/2f, 0);
     }
 
@@ -585,61 +577,55 @@ public class Menu : MonoBehaviour {
          */
         int buttonEnum = (int) Buttons.Start;
         RectTransform rect = buttonRects[buttonEnum];
-        float hoverRatio = (Mathf.Sin(Mathf.PI*currentHoverTime[buttonEnum]/maxHoverTime - 0.5f*Mathf.PI)+1)/2f;
-        float extraHoverWidth = hoverRatio*buttonHeight*0.5f;
+        //Set the size and color of the button to reflect the current hover value
+        StartButtonHoverUpdate();
         //Use a custom sin function to smooth the transition fade value
         Transition transition = GetTransitionFromState(state);
         float transitionFade = Mathf.Sin((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax));
 
         /* Animate the button slidding in from the left side */
-        rect.sizeDelta = new Vector2(1.5f*buttonHeight*startWidthRatio + extraHoverWidth, 1.5f*buttonHeight);
         rect.position = new Vector3(rect.sizeDelta.x/2f - rect.sizeDelta.x*transitionFade, canvasRect.position.y + buttonHeight/2f, 0);
     }
 
     void UStartButtonMain() {
         /*
-         * Update the start button while in the Main state.
+         * Make sure the button's position is properly updated after updating it's hover value
          */
         int buttonEnum = (int) Buttons.Start;
-        Button button = buttons[buttonEnum];
         RectTransform rect = buttonRects[buttonEnum];
-        Outline[] outlines = button.GetComponentInChildren<Text>().gameObject.GetComponents<Outline>();
-        float hoverRatio = (Mathf.Sin(Mathf.PI*currentHoverTime[buttonEnum]/maxHoverTime - 0.5f*Mathf.PI)+1)/2f;
-        float extraHoverWidth = hoverRatio*buttonHeight*0.5f;
+        //Set the size and color of the button to reflect the current hover value
+        StartButtonHoverUpdate();
 
-        /* The position and color is effected by the current hover value */
-        rect.sizeDelta = new Vector2(1.5f*buttonHeight*startWidthRatio + extraHoverWidth, 1.5f*buttonHeight);
+        /* Make sure the button is properly positionned */
         rect.position = new Vector3(rect.sizeDelta.x/2f, canvasRect.position.y + buttonHeight/2f, 0);
-        float hoverColor = 1f - 0.25f*hoverRatio;
-        button.GetComponentInChildren<Text>().color = new Color(hoverColor, hoverColor, hoverColor, 1);
     }
 
     void UStartButtonMainToIntro() {
         /*
-         * Update the start button while in the Main to Intro state. This state will not move the button
-         * but it will change the opacity of the text along with the outline's distances.
+         * Update the start button's position and outlines to animate it fading away in a unique way.
          */
         int buttonEnum = (int) Buttons.Start;
         Button button = buttons[buttonEnum];
         RectTransform rect = buttonRects[buttonEnum];
         Outline[] outlines = button.GetComponentInChildren<Text>().gameObject.GetComponents<Outline>();
+        //Set the size and color of the button to reflect the current hover value
+        StartButtonHoverUpdate();
         //Use the transition value very basically
         Transition transition = GetTransitionFromState(state);
         float transitionFade = TimeRatio(transition.timeRemaining, transition.timeMax);
 
-        /* Change the color of the text and change the outline's distance */
-        button.GetComponentInChildren<Text>().color = new Color(1, 1, 1, 1 - transitionFade);
-        outlines[0].effectDistance = new Vector2(0.5f + 45f*transitionFade, 0.5f + 45f*transitionFade);
-        outlines[1].effectDistance = new Vector2(0.5f + 30f*transitionFade, 0.5f + 30f*transitionFade);
+        /* Make sure the button is properly positionned */
+        rect.position = new Vector3(rect.sizeDelta.x/2f, canvasRect.position.y + buttonHeight/2f, 0);
+
+        /* Update the color of the text and change the outline's distance to reflect the current fade value */
+        button.GetComponentInChildren<Text>().color -= new Color(0, 0, 0, transitionFade);
+        outlines[0].effectDistance += new Vector2(45f*transitionFade, 45f*transitionFade);
+        outlines[1].effectDistance += new Vector2(30f*transitionFade, 30f*transitionFade);
 
         /* Place the button off the screen on the final frame in the MainToIntro state */
         if(transition.timeRemaining == 0) {
             /* Position the button off screen */
             rect.position = new Vector3(-rect.sizeDelta.x/2f, canvasRect.position.y + buttonHeight/2f, 0);
-
-            /* Reset the outlines of the button */
-            outlines[0].effectDistance = new Vector2(0.5f, 0.5f);
-            outlines[1].effectDistance = new Vector2(0.5f, 0.5f);
         }
     }
 
@@ -649,12 +635,37 @@ public class Menu : MonoBehaviour {
          */
         int buttonEnum = (int) Buttons.Start;
         RectTransform rect = buttonRects[buttonEnum];
+        //Set the size and color of the button to reflect the current hover value
+        StartButtonHoverUpdate();
         //The transition starts fading the button at the start and ends 50% through
         Transition transition = GetTransitionFromState(state);
         float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 0.5f);
 
         /* Move the button out to the left side of the screen */
         rect.position = new Vector3(rect.sizeDelta.x/2f - rect.sizeDelta.x*transitionFade, rect.position.y, 0);
+    }
+    
+    void StartButtonHoverUpdate() {
+        /*
+         * Set the sizes and colors of the start button to reflect it's current hover value
+         */
+        int buttonEnum = (int) Buttons.Start;
+        Button button = buttons[buttonEnum];
+        RectTransform rect = buttonRects[buttonEnum];
+        Outline[] outlines = button.GetComponentInChildren<Text>().gameObject.GetComponents<Outline>();
+        float hoverRatio = HoverRatio(buttonEnum, true);
+        float extraHoverWidth = hoverRatio*buttonHeight*0.5f;
+
+        /* Set the color of the button to reflect the current hover value */
+        float hoverColor = 1f - 0.25f*hoverRatio;
+        button.GetComponentInChildren<Text>().color = new Color(hoverColor, hoverColor, hoverColor, 1);
+
+        /* Set the button's size to reflect the current hover value */
+        rect.sizeDelta = new Vector2(1.5f*buttonHeight*startWidthRatio + extraHoverWidth, 1.5f*buttonHeight);
+
+        /* Set the outline's distance relative to the hover value */
+        outlines[0].effectDistance = 1.5f*new Vector2(0.5f + 1f*hoverRatio, 0.5f + 1f*hoverRatio);
+        outlines[1].effectDistance = 1.5f*new Vector2(0.5f + 1f*hoverRatio, 0.5f + 1f*hoverRatio);
     }
     #endregion
 
@@ -666,22 +677,21 @@ public class Menu : MonoBehaviour {
         int buttonEnum = (int) Buttons.Quit;
         Button button = buttons[buttonEnum];
         RectTransform rect = buttonRects[buttonEnum];
-        Outline[] outlines = button.GetComponentInChildren<Text>().gameObject.GetComponents<Outline>();
+        //Set the size and color of the button to reflect the current hover value
+        QuitButtonHoverUpdate();
         /* The button that this quit button will be placed bellow */
         RectTransform aboveButton = buttonRects[(int) Buttons.Start];
         //Start fading in the button 60% into the intro, finish 100% in
         Transition transition = GetTransitionFromState(state);
         float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.6f, 1.0f);
-
+        
         /* Leave the positions as their default intro positions */
-        rect.sizeDelta = new Vector2(buttonHeight*quitWidthRatio, buttonHeight);
         float relativeHeight = aboveButton.position.y - aboveButton.sizeDelta.y/2f - buttonHeight/2f;
         rect.position = new Vector3(rect.sizeDelta.x/2f, relativeHeight, 0);
-        outlines[0].effectDistance = new Vector2(0.5f, 0.5f);
-        outlines[1].effectDistance = new Vector2(0.5f, 0.5f);
 
         /* Change the opacity to reflect the transition state */
-        button.GetComponentInChildren<Text>().color = new Color(1, 1, 1, transitionFade);
+        Color col = button.GetComponentInChildren<Text>().color;
+        button.GetComponentInChildren<Text>().color = new Color(col.r, col.g, col.b, transitionFade);
     }
 
     void UQuitButtonEmptyToMain() {
@@ -690,16 +700,15 @@ public class Menu : MonoBehaviour {
          */
         int buttonEnum = (int) Buttons.Quit;
         RectTransform rect = buttonRects[buttonEnum];
-        float hoverRatio = (Mathf.Sin(Mathf.PI*currentHoverTime[buttonEnum]/maxHoverTime - 0.5f*Mathf.PI)+1)/2f;
-        float extraHoverWidth = hoverRatio*buttonHeight*0.5f;
+        //Set the size and color of the button to reflect the current hover value
+        QuitButtonHoverUpdate();
         /* The button that this quit button will be placed bellow */
         RectTransform aboveButton = buttonRects[(int) Buttons.Start];
         //Use a sin function to smooth out the transition value
         Transition transition = GetTransitionFromState(state);
         float transitionFade = Mathf.Sin((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax));
 
-        /* For now, do the same as the normal Menu state */
-        rect.sizeDelta = new Vector2(buttonHeight*quitWidthRatio + extraHoverWidth, buttonHeight);
+        /* Place the quit button as it slides into it's main position */
         float relativeHeight = aboveButton.position.y - aboveButton.sizeDelta.y/2f - buttonHeight/2f;
         rect.position = new Vector3(-rect.sizeDelta.x/2f + rect.sizeDelta.x*transitionFade, relativeHeight, 0);
     }
@@ -710,16 +719,15 @@ public class Menu : MonoBehaviour {
          */
         int buttonEnum = (int) Buttons.Quit;
         RectTransform rect = buttonRects[buttonEnum];
-        float hoverRatio = (Mathf.Sin(Mathf.PI*currentHoverTime[buttonEnum]/maxHoverTime - 0.5f*Mathf.PI)+1)/2f;
-        float extraHoverWidth = hoverRatio*buttonHeight*0.5f;
+        //Set the size and color of the button to reflect the current hover value
+        QuitButtonHoverUpdate();
         /* The button that this quit button will be placed bellow */
         RectTransform aboveButton = buttonRects[(int) Buttons.Start];
         //Use a sin function to smooth out the transition value
         Transition transition = GetTransitionFromState(state);
         float transitionFade = Mathf.Sin((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax));
 
-        /* For now, do the same as the normal Menu state */
-        rect.sizeDelta = new Vector2(buttonHeight*quitWidthRatio + extraHoverWidth, buttonHeight);
+        /* Position the button as it slides off the left side of the screen */
         float relativeHeight = aboveButton.position.y - aboveButton.sizeDelta.y/2f - buttonHeight/2f;
         rect.position = new Vector3(rect.sizeDelta.x/2f - rect.sizeDelta.x*transitionFade, relativeHeight, 0);
     }
@@ -729,23 +737,15 @@ public class Menu : MonoBehaviour {
          * Update the quit button while in the Main state.
          */
         int buttonEnum = (int) Buttons.Quit;
-        Button button = buttons[buttonEnum];
         RectTransform rect = buttonRects[buttonEnum];
-        Outline[] outlines = button.GetComponentInChildren<Text>().gameObject.GetComponents<Outline>();
-        float hoverRatio = (Mathf.Sin(Mathf.PI*currentHoverTime[buttonEnum]/maxHoverTime - 0.5f*Mathf.PI)+1)/2f;
-        float extraHoverWidth = hoverRatio*buttonHeight*0.5f;
+        //Set the size and color of the button to reflect the current hover value
+        QuitButtonHoverUpdate();
         /* The button that this quit button will be placed bellow */
         RectTransform aboveButton = buttonRects[(int) Buttons.Start];
 
         /* The position and color is effected by it's hover values and the button above it */
-        rect.sizeDelta = new Vector2(buttonHeight*quitWidthRatio + extraHoverWidth, buttonHeight);
         float relativeHeight = aboveButton.position.y - aboveButton.sizeDelta.y/2f - buttonHeight/2f;
         rect.position = new Vector3(rect.sizeDelta.x/2f, relativeHeight, 0);
-        float hoverColor = 1f - 0.25f*hoverRatio;
-        button.GetComponentInChildren<Text>().color = new Color(hoverColor, hoverColor, hoverColor, 1);
-
-        /* Depending on the quitValueCurrent value, update a visual element around the mouse */
-        //Add a circle around the mouse depending on the quitValueCurrent/quitValueMax ratio
     }
 
     void UQuitButtonMainToIntro() {
@@ -754,6 +754,8 @@ public class Menu : MonoBehaviour {
          */
         int buttonEnum = (int) Buttons.Quit;
         RectTransform rect = buttonRects[buttonEnum];
+        //Set the size and color of the button to reflect the current hover value
+        QuitButtonHoverUpdate();
         //The transition fade values aims to go from 0 to 2 over the transition state.
         Transition transition = GetTransitionFromState(state);
         float transitionFade = TimeRatio(transition.timeRemaining, transition.timeMax);
@@ -768,12 +770,37 @@ public class Menu : MonoBehaviour {
          */
         int buttonEnum = (int) Buttons.Quit;
         RectTransform rect = buttonRects[buttonEnum];
+        //Set the size and color of the button to reflect the current hover value
+        QuitButtonHoverUpdate();
         //The transition starts fading at the start and ends 50% through
         Transition transition = GetTransitionFromState(state);
         float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 0.5f);
 
         /* Move the button out to the left side of the screen */
         rect.position = new Vector3(rect.sizeDelta.x/2f - rect.sizeDelta.x*transitionFade, rect.position.y, 0);
+    }
+
+    void QuitButtonHoverUpdate() {
+        /*
+         * Set the sizes and colors of the start button to reflect it's current hover value
+         */
+        int buttonEnum = (int) Buttons.Quit;
+        Button button = buttons[buttonEnum];
+        RectTransform rect = buttonRects[buttonEnum];
+        Outline[] outlines = button.GetComponentInChildren<Text>().gameObject.GetComponents<Outline>();
+        float hoverRatio = HoverRatio(buttonEnum, true);
+        float extraHoverWidth = hoverRatio*buttonHeight*0.5f;
+
+        /* Set the color of the button to reflect the current hover value */
+        float hoverColor = 1f - 0.25f*hoverRatio;
+        button.GetComponentInChildren<Text>().color = new Color(hoverColor, hoverColor, hoverColor, 1);
+
+        /* Set the button's size to reflect the current hover value */
+        rect.sizeDelta = new Vector2(buttonHeight*quitWidthRatio + extraHoverWidth, buttonHeight);
+
+        /* Set the outline's distance relative to the hover value */
+        outlines[0].effectDistance = new Vector2(0.5f + 1f*hoverRatio, 0.5f + 1f*hoverRatio);
+        outlines[1].effectDistance = new Vector2(0.5f + 1f*hoverRatio, 0.5f + 1f*hoverRatio);
     }
     #endregion
 
@@ -806,13 +833,14 @@ public class Menu : MonoBehaviour {
          * close the menu if it's open or open the menu if it's closed.
          */
 
-        /* If the menu is empty, bring it to the main menu */
+        /* If the menu is empty, Start opening the main menu */
         if(state == MenuStates.Empty) {
-            ChangeState(MenuStates.Main);
+            ChangeState(MenuStates.EmptyToMain);
         }
 
         /* If the menu is not empty, empty it */
-        else {
+        /* If we're in the main menu, start quitting the menu */
+        else if(state == MenuStates.Main) {
             ChangeState(MenuStates.MainToEmpty);
         }
     }
@@ -975,6 +1003,22 @@ public class Menu : MonoBehaviour {
 
     
     /* ----------- Helper Functions ------------------------------------------------------------- */
+
+    float HoverRatio(int buttonEnum, bool sinFunction) {
+        /*
+         * Given an index to the currentHover array, return the value on a [0, 1] range with maxHovertime
+         * being the upper limit. If sinFunction is true, then apply a sin function to smooth out the ratio.
+         * The sin ratio ranges from [-PI/2, PI/2] for ratio values of [0, 1].
+         */
+        float hoverRatio = 0;
+
+        hoverRatio = currentHoverTime[buttonEnum]/maxHoverTime;
+        if(sinFunction) {
+            hoverRatio = (Mathf.Sin(Mathf.PI*hoverRatio - 0.5f*Mathf.PI)+1)/2f;
+        }
+
+        return hoverRatio;
+    }
 
     float TimeRatio(float remainingTime, float maxTime) {
         /*
