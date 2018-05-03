@@ -540,15 +540,13 @@ public class Menu : MonoBehaviour {
          */
         int buttonEnum = (int) Buttons.Start;
         Button button = buttons[buttonEnum];
-        RectTransform rect = buttonRects[buttonEnum];
-        //Set the size and color of the button to reflect the current hover value
-        StartButtonHoverUpdate();
         //Start fading in the button 50% into the intro, finish 90% in
         Transition transition = GetTransitionFromState(state);
         float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.5f, 0.9f);
 
-        /* Leave the positions as their default intro positions */
-        rect.position = new Vector3(rect.sizeDelta.x/2f, canvasRect.position.y + buttonHeight/2f, 0);
+        /* Position the button to already be in it's main position */
+        StartButtonHoverUpdate();
+        StartButtonPositionUpdate(1);
 
         /* Change the opacity to reflect the transition state */
         Color col = button.GetComponentInChildren<Text>().color;
@@ -559,45 +557,36 @@ public class Menu : MonoBehaviour {
         /*
          * During this transition state, move the button so it's back onto the screen
          */
-        int buttonEnum = (int) Buttons.Start;
-        RectTransform rect = buttonRects[buttonEnum];
-        //Set the size and color of the button to reflect the current hover value
-        StartButtonHoverUpdate();
         //Use a custom sin function to smooth the transition fade value
         Transition transition = GetTransitionFromState(state);
         float transitionFade = Mathf.Sin((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax));
-
-        /* Animate the button slidding in from the left side */
-        rect.position = new Vector3(-rect.sizeDelta.x/2f + rect.sizeDelta.x*transitionFade, canvasRect.position.y + buttonHeight/2f, 0);
+        
+        /* Slide the button into it's main position from off-screen */
+        StartButtonHoverUpdate();
+        StartButtonPositionUpdate(transitionFade);
     }
 
     void UStartButtonMainToEmpty() {
         /*
          * During this transition state, Quickly move the button off-screen
          */
-        int buttonEnum = (int) Buttons.Start;
-        RectTransform rect = buttonRects[buttonEnum];
-        //Set the size and color of the button to reflect the current hover value
-        StartButtonHoverUpdate();
         //Use a custom sin function to smooth the transition fade value
         Transition transition = GetTransitionFromState(state);
         float transitionFade = Mathf.Sin((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax));
-
-        /* Animate the button slidding in from the left side */
-        rect.position = new Vector3(rect.sizeDelta.x/2f - rect.sizeDelta.x*transitionFade, canvasRect.position.y + buttonHeight/2f, 0);
+        
+        /* Slide the button off-screen from it's main position */
+        StartButtonHoverUpdate();
+        StartButtonPositionUpdate(1 - transitionFade);
     }
 
     void UStartButtonMain() {
         /*
          * Make sure the button's position is properly updated after updating it's hover value
          */
-        int buttonEnum = (int) Buttons.Start;
-        RectTransform rect = buttonRects[buttonEnum];
-        //Set the size and color of the button to reflect the current hover value
-        StartButtonHoverUpdate();
 
-        /* Make sure the button is properly positionned */
-        rect.position = new Vector3(rect.sizeDelta.x/2f, canvasRect.position.y + buttonHeight/2f, 0);
+        /* Place the button in it's main position */
+        StartButtonHoverUpdate();
+        StartButtonPositionUpdate(1);
     }
 
     void UStartButtonMainToIntro() {
@@ -606,16 +595,14 @@ public class Menu : MonoBehaviour {
          */
         int buttonEnum = (int) Buttons.Start;
         Button button = buttons[buttonEnum];
-        RectTransform rect = buttonRects[buttonEnum];
         Outline[] outlines = button.GetComponentInChildren<Text>().gameObject.GetComponents<Outline>();
-        //Set the size and color of the button to reflect the current hover value
-        StartButtonHoverUpdate();
         //Use the transition value very basically
         Transition transition = GetTransitionFromState(state);
         float transitionFade = TimeRatio(transition.timeRemaining, transition.timeMax);
 
         /* Make sure the button is properly positionned */
-        rect.position = new Vector3(rect.sizeDelta.x/2f, canvasRect.position.y + buttonHeight/2f, 0);
+        StartButtonHoverUpdate();
+        StartButtonPositionUpdate(1);
 
         /* Update the color of the text and change the outline's distance to reflect the current fade value */
         button.GetComponentInChildren<Text>().color -= new Color(0, 0, 0, transitionFade);
@@ -625,7 +612,7 @@ public class Menu : MonoBehaviour {
         /* Place the button off the screen on the final frame in the MainToIntro state */
         if(transition.timeRemaining == 0) {
             /* Position the button off screen */
-            rect.position = new Vector3(-rect.sizeDelta.x/2f, canvasRect.position.y + buttonHeight/2f, 0);
+            StartButtonPositionUpdate(0);
         }
     }
 
@@ -633,18 +620,28 @@ public class Menu : MonoBehaviour {
         /*
          * Animate the button slidding off the left side of the screen as the game quits
          */
-        int buttonEnum = (int) Buttons.Start;
-        RectTransform rect = buttonRects[buttonEnum];
-        //Set the size and color of the button to reflect the current hover value
-        StartButtonHoverUpdate();
         //The transition starts fading the button at the start and ends 50% through
         Transition transition = GetTransitionFromState(state);
         float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 0.5f);
-
-        /* Move the button out to the left side of the screen */
-        rect.position = new Vector3(rect.sizeDelta.x/2f - rect.sizeDelta.x*transitionFade, rect.position.y, 0);
+        
+        /* Move the button from the main position to off-screen */
+        StartButtonHoverUpdate();
+        StartButtonPositionUpdate(1 - transitionFade);
     }
-    
+
+    void StartButtonPositionUpdate(float sideRatio) {
+        /*
+         * Update the position of the start button. The start button will be anchored to the left wall.
+         * 
+         * Depending on the given side value, place it either on the right or left side of the wall.
+         * 0 is completely on the left and 1 is completely on the right.
+         */
+        int buttonEnum = (int) Buttons.Start;
+        RectTransform rect = buttonRects[buttonEnum];
+
+        rect.position = new Vector3(-rect.sizeDelta.x/2f + rect.sizeDelta.x*sideRatio, canvasRect.position.y + buttonHeight/2f, 0);
+    }
+
     void StartButtonHoverUpdate() {
         /*
          * Set the sizes and colors of the start button to reflect it's current hover value
@@ -676,19 +673,14 @@ public class Menu : MonoBehaviour {
          */
         int buttonEnum = (int) Buttons.Quit;
         Button button = buttons[buttonEnum];
-        RectTransform rect = buttonRects[buttonEnum];
-        //Set the size and color of the button to reflect the current hover value
-        QuitButtonHoverUpdate();
-        /* The button that this quit button will be placed bellow */
-        RectTransform aboveButton = buttonRects[(int) Buttons.Start];
         //Start fading in the button 60% into the intro, finish 100% in
         Transition transition = GetTransitionFromState(state);
         float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.6f, 1.0f);
         
-        /* Leave the positions as their default intro positions */
-        float relativeHeight = aboveButton.position.y - aboveButton.sizeDelta.y/2f - buttonHeight/2f;
-        rect.position = new Vector3(rect.sizeDelta.x/2f, relativeHeight, 0);
-
+        /* Position the button at it's main position */
+        QuitButtonHoverUpdate();
+        QuitButtonPositionUpdate(1);
+        
         /* Change the opacity to reflect the transition state */
         Color col = button.GetComponentInChildren<Text>().color;
         button.GetComponentInChildren<Text>().color = new Color(col.r, col.g, col.b, transitionFade);
@@ -698,86 +690,79 @@ public class Menu : MonoBehaviour {
         /*
          * Update the quit button as the menu enters the main from empty
          */
-        int buttonEnum = (int) Buttons.Quit;
-        RectTransform rect = buttonRects[buttonEnum];
-        //Set the size and color of the button to reflect the current hover value
-        QuitButtonHoverUpdate();
-        /* The button that this quit button will be placed bellow */
-        RectTransform aboveButton = buttonRects[(int) Buttons.Start];
         //Use a sin function to smooth out the transition value
         Transition transition = GetTransitionFromState(state);
         float transitionFade = Mathf.Sin((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax));
-
-        /* Place the quit button as it slides into it's main position */
-        float relativeHeight = aboveButton.position.y - aboveButton.sizeDelta.y/2f - buttonHeight/2f;
-        rect.position = new Vector3(-rect.sizeDelta.x/2f + rect.sizeDelta.x*transitionFade, relativeHeight, 0);
+        
+        /* Move the button from it's off-screen position to the main position */
+        QuitButtonHoverUpdate();
+        QuitButtonPositionUpdate(transitionFade);
     }
 
     void UQuitButtonMainToEmpty() {
         /*
          * Update the quit button as the menu quickly closes
          */
-        int buttonEnum = (int) Buttons.Quit;
-        RectTransform rect = buttonRects[buttonEnum];
-        //Set the size and color of the button to reflect the current hover value
-        QuitButtonHoverUpdate();
-        /* The button that this quit button will be placed bellow */
-        RectTransform aboveButton = buttonRects[(int) Buttons.Start];
         //Use a sin function to smooth out the transition value
         Transition transition = GetTransitionFromState(state);
         float transitionFade = Mathf.Sin((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax));
 
-        /* Position the button as it slides off the left side of the screen */
-        float relativeHeight = aboveButton.position.y - aboveButton.sizeDelta.y/2f - buttonHeight/2f;
-        rect.position = new Vector3(rect.sizeDelta.x/2f - rect.sizeDelta.x*transitionFade, relativeHeight, 0);
+        /* Move the button from it's main position to off-screen */
+        QuitButtonHoverUpdate();
+        QuitButtonPositionUpdate(1 - transitionFade);
     }
 
     void UQuitButtonMain() {
         /*
          * Update the quit button while in the Main state.
          */
-        int buttonEnum = (int) Buttons.Quit;
-        RectTransform rect = buttonRects[buttonEnum];
-        //Set the size and color of the button to reflect the current hover value
-        QuitButtonHoverUpdate();
-        /* The button that this quit button will be placed bellow */
-        RectTransform aboveButton = buttonRects[(int) Buttons.Start];
 
-        /* The position and color is effected by it's hover values and the button above it */
-        float relativeHeight = aboveButton.position.y - aboveButton.sizeDelta.y/2f - buttonHeight/2f;
-        rect.position = new Vector3(rect.sizeDelta.x/2f, relativeHeight, 0);
+        /* Keep the button in it's main position */
+        QuitButtonHoverUpdate();
+        QuitButtonPositionUpdate(1);
     }
 
     void UQuitButtonMainToIntro() {
         /*
          * Animate the quit button when entering the intro. The quit button slides out to the left
          */
-        int buttonEnum = (int) Buttons.Quit;
-        RectTransform rect = buttonRects[buttonEnum];
-        //Set the size and color of the button to reflect the current hover value
-        QuitButtonHoverUpdate();
-        //The transition fade values aims to go from 0 to 2 over the transition state.
+        //The transition starts fading at the start and ends 50% through
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = TimeRatio(transition.timeRemaining, transition.timeMax);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 0.5f);
 
-        /* Move the button out to the left side of the screen */
-        rect.position = new Vector3(rect.sizeDelta.x/2f - rect.sizeDelta.x*transitionFade, rect.position.y, 0);
+        /* Move the button from the main to off-screen position */
+        QuitButtonHoverUpdate();
+        QuitButtonPositionUpdate(1 - transitionFade);
     }
     
     void UQuitButtonMainToQuit() {
         /*
          * Animate the button slidding off the left side of the screen as the game quits
          */
-        int buttonEnum = (int) Buttons.Quit;
-        RectTransform rect = buttonRects[buttonEnum];
-        //Set the size and color of the button to reflect the current hover value
-        QuitButtonHoverUpdate();
         //The transition starts fading at the start and ends 50% through
         Transition transition = GetTransitionFromState(state);
         float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 0.5f);
 
-        /* Move the button out to the left side of the screen */
-        rect.position = new Vector3(rect.sizeDelta.x/2f - rect.sizeDelta.x*transitionFade, rect.position.y, 0);
+        /* Move the button from the main to off-screen position */
+        QuitButtonHoverUpdate();
+        QuitButtonPositionUpdate(1 - transitionFade);
+    }
+
+    void QuitButtonPositionUpdate(float sideRatio) {
+        /*
+         * Update the position of the quit button. The quit button will be anchored 
+         * to the left wall and bellow the start button.
+         * 
+         * Depending on the given side value, place it either on the right or left side of the wall.
+         * 0 is completely on the left and 1 is completely on the right.
+         */
+        int buttonEnum = (int) Buttons.Quit;
+        RectTransform rect = buttonRects[buttonEnum];
+        /* The button that this quit button will be placed bellow */
+        RectTransform aboveButton = buttonRects[(int) Buttons.Start];
+        
+        float relativeHeight = aboveButton.position.y - aboveButton.sizeDelta.y/2f - buttonHeight/2f;
+        rect.position = new Vector3(-rect.sizeDelta.x/2f + rect.sizeDelta.x*sideRatio, relativeHeight, 0);
     }
 
     void QuitButtonHoverUpdate() {
