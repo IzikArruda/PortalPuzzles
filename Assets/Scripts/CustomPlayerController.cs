@@ -38,6 +38,7 @@ public enum PlayerStates{
  */
 public class CustomPlayerController : MonoBehaviour {
     public int state;
+    public bool inMenu;
     /* How long the player has spent in the current state */
     public float stateTime;
 
@@ -218,7 +219,7 @@ public class CustomPlayerController : MonoBehaviour {
         /* Place the player in  the startingRoom, facing the window */
         SetupPlayer();
     }
-    
+
     void FixedUpdate() {
         /*
          * Handle player movement. This includes moving the player in the inputted direction and stepping.
@@ -227,42 +228,46 @@ public class CustomPlayerController : MonoBehaviour {
          * This could be due to the high amount of physics checks or possibly a drop in framerate for the player.
          * The goal is to prevent the player from moving past if they are not updating fast enough.
          */
-         
-        /* Handle the conditions that need to be checked after the player moves (teleport, update footstep tracker) */
-        HandlePlayerMovement(true);
-        
-        /* Update the step tracker with whatever steps were made since the last FixedUpdate call */
-        if(PlayerIsGrounded()) {
-            playerStepTracker.AddHorizontalStep(Quaternion.Inverse(transform.rotation)*lastStepMovement);
-            lastStepMovement = Vector3.zero;
+
+        /* Do not update the player if they are in the menu */
+        if(!inMenu) {
+
+            /* Handle the conditions that need to be checked after the player moves (teleport, update footstep tracker) */
+            HandlePlayerMovement(true);
+
+            /* Update the step tracker with whatever steps were made since the last FixedUpdate call */
+            if(PlayerIsGrounded()) {
+                playerStepTracker.AddHorizontalStep(Quaternion.Inverse(transform.rotation)*lastStepMovement);
+                lastStepMovement = Vector3.zero;
+            }
+
+            /* From the player's current position, execute a step check to see if they need to move along their Y axis */
+            /* Do not use steps if the player is in the intro */
+            if(!PlayerIsInIntro()) {
+                StepPlayer();
+            }
+
+            /* Move the player using their given input and the gravity vector */
+            UpdateInputVector();
+            MovePlayer(inputVector + GetGravityVector());
+
+            /* Apply the final tallied movement vector to the player's position */
+            Rigidbody rigidBody = GetComponent<Rigidbody>();
+            Vector3 newPosition = transform.position;
+            for(int i = 0; i < expectedMovements.Count; i++) {
+                newPosition += (Vector3) expectedMovements[i];
+            }
+            rigidBody.MovePosition(newPosition);
+
+            /* Freeze the player's rigidbody's velocity */
+            rigidBody.velocity = Vector3.zero;
+
+            /* Empty the expectedMovements array as we are about to add new movements */
+            expectedMovements.Clear();
+
+            /* Save the player's current position as the lastSavedPosition */
+            UpdateSavedPositon();
         }
-
-        /* From the player's current position, execute a step check to see if they need to move along their Y axis */
-        /* Do not use steps if the player is in the intro */
-        if(!PlayerIsInIntro()) {
-            StepPlayer();
-        }
-
-        /* Move the player using their given input and the gravity vector */
-        UpdateInputVector();
-        MovePlayer(inputVector + GetGravityVector());
-        
-        /* Apply the final tallied movement vector to the player's position */
-        Rigidbody rigidBody = GetComponent<Rigidbody>();
-        Vector3 newPosition = transform.position;
-        for(int i = 0; i < expectedMovements.Count; i++) {
-            newPosition += (Vector3) expectedMovements[i];
-        }
-        rigidBody.MovePosition(newPosition);
-
-        /* Freeze the player's rigidbody's velocity */
-        rigidBody.velocity = Vector3.zero;
-
-        /* Empty the expectedMovements array as we are about to add new movements */
-        expectedMovements.Clear();
-
-        /* Save the player's current position as the lastSavedPosition */
-        UpdateSavedPositon();
     }
 
     void Update() {
@@ -282,18 +287,16 @@ public class CustomPlayerController : MonoBehaviour {
          * after a physics update, we detected a teleport SHOULD have occured, but we did not update the frame yet,
          * so by teleporting the player in that moment they will NOT render a frame of them PAST the teleport trigger.
          */
-        Debug.Log(state);
-
         /* Get how long it's been since a time update */
         System.DateTime current = System.DateTime.Now;
         System.TimeSpan duration = current.Subtract(before);
         //Debug.Log(" ------- Since update: " + duration.Milliseconds);
         before = System.DateTime.Now;
-        
+
         //Print how many cams were rendered this frame
         //Debug.Log(renderedCameraCount);
         renderedCameraCount = 0;
-        
+
         /* Pressing the escape button will send a request to the menu and either open/close the menu */
         MenuKey();
 
@@ -301,36 +304,40 @@ public class CustomPlayerController : MonoBehaviour {
         if(PlayerIsInIntro()) {
             UpdateIntroValues();
         }
-
-        /* Update the player's inputs and stateTime */
-        inputs.UpdateInputs();
-        stateTime += Time.deltaTime;
-
-        /* Handle the conditions that need to be checked after the player moves (teleport, update footstep tracker) */
-        HandlePlayerMovement(false);
-
-        /* Check the player's inputs to see if they prime a jump */
-        PrimeJumpingValue();
-
-        /* Check if the player wants to reset their position */
-        if(inputs.rKeyPressed) {
-            StartPlayerReset();
-        }
-
-        /* Check if the user presses any other important keys */
-        ArbitraryInput();
-
-        /* Update and animated the resetTimer if the player wants to reset */
-        if(currentResetTime > -1) {
-            UpdateResetAnimation();
-        }
-
-        /* Update the player's stride progress to determine when a footstep sound effect should play */
-        playerStepTracker.UpdateStride();
         
-        //Draw a line in the camera's forward vector
-        Debug.DrawLine(playerCamera.transform.position, 
-                playerCamera.transform.position + playerCamera.transform.rotation*Vector3.forward*0.5f, Color.green);
+        /* Do not update the player if they are in the menu */
+        if(!inMenu) {
+
+            /* Update the player's inputs and stateTime */
+            inputs.UpdateInputs();
+            stateTime += Time.deltaTime;
+
+            /* Handle the conditions that need to be checked after the player moves (teleport, update footstep tracker) */
+            HandlePlayerMovement(false);
+
+            /* Check the player's inputs to see if they prime a jump */
+            PrimeJumpingValue();
+
+            /* Check if the player wants to reset their position */
+            if(inputs.rKeyPressed) {
+                StartPlayerReset();
+            }
+
+            /* Check if the user presses any other important keys */
+            ArbitraryInput();
+
+            /* Update and animated the resetTimer if the player wants to reset */
+            if(currentResetTime > -1) {
+                UpdateResetAnimation();
+            }
+
+            /* Update the player's stride progress to determine when a footstep sound effect should play */
+            playerStepTracker.UpdateStride();
+
+            //Draw a line in the camera's forward vector
+            Debug.DrawLine(playerCamera.transform.position,
+                    playerCamera.transform.position + playerCamera.transform.rotation*Vector3.forward*0.5f, Color.green);
+        }
     }
 
     void LateUpdate() {
@@ -349,11 +356,11 @@ public class CustomPlayerController : MonoBehaviour {
          * --------
          */
          
-        /* Update the camera's view with the mouse input when NOT in the intro states */
-        if(!PlayerIsInIntro()) {
+        /* Prevent the mouse from moving the camera while in a menu */
+        if(!inMenu) {
             AdjustCameraRotation();
         }
-        
+
         /* Update currentCameraTransform to control the transform of the camera, depending on the current state */
         if(state == (int) PlayerStates.Landing) {
             /* Apply an animation to the camera while in the landing state */
@@ -384,7 +391,10 @@ public class CustomPlayerController : MonoBehaviour {
         playerCamera.transform.rotation = currentCameraTransform.rotation;
 
         /* Apply any needed special effects to the camera. Runs everytime the camera renders */
-        cameraEffectsScript.UpdateCameraEffects();
+        /* Do not update these camera effects if the game is in a menu */
+        if(!inMenu) {
+            cameraEffectsScript.UpdateCameraEffects();
+        }
     }
 
     
@@ -458,9 +468,6 @@ public class CustomPlayerController : MonoBehaviour {
         }
         else if(PlayerIsAirborn()) {
             StepPlayerAirborn();
-        }
-        else if(PlayerIsInIntro()) {
-            //Freeze the player in their current spot when in the intro
         }
         else {
             Debug.Log("Warning: state " + state + " does not handle player stepping");
@@ -696,7 +703,7 @@ public class CustomPlayerController : MonoBehaviour {
         float rotState1 = 0.15f;
         float rotState2 = 0.65f;
 
-        /* Camera's Y rotation will follow the sine graph of [0, PI] with x axis being time spent in thos state */
+        /* Camera's Y rotation will follow the sine graph of [0, PI] with x axis being time spent in those state */
         xRot = cameraXRotation;
         if(stateTime < rotState1) {
             yRot = cameraYRotation - angleRotation*Mathf.Sin(0 + (Mathf.PI/2f)*RatioWithinRange(0, rotState1, stateTime));
@@ -1031,6 +1038,7 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Start the player in the InIntro state */
         state = -1;
+        inMenu = true;
         ChangeState((int) PlayerStates.InIntro);
         //After entering the intro state, we want to update certain values that will be used with the intro animation
         AdjustCameraPosition(GetCameraHeight());
@@ -1151,6 +1159,11 @@ public class CustomPlayerController : MonoBehaviour {
                 	cameraYOffset = 0;
                 }
 			}
+
+            /* Exitting the LeavingIntro state will set certain values pertinent to leaving the intro */
+            if(state == (int) PlayerStates.LeavingIntro) {
+                inMenu = false;
+            }
 			
 			/* Entering the Falling state... */
 			if(newState == (int) PlayerStates.Falling){
@@ -1445,20 +1458,22 @@ public class CustomPlayerController : MonoBehaviour {
          * Handle the act of sending requests to the menu about opening or closing the menu
          */
 
-        /* The escape key is used to open or close the menu */
-        if(Input.GetKeyDown(KeyCode.Escape)) {
-            bool inMenu = playerMenu.PlayerRequestMenuChange();
-
-            /* True means we entered a menu */
-            if(inMenu) {
-                //Menu - prevent control
-            }
-
-            /* False means we will not be in the menu */
-            else {
-                //No menu - allow control
+        /* Do not change the inMenu value if we are in a intro state */
+        if(!PlayerIsInIntro()) {
+            /* The escape key is used to open or close the menu */
+            if(Input.GetKeyDown(KeyCode.Escape)) {
+                /* Set whether the menu should prevent user input or not */
+                inMenu = playerMenu.PlayerRequestMenuChange();
             }
         }
+
+        /* Maybe pressing escape in the intro will skip it? */
+        else {
+            if(Input.GetKeyDown(KeyCode.Escape)) {
+                Debug.Log("SKIP INTRO?");
+            }
+        }
+
     }
     
     void UpdateIntroValues() {
@@ -1485,8 +1500,16 @@ public class CustomPlayerController : MonoBehaviour {
         /* Start a timer for when we will leave the inMenu state */
         currentlyLeavingInIntro = true;
         remainingInIntroTime = timeToLeaveIntro;
-        Debug.Log("UPDATED THE THING");
     }
+
+    public void ContinueButtonPressed() {
+        /*
+         * This is run when the player presses the continue button on the main menu
+         */
+
+        inMenu = false;
+    }
+
 
     /* ----------- Outside Called Functions ------------------------------------------------------------- */
 

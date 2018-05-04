@@ -951,9 +951,9 @@ public class Menu : MonoBehaviour {
 
             /* Continue the game by entering the empty state */
             else {
-                ChangeState(MenuStates.Empty);
+                ChangeState(MenuStates.MainToEmpty);
+                playerController.ContinueButtonPressed();
             }
-
         }
     }
 
