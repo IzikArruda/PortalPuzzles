@@ -87,11 +87,11 @@ public class Menu : MonoBehaviour {
      * make the state transition into itself as it will be handlede manually in UpdateCurrentState().
      */
     Transition[] transitionStates = {
-        new Transition(MenuStates.Startup, MenuStates.Main, 3f, 0f),
-        new Transition(MenuStates.EmptyToMain, MenuStates.Main, 0.5f, 0f),
-        new Transition(MenuStates.MainToEmpty, MenuStates.Empty, 0.5f, 0f),
-        new Transition(MenuStates.MainToIntro, MenuStates.Empty, 3f, 0f),
-        new Transition(MenuStates.MainToQuit, MenuStates.MainToQuit, 3f, 0f)
+        new Transition(MenuStates.Startup, MenuStates.Main, 1f, 0f),
+        new Transition(MenuStates.EmptyToMain, MenuStates.Main, 0.325f, 0f),
+        new Transition(MenuStates.MainToEmpty, MenuStates.Empty, 0.325f, 0f),
+        new Transition(MenuStates.MainToIntro, MenuStates.Empty, 0.5f, 0f),
+        new Transition(MenuStates.MainToQuit, MenuStates.MainToQuit, 1.8f, 0f)
     };
 
     /*
@@ -101,16 +101,21 @@ public class Menu : MonoBehaviour {
     StateFunction[] startButtonTransitions;
     StateFunction[] quitButtonTransitions;
     StateFunction[] coverPanelTransitions;
-    
+
     /* Button height to width ratios. Set manually and is unique for each font + text content. */
+    private float startBonusSize = 1.3f;
     private float startWidthRatio = 3;
     private float continueWidthRatio = 4.65f;
     private float quitWidthRatio = 2.25f;
+    //Set this to the largest ratio we currently have. This is to make sure each element goes offscreen at the same speed
+    private float largestRaio = 1.3f*4.65f;
 
     /* Global values used for sizes of UI elements */
-    private float minHeight = 25;
-    private float maxHeight = 200;
+    private float minHeight = 40;//40
+    private float maxHeight = 175;//175
+    private float avgHeight = 100;
     private float buttonHeight;
+    private float heightRatio;
 
     /* A link to the player's controller */
     private CustomPlayerController playerController;
@@ -161,7 +166,6 @@ public class Menu : MonoBehaviour {
         /*
          * Check if the screen has been resized and run any per-frame update calls for any UI elements
          */
-        Debug.Log(state);
         
         /* Check if the screen has been resized */
         if(Screen.width != screenWidth || Screen.height != screenHeight) {
@@ -300,6 +304,7 @@ public class Menu : MonoBehaviour {
 
         /* Update the buttonHeight value used by all buttons */
         buttonHeight = Mathf.Clamp(screenHeight*0.2f, minHeight, maxHeight);
+        heightRatio = buttonHeight/avgHeight;
     }
     
     void ReorderHeirarchy() {
@@ -600,14 +605,16 @@ public class Menu : MonoBehaviour {
         Transition transition = GetTransitionFromState(state);
         float transitionFade = TimeRatio(transition.timeRemaining, transition.timeMax);
 
-        /* Make sure the button is properly positionned */
-        StartButtonHoverUpdate();
+        /* Make sure the button is properly positionned. Don't run any changes through StartButtonHoverUpdate */
+        //StartButtonHoverUpdate();
         StartButtonPositionUpdate(1);
 
         /* Update the color of the text and change the outline's distance to reflect the current fade value */
         button.GetComponentInChildren<Text>().color -= new Color(0, 0, 0, transitionFade);
-        outlines[0].effectDistance += new Vector2(45f*transitionFade, 45f*transitionFade);
-        outlines[1].effectDistance += new Vector2(30f*transitionFade, 30f*transitionFade);
+        outlines[0].effectDistance = new Vector2(2 + 5f*transitionFade*buttonHeight, 2 + 5f*transitionFade*buttonHeight);
+        outlines[1].effectDistance = new Vector2(2 + 10f*transitionFade*buttonHeight, 2 + 10f*transitionFade*buttonHeight);
+        outlines[0].effectColor = new Color(0, 0, 0, 0.75f - transitionFade);
+        outlines[1].effectColor = new Color(0, 0, 0, 0.75f - transitionFade);
 
         /* Place the button off the screen on the final frame in the MainToIntro state */
         if(transition.timeRemaining == 0) {
@@ -651,18 +658,20 @@ public class Menu : MonoBehaviour {
         RectTransform rect = buttonRects[buttonEnum];
         Outline[] outlines = button.GetComponentInChildren<Text>().gameObject.GetComponents<Outline>();
         float hoverRatio = HoverRatio(buttonEnum, true);
-        float extraHoverWidth = hoverRatio*buttonHeight*0.5f;
+        float extraHoverWidth = hoverRatio*buttonHeight*startBonusSize;
 
         /* Set the color of the button to reflect the current hover value */
-        float hoverColor = 1f - 0.25f*hoverRatio;
+        float hoverColor = 1f - 0.10f*hoverRatio;
         button.GetComponentInChildren<Text>().color = new Color(hoverColor, hoverColor, hoverColor, 1);
 
         /* Set the button's size to reflect the current hover value */
-        rect.sizeDelta = new Vector2(1.5f*buttonHeight*startWidthRatio + extraHoverWidth, 1.5f*buttonHeight);
+        rect.sizeDelta = new Vector2(startBonusSize*buttonHeight*startWidthRatio + extraHoverWidth, startBonusSize*buttonHeight);
 
         /* Set the outline's distance relative to the hover value */
-        outlines[0].effectDistance = 1.5f*new Vector2(0.5f + 1f*hoverRatio, 0.5f + 1f*hoverRatio);
-        outlines[1].effectDistance = 1.5f*new Vector2(0.5f + 1f*hoverRatio, 0.5f + 1f*hoverRatio);
+        outlines[0].effectDistance = heightRatio*startBonusSize*new Vector2(0.25f + 1f*hoverRatio, 0.25f + 1f*hoverRatio);
+        outlines[1].effectDistance = heightRatio*startBonusSize*new Vector2(0.25f + 1f*hoverRatio, 0.25f + 1f*hoverRatio);
+        outlines[0].effectColor = new Color(0, 0, 0, 0.5f + 0.25f*hoverRatio);
+        outlines[1].effectColor = new Color(0, 0, 0, 0.5f + 0.25f*hoverRatio);
     }
     #endregion
 
@@ -726,9 +735,9 @@ public class Menu : MonoBehaviour {
         /*
          * Animate the quit button when entering the intro. The quit button slides out to the left
          */
-        //The transition starts fading at the start and ends 50% through
+        //The transition starts fading at the start and ends 100% through
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 0.5f);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 1f);
 
         /* Move the button from the main to off-screen position */
         QuitButtonHoverUpdate();
@@ -774,18 +783,20 @@ public class Menu : MonoBehaviour {
         RectTransform rect = buttonRects[buttonEnum];
         Outline[] outlines = button.GetComponentInChildren<Text>().gameObject.GetComponents<Outline>();
         float hoverRatio = HoverRatio(buttonEnum, true);
-        float extraHoverWidth = hoverRatio*buttonHeight*0.5f;
+        float extraHoverWidth = hoverRatio*buttonHeight;
 
         /* Set the color of the button to reflect the current hover value */
-        float hoverColor = 1f - 0.25f*hoverRatio;
+        float hoverColor = 1f - 0.10f*hoverRatio;
         button.GetComponentInChildren<Text>().color = new Color(hoverColor, hoverColor, hoverColor, 1);
 
         /* Set the button's size to reflect the current hover value */
         rect.sizeDelta = new Vector2(buttonHeight*quitWidthRatio + extraHoverWidth, buttonHeight);
 
         /* Set the outline's distance relative to the hover value */
-        outlines[0].effectDistance = new Vector2(0.5f + 1f*hoverRatio, 0.5f + 1f*hoverRatio);
-        outlines[1].effectDistance = new Vector2(0.5f + 1f*hoverRatio, 0.5f + 1f*hoverRatio);
+        outlines[0].effectDistance = heightRatio*new Vector2(0.25f + 1f*hoverRatio, 0.25f + 1f*hoverRatio);
+        outlines[1].effectDistance = heightRatio*new Vector2(0.25f + 1f*hoverRatio, 0.25f + 1f*hoverRatio);
+        outlines[0].effectColor = new Color(0, 0, 0, 0.5f + 0.25f*hoverRatio);
+        outlines[1].effectColor = new Color(0, 0, 0, 0.5f + 0.25f*hoverRatio);
     }
     #endregion
 
@@ -812,22 +823,28 @@ public class Menu : MonoBehaviour {
         return transition;
     }
 
-    public void PlayerRequestMenuChange() {
+    public bool PlayerRequestMenuChange() {
         /*
          * The player sent a request to change the menu. This will either 
          * close the menu if it's open or open the menu if it's closed.
+         * 
+         * Return true if the player will stay in the menu state
+         * and return false if the player is now out of the menu state.
          */
+        bool inMenu = true;
 
         /* If the menu is empty, Start opening the main menu */
         if(state == MenuStates.Empty) {
             ChangeState(MenuStates.EmptyToMain);
         }
-
-        /* If the menu is not empty, empty it */
-        /* If we're in the main menu, start quitting the menu */
-        else if(state == MenuStates.Main) {
+        
+        /* Quitting from the main menu will give the player control and start moving as the menu quits */
+        else if(state == MenuStates.Main || state == MenuStates.MainToEmpty) {
             ChangeState(MenuStates.MainToEmpty);
+            inMenu = false;
         }
+
+        return inMenu;
     }
 
     void ChangeState(MenuStates newState) {

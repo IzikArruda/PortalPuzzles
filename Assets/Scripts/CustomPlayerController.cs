@@ -17,8 +17,8 @@ using System.Collections;
  * speed and terminal velocity. 
  */
 public enum PlayerStates{
-    InMenu,
-    LeavingMenu,
+    InIntro,
+    LeavingIntro,
     Standing,
     Landing,
 	Falling,
@@ -164,12 +164,12 @@ public class CustomPlayerController : MonoBehaviour {
     private Quaternion camDestinationRot;
     private float introCamDistance = -1;
 
-    /* Menu Animation values */
-    private float menuWindowStrafeSpeed = 0.25f;
-    //Used to smoothly transition between inMenu and LeavingMenu
-    private float remainingInMenuTime;
-    private bool currentlyLeavingInMenu = false;
-    private float timeToLeaveMenu = 3;
+    /* Intro Animation values */
+    private float IntroWindowStrafeSpeed = 0.25f;
+    //Used to smoothly transition between InIntro and LeavingIntro
+    private float remainingInIntroTime;
+    private bool currentlyLeavingInIntro = false;
+    private float timeToLeaveIntro = 3;
 
 
     /* Debugging trackers */
@@ -238,8 +238,8 @@ public class CustomPlayerController : MonoBehaviour {
         }
 
         /* From the player's current position, execute a step check to see if they need to move along their Y axis */
-        /* Do not use steps if the player is in menus */
-        if(!PlayerIsInMenu()) {
+        /* Do not use steps if the player is in the intro */
+        if(!PlayerIsInIntro()) {
             StepPlayer();
         }
 
@@ -282,6 +282,7 @@ public class CustomPlayerController : MonoBehaviour {
          * after a physics update, we detected a teleport SHOULD have occured, but we did not update the frame yet,
          * so by teleporting the player in that moment they will NOT render a frame of them PAST the teleport trigger.
          */
+        Debug.Log(state);
 
         /* Get how long it's been since a time update */
         System.DateTime current = System.DateTime.Now;
@@ -292,13 +293,14 @@ public class CustomPlayerController : MonoBehaviour {
         //Print how many cams were rendered this frame
         //Debug.Log(renderedCameraCount);
         renderedCameraCount = 0;
-
-
+        
         /* Pressing the escape button will send a request to the menu and either open/close the menu */
         MenuKey();
 
-        /* Update values relevent to the menu */
-        UpdateMenuValues();
+        /* Update values relevent to the intro */
+        if(PlayerIsInIntro()) {
+            UpdateIntroValues();
+        }
 
         /* Update the player's inputs and stateTime */
         inputs.UpdateInputs();
@@ -347,8 +349,8 @@ public class CustomPlayerController : MonoBehaviour {
          * --------
          */
          
-        /* Update the camera's view with the mouse input when NOT in the menu states */
-        if(!PlayerIsInMenu()) {
+        /* Update the camera's view with the mouse input when NOT in the intro states */
+        if(!PlayerIsInIntro()) {
             AdjustCameraRotation();
         }
         
@@ -361,15 +363,15 @@ public class CustomPlayerController : MonoBehaviour {
             /* Apply an animation to the camera while in the fastFalling state */
             AnimateCameraFastFalling();
         }
-        else if(PlayerIsInMenu()) {       
-            /* Depending on the menu state the player is in, re-position the camera */
-            if(state == (int) PlayerStates.InMenu) {
-                /* While in the menu, leave the camera immobile */
-                AnimatedCameraInMenu();
+        else if(PlayerIsInIntro()) {       
+            /* Depending on the player's current state in the intro, re-position the camera */
+            if(state == (int) PlayerStates.InIntro) {
+                /* While in the intro, leave the camera immobile */
+                AnimatedCameraInIntro();
             }
-            else if(state == (int) PlayerStates.LeavingMenu) {
+            else if(state == (int) PlayerStates.LeavingIntro) {
                 /* Move the camera back to the player's default camera position, then give them control */
-                AnimatedCameraLeavingMenu();
+                AnimatedCameraLeavingIntro();
             }
         }
         else {
@@ -457,8 +459,8 @@ public class CustomPlayerController : MonoBehaviour {
         else if(PlayerIsAirborn()) {
             StepPlayerAirborn();
         }
-        else if(PlayerIsInMenu()) {
-            //Freeze the player in their current spot when in a menu
+        else if(PlayerIsInIntro()) {
+            //Freeze the player in their current spot when in the intro
         }
         else {
             Debug.Log("Warning: state " + state + " does not handle player stepping");
@@ -745,16 +747,16 @@ public class CustomPlayerController : MonoBehaviour {
         //playerCamera.transform.rotation = currentCameraTransform.rotation;
     }
 
-    void AnimatedCameraInMenu() {
+    void AnimatedCameraInIntro() {
         /*
-         * While in a menu, the camera will remain immobile
+         * While in the intro, the camera will remain immobile
          */
 
         /* Fire a ray from the player's current position */
-        FireCameraRayInMenuState();
+        FireCameraRayInIntroState();
     }
 
-    void AnimatedCameraLeavingMenu() {
+    void AnimatedCameraLeavingIntro() {
         /*
          * While in one of the "Menus" state, take control over the camera. 
          */
@@ -778,7 +780,7 @@ public class CustomPlayerController : MonoBehaviour {
         /* Update the position of the camera to reflect the change in introCamDistance */
         if(introCamDistance > 0) {
             /* Fire a ray to reposition the camera using the new introCamDistance */
-            FireCameraRayInMenuState();
+            FireCameraRayInIntroState();
         }
 
         /* If the cam distance reaches 0, have the player enter the standing state as they are done the intro animation */
@@ -789,22 +791,22 @@ public class CustomPlayerController : MonoBehaviour {
         }
     }
 
-    private void FireCameraRayInMenuState() {
+    private void FireCameraRayInIntroState() {
         /*
-         * A unified function used by multiple "Menus" state.
+         * A unified function used during the intro states
          */
-        float strafeSpeed = menuWindowStrafeSpeed;
+        float strafeSpeed = IntroWindowStrafeSpeed;
 
-        /* If the player is about the leave the menu, reduce window's strafing speed */
-        if(currentlyLeavingInMenu) {
+        /* If the player is about the leave the intro, reduce window's strafing speed */
+        if(currentlyLeavingInIntro) {
             float earlyTimeToStop = 0.5f;
-            float remainingTimeRatio = (remainingInMenuTime / (timeToLeaveMenu - earlyTimeToStop));
+            float remainingTimeRatio = (remainingInIntroTime / (timeToLeaveIntro - earlyTimeToStop));
             if(remainingTimeRatio < 0) { remainingTimeRatio = 0; }
             strafeSpeed *= remainingTimeRatio;
         }
         
-        /* Animate the menu's background by moving the startingRoom window's exit point to the side during this state */
-        if(state == (int) PlayerStates.InMenu) {
+        /* Animate the intro menu's background by moving the startingRoom window's exit point to the side during this state */
+        if(state == (int) PlayerStates.InIntro) {
             startingRoom.windowExit.position = startingRoom.windowExit.position + new Vector3(strafeSpeed, 0, 0);
         }
         startingRoom.UpdateOutsideWindowPositon(false);
@@ -878,7 +880,7 @@ public class CustomPlayerController : MonoBehaviour {
 		}
 
         /* Don't change the leg lengths while in menus */
-        else if(PlayerIsInMenu()) {
+        else if(PlayerIsInIntro()) {
 
         }
 
@@ -914,7 +916,7 @@ public class CustomPlayerController : MonoBehaviour {
             }
         }
         /* If the player is in the Intro state, do not accept any movements from keyboard or mouse */
-        else if(PlayerIsInMenu()) {
+        else if(PlayerIsInIntro()) {
             inputVector = Vector3.zero;
         }
 
@@ -950,9 +952,9 @@ public class CustomPlayerController : MonoBehaviour {
         playerStepTracker.ResetStrideProgress();
         playerStepTracker.ResetStepBuffer();
 
-        /* Start the player in the Intro state so they cannot move */
+        /* Start the player in the standing state */
         state = -1;
-        ChangeState((int) PlayerStates.LeavingMenu);
+        ChangeState((int) PlayerStates.Standing);
 
         /* Empty the arraylist of vectors that track the player's upcomming movement */
         if(expectedMovements != null) { expectedMovements.Clear(); }
@@ -1027,9 +1029,9 @@ public class CustomPlayerController : MonoBehaviour {
         /* Set the camera's offset to it's natural default value */
         cameraYOffset = 0;
 
-        /* Start the player in the "InMenu" state */
+        /* Start the player in the InIntro state */
         state = -1;
-        ChangeState((int) PlayerStates.InMenu);
+        ChangeState((int) PlayerStates.InIntro);
         //After entering the intro state, we want to update certain values that will be used with the intro animation
         AdjustCameraPosition(GetCameraHeight());
         camDestinationPos = currentCameraTransform.position;
@@ -1333,8 +1335,8 @@ public class CustomPlayerController : MonoBehaviour {
             currentYVelocity = 0;
         }
 
-        /* Reset the player's yVelocity if they are in a menu */
-        else if(PlayerIsInMenu()) {
+        /* Reset the player's yVelocity if they are in the intro */
+        else if(PlayerIsInIntro()) {
             currentYVelocity = 0;
         }
 
@@ -1445,40 +1447,45 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* The escape key is used to open or close the menu */
         if(Input.GetKeyDown(KeyCode.Escape)) {
-            playerMenu.PlayerRequestMenuChange();
+            bool inMenu = playerMenu.PlayerRequestMenuChange();
+
+            /* True means we entered a menu */
+            if(inMenu) {
+                //Menu - prevent control
+            }
+
+            /* False means we will not be in the menu */
+            else {
+                //No menu - allow control
+            }
         }
     }
-
-
-    void UpdateMenuValues() {
+    
+    void UpdateIntroValues() {
         /*
-         * Runs on every Update call, it is used to contain and update all values pertinent to the menu
+         * Runs on Update when in the intro, it is used to contain and update all values pertinent to the intro
          */
 
         /* If we are leaving the InMenu state, decrement remainingInMenuTime */
-        if(currentlyLeavingInMenu) {
-            /* Decrease remainingInMenuTime */
-            remainingInMenuTime -= Time.deltaTime;
-            if(remainingInMenuTime <= 0) {
-                /* When time runs out, change to the leavingMenu state */
-                ChangeState((int) PlayerStates.LeavingMenu);
+        if(currentlyLeavingInIntro) {
+            /* Decrease remainingInIntroTime */
+            remainingInIntroTime -= Time.deltaTime;
+            if(remainingInIntroTime <= 0) {
+                /* When time runs out, change to the leavingIntro state */
+                ChangeState((int) PlayerStates.LeavingIntro);
             }
         }
     }
 
     public void StartButtonPressed() {
         /*
-         * This is run when the player presses the start button on the main menu
+         * This is run when the player presses the start button on the main menu in the intro
          */
 
-        /* The player must not already be leaving the menu */
-        if(!currentlyLeavingInMenu) {
-
-            /* Start a timer for when we will leave the inMenu state */
-            currentlyLeavingInMenu = true;
-            remainingInMenuTime = timeToLeaveMenu;
-            Debug.Log("UPDATED THE THING");
-        }
+        /* Start a timer for when we will leave the inMenu state */
+        currentlyLeavingInIntro = true;
+        remainingInIntroTime = timeToLeaveIntro;
+        Debug.Log("UPDATED THE THING");
     }
 
     /* ----------- Outside Called Functions ------------------------------------------------------------- */
@@ -1662,17 +1669,17 @@ public class CustomPlayerController : MonoBehaviour {
         return isFalling;
     }
 
-    bool StateIsMenu(int givenState) {
+    bool StateIsIntro(int givenState) {
         /*
-         * Return true if the player is in a "menu" state. So far the only menu state is Intro
+         * Return true if the player is in a "intro" state.
          */
-        bool isMenuing = false;
+        bool inIntro = false;
 
-        if(givenState == (int) PlayerStates.LeavingMenu || givenState == (int) PlayerStates.InMenu) {
-            isMenuing = true;
+        if(givenState == (int) PlayerStates.LeavingIntro || givenState == (int) PlayerStates.InIntro) {
+            inIntro = true;
         }
 
-        return isMenuing;
+        return inIntro;
     }
 
     bool PlayerIsGrounded() {
@@ -1691,12 +1698,12 @@ public class CustomPlayerController : MonoBehaviour {
     	return StateIsAirborn(state);
     }
     
-    bool PlayerIsInMenu() {
+    bool PlayerIsInIntro() {
         /*
-         * Return true if the player is in one of the "menu" states
+         * Return true if the player is in one of the "intro" states
          */
 
-        return StateIsMenu(state);
+        return StateIsIntro(state);
     }
 
     public static float RatioWithinRange(float min, float max, float value) {
