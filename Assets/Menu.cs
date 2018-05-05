@@ -212,7 +212,13 @@ public class Menu : MonoBehaviour {
         /* Update the current starting state */
         state = MenuStates.Empty;
         ChangeState(MenuStates.Startup);
-        
+
+        /* Set the largestRaio to reflect the largest button */
+        largestRaio = startWidthRatio*startBonusSize;
+        largestRaio = Mathf.Max(largestRaio, continueWidthRatio*startBonusSize);
+        largestRaio = Mathf.Max(largestRaio, sensWidthRatio);
+        largestRaio = Mathf.Max(largestRaio, quitWidthRatio);
+
         /* Link the global variables of the script */
         playerController = controller;
         canvasRect = canvas.GetComponent<RectTransform>();
@@ -590,10 +596,10 @@ public class Menu : MonoBehaviour {
         /*
          * During this transition state, move the button so it's back onto the screen
          */
-        //Use a custom sin function to smooth the transition fade value
+        //Adjust the transition to reflect the button's size
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = Mathf.Sin((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax));
-        
+        float transitionFade = AdjustRatio((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax), 0, (startWidthRatio*startBonusSize)/largestRaio);
+
         /* Slide the button into it's main position from off-screen */
         StartButtonHoverUpdate();
         StartButtonPositionUpdate(transitionFade);
@@ -603,9 +609,9 @@ public class Menu : MonoBehaviour {
         /*
          * During this transition state, Quickly move the button off-screen
          */
-        //Use a custom sin function to smooth the transition fade value
+        //Adjust the transition to reflect the button's size
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = Mathf.Sin((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax));
+        float transitionFade = AdjustRatio((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax), 0, (startWidthRatio*startBonusSize)/largestRaio);
         
         /* Slide the button off-screen from it's main position */
         StartButtonHoverUpdate();
@@ -657,8 +663,8 @@ public class Menu : MonoBehaviour {
          */
         //The transition starts fading the button at the start and ends 50% through
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 0.5f);
-        
+        float transitionFade = AdjustRatio((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax), 0, 0.5f*(startWidthRatio*startBonusSize)/largestRaio);
+
         /* Move the button from the main position to off-screen */
         StartButtonHoverUpdate();
         StartButtonPositionUpdate(1 - transitionFade);
@@ -727,9 +733,9 @@ public class Menu : MonoBehaviour {
         /*
          * During this transition state, move the button so it's back onto the screen
          */
-        //Use a custom sin function to smooth the transition fade value
+        //Adjust the transition to reflect the button's size
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = Mathf.Sin((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax));
+        float transitionFade = AdjustRatio((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax), 0, sensWidthRatio/largestRaio);
 
         /* Slide the button into it's main position from off-screen */
         SensButtonHoverUpdate();
@@ -740,9 +746,9 @@ public class Menu : MonoBehaviour {
         /*
          * During this transition state, Quickly move the button off-screen
          */
-        //Use a custom sin function to smooth the transition fade value
+        //Adjust the transition to reflect the button's size
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = Mathf.Sin((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax));
+        float transitionFade = AdjustRatio((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax), 0, sensWidthRatio/largestRaio);
 
         /* Slide the button off-screen from it's main position */
         SensButtonHoverUpdate();
@@ -763,9 +769,9 @@ public class Menu : MonoBehaviour {
         /*
          * Animate the sensitivity button when entering the intro. The button slides out to the left
          */
-        //The transition starts fading at the start and ends 100% through
+        //Adjust the transition to reflect the button's size
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 1f);
+        float transitionFade = AdjustRatio((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax), 0, sensWidthRatio/largestRaio);
 
         /* Move the button from the main to off-screen position */
         SensButtonHoverUpdate();
@@ -778,7 +784,7 @@ public class Menu : MonoBehaviour {
          */
         //The transition starts fading the button at the start and ends 50% through
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 0.5f);
+        float transitionFade = AdjustRatio((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax), 0, 0.5f*sensWidthRatio/largestRaio);
 
         /* Move the button from the main position to off-screen */
         SensButtonHoverUpdate();
@@ -852,10 +858,10 @@ public class Menu : MonoBehaviour {
         /*
          * Update the quit button as the menu enters the main from empty
          */
-        //Use a sin function to smooth out the transition value
+        //Adjust the transition to reflect the button's size
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = Mathf.Sin((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax));
-        
+        float transitionFade = AdjustRatio((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax), 0, quitWidthRatio/largestRaio);
+
         /* Move the button from it's off-screen position to the main position */
         QuitButtonHoverUpdate();
         QuitButtonPositionUpdate(transitionFade);
@@ -865,9 +871,9 @@ public class Menu : MonoBehaviour {
         /*
          * Update the quit button as the menu quickly closes
          */
-        //Use a sin function to smooth out the transition value
+        //Adjust the transition to reflect the button's size
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = Mathf.Sin((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax));
+        float transitionFade = AdjustRatio((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax), 0, quitWidthRatio/largestRaio);
 
         /* Move the button from it's main position to off-screen */
         QuitButtonHoverUpdate();
@@ -888,9 +894,9 @@ public class Menu : MonoBehaviour {
         /*
          * Animate the quit button when entering the intro. The quit button slides out to the left
          */
-        //The transition starts fading at the start and ends 100% through
+        //Adjust the transition to reflect the button's size
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 1f);
+        float transitionFade = AdjustRatio((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax), 0, quitWidthRatio/largestRaio);
 
         /* Move the button from the main to off-screen position */
         QuitButtonHoverUpdate();
@@ -903,7 +909,7 @@ public class Menu : MonoBehaviour {
          */
         //The transition starts fading at the start and ends 50% through
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 0.5f);
+        float transitionFade = AdjustRatio((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax), 0, 0.5f*quitWidthRatio/largestRaio);
 
         /* Move the button from the main to off-screen position */
         QuitButtonHoverUpdate();
