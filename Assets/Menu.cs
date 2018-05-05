@@ -29,6 +29,7 @@ public enum MenuStates {
  */
 public enum Buttons {
     Start,
+    Sens,
     Quit
 }
 
@@ -99,6 +100,7 @@ public class Menu : MonoBehaviour {
      * a state function for each state that the element is visible in.
      */
     StateFunction[] startButtonTransitions;
+    StateFunction[] sensButtonTransitions;
     StateFunction[] quitButtonTransitions;
     StateFunction[] coverPanelTransitions;
 
@@ -106,9 +108,10 @@ public class Menu : MonoBehaviour {
     private float startBonusSize = 1.3f;
     private float startWidthRatio = 3;
     private float continueWidthRatio = 4.65f;
+    private float sensWidthRatio = 5.65f;
     private float quitWidthRatio = 2.25f;
     //Set this to the largest ratio we currently have. This is to make sure each element goes offscreen at the same speed
-    private float largestRaio = 1.3f*4.65f;
+    private float largestRaio;
 
     /* Global values used for sizes of UI elements */
     private float minHeight = 40;//40
@@ -183,6 +186,8 @@ public class Menu : MonoBehaviour {
          */
         /* Start button */
         ExecuteElementFunctions(startButtonTransitions);
+        /* Sensitivity button */
+        ExecuteElementFunctions(sensButtonTransitions);
         /* Quit button */
         ExecuteElementFunctions(quitButtonTransitions);
         /* Cover panel */
@@ -207,8 +212,6 @@ public class Menu : MonoBehaviour {
         /* Update the current starting state */
         state = MenuStates.Empty;
         ChangeState(MenuStates.Startup);
-
-
         
         /* Link the global variables of the script */
         playerController = controller;
@@ -237,6 +240,7 @@ public class Menu : MonoBehaviour {
 
         /* Run the initialSetup functions for each of the buttons */
         SetupStartButton();
+        SetupSensButton();
         SetupQuitButton();
 
         /* Re-order the hierarchy so that certain objects are rendered ontop of others */
@@ -255,6 +259,14 @@ public class Menu : MonoBehaviour {
             new StateFunction(MenuStates.Main, UStartButtonMain),
             new StateFunction(MenuStates.MainToIntro, UStartButtonMainToIntro),
             new StateFunction(MenuStates.MainToQuit, UStartButtonMainToQuit)
+        };
+        sensButtonTransitions = new StateFunction[] {
+            new StateFunction(MenuStates.Startup, USensButtonStartup),
+            new StateFunction(MenuStates.EmptyToMain, USensButtonEmptyToMain),
+            new StateFunction(MenuStates.MainToEmpty, USensButtonMainToEmpty),
+            new StateFunction(MenuStates.Main, USensButtonMain),
+            new StateFunction(MenuStates.MainToIntro, USensButtonMainToIntro),
+            new StateFunction(MenuStates.MainToQuit, USensButtonMainToQuit)
         };
         quitButtonTransitions = new StateFunction[] {
             new StateFunction(MenuStates.Startup, UQuitButtonStartup),
@@ -390,6 +402,22 @@ public class Menu : MonoBehaviour {
         /* Setup the event triggers for mouse clicks and hovers */
         button.onClick.AddListener(StartButtonClick);
         SetupButtonEvents(ref button, StartButtonMouseEnter, StartButtonMouseExit);
+    }
+    
+    void SetupSensButton() {
+        /*
+         * Set the variables of the button that makes it the "Sensitivity" button
+         */
+        Button button = buttons[(int) Buttons.Sens];
+        button.name = "Sensitivity button";
+
+        /* Setup the text of the button */
+        SetupText(button.GetComponentInChildren<Text>());
+        button.GetComponentInChildren<Text>().text = "SENSITIVITY";
+
+        /* Setup the event triggers for mouse clicks and hovers */
+        button.onClick.AddListener(SensButtonClick);
+        SetupButtonEvents(ref button, SensButtonMouseEnter, SensButtonMouseExit);
     }
 
     void SetupQuitButton() {
@@ -675,6 +703,131 @@ public class Menu : MonoBehaviour {
     }
     #endregion
 
+    #region Sensitivity Button Updates
+    void USensButtonStartup() {
+        /*
+         * Fade the button into view. Have it already placed in it's main menu position
+         */
+        int buttonEnum = (int) Buttons.Sens;
+        Button button = buttons[buttonEnum];
+        //Start fading in the button 50% into the intro, finish 90% in
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.5f, 0.9f);
+
+        /* Position the button to already be in it's main position */
+        SensButtonHoverUpdate();
+        SensButtonPositionUpdate(1);
+
+        /* Change the opacity to reflect the transition state */
+        Color col = button.GetComponentInChildren<Text>().color;
+        button.GetComponentInChildren<Text>().color = new Color(col.r, col.g, col.b, transitionFade);
+    }
+
+    void USensButtonEmptyToMain() {
+        /*
+         * During this transition state, move the button so it's back onto the screen
+         */
+        //Use a custom sin function to smooth the transition fade value
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = Mathf.Sin((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax));
+
+        /* Slide the button into it's main position from off-screen */
+        SensButtonHoverUpdate();
+        SensButtonPositionUpdate(transitionFade);
+    }
+
+    void USensButtonMainToEmpty() {
+        /*
+         * During this transition state, Quickly move the button off-screen
+         */
+        //Use a custom sin function to smooth the transition fade value
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = Mathf.Sin((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax));
+
+        /* Slide the button off-screen from it's main position */
+        SensButtonHoverUpdate();
+        SensButtonPositionUpdate(1 - transitionFade);
+    }
+
+    void USensButtonMain() {
+        /*
+         * Make sure the button's position is properly updated after updating it's hover value
+         */
+
+        /* Place the button in it's main position */
+        SensButtonHoverUpdate();
+        SensButtonPositionUpdate(1);
+    }
+
+    void USensButtonMainToIntro() {
+        /*
+         * Animate the sensitivity button when entering the intro. The button slides out to the left
+         */
+        //The transition starts fading at the start and ends 100% through
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 1f);
+
+        /* Move the button from the main to off-screen position */
+        SensButtonHoverUpdate();
+        SensButtonPositionUpdate(1 - transitionFade);
+    }
+
+    void USensButtonMainToQuit() {
+        /*
+         * Animate the button slidding off the left side of the screen as the game quits
+         */
+        //The transition starts fading the button at the start and ends 50% through
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 0.5f);
+
+        /* Move the button from the main position to off-screen */
+        SensButtonHoverUpdate();
+        SensButtonPositionUpdate(1 - transitionFade);
+    }
+
+    void SensButtonPositionUpdate(float sideRatio) {
+        /*
+         * Update the position of the sensitivity button. The button will be anchored to the left wall
+         * and will be directly bellow the start button.
+         * 
+         * Depending on the given side value, place it either on the right or left side of the wall.
+         * 0 is completely on the left and 1 is completely on the right.
+         */
+        int buttonEnum = (int) Buttons.Sens;
+        RectTransform rect = buttonRects[buttonEnum];
+        /* The sens button will be placed bellow the start button */
+        RectTransform aboveButton = buttonRects[(int) Buttons.Start];
+
+        float relativeHeight = aboveButton.position.y - aboveButton.sizeDelta.y/2f - buttonHeight/2f;
+        rect.position = new Vector3(-rect.sizeDelta.x/2f + rect.sizeDelta.x*sideRatio, relativeHeight, 0);
+    }
+    
+    void SensButtonHoverUpdate() {
+        /*
+         * Set the sizes and colors of the sensitivity button to reflect it's current hover value
+         */
+        int buttonEnum = (int) Buttons.Sens;
+        Button button = buttons[buttonEnum];
+        RectTransform rect = buttonRects[buttonEnum];
+        Outline[] outlines = button.GetComponentInChildren<Text>().gameObject.GetComponents<Outline>();
+        float hoverRatio = HoverRatio(buttonEnum, true);
+        float extraHoverWidth = hoverRatio*buttonHeight;
+
+        /* Set the color of the button to reflect the current hover value */
+        float hoverColor = 1f - 0.10f*hoverRatio;
+        button.GetComponentInChildren<Text>().color = new Color(hoverColor, hoverColor, hoverColor, 1);
+
+        /* Set the button's size to reflect the current hover value */
+        rect.sizeDelta = new Vector2(buttonHeight*sensWidthRatio + extraHoverWidth, buttonHeight);
+
+        /* Set the outline's distance relative to the hover value */
+        outlines[0].effectDistance = heightRatio*startBonusSize*new Vector2(0.25f + 1f*hoverRatio, 0.25f + 1f*hoverRatio);
+        outlines[1].effectDistance = heightRatio*startBonusSize*new Vector2(0.25f + 1f*hoverRatio, 0.25f + 1f*hoverRatio);
+        outlines[0].effectColor = new Color(0, 0, 0, 0.5f + 0.25f*hoverRatio);
+        outlines[1].effectColor = new Color(0, 0, 0, 0.5f + 0.25f*hoverRatio);
+    }
+    #endregion
+
     #region Quit Button Updates
     void UQuitButtonStartup() {
         /*
@@ -768,7 +921,7 @@ public class Menu : MonoBehaviour {
         int buttonEnum = (int) Buttons.Quit;
         RectTransform rect = buttonRects[buttonEnum];
         /* The button that this quit button will be placed bellow */
-        RectTransform aboveButton = buttonRects[(int) Buttons.Start];
+        RectTransform aboveButton = buttonRects[(int) Buttons.Sens];
         
         float relativeHeight = aboveButton.position.y - aboveButton.sizeDelta.y/2f - buttonHeight/2f;
         rect.position = new Vector3(-rect.sizeDelta.x/2f + rect.sizeDelta.x*sideRatio, relativeHeight, 0);
@@ -972,6 +1125,33 @@ public class Menu : MonoBehaviour {
 
         currentHoverState[(int) Buttons.Start] = false;
     }
+    
+    void SensButtonClick() {
+        /*
+         * Clicking on the Sensitivity button does nothing yet
+         */
+
+        if(state == MenuStates.Main) {
+            Debug.Log("PRESSED SENS BUTTON");
+        }
+    }
+
+    void SensButtonMouseEnter() {
+        /*
+         * The mouse entered the Sens button's clickable area
+         */
+
+        currentHoverState[(int) Buttons.Sens] = true;
+    }
+
+    void SensButtonMouseExit() {
+        /*
+         * The mouse entered the Sens Button's clickable area
+         */
+
+        currentHoverState[(int) Buttons.Sens] = false;
+    }
+
 
     void QuitButtonClick() {
         /*
@@ -997,7 +1177,7 @@ public class Menu : MonoBehaviour {
 
     void QuitButtonMouseExit() {
         /*
-         * The mouse entered the start Button's clickable area
+         * The mouse entered the Quit Button's clickable area
          */
 
         currentHoverState[(int) Buttons.Quit] = false;
@@ -1049,63 +1229,7 @@ public class Menu : MonoBehaviour {
 
         return adjustedValue;
     }
-
-
-    /* ----------- Helper IsVisible Functions ------------------------------------------------------------- */
-
-    bool IsStartVisible() {
-        /*
-         * Return true if the current state shows the start button
-         */
-        bool visible = false;
-
-        if(state == MenuStates.Startup ||
-            state == MenuStates.EmptyToMain ||
-            state == MenuStates.MainToEmpty ||
-            state == MenuStates.Main || 
-            state == MenuStates.MainToIntro || 
-            state == MenuStates.MainToQuit) {
-            visible = true;
-        }
-
-        return visible;
-    }
-
-    bool isQuitVisible() {
-        /*
-         * Return true if the current state shows the quit button
-         */
-        bool visible = false;
-
-        if(state == MenuStates.Startup ||
-            state == MenuStates.EmptyToMain ||
-            state == MenuStates.MainToEmpty ||
-            state == MenuStates.Main || 
-            state == MenuStates.MainToIntro ||
-            state == MenuStates.MainToQuit) {
-            visible = true;
-        }
-
-        return visible;
-    }
-
-    bool isCoverPanelVisible() {
-        /*
-         * Return true if the cover panel is used
-         */
-        bool visible = false;
-
-        if(state == MenuStates.Startup ||
-            state == MenuStates.MainToQuit) {
-            visible = true;
-        }
-
-        return visible;
-    }
-
     
-    /* ----------- Helper IsClickable Functions ------------------------------------------------------------- */
-
     bool IsButtonClickable(Buttons button) {
         /*
          * Return true if the current state can click on the given button
@@ -1127,22 +1251,17 @@ public class Menu : MonoBehaviour {
                 clickable = true;
             }
         }
-        
-        else {
-            Debug.Log("WARNING: button not handled in IsButtonClickable");
+
+        /* Sensitivity button... */
+        else if(button == Buttons.Sens) {
+            /* ...Is only clickable in the main menu */
+            if(state == MenuStates.Main) {
+                clickable = true;
+            }
         }
 
-        return clickable;
-    }
-
-    bool IsQuitClickable() {
-        /*
-         * Return true if the current state can click on the quit button
-         */
-        bool clickable = false;
-
-        if(state == MenuStates.Main) {
-            clickable = true;
+        else {
+            Debug.Log("WARNING: button not handled in IsButtonClickable");
         }
 
         return clickable;
