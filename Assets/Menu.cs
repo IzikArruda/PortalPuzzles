@@ -8,18 +8,27 @@ using System.Collections;
  * The potential states the menu can be in. Some states are transition states
  * that require a certain amount of time to pass until it reaches another state.
  * When a new state is added, a new entry in each visible element of the state is needed.
- * When a transitional state is added, it must have it's own entry in transitionStates.
+ * 
+ * 
+ * When a transitional state is added, it must have it's own entry in transitionStates, and:
+ * - Update the state in transitionStates
+ * - Add the states to the elements's arrays in StateFunctionInit()
+ * - Add a UElementState() function for each element that uses the state
+ * - Update ChangeState() to reset the transition's remainingTime once we enter it's transition
  */
 public enum MenuStates {
     //Idle states
     Main,
     Empty,
+    Sensitivity,
     //Transitional states
     Startup,
     EmptyToMain,
     MainToEmpty,
     MainToIntro,
-    MainToQuit
+    MainToQuit,
+    MainToSens,
+    SensToMain
 };
 
 
@@ -88,11 +97,13 @@ public class Menu : MonoBehaviour {
      * make the state transition into itself as it will be handlede manually in UpdateCurrentState().
      */
     Transition[] transitionStates = {
-        new Transition(MenuStates.Startup, MenuStates.Main, 1f, 0f),
+        new Transition(MenuStates.Startup, MenuStates.Main, 1.0f, 0f),
         new Transition(MenuStates.EmptyToMain, MenuStates.Main, 0.325f, 0f),
         new Transition(MenuStates.MainToEmpty, MenuStates.Empty, 0.325f, 0f),
         new Transition(MenuStates.MainToIntro, MenuStates.Empty, 0.5f, 0f),
-        new Transition(MenuStates.MainToQuit, MenuStates.MainToQuit, 1.8f, 0f)
+        new Transition(MenuStates.MainToQuit, MenuStates.MainToQuit, 1.8f, 0f),
+        new Transition(MenuStates.MainToSens, MenuStates.Sensitivity, 0.4f, 0f),
+        new Transition(MenuStates.SensToMain, MenuStates.Main, 0.4f, 0f)
     };
 
     /*
@@ -160,7 +171,7 @@ public class Menu : MonoBehaviour {
     float quitValueMax = 1;
 
     /* Values used with the start button and once the game has begun */
-    bool startButtonState = true;
+    bool isGameStarted = false;
 
 
     /* ----------- Built-in Functions ------------------------------------------------------------- */
@@ -169,6 +180,7 @@ public class Menu : MonoBehaviour {
         /*
          * Check if the screen has been resized and run any per-frame update calls for any UI elements
          */
+        Debug.Log(state);
         
         /* Check if the screen has been resized */
         if(Screen.width != screenWidth || Screen.height != screenHeight) {
@@ -264,7 +276,9 @@ public class Menu : MonoBehaviour {
             new StateFunction(MenuStates.MainToEmpty, UStartButtonMainToEmpty),
             new StateFunction(MenuStates.Main, UStartButtonMain),
             new StateFunction(MenuStates.MainToIntro, UStartButtonMainToIntro),
-            new StateFunction(MenuStates.MainToQuit, UStartButtonMainToQuit)
+            new StateFunction(MenuStates.MainToQuit, UStartButtonMainToQuit),
+            new StateFunction(MenuStates.MainToSens, UStartButtonMainToSens),
+            new StateFunction(MenuStates.SensToMain, UStartButtonSensToMain)
         };
         sensButtonTransitions = new StateFunction[] {
             new StateFunction(MenuStates.Startup, USensButtonStartup),
@@ -272,7 +286,10 @@ public class Menu : MonoBehaviour {
             new StateFunction(MenuStates.MainToEmpty, USensButtonMainToEmpty),
             new StateFunction(MenuStates.Main, USensButtonMain),
             new StateFunction(MenuStates.MainToIntro, USensButtonMainToIntro),
-            new StateFunction(MenuStates.MainToQuit, USensButtonMainToQuit)
+            new StateFunction(MenuStates.MainToQuit, USensButtonMainToQuit),
+            new StateFunction(MenuStates.MainToSens, USensButtonMainToSens),
+            new StateFunction(MenuStates.SensToMain, USensButtonSensToMain),
+            new StateFunction(MenuStates.Sensitivity, USensButtonSensitivity),
         };
         quitButtonTransitions = new StateFunction[] {
             new StateFunction(MenuStates.Startup, UQuitButtonStartup),
@@ -280,7 +297,9 @@ public class Menu : MonoBehaviour {
             new StateFunction(MenuStates.MainToEmpty, UQuitButtonMainToEmpty),
             new StateFunction(MenuStates.Main, UQuitButtonMain),
             new StateFunction(MenuStates.MainToIntro, UQuitButtonMainToIntro),
-            new StateFunction(MenuStates.MainToQuit, UQuitButtonMainToQuit)
+            new StateFunction(MenuStates.MainToQuit, UQuitButtonMainToQuit),
+            new StateFunction(MenuStates.MainToSens, UQuitButtonMainToSens),
+            new StateFunction(MenuStates.SensToMain, UQuitButtonSensToMain)
         };
         coverPanelTransitions = new StateFunction[] {
             new StateFunction(MenuStates.Startup, UCoverPanelStartup),
@@ -524,6 +543,12 @@ public class Menu : MonoBehaviour {
          * Update the hover values in currentHoverTime. Only increase the values when the button is clickable
          */
 
+        /* Force certain hover values onto buttons at certain states */
+        if(state == MenuStates.MainToSens || state == MenuStates.Sensitivity) {
+            /* When the sensitivity menu is open(ing), force the button to be hovered */
+            currentHoverState[(int)Buttons.Sens] = true;
+        }
+
         for(int i = 0; i < System.Enum.GetValues(typeof(Buttons)).Length; i++) {
             /* Increase the hover value if the button is clickable AND it's being hovered */
             if(IsButtonClickable((Buttons) i) && currentHoverState[i]) {
@@ -663,11 +688,37 @@ public class Menu : MonoBehaviour {
          */
         //The transition starts fading the button at the start and ends 50% through
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax), 0, 0.5f*(startWidthRatio*startBonusSize)/largestRaio);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 0.5f*(startWidthRatio*startBonusSize)/largestRaio);
 
         /* Move the button from the main position to off-screen */
         StartButtonHoverUpdate();
         StartButtonPositionUpdate(1 - transitionFade);
+    }
+
+    void UStartButtonMainToSens() {
+        /*
+         * Slide the button off the left side
+         */
+        //Adjust the transition to reflect the button's size
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, (startWidthRatio*startBonusSize)/largestRaio);
+
+        /* Move the button from the main position to off-screen */
+        StartButtonHoverUpdate();
+        StartButtonPositionUpdate(1 - transitionFade);
+    }
+
+    void UStartButtonSensToMain() {
+        /*
+         * Slide the button back into view
+         */
+        //Adjust the transition to reflect the button's size
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, (startWidthRatio*startBonusSize)/largestRaio);
+
+        /* Move the button from the main position to off-screen */
+        StartButtonHoverUpdate();
+        StartButtonPositionUpdate(transitionFade);
     }
 
     void StartButtonPositionUpdate(float sideRatio) {
@@ -784,11 +835,41 @@ public class Menu : MonoBehaviour {
          */
         //The transition starts fading the button at the start and ends 50% through
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax), 0, 0.5f*sensWidthRatio/largestRaio);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 0.5f*sensWidthRatio/largestRaio);
 
         /* Move the button from the main position to off-screen */
         SensButtonHoverUpdate();
         SensButtonPositionUpdate(1 - transitionFade);
+    }
+
+    void USensButtonMainToSens() {
+        /*
+         * Keep the button in it's main position
+         */
+
+        /* Place the button in it's main position */
+        SensButtonHoverUpdate();
+        SensButtonPositionUpdate(1);
+    }
+
+    void USensButtonSensToMain() {
+        /*
+         * Keep the button in it's main position
+         */
+
+        /* Place the button in it's main position */
+        SensButtonHoverUpdate();
+        SensButtonPositionUpdate(1);
+    }
+
+    void USensButtonSensitivity() {
+        /*
+         * Make sure the button is in the main position
+         */
+
+        /* Place the button in it's main position */
+        SensButtonHoverUpdate();
+        SensButtonPositionUpdate(1);
     }
 
     void SensButtonPositionUpdate(float sideRatio) {
@@ -909,11 +990,37 @@ public class Menu : MonoBehaviour {
          */
         //The transition starts fading at the start and ends 50% through
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax), 0, 0.5f*quitWidthRatio/largestRaio);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 0.5f*quitWidthRatio/largestRaio);
 
         /* Move the button from the main to off-screen position */
         QuitButtonHoverUpdate();
         QuitButtonPositionUpdate(1 - transitionFade);
+    }
+
+    void UQuitButtonMainToSens() {
+        /*
+         * Update the quit button as it slides out of view
+         */
+        //Adjust the transition to reflect the button's size
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = AdjustRatio((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax), 0, quitWidthRatio/largestRaio);
+
+        /* Move the button from it's main position to off-screen */
+        QuitButtonHoverUpdate();
+        QuitButtonPositionUpdate(1 - transitionFade);
+    }
+
+    void UQuitButtonSensToMain() {
+        /*
+         * Update the quit button as it comes back into view
+         */
+        //Adjust the transition to reflect the button's size
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = AdjustRatio((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax), 0, quitWidthRatio/largestRaio);
+
+        /* Move the button from it's off-screen position to the main position */
+        QuitButtonHoverUpdate();
+        QuitButtonPositionUpdate(transitionFade);
     }
 
     void QuitButtonPositionUpdate(float sideRatio) {
@@ -996,12 +1103,29 @@ public class Menu : MonoBehaviour {
         if(state == MenuStates.Empty) {
             ChangeState(MenuStates.EmptyToMain);
         }
-        
-        /* Quitting from the main menu will give the player control and start moving as the menu quits */
-        else if(state == MenuStates.Main || state == MenuStates.MainToEmpty) {
-            ChangeState(MenuStates.MainToEmpty);
+
+        /* Wanting to quit the sensitivity menu will bring the game back to the main menu */
+        else if(state == MenuStates.Sensitivity) {
+            ChangeState(MenuStates.SensToMain);
+        }
+
+        /* give the player control if they are exiting the menu */
+        else if(state == MenuStates.MainToEmpty) {
             inMenu = false;
         }
+
+        /*
+         * When wanting to leave the menu while on the main menu, make sure the game has already begun.
+         * If the game did not start yet (determined by isGameStarted), do not close the menu.
+         */
+        else if(state == MenuStates.Main) {
+            /* Only close the game has already started */
+            if(isGameStarted) {
+                ChangeState(MenuStates.MainToEmpty);
+                inMenu = false;
+            }
+        }
+
 
         return inMenu;
     }
@@ -1019,42 +1143,27 @@ public class Menu : MonoBehaviour {
         /* Make sure the state being changed to is actually a new state */
         if(state != newState) {
 
-            /* Entering Startup will start it's transition value */
-            if(newState == MenuStates.Startup) {
+            /* Entering a transition state will start it's tranistion value */
+            if(newState == MenuStates.Startup ||
+                newState == MenuStates.EmptyToMain ||
+                newState == MenuStates.MainToEmpty ||
+                newState == MenuStates.MainToIntro ||
+                newState == MenuStates.MainToQuit ||
+                newState == MenuStates.MainToSens ||
+                newState == MenuStates.SensToMain) {
                 ResetRemainingTime(newState);
             }
-
-            /* Entering EmptyToMain will start it's transition value */
-            else if(newState == MenuStates.EmptyToMain) {
-                ResetRemainingTime(newState);
-            }
-
-            /* Entering MainToEmpty will start it's transition value */
-            else if(newState == MenuStates.MainToEmpty) {
-                ResetRemainingTime(newState);
-            }
-
-            /* Entering MainToIntro will start it's transition value */
-            else if(newState == MenuStates.MainToIntro) {
-                ResetRemainingTime(newState);
-            }
-
+            
             /* Entering Main will reset the quitValueCurrent */
             else if(newState == MenuStates.Main) {
                 quitValueCurrent = 0;
             }
-
-            /* Entering MainToQuit will start the time to quit transition value */
-            else if(newState == MenuStates.MainToQuit) {
-                ResetRemainingTime(newState);
-            }
-
-
+            
             /* Leaving the MainToIntro state will change the start button */
             if(state == MenuStates.MainToIntro) {
                 buttons[(int) Buttons.Start].GetComponentInChildren<Text>().text = "CONTINUE";
                 startWidthRatio = continueWidthRatio;
-                startButtonState = false;
+                isGameStarted = true;
             }
 
 
@@ -1099,11 +1208,10 @@ public class Menu : MonoBehaviour {
         /*
          * When the user presses the start key during the Menu state, change into the MenuToIntro state.
          */
-         
-        if(state == MenuStates.Main) {
 
+        if(IsButtonClickable(Buttons.Start)) {
             /* Start the game by entering the intro state */
-            if(startButtonState) {
+            if(!isGameStarted) {
                 ChangeState(MenuStates.MainToIntro);
                 playerController.StartButtonPressed();
             }
@@ -1137,8 +1245,16 @@ public class Menu : MonoBehaviour {
          * Clicking on the Sensitivity button does nothing yet
          */
 
-        if(state == MenuStates.Main) {
-            Debug.Log("PRESSED SENS BUTTON");
+        if(IsButtonClickable(Buttons.Sens)) {
+            /* Clicking the button in the main menu will bring it to the sensitivity menu */
+            if(state == MenuStates.Main) {
+                ChangeState(MenuStates.MainToSens);
+            }
+
+            /* Clicking the button while in the Sensitivity state will go back to the main channel */
+            else if(state == MenuStates.Sensitivity) {
+                ChangeState(MenuStates.SensToMain);
+            }
         }
     }
 
@@ -1157,14 +1273,13 @@ public class Menu : MonoBehaviour {
 
         currentHoverState[(int) Buttons.Sens] = false;
     }
-
-
+    
     void QuitButtonClick() {
         /*
          * When clicking on the quit button in the Main state, Increase currentQuitValue.
          */
 
-        if(state == MenuStates.Main) {
+        if(IsButtonClickable(Buttons.Quit)) {
             if(quitValueCurrent == 0) {
                 quitValueCurrent += quitValueIncrease*3;
             }else {
@@ -1260,8 +1375,9 @@ public class Menu : MonoBehaviour {
 
         /* Sensitivity button... */
         else if(button == Buttons.Sens) {
-            /* ...Is only clickable in the main menu */
-            if(state == MenuStates.Main) {
+            /* ...Is clickable in the main menu and the sensitivity states */
+            if(state == MenuStates.Main || state == MenuStates.Sensitivity ||
+                state == MenuStates.SensToMain || state == MenuStates.MainToSens) {
                 clickable = true;
             }
         }

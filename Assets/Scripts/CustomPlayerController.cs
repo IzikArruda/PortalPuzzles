@@ -1457,23 +1457,19 @@ public class CustomPlayerController : MonoBehaviour {
         /*
          * Handle the act of sending requests to the menu about opening or closing the menu
          */
+         
+        if(Input.GetKeyDown(KeyCode.Escape)) {
 
-        /* Do not change the inMenu value if we are in a intro state */
-        if(!PlayerIsInIntro()) {
-            /* The escape key is used to open or close the menu */
-            if(Input.GetKeyDown(KeyCode.Escape)) {
+            /* If the game is currently in the intro, we could potentially skip it if they press escape */
+            if(PlayerIsInIntro() && currentlyLeavingInIntro) {
+                Debug.Log("SKIP INTRO???");
+            }
+
+            else {
                 /* Set whether the menu should prevent user input or not */
                 inMenu = playerMenu.PlayerRequestMenuChange();
             }
         }
-
-        /* Maybe pressing escape in the intro will skip it? */
-        else {
-            if(Input.GetKeyDown(KeyCode.Escape)) {
-                Debug.Log("SKIP INTRO?");
-            }
-        }
-
     }
     
     void UpdateIntroValues() {
