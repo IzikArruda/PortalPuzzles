@@ -141,23 +141,31 @@ public class Menu : MonoBehaviour {
     /* A link to the player's controller */
     private CustomPlayerController playerController;
 
+    /* The font used for the text of the game */
+    public Font usedFont;
+    
+    /* The canvas that holds all the UI elements */
+    public Canvas canvas;
+    private RectTransform canvasRect;
+
     /* A basic button with a text child and an empty panel. Must be set before running. */
     public GameObject buttonReference;
     public GameObject panelReference;
 
-    /* The font used for the text of the game */
-    public Font usedFont;
+    /* References to UI objects used by the menu */
+    public Slider sensSliderReference;
 
-    /* The canvas that holds all the UI elements */
-    public Canvas canvas;
-    public RectTransform canvasRect;
+    /* The sensitivity slider and it's current value */
+    private Slider sensitivitySlider;
+    private Text sensitivitySliderValueText;
+    private float sensitivity;
 
     /* An array that holds the main buttons of the UI. Each index has it's own button */
-    public Button[] buttons;
-    public RectTransform[] buttonRects;
+    private Button[] buttons;
+    private RectTransform[] buttonRects;
 
     /* An array of panels used by the menu */
-    public RectTransform[] panelRects;
+    private RectTransform[] panelRects;
 
     /* Arrays that hold the hover values. Each index is a different button's hover time. True = hovered */
     private bool[] currentHoverState;
@@ -165,8 +173,8 @@ public class Menu : MonoBehaviour {
     private float maxHoverTime = 0.5f;
 
     /* Previous resolutions of the window */
-    public float screenWidth;
-    public float screenHeight;
+    private float screenWidth;
+    private float screenHeight;
 
     /* 
      * Other menu variables 
@@ -227,6 +235,9 @@ public class Menu : MonoBehaviour {
          * Start the game in the IntroToMain transition state.
          */
 
+        /* Make sure the window's sizes are properly set */
+        Resize();
+
         /* Populate the StateFunction arrays before anything else */
         StateFunctionInit();
 
@@ -275,9 +286,6 @@ public class Menu : MonoBehaviour {
 
         /* Re-order the hierarchy so that certain objects are rendered ontop of others */
         ReorderHeirarchy();
-
-        /* Make sure the window's sizes are properly set */
-        Resize();
     }
 
     public void StateFunctionInit() {
@@ -460,7 +468,67 @@ public class Menu : MonoBehaviour {
         sensPanel.sizeDelta = new Vector2(panelWidth, panelHeight);
 
         /* Set the color so that the panel is invisible */
-        sensPanel.GetComponent<Image>().color = new Color(0, 0, 0, 0.3f);
+        sensPanel.GetComponent<Image>().color = new Color(0, 0, 0, 0.1f);
+
+        /*
+         * Add new components to the panel
+         */
+        /* Add a slider to the center of the panel used to control the sensitivity */
+        GameObject sliderObject = Instantiate(sensSliderReference.gameObject);
+        RectTransform sliderRect = sliderObject.GetComponent<RectTransform>();
+        sensitivitySlider = sliderObject.GetComponent<Slider>();
+        sliderObject.transform.SetParent(sensPanel);
+        sliderObject.SetActive(true);
+        sliderObject.name = "Sensitivity slider";
+        /* Set the sizes of the slider */
+        sliderRect.anchorMin = new Vector2(0, 0.5f);
+        sliderRect.anchorMax = new Vector2(1, 0.5f);
+        sliderRect.anchoredPosition = new Vector3(0, 0, 0);
+        sliderRect.sizeDelta = new Vector2(0, 20);
+        /* Assign a function to when the slider updates */
+        sensitivitySlider.maxValue = 10;
+        sensitivitySlider.minValue = 0f;
+        sensitivitySlider.value = sensitivitySlider.maxValue/2f;
+        sensitivity = sensitivitySlider.value;
+        sensitivitySlider.onValueChanged.AddListener(delegate { UpdateSensitivitySlider(); });
+        
+        /* Add text bellow the slider giving instructions */
+        GameObject sliderText = new GameObject("Slider text", typeof(RectTransform));
+        Text text = sliderText.AddComponent<Text>();
+        RectTransform rectTex = sliderText.GetComponent<RectTransform>();
+        sliderText.transform.SetParent(sensPanel);
+        sliderText.SetActive(true);
+        /* Set the text properties */
+        text.text = "Hold right-click to test the mouse sensitivity";
+        text.font = usedFont;
+        text.alignment = TextAnchor.MiddleCenter;
+        text.resizeTextForBestFit = true;
+        text.resizeTextMinSize = 1;
+        text.resizeTextMaxSize = 300;
+        /* Set the sizes of the text */
+        rectTex.anchorMin = new Vector2(0, 0.5f);
+        rectTex.anchorMax = new Vector2(1, 0.5f);
+        rectTex.anchoredPosition = new Vector3(0, -10 -buttonHeight/4f, 0);
+        rectTex.sizeDelta = new Vector2(0, buttonHeight/2f);
+
+        /* Add text above the slider giving the sensitivity */
+        GameObject sliderValue = new GameObject("Slider value", typeof(RectTransform));
+        sensitivitySliderValueText = sliderValue.AddComponent<Text>();
+        RectTransform valueRect = sliderValue.GetComponent<RectTransform>();
+        sliderValue.transform.SetParent(sensPanel);
+        sliderValue.SetActive(true);
+        /* Set the text properties */
+        sensitivitySliderValueText.text = ""+sensitivity;
+        sensitivitySliderValueText.font = usedFont;
+        sensitivitySliderValueText.alignment = TextAnchor.MiddleCenter;
+        sensitivitySliderValueText.resizeTextForBestFit = true;
+        sensitivitySliderValueText.resizeTextMinSize = 1;
+        sensitivitySliderValueText.resizeTextMaxSize = 300;
+        /* Set the sizes of the value */
+        valueRect.anchorMin = new Vector2(0, 0.5f);
+        valueRect.anchorMax = new Vector2(1, 0.5f);
+        valueRect.anchoredPosition = new Vector3(0, 10 + 1.5f*buttonHeight/4f, 0);
+        valueRect.sizeDelta = new Vector2(0, 1.5f*buttonHeight/2f);
     }
 
     void SetupStartButton() {
@@ -1181,6 +1249,16 @@ public class Menu : MonoBehaviour {
 
 
     /* ----------- Event/Listener Functions ------------------------------------------------------------- */
+
+    void UpdateSensitivitySlider() {
+        /*
+         * Runs everytime the value in the slider is updated. update the current mouse sensitivity.
+         */
+        sensitivity = sensitivitySlider.value;
+        sensitivitySliderValueText.text = ""+sensitivity;
+
+        Debug.Log(sensitivity);
+    }
 
     Transition GetTransitionFromState(MenuStates givenState) {
         /*
