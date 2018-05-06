@@ -43,10 +43,12 @@ public enum Buttons {
 }
 
 /*
- * Each panel used by the menu
+ * Each panel used by the menu. Adding a panel requires you to:
+ * - Create and run the new panel's Setup function
  */
 public enum Panels {
-    Cover
+    Cover,
+    Sens
 }
 
 /*
@@ -114,6 +116,7 @@ public class Menu : MonoBehaviour {
     StateFunction[] sensButtonTransitions;
     StateFunction[] quitButtonTransitions;
     StateFunction[] coverPanelTransitions;
+    StateFunction[] sensPanelTransitions;
 
     /* Button height to width ratios. Set manually and is unique for each font + text content. */
     private float startBonusSize = 1.3f;
@@ -123,6 +126,10 @@ public class Menu : MonoBehaviour {
     private float quitWidthRatio = 2.25f;
     //Set this to the largest ratio we currently have. This is to make sure each element goes offscreen at the same speed
     private float largestRaio;
+
+    /* Panel sizes. These are set in their setup functions and used in their update functions */
+    private float[] panelsWidth;
+    private float[] panelsHeight;
 
     /* Global values used for sizes of UI elements */
     private float minHeight = 40;//40
@@ -204,7 +211,9 @@ public class Menu : MonoBehaviour {
         ExecuteElementFunctions(quitButtonTransitions);
         /* Cover panel */
         ExecuteElementFunctions(coverPanelTransitions);
-
+        /* Sens panel */
+        ExecuteElementFunctions(sensPanelTransitions);
+           
         /* Change the current state if needed after all the per-frame update functions are done */
         UpdateCurrentState();
     }
@@ -235,14 +244,17 @@ public class Menu : MonoBehaviour {
         playerController = controller;
         canvasRect = canvas.GetComponent<RectTransform>();
 
-        /* Create and populate the array of panels used by the UI */
+        /* Create and populate the array of panels and their sizes used by the UI */
         panelRects = new RectTransform[System.Enum.GetValues(typeof(Panels)).Length];
+        panelsWidth = new float[System.Enum.GetValues(typeof(Panels)).Length];
+        panelsHeight = new float[System.Enum.GetValues(typeof(Panels)).Length];
         for(int i = 0; i < panelRects.Length; i++) {
             panelRects[i] = CreatePanel().GetComponent<RectTransform>();
         }
 
         /* Run the initialSetup functions for each panel */
         SetupCoverPanel();
+        SetupSensPanel();
 
         /* Create and populate the buttons and hover arrays */
         buttons = new Button[System.Enum.GetValues(typeof(Buttons)).Length];
@@ -263,6 +275,9 @@ public class Menu : MonoBehaviour {
 
         /* Re-order the hierarchy so that certain objects are rendered ontop of others */
         ReorderHeirarchy();
+
+        /* Make sure the window's sizes are properly set */
+        Resize();
     }
 
     public void StateFunctionInit() {
@@ -305,6 +320,11 @@ public class Menu : MonoBehaviour {
             new StateFunction(MenuStates.Startup, UCoverPanelStartup),
             new StateFunction(MenuStates.MainToQuit, UCoverPanelMainToQuit)
         };
+        sensPanelTransitions = new StateFunction[] {
+            new StateFunction(MenuStates.Sensitivity, USensPanelSensitivity),
+            new StateFunction(MenuStates.MainToSens, USensPanelMainToSens),
+            new StateFunction(MenuStates.SensToMain, USensPanelSensToMain)
+        };
     }
 
     public GameObject CreatePanel() {
@@ -342,6 +362,9 @@ public class Menu : MonoBehaviour {
         /* Update the buttonHeight value used by all buttons */
         buttonHeight = Mathf.Clamp(screenHeight*0.2f, minHeight, maxHeight);
         heightRatio = buttonHeight/avgHeight;
+
+        //Also we are going to need to update the position of everything, or have each element ALWAYS 
+        //run a function that either places the element off or on screen
     }
     
     void ReorderHeirarchy() {
@@ -405,12 +428,39 @@ public class Menu : MonoBehaviour {
         RectTransform mainPanel = panelRects[(int) Panels.Cover];
         mainPanel.name = "Cover panel";
 
+        /* Set the anchors so it becomes a full stretch layout */
+        mainPanel.anchorMin = new Vector2(0, 0);
+        mainPanel.anchorMax = new Vector2(1, 1);
+
         /* Set the sizes to match the screen size */
         mainPanel.anchoredPosition = new Vector3(0, 0, 0);
         mainPanel.sizeDelta = new Vector2(0, 0);
-
+        
         /* Set the color so that the panel is invisible */
         mainPanel.GetComponent<Image>().color = new Color(0, 0, 0, 0);
+    }
+
+    void SetupSensPanel() {
+        /*
+         * Setup the sensitivity panel which will be used when in the sensitivity state
+         */
+        int panelEnum = (int) Panels.Sens;
+        RectTransform sensPanel = panelRects[panelEnum];
+        sensPanel.name = "Sensitivity panel";
+
+        /* Set the anchors so it's position based in the bottom right corner */
+        sensPanel.anchorMin = new Vector2(1, 0);
+        sensPanel.anchorMax = new Vector2(1, 0);
+
+        /* The size of the panel should be 80% the screen width and 40% for height */
+        panelsWidth[panelEnum] = 0.8f;
+        panelsHeight[panelEnum] = 0.4f;
+        float panelWidth = Screen.width*panelsWidth[panelEnum];
+        float panelHeight = Screen.height*panelsHeight[panelEnum];
+        sensPanel.sizeDelta = new Vector2(panelWidth, panelHeight);
+
+        /* Set the color so that the panel is invisible */
+        sensPanel.GetComponent<Image>().color = new Color(0, 0, 0, 0.3f);
     }
 
     void SetupStartButton() {
@@ -570,7 +620,7 @@ public class Menu : MonoBehaviour {
     #region Cover Panel Updates
     void UCoverPanelStartup() {
         /*
-         * Do nothing with this for now
+         * Have the panel fade out from pure black to completely opaque for the intro
          */
         int panelEnum = (int) Panels.Cover;
         Image rectImage = panelRects[panelEnum].GetComponent<Image>();
@@ -595,6 +645,69 @@ public class Menu : MonoBehaviour {
         /* Fade the color out relative to the remaining time before the game closes */
         rectImage.color = new Color(0, 0, 0, transitionFade);
     }
+    #endregion
+
+    #region Sens Panel Updates
+    void USensPanelSensitivity() {
+        /*
+         * While in the Sensitivity state, make sure the panel occupies the bottom edge of the screen
+         */
+        int panelEnum = (int) Panels.Sens;
+        Image rectImage = panelRects[panelEnum].GetComponent<Image>();
+
+        /* Place the panel so it can be seen */
+        SensPanelPositionUpdate(1);
+    }
+
+    void USensPanelMainToSens() {
+        /*
+         * Animate the panel comming into view
+         */
+        int panelEnum = (int) Panels.Sens;
+        Image rectImage = panelRects[panelEnum].GetComponent<Image>();
+        //Get the transition ratio for the current state
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 1);
+
+        /* Place the panel so it can be seen */
+        SensPanelPositionUpdate(transitionFade);
+    }
+    void USensPanelSensToMain() {
+        /*
+         * Animate the panel leaving the view
+         */
+        int panelEnum = (int) Panels.Sens;
+        Image rectImage = panelRects[panelEnum].GetComponent<Image>();
+        //Get the transition ratio for the current state
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 1);
+
+        /* Place the panel so it can be seen */
+        SensPanelPositionUpdate(1 + transitionFade);
+    }
+
+    void SensPanelPositionUpdate(float sideRatio) {
+        /*
+         * Update the position of the Sensitivity Panel. It is anchored to the bottom-right corner.
+         * 
+         * The given sideRatio value determines where the panel is placed. The potential values are:
+         * 0 - Place the wall above the bottom line and to the right of the right wall
+         * 1 - Place the wall above the bottom line and to the left of the right wall
+         * 2 - Place the wall bellow the bottom line and to the left of the right wall
+         */
+        int panelEnum = (int) Panels.Sens;
+        RectTransform rect = panelRects[panelEnum];
+
+        /* Get the proper position of the panel */
+        float panelWidth = screenWidth*panelsWidth[panelEnum];
+        float panelHeight = screenHeight*panelsHeight[panelEnum];
+
+        /* [0, 1] controls it's X position while [1, 2] controls it's Y position */
+        panelWidth = panelWidth/2f - panelWidth*AdjustRatio(sideRatio, 0, 1);
+        panelHeight = panelHeight/2f - panelHeight*AdjustRatio(sideRatio, 1, 2);
+        rect.anchoredPosition = new Vector3(panelWidth, panelHeight, 0);
+    }
+
     #endregion
 
     #region Start Button Updates
@@ -623,7 +736,7 @@ public class Menu : MonoBehaviour {
          */
         //Adjust the transition to reflect the button's size
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax), 0, (startWidthRatio*startBonusSize)/largestRaio);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, (startWidthRatio*startBonusSize)/largestRaio);
 
         /* Slide the button into it's main position from off-screen */
         StartButtonHoverUpdate();
@@ -636,7 +749,7 @@ public class Menu : MonoBehaviour {
          */
         //Adjust the transition to reflect the button's size
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax), 0, (startWidthRatio*startBonusSize)/largestRaio);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, (startWidthRatio*startBonusSize)/largestRaio);
         
         /* Slide the button off-screen from it's main position */
         StartButtonHoverUpdate();
@@ -786,7 +899,7 @@ public class Menu : MonoBehaviour {
          */
         //Adjust the transition to reflect the button's size
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax), 0, sensWidthRatio/largestRaio);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, sensWidthRatio/largestRaio);
 
         /* Slide the button into it's main position from off-screen */
         SensButtonHoverUpdate();
@@ -799,7 +912,7 @@ public class Menu : MonoBehaviour {
          */
         //Adjust the transition to reflect the button's size
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax), 0, sensWidthRatio/largestRaio);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, sensWidthRatio/largestRaio);
 
         /* Slide the button off-screen from it's main position */
         SensButtonHoverUpdate();
@@ -822,7 +935,7 @@ public class Menu : MonoBehaviour {
          */
         //Adjust the transition to reflect the button's size
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax), 0, sensWidthRatio/largestRaio);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, sensWidthRatio/largestRaio);
 
         /* Move the button from the main to off-screen position */
         SensButtonHoverUpdate();
@@ -941,7 +1054,7 @@ public class Menu : MonoBehaviour {
          */
         //Adjust the transition to reflect the button's size
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax), 0, quitWidthRatio/largestRaio);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, quitWidthRatio/largestRaio);
 
         /* Move the button from it's off-screen position to the main position */
         QuitButtonHoverUpdate();
@@ -954,7 +1067,7 @@ public class Menu : MonoBehaviour {
          */
         //Adjust the transition to reflect the button's size
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax), 0, quitWidthRatio/largestRaio);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, quitWidthRatio/largestRaio);
 
         /* Move the button from it's main position to off-screen */
         QuitButtonHoverUpdate();
@@ -977,7 +1090,7 @@ public class Menu : MonoBehaviour {
          */
         //Adjust the transition to reflect the button's size
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax), 0, quitWidthRatio/largestRaio);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, quitWidthRatio/largestRaio);
 
         /* Move the button from the main to off-screen position */
         QuitButtonHoverUpdate();
@@ -1003,7 +1116,7 @@ public class Menu : MonoBehaviour {
          */
         //Adjust the transition to reflect the button's size
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax), 0, quitWidthRatio/largestRaio);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, quitWidthRatio/largestRaio);
 
         /* Move the button from it's main position to off-screen */
         QuitButtonHoverUpdate();
@@ -1016,7 +1129,7 @@ public class Menu : MonoBehaviour {
          */
         //Adjust the transition to reflect the button's size
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio((Mathf.PI/2f)*TimeRatio(transition.timeRemaining, transition.timeMax), 0, quitWidthRatio/largestRaio);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, quitWidthRatio/largestRaio);
 
         /* Move the button from it's off-screen position to the main position */
         QuitButtonHoverUpdate();
@@ -1336,7 +1449,7 @@ public class Menu : MonoBehaviour {
         /*
          * Given a value that ranges from [0, 1], change it's minimum and max limits,
          * then saturate it so it returns to a [0, 1] range. Example:
-         * RealTime:
+         * Entry index/numbering:
          * 0.0 -- 1.0 -- 2.0 -- 3.0 -- 4.0 -- 5.0
          * Normal Value:
          * 0.0 -- 0.2 -- 0.4 -- 0.6 -- 0.8 -- 1.0
