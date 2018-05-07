@@ -132,8 +132,8 @@ public class Menu : MonoBehaviour {
     private float[] panelsHeight;
 
     /* Global values used for sizes of UI elements */
-    private float minHeight = 40;//40
-    private float maxHeight = 175;//175
+    private float minHeight = 40;
+    private float maxHeight = 175;
     private float avgHeight = 100;
     private float buttonHeight;
     private float heightRatio;
@@ -158,8 +158,9 @@ public class Menu : MonoBehaviour {
     /* The sensitivity slider and it's current value */
     private Slider sensitivitySlider;
     private Text sensitivitySliderValueText;
+    private float sensMax = 25f;
     private float sensitivity;
-
+    
     /* An array that holds the main buttons of the UI. Each index has it's own button */
     private Button[] buttons;
     private RectTransform[] buttonRects;
@@ -188,6 +189,9 @@ public class Menu : MonoBehaviour {
     /* Values used with the start button and once the game has begun */
     bool isGameStarted = false;
 
+    /* Values used when testing the mouse sensitivity */
+    private Vector3 extraCamRotation;
+
 
     /* ----------- Built-in Functions ------------------------------------------------------------- */
 
@@ -195,7 +199,6 @@ public class Menu : MonoBehaviour {
         /*
          * Check if the screen has been resized and run any per-frame update calls for any UI elements
          */
-        Debug.Log(state);
         
         /* Check if the screen has been resized */
         if(Screen.width != screenWidth || Screen.height != screenHeight) {
@@ -204,6 +207,9 @@ public class Menu : MonoBehaviour {
 
         /* Update the hover values of the buttons */
         UpdateHoverValues();
+
+        /* Update the camera for any mouse movement during the sensitivity testing */
+        UpdateSensitivityCamera();
 
         /* Update the transition values. Only change states once the per-frame updates are done. */
         UpdateTransitionValues();
@@ -486,10 +492,11 @@ public class Menu : MonoBehaviour {
         sliderRect.anchoredPosition = new Vector3(0, 0, 0);
         sliderRect.sizeDelta = new Vector2(0, 20);
         /* Assign a function to when the slider updates */
-        sensitivitySlider.maxValue = 10;
+        sensitivitySlider.maxValue = sensMax;
         sensitivitySlider.minValue = 0f;
-        sensitivitySlider.value = sensitivitySlider.maxValue/2f;
+        sensitivitySlider.value = playerController.mouseSensMod;
         sensitivity = sensitivitySlider.value;
+        playerController.mouseSens = sensitivity;
         sensitivitySlider.onValueChanged.AddListener(delegate { UpdateSensitivitySlider(); });
         
         /* Add text bellow the slider giving instructions */
@@ -499,6 +506,7 @@ public class Menu : MonoBehaviour {
         sliderText.transform.SetParent(sensPanel);
         sliderText.SetActive(true);
         /* Set the text properties */
+        text.gameObject.AddComponent<Outline>().effectDistance = heightRatio*new Vector2(1, 1);
         text.text = "Hold right-click to test the mouse sensitivity";
         text.font = usedFont;
         text.alignment = TextAnchor.MiddleCenter;
@@ -518,6 +526,7 @@ public class Menu : MonoBehaviour {
         sliderValue.transform.SetParent(sensPanel);
         sliderValue.SetActive(true);
         /* Set the text properties */
+        sensitivitySliderValueText.gameObject.AddComponent<Outline>().effectDistance = heightRatio*new Vector2(1, 1);
         sensitivitySliderValueText.text = ""+sensitivity;
         sensitivitySliderValueText.font = usedFont;
         sensitivitySliderValueText.alignment = TextAnchor.MiddleCenter;
@@ -682,6 +691,31 @@ public class Menu : MonoBehaviour {
         }
     }
 
+    void UpdateSensitivityCamera() {
+        /*
+         * If it's in the right state, update the camera's current rotation 
+         * to test the new sensitivty of the mouse
+         */
+         
+        /* Holding right-click in the Sensitivity state will update the testingRotation value */
+        if(state == MenuStates.Sensitivity && Input.GetMouseButton(1)) {
+
+            /* Get the player's sensitivity modifier */
+            float sens = playerController.mouseSens / playerController.mouseSensMod;
+
+            /* Apply the mouse movement to the extraCamRotation */
+            extraCamRotation += sens*new Vector3(-Input.GetAxis("Mouse Y"), Input.GetAxis("Mouse X"), 0);
+            Debug.Log(extraCamRotation);
+        }
+        
+        /* Animate the camera moving back to it's savedRotation */
+        else{
+            extraCamRotation *= 0.9f;
+        }
+
+        /* Set the camera's rotation */
+        playerController.extraCamRot = extraCamRotation;
+    }
 
     /* ----------- UI Element Update Functions ------------------------------------------------------------- */
 
@@ -740,6 +774,7 @@ public class Menu : MonoBehaviour {
         /* Place the panel so it can be seen */
         SensPanelPositionUpdate(transitionFade);
     }
+
     void USensPanelSensToMain() {
         /*
          * Animate the panel leaving the view
@@ -1255,9 +1290,12 @@ public class Menu : MonoBehaviour {
          * Runs everytime the value in the slider is updated. update the current mouse sensitivity.
          */
         sensitivity = sensitivitySlider.value;
-        sensitivitySliderValueText.text = ""+sensitivity;
-
-        Debug.Log(sensitivity);
+        sensitivitySliderValueText.text = ""+Mathf.Round(sensitivity*100)/100f;
+        playerController.mouseSens = sensitivity;
+        /* Change the color of the text depending on how close it is to the edges */
+        float red = 0.8f*Mathf.Clamp((sensitivity - sensitivitySlider.maxValue/2f) / (sensitivitySlider.maxValue/2f), 0, 1);
+        float green = 0.8f*Mathf.Clamp((sensitivitySlider.maxValue/2f - sensitivity) / (sensitivitySlider.maxValue/2f), 0, 1);
+        sensitivitySliderValueText.color = new Color(1 - green, 1 - red, 1 - green - red, 1);
     }
 
     Transition GetTransitionFromState(MenuStates givenState) {
@@ -1348,6 +1386,11 @@ public class Menu : MonoBehaviour {
             /* Entering Main will reset the quitValueCurrent */
             else if(newState == MenuStates.Main) {
                 quitValueCurrent = 0;
+            }
+
+            /* Entering the Sensitivity state will reset the extraCamRotation */
+            else if(newState == MenuStates.Sensitivity) {
+                extraCamRotation = Vector3.zero;
             }
             
             /* Leaving the MainToIntro state will change the start button */

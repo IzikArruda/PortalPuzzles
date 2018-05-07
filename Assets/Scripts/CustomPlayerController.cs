@@ -66,6 +66,11 @@ public class CustomPlayerController : MonoBehaviour {
     /* Sliding determines how much of getAxis should be used over getAxisRaw. */
     [Range(1, 0)]
     public float sliding;
+    /* Sensitivity for the mouse. Controlled by the menu. */
+    [HideInInspector]
+    public float mouseSens = 5;
+    [HideInInspector]
+    public float mouseSensMod = 5;
 
     /* How fast a player accelerates towards their feet when falling. */
     public float gravity;
@@ -164,6 +169,7 @@ public class CustomPlayerController : MonoBehaviour {
     private Vector3 camDestinationPos;
     private Quaternion camDestinationRot;
     private float introCamDistance = -1;
+    public Vector3 extraCamRot = Vector3.zero;
 
     /* Intro Animation values */
     private float IntroWindowStrafeSpeed = 0.25f;
@@ -389,6 +395,11 @@ public class CustomPlayerController : MonoBehaviour {
         /* Update the player's camera's transform to reflect the changes to currentCameraTransform */
         playerCamera.transform.position = currentCameraTransform.position;
         playerCamera.transform.rotation = currentCameraTransform.rotation;
+        
+        /* If the menu is open, allow it to control the final rotation of the camera */
+        if(inMenu) {
+            playerCamera.transform.localEulerAngles += extraCamRot;
+        }
 
         /* Apply any needed special effects to the camera. Runs everytime the camera renders */
         /* Do not update these camera effects if the game is in a menu */
@@ -614,12 +625,13 @@ public class CustomPlayerController : MonoBehaviour {
         currentCameraTransform.rotation = transform.rotation;
 
         /* Add the X input rotation and ensure it does not overflow */
-        cameraXRotation -= inputs.mouseX;
+        float sens = mouseSens / mouseSensMod;
+        cameraXRotation -= sens*inputs.mouseX;
         if(cameraXRotation < 0) { cameraXRotation += 360; }
         else if(cameraXRotation > 360) { cameraXRotation -= 360; }
 
         /* Add the Y input rotation and ensure it does not overflow */
-        cameraYRotation += inputs.mouseY;
+        cameraYRotation += sens*inputs.mouseY;
         cameraYRotation = Mathf.Clamp(cameraYRotation, -75, 75);
 
         /* Apply the rotations to the camera's default transform */
