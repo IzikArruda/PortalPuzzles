@@ -9,7 +9,6 @@ using System.Collections;
  * that require a certain amount of time to pass until it reaches another state.
  * When a new state is added, a new entry in each visible element of the state is needed.
  * 
- * 
  * When a transitional state is added, it must have it's own entry in transitionStates, and:
  * - Update the state in transitionStates
  * - Add the states to the elements's arrays in StateFunctionInit()
@@ -21,6 +20,7 @@ public enum MenuStates {
     Main,
     Empty,
     Sensitivity,
+    Video,
     //Transitional states
     Startup,
     EmptyToMain,
@@ -38,6 +38,7 @@ public enum MenuStates {
  */
 public enum Buttons {
     Start,
+    Video,
     Sens,
     Quit
 }
@@ -113,6 +114,7 @@ public class Menu : MonoBehaviour {
      * a state function for each state that the element is visible in.
      */
     StateFunction[] startButtonTransitions;
+    StateFunction[] videoButtonTransitions;
     StateFunction[] sensButtonTransitions;
     StateFunction[] quitButtonTransitions;
     StateFunction[] coverPanelTransitions;
@@ -122,6 +124,7 @@ public class Menu : MonoBehaviour {
     private float startBonusSize = 1.3f;
     private float startWidthRatio = 3;
     private float continueWidthRatio = 4.65f;
+    private float videoRatio = 2.9f;
     private float sensWidthRatio = 5.65f;
     private float quitWidthRatio = 2.25f;
     //Set this to the largest ratio we currently have. This is to make sure each element goes offscreen at the same speed
@@ -219,6 +222,8 @@ public class Menu : MonoBehaviour {
          */
         /* Start button */
         ExecuteElementFunctions(startButtonTransitions);
+        /* Video button */
+        ExecuteElementFunctions(videoButtonTransitions);
         /* Sensitivity button */
         ExecuteElementFunctions(sensButtonTransitions);
         /* Quit button */
@@ -287,6 +292,7 @@ public class Menu : MonoBehaviour {
 
         /* Run the initialSetup functions for each of the buttons */
         SetupStartButton();
+        SetupVideoButton();
         SetupSensButton();
         SetupQuitButton();
 
@@ -308,6 +314,9 @@ public class Menu : MonoBehaviour {
             new StateFunction(MenuStates.MainToQuit, UStartButtonMainToQuit),
             new StateFunction(MenuStates.MainToSens, UStartButtonMainToSens),
             new StateFunction(MenuStates.SensToMain, UStartButtonSensToMain)
+        };
+        videoButtonTransitions = new StateFunction[] {
+            new StateFunction(MenuStates.Main, UVideoButtonMain)
         };
         sensButtonTransitions = new StateFunction[] {
             new StateFunction(MenuStates.Startup, USensButtonStartup),
@@ -556,6 +565,22 @@ public class Menu : MonoBehaviour {
         SetupButtonEvents(ref button, StartButtonMouseEnter, StartButtonMouseExit);
     }
     
+    void SetupVideoButton() {
+        /*
+         * Set the variables of the video button
+         */
+        Button button = buttons[(int) Buttons.Video];
+        button.name = "Video button";
+
+        /* Setup the text of the button */
+        SetupText(button.GetComponentInChildren<Text>());
+        button.GetComponentInChildren<Text>().text = "VIDEO";
+
+        /* Setup the event triggers for mouse clicks and hovers */
+        button.onClick.AddListener(VideoButtonClick);
+        SetupButtonEvents(ref button, VideoButtonMouseEnter, VideoButtonMouseExit);
+    }
+
     void SetupSensButton() {
         /*
          * Set the variables of the button that makes it the "Sensitivity" button
@@ -781,12 +806,12 @@ public class Menu : MonoBehaviour {
          */
         int panelEnum = (int) Panels.Sens;
         Image rectImage = panelRects[panelEnum].GetComponent<Image>();
-        //Get the transition ratio for the current state
+        //Use a cos function to smooth out the animation
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 1);
+        float transitionFade = Mathf.Cos((Mathf.PI/2f)*AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 1));
 
         /* Place the panel so it can be seen */
-        SensPanelPositionUpdate(1 + transitionFade);
+        SensPanelPositionUpdate(2 - transitionFade);
     }
 
     void SensPanelPositionUpdate(float sideRatio) {
@@ -976,6 +1001,59 @@ public class Menu : MonoBehaviour {
     }
     #endregion
 
+    #region Video Button Updates
+    void UVideoButtonMain() {
+        /*
+         * Place the button in it's default position
+         */
+
+        UVideoButtonHoverUpdate();
+        UVideoButtonPositionUpdate(1);
+    }
+
+    void UVideoButtonPositionUpdate(float sideRatio) {
+        /*
+         * Update the position of the video button. The button will be anchored to the left wall
+         * and will be directly bellow the start button.
+         * 
+         * Depending on the given side value, place it either on the right or left side of the wall.
+         * 0 is completely on the left and 1 is completely on the right.
+         */
+        int buttonEnum = (int) Buttons.Video;
+        RectTransform rect = buttonRects[buttonEnum];
+        /* The sens button will be placed bellow the start button */
+        RectTransform aboveButton = buttonRects[(int) Buttons.Start];
+
+        float relativeHeight = aboveButton.position.y - aboveButton.sizeDelta.y/2f - buttonHeight/2f;
+        rect.position = new Vector3(-rect.sizeDelta.x/2f + rect.sizeDelta.x*sideRatio, relativeHeight, 0);
+    }
+
+    void UVideoButtonHoverUpdate() {
+        /*
+         * Set the sizes and colors of the video button to reflect it's current hover value
+         */
+        int buttonEnum = (int) Buttons.Video;
+        Button button = buttons[buttonEnum];
+        RectTransform rect = buttonRects[buttonEnum];
+        Outline[] outlines = button.GetComponentInChildren<Text>().gameObject.GetComponents<Outline>();
+        float hoverRatio = HoverRatio(buttonEnum, true);
+        float extraHoverWidth = hoverRatio*buttonHeight;
+
+        /* Set the color of the button to reflect the current hover value */
+        float hoverColor = 1f - 0.10f*hoverRatio;
+        button.GetComponentInChildren<Text>().color = new Color(hoverColor, hoverColor, hoverColor, 1);
+
+        /* Set the button's size to reflect the current hover value */
+        rect.sizeDelta = new Vector2(buttonHeight*videoRatio + extraHoverWidth, buttonHeight);
+
+        /* Set the outline's distance relative to the hover value */
+        outlines[0].effectDistance = heightRatio*startBonusSize*new Vector2(0.25f + 1f*hoverRatio, 0.25f + 1f*hoverRatio);
+        outlines[1].effectDistance = heightRatio*startBonusSize*new Vector2(0.25f + 1f*hoverRatio, 0.25f + 1f*hoverRatio);
+        outlines[0].effectColor = new Color(0, 0, 0, 0.5f + 0.25f*hoverRatio);
+        outlines[1].effectColor = new Color(0, 0, 0, 0.5f + 0.25f*hoverRatio);
+    }
+    #endregion
+
     #region Sensitivity Button Updates
     void USensButtonStartup() {
         /*
@@ -1091,15 +1169,15 @@ public class Menu : MonoBehaviour {
     void SensButtonPositionUpdate(float sideRatio) {
         /*
          * Update the position of the sensitivity button. The button will be anchored to the left wall
-         * and will be directly bellow the start button.
+         * and will be directly bellow the video button.
          * 
          * Depending on the given side value, place it either on the right or left side of the wall.
          * 0 is completely on the left and 1 is completely on the right.
          */
         int buttonEnum = (int) Buttons.Sens;
         RectTransform rect = buttonRects[buttonEnum];
-        /* The sens button will be placed bellow the start button */
-        RectTransform aboveButton = buttonRects[(int) Buttons.Start];
+        /* The sens button will be placed bellow the video button */
+        RectTransform aboveButton = buttonRects[(int) Buttons.Video];
 
         float relativeHeight = aboveButton.position.y - aboveButton.sizeDelta.y/2f - buttonHeight/2f;
         rect.position = new Vector3(-rect.sizeDelta.x/2f + rect.sizeDelta.x*sideRatio, relativeHeight, 0);
@@ -1438,6 +1516,9 @@ public class Menu : MonoBehaviour {
         UnityEditor.EditorApplication.isPlaying = false;
     }
 
+
+    /* ----------- Mouse Enter/Hover Functions ------------------------------------------------------------- */
+
     void StartButtonClick() {
         /*
          * When the user presses the start key during the Menu state, change into the MenuToIntro state.
@@ -1474,9 +1555,38 @@ public class Menu : MonoBehaviour {
         currentHoverState[(int) Buttons.Start] = false;
     }
     
+    void VideoButtonClick() {
+        /*
+         * Clicking on the Video button will change from the main state to the Video state
+         */
+
+        if(IsButtonClickable(Buttons.Video)) {
+            /* Clicked the button on the main menu */
+            if(state == MenuStates.Main) {
+                Debug.Log("Test");
+            }
+        }
+    }
+
+    void VideoButtonMouseEnter() {
+        /*
+         * The mouse entered the Video button's clickable area
+         */
+
+        currentHoverState[(int) Buttons.Video] = true;
+    }
+
+    void VideoButtonMouseExit() {
+        /*
+         * The mouse entered the Video Button's clickable area
+         */
+
+        currentHoverState[(int) Buttons.Video] = false;
+    }
+    
     void SensButtonClick() {
         /*
-         * Clicking on the Sensitivity button does nothing yet
+         * Clicking on the Sensitivity button changes the main menu to enter the sensitivity menu
          */
 
         if(IsButtonClickable(Buttons.Sens)) {
@@ -1612,6 +1722,14 @@ public class Menu : MonoBehaviour {
             /* ...Is clickable in the main menu and the sensitivity states */
             if(state == MenuStates.Main || state == MenuStates.Sensitivity ||
                 state == MenuStates.SensToMain || state == MenuStates.MainToSens) {
+                clickable = true;
+            }
+        }
+
+        /* Video button... */
+        else if(button == Buttons.Video) {
+            /* ...Is clickable in the main menu */
+            if(state == MenuStates.Main) {
                 clickable = true;
             }
         }
