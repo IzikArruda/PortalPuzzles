@@ -51,6 +51,7 @@ public enum Buttons {
  */
 public enum Panels {
     Cover,
+    Video,
     Sens
 }
 
@@ -122,6 +123,7 @@ public class Menu : MonoBehaviour {
     StateFunction[] sensButtonTransitions;
     StateFunction[] quitButtonTransitions;
     StateFunction[] coverPanelTransitions;
+    StateFunction[] videoPanelTransitions;
     StateFunction[] sensPanelTransitions;
 
     /* Button height to width ratios. Set manually and is unique for each font + text content. */
@@ -234,6 +236,8 @@ public class Menu : MonoBehaviour {
         ExecuteElementFunctions(quitButtonTransitions);
         /* Cover panel */
         ExecuteElementFunctions(coverPanelTransitions);
+        /* Video panel */
+        ExecuteElementFunctions(videoPanelTransitions);
         /* Sens panel */
         ExecuteElementFunctions(sensPanelTransitions);
            
@@ -281,6 +285,7 @@ public class Menu : MonoBehaviour {
         /* Run the initialSetup functions for each panel */
         SetupCoverPanel();
         SetupSensPanel();
+        SetupVideoPanel();
 
         /* Create and populate the buttons and hover arrays */
         buttons = new Button[System.Enum.GetValues(typeof(Buttons)).Length];
@@ -361,6 +366,11 @@ public class Menu : MonoBehaviour {
         coverPanelTransitions = new StateFunction[] {
             new StateFunction(MenuStates.Startup, UCoverPanelStartup),
             new StateFunction(MenuStates.MainToQuit, UCoverPanelMainToQuit)
+        };
+        videoPanelTransitions = new StateFunction[] {
+            new StateFunction(MenuStates.Video, UVideoPanelVideo),
+            new StateFunction(MenuStates.MainToVideo, UVideoPanelMainToVideo),
+            new StateFunction(MenuStates.VideoToMain, UVideoPanelVideoToMain)
         };
         sensPanelTransitions = new StateFunction[] {
             new StateFunction(MenuStates.Sensitivity, USensPanelSensitivity),
@@ -480,6 +490,30 @@ public class Menu : MonoBehaviour {
         
         /* Set the color so that the panel is invisible */
         mainPanel.GetComponent<Image>().color = new Color(0, 0, 0, 0);
+    }
+
+    void SetupVideoPanel() {
+        /*
+         * Setup the video panel which will be used when in the video state
+         */
+        int panelEnum = (int) Panels.Video;
+        RectTransform videoPanel = panelRects[panelEnum];
+        videoPanel.name = "Video panel";
+
+        /* Set the anchors so it's centered on the right wall */
+        videoPanel.anchorMin = new Vector2(1, 0.5f);
+        videoPanel.anchorMax = new Vector2(1, 0.5f);
+
+        /* The size of the panel should be 80% the screen width and 100% for height */
+        panelsWidth[panelEnum] = 0.8f;
+        panelsHeight[panelEnum] = 1f;
+        float panelWidth = Screen.width*panelsWidth[panelEnum];
+        float panelHeight = Screen.height*panelsHeight[panelEnum];
+        videoPanel.sizeDelta = new Vector2(panelWidth, panelHeight);
+        VideoPanelPositionUpdate(0);
+
+        /* Set the color so that the panel is invisible */
+        videoPanel.GetComponent<Image>().color = new Color(0, 0, 0, 0.2f);
     }
 
     void SetupSensPanel() {
@@ -862,7 +896,75 @@ public class Menu : MonoBehaviour {
     }
 
     #endregion
+    
+    #region Video Panel Updates
+    void UVideoPanelVideo() {
+        /*
+         * While in the Video state, make sure the panel occupies the right side of the screen
+         */
+        int panelEnum = (int) Panels.Video;
+        Image rectImage = panelRects[panelEnum].GetComponent<Image>();
 
+        /* Place the panel so it can be seen */
+        VideoPanelPositionUpdate(1);
+    }
+
+    void UVideoPanelMainToVideo() {
+        /*
+         * Animate the panel comming into view
+         */
+        int panelEnum = (int) Panels.Video;
+        Image rectImage = panelRects[panelEnum].GetComponent<Image>();
+        //Get the transition ratio for the current state
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 1);
+
+        /* Place the panel so it can be seen */
+        VideoPanelPositionUpdate(transitionFade);
+    }
+
+    void UVideoPanelVideoToMain() {
+        /*
+         * Animate the panel leaving the view
+         */
+        int panelEnum = (int) Panels.Video;
+        Image rectImage = panelRects[panelEnum].GetComponent<Image>();
+        //Use a cos function to smooth out the animation
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = Mathf.Cos((Mathf.PI/2f)*AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 1));
+
+        /* Place the panel so it can be seen */
+        VideoPanelPositionUpdate(2 - transitionFade);
+    }
+
+    void VideoPanelPositionUpdate(float sideRatio) {
+        /*
+         * Update the position of the Video Panel. It is anchored to the right side of the screen.
+         * 
+         * The given sideRatio value determines where the panel is placed. The potential values are:
+         * 0 - Place the wall on the top edge and rotated
+         * 1 - Place the wall in the center and with no rotation
+         * 2 - Place the wall on the bottom edge and rotated
+         */
+        int panelEnum = (int) Panels.Video;
+        RectTransform rect = panelRects[panelEnum];
+
+        /* Set the rotation ratio */
+        rect.pivot = new Vector2(0.5f, 1 - sideRatio/2f);
+        rect.localEulerAngles = new Vector3(90 - 180*sideRatio/2f, 0, 0);
+
+        /* Get the sizes of the panel */
+        float panelWidth = screenWidth*panelsWidth[panelEnum];
+        float panelHeight = screenHeight*panelsHeight[panelEnum];
+
+        /* Position the Y position of the panel */
+        panelWidth = -panelWidth/2f;
+        panelHeight = panelHeight/2f - (panelHeight/2f)*sideRatio;
+        rect.anchoredPosition = new Vector3(panelWidth, panelHeight, 0);
+    }
+
+    #endregion
+    
     #region Start Button Updates
     void UStartButtonStartup() {
         /*
