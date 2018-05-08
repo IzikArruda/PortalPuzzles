@@ -124,7 +124,7 @@ public class Menu : MonoBehaviour {
     private float startBonusSize = 1.3f;
     private float startWidthRatio = 3;
     private float continueWidthRatio = 4.65f;
-    private float videoRatio = 2.9f;
+    private float videoWidthRatio = 2.9f;
     private float sensWidthRatio = 5.65f;
     private float quitWidthRatio = 2.25f;
     //Set this to the largest ratio we currently have. This is to make sure each element goes offscreen at the same speed
@@ -316,7 +316,14 @@ public class Menu : MonoBehaviour {
             new StateFunction(MenuStates.SensToMain, UStartButtonSensToMain)
         };
         videoButtonTransitions = new StateFunction[] {
-            new StateFunction(MenuStates.Main, UVideoButtonMain)
+            new StateFunction(MenuStates.Startup, UVideoButtonStartup),
+            new StateFunction(MenuStates.EmptyToMain, UVideoButtonEmptyToMain),
+            new StateFunction(MenuStates.MainToEmpty, UVideoButtonMainToEmpty),
+            new StateFunction(MenuStates.Main, UVideoButtonMain),
+            new StateFunction(MenuStates.MainToIntro, UVideoButtonMainToIntro),
+            new StateFunction(MenuStates.MainToQuit, UVideoButtonMainToQuit),
+            new StateFunction(MenuStates.MainToSens, UVideoButtonMainToSens),
+            new StateFunction(MenuStates.SensToMain, UVideoButtonSensToMain)
         };
         sensButtonTransitions = new StateFunction[] {
             new StateFunction(MenuStates.Startup, USensButtonStartup),
@@ -1002,16 +1009,113 @@ public class Menu : MonoBehaviour {
     #endregion
 
     #region Video Button Updates
+    void UVideoButtonStartup() {
+        /*
+         * Fade the button into view. Have it already placed in it's main position
+         */
+        int buttonEnum = (int) Buttons.Video;
+        Button button = buttons[buttonEnum];
+        //Start fading in the button 50% into the intro, finish 90% in
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.5f, 0.9f);
+
+        /* Position the button to already be in it's main position */
+        VideoButtonHoverUpdate();
+        VideoButtonPositionUpdate(1);
+
+        /* Change the opacity to reflect the transition state */
+        Color col = button.GetComponentInChildren<Text>().color;
+        button.GetComponentInChildren<Text>().color = new Color(col.r, col.g, col.b, transitionFade);
+    }
+
+    void UVideoButtonEmptyToMain() {
+        /*
+         * During this transition state, move the button so it's back onto the screen
+         */
+        //Adjust the transition to reflect the button's size
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, videoWidthRatio/largestRaio);
+
+        /* Slide the button into it's main position from off-screen */
+        VideoButtonHoverUpdate();
+        VideoButtonPositionUpdate(transitionFade);
+    }
+    
+    void UVideoButtonMainToEmpty() {
+        /*
+         * During this transition state, Quickly move the button off-screen
+         */
+        //Adjust the transition to reflect the button's size
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, videoWidthRatio/largestRaio);
+
+        /* Slide the button off-screen from it's main position */
+        VideoButtonHoverUpdate();
+        VideoButtonPositionUpdate(1 - transitionFade);
+    }
+
+    void UVideoButtonMainToIntro() {
+        /*
+         * Animate the video button when entering the intro. The button slides out to the left
+         */
+        //Adjust the transition to reflect the button's size
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, videoWidthRatio/largestRaio);
+
+        /* Move the button from the main to off-screen position */
+        VideoButtonHoverUpdate();
+        VideoButtonPositionUpdate(1 - transitionFade);
+    }
+
+    void UVideoButtonMainToQuit() {
+        /*
+         * Animate the button slidding off the left side of the screen as the game quits
+         */
+        //The transition starts fading the button at the start and ends 50% through
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 0.5f*videoWidthRatio/largestRaio);
+
+        /* Move the button from the main position to off-screen */
+        VideoButtonHoverUpdate();
+        VideoButtonPositionUpdate(1 - transitionFade);
+    }
+
+    void UVideoButtonMainToSens() {
+        /*
+         * Animate the button slidding off the left side of the screen
+         */
+        //Adjust the transition to reflect the button's size
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, videoWidthRatio/largestRaio);
+
+        /* Place the button in it's main position */
+        VideoButtonHoverUpdate();
+        VideoButtonPositionUpdate(1 - transitionFade);
+    }
+    
     void UVideoButtonMain() {
         /*
          * Place the button in it's default position
          */
 
-        UVideoButtonHoverUpdate();
-        UVideoButtonPositionUpdate(1);
+        VideoButtonHoverUpdate();
+        VideoButtonPositionUpdate(1);
     }
 
-    void UVideoButtonPositionUpdate(float sideRatio) {
+    void UVideoButtonSensToMain() {
+        /*
+         * Slide the button back into view
+         */
+        //Adjust the transition to reflect the button's size
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, (videoWidthRatio*startBonusSize)/largestRaio);
+
+        /* Move the button from the main position to off-screen */
+        VideoButtonHoverUpdate();
+        VideoButtonPositionUpdate(transitionFade);
+    }
+
+    void VideoButtonPositionUpdate(float sideRatio) {
         /*
          * Update the position of the video button. The button will be anchored to the left wall
          * and will be directly bellow the start button.
@@ -1028,7 +1132,7 @@ public class Menu : MonoBehaviour {
         rect.position = new Vector3(-rect.sizeDelta.x/2f + rect.sizeDelta.x*sideRatio, relativeHeight, 0);
     }
 
-    void UVideoButtonHoverUpdate() {
+    void VideoButtonHoverUpdate() {
         /*
          * Set the sizes and colors of the video button to reflect it's current hover value
          */
@@ -1044,7 +1148,7 @@ public class Menu : MonoBehaviour {
         button.GetComponentInChildren<Text>().color = new Color(hoverColor, hoverColor, hoverColor, 1);
 
         /* Set the button's size to reflect the current hover value */
-        rect.sizeDelta = new Vector2(buttonHeight*videoRatio + extraHoverWidth, buttonHeight);
+        rect.sizeDelta = new Vector2(buttonHeight*videoWidthRatio + extraHoverWidth, buttonHeight);
 
         /* Set the outline's distance relative to the hover value */
         outlines[0].effectDistance = heightRatio*startBonusSize*new Vector2(0.25f + 1f*hoverRatio, 0.25f + 1f*hoverRatio);
