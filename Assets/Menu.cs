@@ -28,7 +28,9 @@ public enum MenuStates {
     MainToIntro,
     MainToQuit,
     MainToSens,
-    SensToMain
+    MainToVideo,
+    SensToMain,
+    VideoToMain
 };
 
 
@@ -106,6 +108,8 @@ public class Menu : MonoBehaviour {
         new Transition(MenuStates.MainToIntro, MenuStates.Empty, 0.5f, 0f),
         new Transition(MenuStates.MainToQuit, MenuStates.MainToQuit, 1.8f, 0f),
         new Transition(MenuStates.MainToSens, MenuStates.Sensitivity, 0.4f, 0f),
+        new Transition(MenuStates.MainToVideo, MenuStates.Video, 0.4f, 0f),
+        new Transition(MenuStates.VideoToMain, MenuStates.Main, 0.4f, 0f),
         new Transition(MenuStates.SensToMain, MenuStates.Main, 0.4f, 0f)
     };
 
@@ -313,7 +317,9 @@ public class Menu : MonoBehaviour {
             new StateFunction(MenuStates.MainToIntro, UStartButtonMainToIntro),
             new StateFunction(MenuStates.MainToQuit, UStartButtonMainToQuit),
             new StateFunction(MenuStates.MainToSens, UStartButtonMainToSens),
-            new StateFunction(MenuStates.SensToMain, UStartButtonSensToMain)
+            new StateFunction(MenuStates.MainToVideo, UStartButtonMainToVideo),
+            new StateFunction(MenuStates.SensToMain, UStartButtonSensToMain),
+            new StateFunction(MenuStates.VideoToMain, UStartButtonVideoToMain)
         };
         videoButtonTransitions = new StateFunction[] {
             new StateFunction(MenuStates.Startup, UVideoButtonStartup),
@@ -323,7 +329,9 @@ public class Menu : MonoBehaviour {
             new StateFunction(MenuStates.MainToIntro, UVideoButtonMainToIntro),
             new StateFunction(MenuStates.MainToQuit, UVideoButtonMainToQuit),
             new StateFunction(MenuStates.MainToSens, UVideoButtonMainToSens),
-            new StateFunction(MenuStates.SensToMain, UVideoButtonSensToMain)
+            new StateFunction(MenuStates.MainToVideo, UVideoButtonMainToVideo),
+            new StateFunction(MenuStates.SensToMain, UVideoButtonSensToMain),
+            new StateFunction(MenuStates.VideoToMain, UVideoButtonVideoToMain)
         };
         sensButtonTransitions = new StateFunction[] {
             new StateFunction(MenuStates.Startup, USensButtonStartup),
@@ -333,8 +341,10 @@ public class Menu : MonoBehaviour {
             new StateFunction(MenuStates.MainToIntro, USensButtonMainToIntro),
             new StateFunction(MenuStates.MainToQuit, USensButtonMainToQuit),
             new StateFunction(MenuStates.MainToSens, USensButtonMainToSens),
+            new StateFunction(MenuStates.MainToVideo, USensButtonMainToVideo),
             new StateFunction(MenuStates.SensToMain, USensButtonSensToMain),
             new StateFunction(MenuStates.Sensitivity, USensButtonSensitivity),
+            new StateFunction(MenuStates.VideoToMain, USensButtonVideoToMain)
         };
         quitButtonTransitions = new StateFunction[] {
             new StateFunction(MenuStates.Startup, UQuitButtonStartup),
@@ -343,8 +353,10 @@ public class Menu : MonoBehaviour {
             new StateFunction(MenuStates.Main, UQuitButtonMain),
             new StateFunction(MenuStates.MainToIntro, UQuitButtonMainToIntro),
             new StateFunction(MenuStates.MainToQuit, UQuitButtonMainToQuit),
+            new StateFunction(MenuStates.MainToVideo, UQuitButtonMainToVideo),
             new StateFunction(MenuStates.MainToSens, UQuitButtonMainToSens),
-            new StateFunction(MenuStates.SensToMain, UQuitButtonSensToMain)
+            new StateFunction(MenuStates.SensToMain, UQuitButtonSensToMain),
+            new StateFunction(MenuStates.VideoToMain, UQuitButtonVideoToMain)
         };
         coverPanelTransitions = new StateFunction[] {
             new StateFunction(MenuStates.Startup, UCoverPanelStartup),
@@ -702,10 +714,16 @@ public class Menu : MonoBehaviour {
          * Update the hover values in currentHoverTime. Only increase the values when the button is clickable
          */
 
-        /* Force certain hover values onto buttons at certain states */
+        /* 
+         * Force certain hover values onto buttons at certain states 
+         */
+        /* When the sensitivity menu is open(ing), force the button to be hovered */
         if(state == MenuStates.MainToSens || state == MenuStates.Sensitivity) {
-            /* When the sensitivity menu is open(ing), force the button to be hovered */
-            currentHoverState[(int)Buttons.Sens] = true;
+            currentHoverState[(int) Buttons.Sens] = true;
+        }
+        /* When the video menu is open(ing), force the button to be hovered */
+        if(state == MenuStates.MainToVideo || state == MenuStates.Video) {
+            currentHoverState[(int) Buttons.Video] = true;
         }
 
         for(int i = 0; i < System.Enum.GetValues(typeof(Buttons)).Length; i++) {
@@ -943,6 +961,54 @@ public class Menu : MonoBehaviour {
         StartButtonPositionUpdate(1 - transitionFade);
     }
 
+    void UStartButtonMainToVideo() {
+        /*
+         * Rotate the button off the left side
+         */
+        int buttonEnum = (int) Buttons.Start;
+        RectTransform rect = buttonRects[buttonEnum];
+        //Use a basic transition value that is the same speed for each button
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 1);
+
+        /* Place teh button on-screen */
+        StartButtonHoverUpdate();
+        StartButtonPositionUpdate(0.5f);
+
+        /* Set it's pivot point onto the edge of the screen/button */
+        rect.pivot = new Vector3(0, 0.5f);
+
+        /* Set it's rotation to reflect the current transition value */
+        rect.localEulerAngles = new Vector3(0, 90f*transitionFade, 0);
+    }
+
+    void UStartButtonVideoToMain() {
+        /*
+         * Rotate the button as we leave the video state
+         */
+        int buttonEnum = (int) Buttons.Start;
+        RectTransform rect = buttonRects[buttonEnum];
+        //Use a basic transition value that is the same speed for each button
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 1);
+
+        /* Place teh button on-screen */
+        StartButtonHoverUpdate();
+        StartButtonPositionUpdate(0.5f);
+
+        /* Set it's pivot point onto the edge of the screen/button */
+        rect.pivot = new Vector3(0, 0.5f);
+
+        /* Set it's rotation to reflect the current transition value */
+        rect.localEulerAngles = new Vector3(0, 90f-90f*transitionFade, 0);
+
+        /* Reset the pivot point once we are done leaving the video state */
+        if(transition.timeRemaining == 0) {
+            rect.pivot = new Vector3(0.5f, 0.5f);
+            StartButtonPositionUpdate(1);
+        }
+    }
+
     void UStartButtonMainToSens() {
         /*
          * Slide the button off the left side
@@ -1102,6 +1168,23 @@ public class Menu : MonoBehaviour {
         VideoButtonPositionUpdate(1);
     }
 
+    void UVideoButtonMainToVideo() {
+        /*
+         * Place the button in it's default position
+         */
+
+        VideoButtonHoverUpdate();
+        VideoButtonPositionUpdate(1);
+    }
+    void UVideoButtonVideoToMain() {
+        /*
+         * Place the button in it's default position
+         */
+
+        VideoButtonHoverUpdate();
+        VideoButtonPositionUpdate(1);
+    }
+
     void UVideoButtonSensToMain() {
         /*
          * Slide the button back into view
@@ -1212,6 +1295,54 @@ public class Menu : MonoBehaviour {
         /* Place the button in it's main position */
         SensButtonHoverUpdate();
         SensButtonPositionUpdate(1);
+    }
+
+    void USensButtonMainToVideo() {
+        /*
+         * Rotate the sens button as we enter the video state
+         */
+        int buttonEnum = (int) Buttons.Sens;
+        RectTransform rect = buttonRects[buttonEnum];
+        //Use a basic transition value that is the same speed for each button
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 1);
+
+        /* Move the button from the main to off-screen position */
+        SensButtonHoverUpdate();
+        SensButtonPositionUpdate(0.5f);
+
+        /* Set it's pivot point onto the edge of the screen/button */
+        rect.pivot = new Vector3(0, 0.5f);
+
+        /* Set it's rotation to reflect the current transition value */
+        rect.localEulerAngles = new Vector3(0, 90f*transitionFade, 0);
+    }
+
+    void USensButtonVideoToMain() {
+        /*
+         * Rotate the sens button as we leave the video state
+         */
+        int buttonEnum = (int) Buttons.Sens;
+        RectTransform rect = buttonRects[buttonEnum];
+        //Adjust the transition to reflect the button's size
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 1);
+
+        /* Move the button from the main to off-screen position */
+        SensButtonHoverUpdate();
+        SensButtonPositionUpdate(0.5f);
+
+        /* Set it's pivot point onto the edge of the screen/button */
+        rect.pivot = new Vector3(0, 0.5f);
+
+        /* Set it's rotation to reflect the current transition value */
+        rect.localEulerAngles = new Vector3(0, 90f-90f*transitionFade, 0);
+
+        /* Reset the pivot point once we are done leaving the video state */
+        if(transition.timeRemaining == 0) {
+            rect.pivot = new Vector3(0.5f, 0.5f);
+            SensButtonPositionUpdate(1);
+        }
     }
 
     void USensButtonMainToIntro() {
@@ -1367,6 +1498,54 @@ public class Menu : MonoBehaviour {
         /* Keep the button in it's main position */
         QuitButtonHoverUpdate();
         QuitButtonPositionUpdate(1);
+    }
+
+    void UQuitButtonMainToVideo() {
+        /*
+         * Rotate the quit button as we enter the video state
+         */
+        int buttonEnum = (int) Buttons.Quit;
+        RectTransform rect = buttonRects[buttonEnum];
+        //Use a basic transition value that is the same speed for each button
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 1);
+
+        /* Move the button from it's main position to off-screen */
+        QuitButtonHoverUpdate();
+        QuitButtonPositionUpdate(0.5f);
+
+        /* Set it's pivot point onto the edge of the screen/button */
+        rect.pivot = new Vector3(0, 0.5f);
+
+        /* Set it's rotation to reflect the current transition value */
+        rect.localEulerAngles = new Vector3(0, 90f*transitionFade, 0);
+    }
+
+    void UQuitButtonVideoToMain() {
+        /*
+         * Rotate the quit button as we leave the video state
+         */
+        int buttonEnum = (int) Buttons.Quit;
+        RectTransform rect = buttonRects[buttonEnum];
+        //Use a basic transition value that is the same speed for each button
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 1);
+
+        /* Move the button from it's main position to off-screen */
+        QuitButtonHoverUpdate();
+        QuitButtonPositionUpdate(0.5f);
+
+        /* Set it's pivot point onto the edge of the screen/button */
+        rect.pivot = new Vector3(0, 0.5f);
+
+        /* Set it's rotation to reflect the current transition value */
+        rect.localEulerAngles = new Vector3(0, 90f-90f*transitionFade, 0);
+
+        /* Reset the pivot point once we are done leaving the video state */
+        if(transition.timeRemaining == 0) {
+            rect.pivot = new Vector3(0.5f, 0.5f);
+            QuitButtonPositionUpdate(1);
+        }
     }
 
     void UQuitButtonMainToIntro() {
@@ -1561,7 +1740,9 @@ public class Menu : MonoBehaviour {
                 newState == MenuStates.MainToIntro ||
                 newState == MenuStates.MainToQuit ||
                 newState == MenuStates.MainToSens ||
-                newState == MenuStates.SensToMain) {
+                newState == MenuStates.SensToMain ||
+                newState == MenuStates.MainToVideo ||
+                newState == MenuStates.VideoToMain) {
                 ResetRemainingTime(newState);
             }
             
@@ -1665,9 +1846,14 @@ public class Menu : MonoBehaviour {
          */
 
         if(IsButtonClickable(Buttons.Video)) {
-            /* Clicked the button on the main menu */
+            /* Clicking the button on the main menu will bring it to the video state */
             if(state == MenuStates.Main) {
-                Debug.Log("Test");
+                ChangeState(MenuStates.MainToVideo);
+            }
+
+            /* Clicking it in the video state will bring it to the main menu */
+            else if(state == MenuStates.Video) {
+                ChangeState(MenuStates.VideoToMain);
             }
         }
     }
@@ -1825,15 +2011,16 @@ public class Menu : MonoBehaviour {
         else if(button == Buttons.Sens) {
             /* ...Is clickable in the main menu and the sensitivity states */
             if(state == MenuStates.Main || state == MenuStates.Sensitivity ||
-                state == MenuStates.SensToMain || state == MenuStates.MainToSens) {
+                    state == MenuStates.SensToMain || state == MenuStates.MainToSens) {
                 clickable = true;
             }
         }
 
         /* Video button... */
         else if(button == Buttons.Video) {
-            /* ...Is clickable in the main menu */
-            if(state == MenuStates.Main) {
+            /* ...Is clickable in the main menu and it's other video states */
+            if(state == MenuStates.Main || state == MenuStates.Video ||
+                    state == MenuStates.MainToVideo) {
                 clickable = true;
             }
         }
