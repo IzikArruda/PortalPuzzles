@@ -2,6 +2,7 @@
 using UnityEngine.UI;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
+using System.Collections.Generic;
 using System.Collections;
 
 /*  
@@ -163,6 +164,7 @@ public class Menu : MonoBehaviour {
 
     /* References to UI objects used by the menu */
     public Slider sensSliderReference;
+    public Dropdown videoOptionsDropwdownReference;
 
     /* The sensitivity slider and it's current value */
     private Slider sensitivitySlider;
@@ -510,10 +512,83 @@ public class Menu : MonoBehaviour {
         float panelWidth = Screen.width*panelsWidth[panelEnum];
         float panelHeight = Screen.height*panelsHeight[panelEnum];
         videoPanel.sizeDelta = new Vector2(panelWidth, panelHeight);
-        VideoPanelPositionUpdate(0);
 
         /* Set the color so that the panel is invisible */
         videoPanel.GetComponent<Image>().color = new Color(0, 0, 0, 0.2f);
+
+        /*
+         * Add the components that make up the panel. The order of the options controls their positions.
+         */
+        string[] videoButtonTexts = { "Resolution", "Windowed", "Lock framerate", "Lock mouse", "Run without focus" };
+        GameObject[] videoOptionPanels = new GameObject[videoButtonTexts.Length];
+        /* Create each panel that is used as an option in the video panel */
+        for(int i = 0; i < videoOptionPanels.Length; i++) {
+            /* Create the option and add it's components */
+            videoOptionPanels[i] = new GameObject("Option panel " + videoButtonTexts[i], typeof(RectTransform));
+            RectTransform panelRect = videoOptionPanels[i].GetComponent<RectTransform>();
+            panelRect.SetParent(videoPanel);
+            videoOptionPanels[i].AddComponent<Image>().color = new Color(0, 1, 0, 0.3f);//Add an image so we can see the placement
+            /* The panel will fill the video panel's width */
+            panelRect.anchorMin = new Vector2(0, 0.5f);
+            panelRect.anchorMax = new Vector2(1, 0.5f);
+            /* The position of the panel depends on it's index */
+            float optionPanelHeight = buttonHeight/2f;
+            panelRect.anchoredPosition = new Vector3(0, (panelHeight/2f-buttonHeight/2f) -i*optionPanelHeight*3/2f, 0);
+            panelRect.sizeDelta = new Vector2(0, optionPanelHeight);
+
+            /* Add a text element that will occupy the left side of the panel */
+            GameObject textObject = new GameObject("Option text " + videoButtonTexts[i], typeof(RectTransform));
+            Text text = textObject.AddComponent<Text>();
+            RectTransform textRect = textObject.GetComponent<RectTransform>();
+            textRect.SetParent(panelRect);
+            /* Set the anchors so that the text stays on the left side of the panel */
+            textRect.anchorMin = new Vector2(0, 0);
+            textRect.anchorMax = new Vector2(0.5f, 1);
+            textRect.anchoredPosition = new Vector3(0, 0, 0);
+            textRect.sizeDelta = new Vector2(0, 0);
+            /* Set the text properties */
+            text.gameObject.AddComponent<Outline>().effectDistance = heightRatio*new Vector2(1, 1);
+            text.text = videoButtonTexts[i];
+            text.font = usedFont;
+            text.alignment = TextAnchor.MiddleRight;
+            text.resizeTextForBestFit = true;
+            text.resizeTextMinSize = 1;
+            text.resizeTextMaxSize = 300;
+        }
+
+        /* 
+         * Add components to the right side of each newly added panels in the video panel 
+         */
+        /* Panel 1 controls the screen's resolution using a dropdown menu of the monitor's usable resolutions.
+         * Duplicate the dropdown object currently referenced by this script */
+        GameObject dropdownObject = Instantiate(videoOptionsDropwdownReference.gameObject);
+        dropdownObject.name = "Resolution Dropdown";
+        dropdownObject.SetActive(true);
+        Dropdown dropdown = dropdownObject.GetComponent<Dropdown>();
+        RectTransform dropdownRect = dropdownObject.GetComponent<RectTransform>();
+        RectTransform dropdownPanel = videoOptionPanels[0].GetComponent<RectTransform>();
+        dropdownRect.SetParent(dropdownPanel);
+        /* Populate the dropdown with the resolutions */
+        Resolution[] res = Screen.resolutions;
+        List<string> newOptions = new List<string>();
+        for(int i = 0; i < res.Length; i++) {
+            newOptions.Add(res[i].width + "x" + res[i].height);
+        }
+        newOptions.Add("Borderless windowed");
+        dropdown.ClearOptions();
+        dropdown.AddOptions(newOptions);
+        dropdown.RefreshShownValue();
+        /* Link a function to it's onValueChanged */
+        dropdown.onValueChanged.AddListener(delegate { UpdatedResolutionDropdown(dropdown); });
+        /* Position the object to be placed on the right side of it's panel */
+        dropdownRect.anchorMin = new Vector2(0.5f, 0);
+        dropdownRect.anchorMax = new Vector2(1, 1);
+        dropdownRect.anchoredPosition = new Vector3(0, 0, 0);
+        dropdownRect.sizeDelta = new Vector2(0, 0);
+
+
+        /* End by setting the position/rotation of the panel after all components have been properly set */
+        VideoPanelPositionUpdate(0);
     }
 
     void SetupSensPanel() {
@@ -1903,6 +1978,13 @@ public class Menu : MonoBehaviour {
         UnityEditor.EditorApplication.isPlaying = false;
     }
 
+    void UpdatedResolutionDropdown(Dropdown dropdown) {
+        /*
+         * When the user selects a new resolution in the video options, this function will run
+         */
+
+        Debug.Log("NEW RES");
+    }
 
     /* ----------- Mouse Enter/Hover Functions ------------------------------------------------------------- */
 
