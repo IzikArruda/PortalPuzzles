@@ -142,9 +142,9 @@ public class Menu : MonoBehaviour {
     private float[] panelsHeight;
 
     /* Global values used for sizes of UI elements */
-    private float minHeight = 40;
-    private float maxHeight = 175;
-    private float avgHeight = 100;
+    private float minHeight = 20f;
+    private float maxHeight = 150f;
+    private float avgHeight = 100f;
     private float buttonHeight;
     private float heightRatio;
 
@@ -216,7 +216,7 @@ public class Menu : MonoBehaviour {
         
         /* Check if the screen has been resized */
         if(Screen.width != screenWidth || Screen.height != screenHeight) {
-            Resize();
+            Resize(true);
         }
 
         /* Update the hover values of the buttons */
@@ -260,7 +260,7 @@ public class Menu : MonoBehaviour {
          */
 
         /* Make sure the window's sizes are properly set */
-        Resize();
+        Resize(false);
 
         /* Populate the StateFunction arrays before anything else */
         StateFunctionInit();
@@ -341,7 +341,8 @@ public class Menu : MonoBehaviour {
             new StateFunction(MenuStates.MainToSens, UVideoButtonMainToSens),
             new StateFunction(MenuStates.MainToVideo, UVideoButtonMainToVideo),
             new StateFunction(MenuStates.SensToMain, UVideoButtonSensToMain),
-            new StateFunction(MenuStates.VideoToMain, UVideoButtonVideoToMain)
+            new StateFunction(MenuStates.VideoToMain, UVideoButtonVideoToMain),
+            new StateFunction(MenuStates.Video, UVideoButtonVideo)
         };
         sensButtonTransitions = new StateFunction[] {
             new StateFunction(MenuStates.Startup, USensButtonStartup),
@@ -409,7 +410,7 @@ public class Menu : MonoBehaviour {
         return buttonObject;
     }
 
-    public void Resize() {
+    public void Resize(bool updateUI) {
         /*
          * Update the sizes of the ui to reflect the current screen size.
          */
@@ -417,11 +418,19 @@ public class Menu : MonoBehaviour {
         screenHeight = Screen.height;
 
         /* Update the buttonHeight value used by all buttons */
-        buttonHeight = Mathf.Clamp(screenHeight*0.2f, minHeight, maxHeight);
+        buttonHeight = Mathf.Clamp(screenHeight*0.15f, minHeight, maxHeight);
         heightRatio = buttonHeight/avgHeight;
 
-        //Also we are going to need to update the position of everything, or have each element ALWAYS 
-        //run a function that either places the element off or on screen
+        /* Run the reset functions for each UI element be updated from the new size */
+        if(updateUI) {
+            CoverPanelReset();
+            VideoPanelReset();
+            SensPanelReset();
+            StartButtonReset();
+            VideoButtonReset();
+            SensButtonReset();
+            QuitButtonReset();
+        }
     }
     
     void ReorderHeirarchy() {
@@ -722,9 +731,9 @@ public class Menu : MonoBehaviour {
         sensPanel.anchorMin = new Vector2(1, 0);
         sensPanel.anchorMax = new Vector2(1, 0);
 
-        /* The size of the panel should be 80% the screen width and 40% for height */
+        /* The size of the panel should be 80% the screen width and 30% for height */
         panelsWidth[panelEnum] = 0.8f;
-        panelsHeight[panelEnum] = 0.4f;
+        panelsHeight[panelEnum] = 0.3f;
         float panelWidth = Screen.width*panelsWidth[panelEnum];
         float panelHeight = Screen.height*panelsHeight[panelEnum];
         sensPanel.sizeDelta = new Vector2(panelWidth, panelHeight);
@@ -769,11 +778,12 @@ public class Menu : MonoBehaviour {
         text.resizeTextForBestFit = true;
         text.resizeTextMinSize = 1;
         text.resizeTextMaxSize = 300;
+        text.raycastTarget = false;
         /* Set the sizes of the text */
-        rectTex.anchorMin = new Vector2(0, 0.5f);
-        rectTex.anchorMax = new Vector2(1, 0.5f);
-        rectTex.anchoredPosition = new Vector3(0, -10 -buttonHeight/4f, 0);
-        rectTex.sizeDelta = new Vector2(0, buttonHeight/2f);
+        rectTex.anchorMin = new Vector2(0, 0.25f);
+        rectTex.anchorMax = new Vector2(1, 0.25f);
+        rectTex.anchoredPosition = new Vector3(0, 0, 0);
+        rectTex.sizeDelta = new Vector2(0, panelHeight/2f);
 
         /* Add text above the slider giving the sensitivity */
         GameObject sliderValue = new GameObject("Slider value", typeof(RectTransform));
@@ -789,11 +799,12 @@ public class Menu : MonoBehaviour {
         sensitivitySliderValueText.resizeTextForBestFit = true;
         sensitivitySliderValueText.resizeTextMinSize = 1;
         sensitivitySliderValueText.resizeTextMaxSize = 300;
+        sensitivitySliderValueText.raycastTarget = false;
         /* Set the sizes of the value */
-        valueRect.anchorMin = new Vector2(0, 0.5f);
-        valueRect.anchorMax = new Vector2(1, 0.5f);
-        valueRect.anchoredPosition = new Vector3(0, 10 + 1.5f*buttonHeight/4f, 0);
-        valueRect.sizeDelta = new Vector2(0, 1.5f*buttonHeight/2f);
+        valueRect.anchorMin = new Vector2(0, 0.75f);
+        valueRect.anchorMax = new Vector2(1, 0.75f);
+        valueRect.anchoredPosition = new Vector3(0, 0, 0);
+        valueRect.sizeDelta = new Vector2(0, panelHeight/2f);
     }
 
     void SetupStartButton() {
@@ -1029,6 +1040,21 @@ public class Menu : MonoBehaviour {
         /* Fade the color out relative to the remaining time before the game closes */
         rectImage.color = new Color(0, 0, 0, transitionFade);
     }
+    
+    void CoverPanelReset() {
+        /*
+         * Reset the sizes of the cover panel 
+         */
+        RectTransform mainPanel = panelRects[(int) Panels.Cover];
+
+        /* Set the anchors so it becomes a full stretch layout */
+        mainPanel.anchorMin = new Vector2(0, 0);
+        mainPanel.anchorMax = new Vector2(1, 1);
+
+        /* Set the sizes to match the screen size */
+        mainPanel.anchoredPosition = new Vector3(0, 0, 0);
+        mainPanel.sizeDelta = new Vector2(0, 0);
+    }
     #endregion
 
     #region Sens Panel Updates
@@ -1093,6 +1119,39 @@ public class Menu : MonoBehaviour {
         rect.anchoredPosition = new Vector3(panelWidth, panelHeight, 0);
     }
 
+    void SensPanelReset() {
+        /*
+         * Reset the size and position of the panel
+         */
+        int panelEnum = (int) Panels.Sens;
+        RectTransform sensPanel = panelRects[panelEnum];
+
+        /* Set the anchors so it's position based in the bottom right corner */
+        sensPanel.anchorMin = new Vector2(1, 0);
+        sensPanel.anchorMax = new Vector2(1, 0);
+
+        /* The size of the panel should be 80% the screen width and 30% for height */
+        panelsWidth[panelEnum] = 0.8f;
+        panelsHeight[panelEnum] = 0.3f;
+        float panelWidth = Screen.width*panelsWidth[panelEnum];
+        float panelHeight = Screen.height*panelsHeight[panelEnum];
+        sensPanel.sizeDelta = new Vector2(panelWidth, panelHeight);
+
+        /* Adjust the size of the text above and bellow the slider */
+        RectTransform bellowText = sensPanel.GetChild(1).GetComponent<RectTransform>();
+        RectTransform aboveText = sensPanel.GetChild(2).GetComponent<RectTransform>();
+        /* Set the sizes of the sens value text above */
+        aboveText.anchorMin = new Vector2(0, 0.75f);
+        aboveText.anchorMax = new Vector2(1, 0.75f);
+        aboveText.anchoredPosition = new Vector3(0, 0, 0);
+        aboveText.sizeDelta = new Vector2(0, panelHeight/2f);
+        /* Set the sizes of the description text bellow */
+        bellowText.anchorMin = new Vector2(0, 0.25f);
+        bellowText.anchorMax = new Vector2(1, 0.25f);
+        bellowText.anchoredPosition = new Vector3(0, 0, 0);
+        bellowText.sizeDelta = new Vector2(0, panelHeight/2f);
+        SensPanelPositionUpdate(0);
+    }
     #endregion
     
     #region Video Panel Updates
@@ -1161,6 +1220,37 @@ public class Menu : MonoBehaviour {
         rect.anchoredPosition = new Vector3(panelWidth, panelHeight, 0);
     }
 
+    void VideoPanelReset() {
+        /*
+         * Reset the video panel's position and size
+         */
+        int panelEnum = (int) Panels.Video;
+        RectTransform videoPanel = panelRects[panelEnum];
+
+        /* Set the anchors so it's centered on the right wall */
+        videoPanel.anchorMin = new Vector2(1, 0.5f);
+        videoPanel.anchorMax = new Vector2(1, 0.5f);
+
+        /* The size of the panel should be 80% the screen width and 100% for height */
+        panelsWidth[panelEnum] = 0.8f;
+        panelsHeight[panelEnum] = 1f;
+        float panelWidth = Screen.width*panelsWidth[panelEnum];
+        float panelHeight = Screen.height*panelsHeight[panelEnum];
+        videoPanel.sizeDelta = new Vector2(panelWidth, panelHeight);
+
+        /* Resize the option panels to fit the screen */
+        RectTransform panelRect;
+        float optionPanelHeight = buttonHeight/2f;
+        for(int i = 0; i < videoPanel.childCount; i++) {
+            panelRect = videoPanel.GetChild(i).GetComponent<RectTransform>();
+            if(panelRect != null) {
+                panelRect.anchoredPosition = new Vector3(0, (panelHeight/2f-buttonHeight/2f) -i*optionPanelHeight*3/2f, 0);
+                panelRect.sizeDelta = new Vector2(0, optionPanelHeight);
+            }
+        }
+
+        VideoPanelPositionUpdate(0);
+    }
     #endregion
     
     #region Start Button Updates
@@ -1372,6 +1462,15 @@ public class Menu : MonoBehaviour {
         outlines[0].effectColor = new Color(0, 0, 0, 0.5f + 0.25f*hoverRatio);
         outlines[1].effectColor = new Color(0, 0, 0, 0.5f + 0.25f*hoverRatio);
     }
+    
+    void StartButtonReset() {
+        /*
+         * Reset the sizes of the start button and position it off-screem
+         */
+
+        StartButtonPositionUpdate(0);
+        StartButtonHoverUpdate();
+    }
     #endregion
 
     #region Video Button Updates
@@ -1458,8 +1557,17 @@ public class Menu : MonoBehaviour {
         VideoButtonHoverUpdate();
         VideoButtonPositionUpdate(1 - transitionFade);
     }
-    
+
     void UVideoButtonMain() {
+        /*
+         * Place the button in it's default position
+         */
+
+        VideoButtonHoverUpdate();
+        VideoButtonPositionUpdate(1);
+    }
+
+    void UVideoButtonVideo() {
         /*
          * Place the button in it's default position
          */
@@ -1538,6 +1646,15 @@ public class Menu : MonoBehaviour {
         outlines[1].effectDistance = heightRatio*startBonusSize*new Vector2(0.25f + 1f*hoverRatio, 0.25f + 1f*hoverRatio);
         outlines[0].effectColor = new Color(0, 0, 0, 0.5f + 0.25f*hoverRatio);
         outlines[1].effectColor = new Color(0, 0, 0, 0.5f + 0.25f*hoverRatio);
+    }
+    
+    void VideoButtonReset() {
+        /*
+         * Reset the video button's size and position
+         */
+
+        VideoButtonHoverUpdate();
+        VideoButtonPositionUpdate(0);
     }
     #endregion
 
@@ -1742,6 +1859,15 @@ public class Menu : MonoBehaviour {
         outlines[0].effectColor = new Color(0, 0, 0, 0.5f + 0.25f*hoverRatio);
         outlines[1].effectColor = new Color(0, 0, 0, 0.5f + 0.25f*hoverRatio);
     }
+    
+    void SensButtonReset() {
+        /*
+         * Reset the sensitivity button's position and size
+         */
+
+        SensButtonHoverUpdate();
+        SensButtonPositionUpdate(0);
+    }
     #endregion
 
     #region Quit Button Updates
@@ -1940,6 +2066,15 @@ public class Menu : MonoBehaviour {
         outlines[1].effectDistance = heightRatio*new Vector2(0.25f + 1f*hoverRatio, 0.25f + 1f*hoverRatio);
         outlines[0].effectColor = new Color(0, 0, 0, 0.5f + 0.25f*hoverRatio);
         outlines[1].effectColor = new Color(0, 0, 0, 0.5f + 0.25f*hoverRatio);
+    }
+    
+    void QuitButtonReset() {
+        /*
+         * Reset the position and size of the quit button
+         */
+
+        QuitButtonHoverUpdate();
+        QuitButtonPositionUpdate(0);
     }
     #endregion
 
@@ -2396,7 +2531,7 @@ public class Menu : MonoBehaviour {
         else if(button == Buttons.Video) {
             /* ...Is clickable in the main menu and it's other video states */
             if(state == MenuStates.Main || state == MenuStates.Video ||
-                    state == MenuStates.MainToVideo) {
+                    state == MenuStates.MainToVideo || state == MenuStates.VideoToMain) {
                 clickable = true;
             }
         }
