@@ -203,6 +203,8 @@ public class Menu : MonoBehaviour {
 
     /* Values used when testing the mouse sensitivity */
     private Vector3 extraCamRotation;
+    private Vector3 savedRotation;
+    private float recoveryTime;
 
 
     /* ----------- Built-in Functions ------------------------------------------------------------- */
@@ -575,7 +577,6 @@ public class Menu : MonoBehaviour {
         for(int i = 0; i < res.Length; i++) {
             newOptions.Add(res[i].width + "x" + res[i].height);
         }
-        newOptions.Add("Borderless windowed");
         dropdown.ClearOptions();
         dropdown.AddOptions(newOptions);
         dropdown.RefreshShownValue();
@@ -586,6 +587,15 @@ public class Menu : MonoBehaviour {
         dropdownRect.anchorMax = new Vector2(1, 1);
         dropdownRect.anchoredPosition = new Vector3(0, 0, 0);
         dropdownRect.sizeDelta = new Vector2(0, 0);
+        /* Set the currently selected dropwdown item menu to reflect the current resolution */
+        string currentRes = Screen.currentResolution.width + "x" + Screen.currentResolution.height;
+        dropdown.value = res.Length-1;
+        for(int i = 0; i < res.Length; i++) {
+            if(currentRes.Equals(res[i].width + "x" + res[i].height)) {
+                dropdown.value = i;
+                i = res.Length;
+            }
+        }
 
         /* Panel 2 controls whether the game will run in windowed mode using a toggle */
         GameObject windowToggleObject = Instantiate(videoOptionsToggleReference.gameObject);
@@ -628,7 +638,7 @@ public class Menu : MonoBehaviour {
         /* Link a function to it's onValueChange */
         framerateDropdown.onValueChanged.AddListener(delegate { UpdateLockedFramerate(framerateDropdown); });
         /* Populate the dropdown with potential locked framerates */
-        List<string> newFramerates = new List<string>() { "Unlocked", "30", "60", "69", "144", "420"};
+        List<string> newFramerates = new List<string>() { "Unlocked", "10", "30", "60", "69", "144", "420"};
         framerateDropdown.ClearOptions();
         framerateDropdown.AddOptions(newFramerates);
         framerateDropdown.RefreshShownValue();
@@ -974,11 +984,15 @@ public class Menu : MonoBehaviour {
             /* Apply the mouse movement to the extraCamRotation */
             extraCamRotation += sens*new Vector3(-Input.GetAxis("Mouse Y"), Input.GetAxis("Mouse X"), 0);
             Debug.Log(extraCamRotation);
+            recoveryTime = 0;
+            savedRotation = extraCamRotation;
         }
         
         /* Animate the camera moving back to it's savedRotation */
         else{
-            extraCamRotation *= 0.9f;
+            recoveryTime += Time.deltaTime;
+            if(recoveryTime > 1) { recoveryTime = 1; }
+            extraCamRotation = Mathf.Cos(recoveryTime*Mathf.PI/2f)*savedRotation;
         }
 
         /* Set the camera's rotation */
@@ -2092,7 +2106,11 @@ public class Menu : MonoBehaviour {
          * When the user selects a new resolution in the video options, this function will run
          */
 
-        Debug.Log("NEW RES");
+        /* Update the window's size to reflect the current selected dropdown */
+        string res = dropdown.options[dropdown.value].text;
+        int width = int.Parse(res.Substring(0, res.IndexOf("x")));
+        int height = int.Parse(res.Substring(res.IndexOf("x")+1, res.Length-res.IndexOf("x")-1));
+        Screen.SetResolution(width, height, Screen.fullScreen, 0);
     }
 
     void UpdateLockedFramerate(Dropdown dropdown) {
@@ -2100,7 +2118,16 @@ public class Menu : MonoBehaviour {
          * When the user selects a new locked framerate in the video options, this function will run
          */
 
-        Debug.Log("NEW FRAMERATE");
+        int framerate = -1;
+        QualitySettings.vSyncCount = 0;
+        if(dropdown.options[dropdown.value].text.Equals("Unlocked")) {
+            framerate = -1;
+        }
+        else {
+            framerate = int.Parse(dropdown.options[dropdown.value].text);
+        }
+        
+        Application.targetFrameRate = framerate;
     }
 
     void UpdatedWindowedToggle(Toggle toggle) {
