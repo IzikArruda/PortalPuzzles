@@ -614,6 +614,8 @@ public class Menu : MonoBehaviour {
         checkRect.anchorMin = new Vector2(0.5f, 0.5f);
         checkRect.anchorMax = new Vector2(0.5f, 0.5f);
         checkRect.sizeDelta = new Vector2(buttonHeight/2f, buttonHeight/2f);
+        /* Set the current toggle setting to reflect the current window state */
+        windowedToggle.isOn = !Screen.fullScreen;
 
         /* Panel 3 controls the framerate lock/target framerate */
         GameObject framerateDropdownObject = Instantiate(videoOptionsDropwdownReference.gameObject);
@@ -662,10 +664,12 @@ public class Menu : MonoBehaviour {
         checkRect.anchorMin = new Vector2(0.5f, 0.5f);
         checkRect.anchorMax = new Vector2(0.5f, 0.5f);
         checkRect.sizeDelta = new Vector2(buttonHeight/2f, buttonHeight/2f);
-        
+        /* Set the toggles starting state to reflect the current mouse state */
+        mouseToggle.isOn = Cursor.lockState == CursorLockMode.Confined;
+
         /* Panel 5 controls whether the game will still run when out of focus */
         GameObject focusObject = Instantiate(videoOptionsToggleReference.gameObject);
-        focusObject.name = "Run without focus";
+        focusObject.name = "Pause when not in focus";
         focusObject.SetActive(true);
         Toggle focusToggle = focusObject.GetComponent<Toggle>();
         RectTransform focusToggleRect = focusObject.GetComponent<RectTransform>();
@@ -689,6 +693,8 @@ public class Menu : MonoBehaviour {
         checkRect.anchorMin = new Vector2(0.5f, 0.5f);
         checkRect.anchorMax = new Vector2(0.5f, 0.5f);
         checkRect.sizeDelta = new Vector2(buttonHeight/2f, buttonHeight/2f);
+        /* Set the toggle's state to reflect the game's current running without focus status */
+        focusToggle.isOn = Application.runInBackground;
 
         /* End by setting the position/rotation of the panel after all components have been properly set */
         VideoPanelPositionUpdate(0);
@@ -2077,8 +2083,8 @@ public class Menu : MonoBehaviour {
          * Called when the game needs to quit. 
          */
 
+        //UnityEditor.EditorApplication.isPlaying = false;
         Application.Quit();
-        UnityEditor.EditorApplication.isPlaying = false;
     }
 
     void UpdatedResolutionDropdown(Dropdown dropdown) {
@@ -2102,7 +2108,15 @@ public class Menu : MonoBehaviour {
          * Runs when the user toggles the windowed toggle option
          */
 
-        Debug.Log("UPDATE WINDOWED");
+        /* Change to windowed */
+        if(toggle.isOn) {
+            Screen.fullScreen = false;
+        }
+
+        /* Change to fullscreen */
+        else {
+            Screen.fullScreen = true;
+        }
     }
 
     void LockMouseToggle(Toggle toggle) {
@@ -2110,7 +2124,15 @@ public class Menu : MonoBehaviour {
          * Runs when the user toggles the lock mouse option
          */
 
-        Debug.Log("LOCK MOUSE");
+        /* Lock the mouse in the window */
+        if(toggle.isOn) {
+            Cursor.lockState = CursorLockMode.Confined;
+        }
+
+        /* Unlock the mouse from the window */
+        else {
+            Cursor.lockState = CursorLockMode.None;
+        }
     }
 
     void RunWithoutFocusToggle(Toggle toggle) {
@@ -2118,7 +2140,15 @@ public class Menu : MonoBehaviour {
          * Runs when the user toggles the run without focus option
          */
 
-        Debug.Log("TOGGLE RUN WITH FOCUS");
+        /* Make the game run without focus */
+        if(toggle.isOn) {
+            Application.runInBackground = true;
+        }
+
+        /* Make the game pause when not in focus */
+        else {
+            Application.runInBackground = false;
+        }
     }
 
     /* ----------- Mouse Enter/Hover Functions ------------------------------------------------------------- */
