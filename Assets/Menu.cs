@@ -134,6 +134,8 @@ public class Menu : MonoBehaviour {
     private float videoWidthRatio = 2.9f;
     private float sensWidthRatio = 5.65f;
     private float quitWidthRatio = 2.25f;
+    private float resolutionWidthRatio = 8f;
+    private float framerateWidthRatio = 3.5f;
     //Set this to the largest ratio we currently have. This is to make sure each element goes offscreen at the same speed
     private float largestRaio;
 
@@ -593,9 +595,9 @@ public class Menu : MonoBehaviour {
         dropdown.onValueChanged.AddListener(delegate { UpdatedResolutionDropdown(dropdown); });
         /* Position the object to be placed on the right side of it's panel */
         dropdownRect.anchorMin = new Vector2(0.5f, 0);
-        dropdownRect.anchorMax = new Vector2(1, 1);
-        dropdownRect.anchoredPosition = new Vector3(0, 0, 0);
-        dropdownRect.sizeDelta = new Vector2(0, 0);
+        dropdownRect.anchorMax = new Vector2(0.5f, 1);
+        dropdownRect.anchoredPosition = new Vector3((optionPanelHeight/2f)*resolutionWidthRatio/2f, 0, 0);
+        dropdownRect.sizeDelta = new Vector2((optionPanelHeight/2f)*resolutionWidthRatio, 0);
         /* Set the currently selected dropwdown item menu to reflect the current resolution */
         string currentRes = Screen.currentResolution.width + "x" + Screen.currentResolution.height;
         dropdown.value = res.Length-1;
@@ -647,15 +649,18 @@ public class Menu : MonoBehaviour {
         /* Link a function to it's onValueChange */
         framerateDropdown.onValueChanged.AddListener(delegate { UpdateLockedFramerate(framerateDropdown); });
         /* Populate the dropdown with potential locked framerates */
-        List<string> newFramerates = new List<string>() { "Unlocked", "10", "30", "60", "69", "144", "420"};
+        List<string> newFramerates = new List<string>() { "Inf", "10", "30", "60", "69", "144", "420"};
         framerateDropdown.ClearOptions();
         framerateDropdown.AddOptions(newFramerates);
         framerateDropdown.RefreshShownValue();
         /* Position the object to be placed on the right side of it's panel */
         framerateDropdownRect.anchorMin = new Vector2(0.5f, 0);
-        framerateDropdownRect.anchorMax = new Vector2(1, 1);
-        framerateDropdownRect.anchoredPosition = new Vector3(0, 0, 0);
-        framerateDropdownRect.sizeDelta = new Vector2(0, 0);
+        framerateDropdownRect.anchorMax = new Vector2(0.5f, 1);
+        framerateDropdownRect.anchoredPosition = new Vector3((optionPanelHeight/2f)*framerateWidthRatio/2f, 0, 0);
+        framerateDropdownRect.sizeDelta = new Vector2((optionPanelHeight/2f)*framerateWidthRatio, 0);
+        /* Start the framerate as unlocked */
+        framerateDropdown.value = 0;
+        UpdateLockedFramerate(framerateDropdown);
 
         /* Panel 4 controls whether the mouse should be locked within the window */
         GameObject mouseLockObject = Instantiate(videoOptionsToggleReference.gameObject);
@@ -1248,6 +1253,66 @@ public class Menu : MonoBehaviour {
                 panelRect.sizeDelta = new Vector2(0, optionPanelHeight);
             }
         }
+
+        /* Update the windowed toggle box */
+        RectTransform windowedToggle = videoPanel.GetChild(1).GetChild(1).GetComponent<RectTransform>();
+        windowedToggle.anchoredPosition = new Vector3(0, 0, 0);
+        windowedToggle.sizeDelta = new Vector2(optionPanelHeight, 0);
+        //Resize the background object, ie the checkbox
+        RectTransform backgroundRect = windowedToggle.transform.GetChild(0).GetComponent<RectTransform>();
+        backgroundRect.anchorMin = new Vector2(0, 0);
+        backgroundRect.anchorMax = new Vector2(0, 1);
+        backgroundRect.anchoredPosition = new Vector3(buttonHeight/2f, 0, 0);
+        backgroundRect.sizeDelta = new Vector2(buttonHeight/2f, 0);
+        //Resize the tick indicator, ie the checkmark
+        RectTransform checkRect = backgroundRect.GetChild(0).GetComponent<RectTransform>();
+        checkRect.anchorMin = new Vector2(0.5f, 0.5f);
+        checkRect.anchorMax = new Vector2(0.5f, 0.5f);
+        checkRect.sizeDelta = new Vector2(buttonHeight/2f, buttonHeight/2f);
+
+        /* Update the mouse lock toggle box */
+        RectTransform mouseToggle = videoPanel.GetChild(3).GetChild(1).GetComponent<RectTransform>();
+        mouseToggle.anchoredPosition = new Vector3(0, 0, 0);
+        mouseToggle.sizeDelta = new Vector2(optionPanelHeight, 0);
+        //Resize the background object, ie the checkbox
+        backgroundRect = mouseToggle.transform.GetChild(0).GetComponent<RectTransform>();
+        backgroundRect.anchorMin = new Vector2(0, 0);
+        backgroundRect.anchorMax = new Vector2(0, 1);
+        backgroundRect.anchoredPosition = new Vector3(buttonHeight/2f, 0, 0);
+        backgroundRect.sizeDelta = new Vector2(buttonHeight/2f, 0);
+        //Resize the tick indicator, ie the checkmark
+        checkRect = backgroundRect.GetChild(0).GetComponent<RectTransform>();
+        checkRect.anchorMin = new Vector2(0.5f, 0.5f);
+        checkRect.anchorMax = new Vector2(0.5f, 0.5f);
+        checkRect.sizeDelta = new Vector2(buttonHeight/2f, buttonHeight/2f);
+
+        /* Update the mouse focus toggle box */
+        RectTransform focusToggle = videoPanel.GetChild(4).GetChild(1).GetComponent<RectTransform>();
+        focusToggle.anchoredPosition = new Vector3(0, 0, 0);
+        focusToggle.sizeDelta = new Vector2(optionPanelHeight, 0);
+        //Resize the background object, ie the checkbox
+        backgroundRect = focusToggle.transform.GetChild(0).GetComponent<RectTransform>();
+        backgroundRect.anchorMin = new Vector2(0, 0);
+        backgroundRect.anchorMax = new Vector2(0, 1);
+        backgroundRect.anchoredPosition = new Vector3(buttonHeight/2f, 0, 0);
+        backgroundRect.sizeDelta = new Vector2(buttonHeight/2f, 0);
+        //Resize the tick indicator, ie the checkmark
+        checkRect = backgroundRect.GetChild(0).GetComponent<RectTransform>();
+        checkRect.anchorMin = new Vector2(0.5f, 0.5f);
+        checkRect.anchorMax = new Vector2(0.5f, 0.5f);
+        checkRect.sizeDelta = new Vector2(buttonHeight/2f, buttonHeight/2f);
+
+        /* Update the Resolution dropdown size */
+        RectTransform resolutionDropdownRect = videoPanel.GetChild(0).GetChild(1).GetComponent<RectTransform>();
+        resolutionDropdownRect.anchoredPosition = new Vector3((optionPanelHeight/2f)*resolutionWidthRatio/2f, 0, 0);
+        resolutionDropdownRect.sizeDelta = new Vector2((optionPanelHeight/2f)*resolutionWidthRatio, 0);
+
+        /* Update the framerate limit dropdown size */
+        RectTransform framerateDropdownRect = videoPanel.GetChild(2).GetChild(1).GetComponent<RectTransform>();
+        framerateDropdownRect.anchoredPosition = new Vector3((optionPanelHeight/2f)*framerateWidthRatio/2f, 0, 0);
+        framerateDropdownRect.sizeDelta = new Vector2((optionPanelHeight/2f)*framerateWidthRatio, 0);
+
+
 
         VideoPanelPositionUpdate(0);
     }
@@ -2255,7 +2320,7 @@ public class Menu : MonoBehaviour {
 
         int framerate = -1;
         QualitySettings.vSyncCount = 0;
-        if(dropdown.options[dropdown.value].text.Equals("Unlocked")) {
+        if(dropdown.options[dropdown.value].text.Equals("Inf")) {
             framerate = -1;
         }
         else {
