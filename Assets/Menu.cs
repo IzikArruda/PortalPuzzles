@@ -208,6 +208,9 @@ public class Menu : MonoBehaviour {
     private Vector3 savedRotation;
     private float recoveryTime;
 
+    /* Global values with minor/single uses */
+    private Vector2 newQuitSize = new Vector2(0, 0);
+
 
     /* ----------- Built-in Functions ------------------------------------------------------------- */
 
@@ -2106,6 +2109,39 @@ public class Menu : MonoBehaviour {
         
         float relativeHeight = aboveButton.position.y - aboveButton.sizeDelta.y/2f - buttonHeight/2f;
         rect.position = new Vector3(-rect.sizeDelta.x/2f + rect.sizeDelta.x*sideRatio, relativeHeight, 0);
+
+        /* Depending on the current quitValueCurrent value, adjust certain aspects of the quit button */
+        Text quitText = rect.GetChild(0).GetComponent<Text>();
+        RectTransform quitRect = rect.GetChild(0).GetComponent<RectTransform>();
+        if(quitText != null) {
+            float ratioColor = AdjustRatio(quitValueCurrent, 0, quitValueMax);
+            float ratioPos = AdjustRatio(quitValueCurrent, quitValueMax*0.3f, quitValueMax);
+            float ratioSize = AdjustRatio(quitValueCurrent, quitValueMax*0.6f, quitValueMax);
+            float ratioDist = AdjustRatio(quitValueCurrent, 0, quitValueMax*0.7f);
+            float ratioOutlineCol = AdjustRatio(quitValueCurrent, 0.25f, quitValueMax*0.9f);
+            //Set the color of the quit button
+            quitText.color = new Color(1, 1 - ratioColor, 1 - ratioColor, 1);
+            //Reposition the text position
+            quitRect.anchoredPosition = ratioPos*10*new Vector2(Random.Range(-1, 1), Random.Range(-1, 1));
+            //Resize the text's size
+            if(ratioSize > 0.6f) {
+                //Increase the size
+                quitRect.sizeDelta = quitRect.sizeDelta - ratioSize*5*new Vector2(Random.Range(-1, 1), Random.Range(-1, 1));
+                newQuitSize = quitRect.sizeDelta;
+            }
+            else {
+                //Start resetting the size to reach back to 0
+                quitRect.sizeDelta = (quitValueCurrent/quitValueMax*0.6f)*newQuitSize;
+                newQuitSize = quitRect.sizeDelta;
+            }
+            //reposition the outline's distance
+            Outline[] outlines = quitRect.gameObject.GetComponents<Outline>();
+            outlines[0].effectDistance += ratioDist*4*new Vector2(Random.Range(-1, 1), Random.Range(-1, 1));
+            outlines[1].effectDistance += ratioDist*4*new Vector2(Random.Range(-1, 1), Random.Range(-1, 1));
+            //Recolor the outline's color
+            outlines[0].effectColor = new Color(ratioOutlineCol*0.5f, 0, 0, outlines[0].effectColor.a);
+            outlines[1].effectColor = new Color(ratioOutlineCol*0.5f, 0, 0, outlines[1].effectColor.a);
+        }
     }
 
     void QuitButtonHoverUpdate() {
