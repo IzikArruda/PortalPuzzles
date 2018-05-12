@@ -467,7 +467,7 @@ public class Menu : MonoBehaviour {
         text.alignment = TextAnchor.MiddleRight;
         text.resizeTextForBestFit = true;
         text.resizeTextMinSize = 1;
-        text.resizeTextMaxSize = 300;
+        text.resizeTextMaxSize = 10000;
 
     }
 
@@ -570,7 +570,7 @@ public class Menu : MonoBehaviour {
             text.alignment = TextAnchor.MiddleRight;
             text.resizeTextForBestFit = true;
             text.resizeTextMinSize = 1;
-            text.resizeTextMaxSize = 300;
+            text.resizeTextMaxSize = 10000;
         }
 
         /* 
@@ -785,7 +785,7 @@ public class Menu : MonoBehaviour {
         text.alignment = TextAnchor.MiddleCenter;
         text.resizeTextForBestFit = true;
         text.resizeTextMinSize = 1;
-        text.resizeTextMaxSize = 300;
+        text.resizeTextMaxSize = 10000;
         text.raycastTarget = false;
         /* Set the sizes of the text */
         rectTex.anchorMin = new Vector2(0, 0.25f);
@@ -806,7 +806,7 @@ public class Menu : MonoBehaviour {
         sensitivitySliderValueText.alignment = TextAnchor.MiddleCenter;
         sensitivitySliderValueText.resizeTextForBestFit = true;
         sensitivitySliderValueText.resizeTextMinSize = 1;
-        sensitivitySliderValueText.resizeTextMaxSize = 300;
+        sensitivitySliderValueText.resizeTextMaxSize = 10000;
         sensitivitySliderValueText.raycastTarget = false;
         /* Set the sizes of the value */
         valueRect.anchorMin = new Vector2(0, 0.75f);
@@ -2058,6 +2058,8 @@ public class Menu : MonoBehaviour {
     void UQuitButtonMainToQuit() {
         /*
          * Animate the button slidding off the left side of the screen as the game quits
+         * 
+         * Animate the button as it approaches the center of the screen
          */
         //The transition starts fading at the start and ends 50% through
         Transition transition = GetTransitionFromState(state);
@@ -2065,7 +2067,9 @@ public class Menu : MonoBehaviour {
 
         /* Move the button from the main to off-screen position */
         QuitButtonHoverUpdate();
-        QuitButtonPositionUpdate(1 - transitionFade);
+        QuitButtonPositionUpdate(1);
+
+        //Reposition the button to be near the center of the screen
     }
 
     void UQuitButtonMainToSens() {
@@ -2119,6 +2123,17 @@ public class Menu : MonoBehaviour {
             float ratioSize = AdjustRatio(quitValueCurrent, quitValueMax*0.6f, quitValueMax);
             float ratioDist = AdjustRatio(quitValueCurrent, 0, quitValueMax*0.7f);
             float ratioOutlineCol = AdjustRatio(quitValueCurrent, 0.25f, quitValueMax*0.9f);
+            float baseExtraWidth = 0;
+            float baseExtraHeight = 0;
+            float quitTimeRatio = 1;
+            /* Increase some values if we are transitionning to quitting */
+            if(state == MenuStates.MainToQuit) {
+                Transition transition = GetTransitionFromState(state);
+                quitTimeRatio = transition.timeRemaining/transition.timeMax;
+                baseExtraHeight = buttonHeight*0.075f;
+                baseExtraWidth = baseExtraHeight*quitWidthRatio;
+                ratioDist += 10*(1 - quitTimeRatio);
+            }
             //Set the color of the quit button
             quitText.color = new Color(1, 1 - ratioColor, 1 - ratioColor, 1);
             //Reposition the text position
@@ -2126,7 +2141,7 @@ public class Menu : MonoBehaviour {
             //Resize the text's size
             if(ratioSize > 0.6f) {
                 //Increase the size
-                quitRect.sizeDelta = quitRect.sizeDelta - ratioSize*5*new Vector2(Random.Range(-1, 1), Random.Range(-1, 1));
+                quitRect.sizeDelta = quitRect.sizeDelta - ratioSize*5*new Vector2(Random.Range(-1, 1), Random.Range(-1, 1)) + new Vector2(baseExtraHeight, baseExtraWidth);
                 newQuitSize = quitRect.sizeDelta;
             }
             else {
@@ -2141,6 +2156,11 @@ public class Menu : MonoBehaviour {
             //Recolor the outline's color
             outlines[0].effectColor = new Color(ratioOutlineCol*0.5f, 0, 0, outlines[0].effectColor.a);
             outlines[1].effectColor = new Color(ratioOutlineCol*0.5f, 0, 0, outlines[1].effectColor.a);
+
+            /* Depending on how long along the mainToQuit transition we are in, reposition the text */
+            if(state == MenuStates.MainToQuit) {
+                rect.position = rect.position*quitTimeRatio + new Vector3(screenWidth/2f, screenHeight/2f, 0)*(1 - quitTimeRatio);
+            }
         }
     }
 
