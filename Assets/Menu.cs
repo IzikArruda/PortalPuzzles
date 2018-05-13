@@ -2256,7 +2256,7 @@ public class Menu : MonoBehaviour {
         }
 
         /* give the player control if they are exiting the menu */
-        else if(state == MenuStates.MainToEmpty) {
+        else if(state == MenuStates.MainToEmpty || state == MenuStates.MainToIntro) {
             inMenu = false;
         }
 

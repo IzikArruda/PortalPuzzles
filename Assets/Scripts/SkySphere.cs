@@ -13,7 +13,6 @@ public class SkySphere : MonoBehaviour {
          * Once this script is created and attached onto a sphere primitive, ensure it's properly sized.
          */
         gameObject.name = "Sky sphere";
-        float maxViewDistance = 20000f;
 
         /* Remove the primitive's sphere collider */
         DestroyImmediate(GetComponent<SphereCollider>());

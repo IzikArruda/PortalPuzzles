@@ -52,6 +52,10 @@ public class TerrainController : MonoBehaviour {
     private GameObject skySphere;
     private SkySphere skySphereScript;
 
+    /* The lighting used in the game */
+    public Light directionalLight;
+    public Light pointLight;
+
 
     /* ----------- Built-in Functions ------------------------------------------------------------- */
 
@@ -160,6 +164,25 @@ public class TerrainController : MonoBehaviour {
 
         /* Reposition the sky sphere at the given window exit point */
         skySphereScript.UpdateSkySpherePosition(focusPointPosition);
+
+        /* Reposition the point light of the scene that is used for the sun flare */
+        UpdateLight();
+    }
+
+    void UpdateLight() {
+        /*
+         * Update the lights and the sun's position. The lighting of the scene is determined by 
+         * the direction light, while the sun and it's flare are determined by the point light.
+         */
+
+        //One needed value is the direction of the sunlight
+
+        pointLight.transform.position = skySphereScript.transform.position;
+        //So far, just place the light directly above the center 
+        float sunDistance = skySphereScript.transform.localScale.y;
+        pointLight.transform.position = skySphereScript.transform.position + new Vector3(0, sunDistance, 0);
+        
+        //Leave the direction light in it's current direction
     }
     
 

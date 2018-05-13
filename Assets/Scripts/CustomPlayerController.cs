@@ -1471,10 +1471,14 @@ public class CustomPlayerController : MonoBehaviour {
          */
          
         if(Input.GetKeyDown(KeyCode.Escape)) {
-
-            /* If the game is currently in the intro, we could potentially skip it if they press escape */
-            if(PlayerIsInIntro() && currentlyLeavingInIntro) {
-                Debug.Log("SKIP INTRO???");
+            
+            /* Pressing escape will skip the intro */
+            if(PlayerIsInIntro()) {
+                if(state == (int) PlayerStates.InIntro) {
+                    remainingInIntroTime = 0;
+                    ChangeState((int) PlayerStates.LeavingIntro);
+                    introCamDistance = 0;
+                }
             }
 
             else {
