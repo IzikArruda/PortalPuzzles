@@ -44,6 +44,9 @@ public class PortalView : MonoBehaviour {
     private bool renderTerrain = false;
     private bool onlySkySphere = false;
 
+    /* Used to determine when to add the flare layer to the cameras */
+    private bool flareLayerToBeAdded = false;
+
 
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
 
@@ -98,6 +101,11 @@ public class PortalView : MonoBehaviour {
                 /* Update the renderTexture for this camera */
                 UpdateRenderTexture(ref recursiveCameras[i].GetComponent<CameraScript>().renderTexture, 
                         recursiveCameras[i].GetComponent<Camera>());
+
+                /* Add the flare layer if required */
+                if(flareLayerToBeAdded) {
+                    recursiveCameras[i].AddComponent<FlareLayer>();
+                }
             }
 
             /* Assign the proper renderingLayer to the cameras */
@@ -784,5 +792,25 @@ public class PortalView : MonoBehaviour {
         }
 
         return behind;
+    }
+
+    public void AddFlareLayer() {
+        /*
+         * Add the flare layer to each of the cameras used by the portal
+         */
+
+        /* If the cameras have not yet been created, mark them to have a flare layer */
+        if(recursiveCameras == null) {
+            flareLayerToBeAdded = true;
+        }
+
+        /* Add the flare layer onto the already defined cameras */
+        else {
+            for(int i = 0; i < recursiveCameras.Length; i++) {
+                if(recursiveCameras[i].GetComponent<FlareLayer>() == null) {
+                    recursiveCameras[i].AddComponent<FlareLayer>();
+                }
+            }
+        }
     }
 }

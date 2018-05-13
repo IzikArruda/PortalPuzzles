@@ -97,10 +97,44 @@ public class Window : MonoBehaviour {
         CreateFrame(insideWindowContainer.transform, ref index, windowHeight, windowWidth);
         CreateFrame(outsideWindowContainer.transform, ref index, windowHeight, windowWidth);
     }
-    
+
+    public void UpdateWindowPosition() {
+        /*
+         * Update the position of the windows in the world
+         */
+
+        /* Place and rotate the inside and outside windows */
+        insideWindowContainer.transform.position = insidePos;
+        insideWindowContainer.transform.eulerAngles = insideRot;
+        outsideWindowContainer.transform.position = outsidePos;
+        outsideWindowContainer.transform.eulerAngles = outsideRot;
+
+        /* To prevent the portals from being placed behind the room's walls, control it's offset */
+        portalSet.portalOffset = new Vector3(0, 0, -0.01f);
+        Vector3 portalOffset = new Vector3(0, 0, -frameDepth/4f);
+        /* Place the portals at their proper locations */
+        portalSet.EntrancePortal.transform.position = insidePos;
+        portalSet.EntrancePortal.transform.eulerAngles = insideRot;
+        portalSet.EntrancePortal.transform.position += portalSet.EntrancePortal.transform.rotation*portalOffset;
+        portalSet.ExitPortal.transform.position = outsidePos;
+        portalSet.ExitPortal.transform.eulerAngles = outsideRot;
+        portalSet.ExitPortal.transform.position -= portalSet.ExitPortal.transform.rotation*portalOffset;
+    }
+
+
+    /* -------- Event Functions ---------------------------------------------------- */
+
+    public void AddFlareLayer() {
+        /*
+         * Add the flare layer to the portal's cameras
+         */
+
+        portalSet.AddFlareLayer();
+    }
+
 
     /* -------- Helper Functions ---------------------------------------------------- */
-    
+
     void CreateFrame(Transform windowParent, ref int index, float windowHeight, float windowWidth) {
         /*
          * Create the 4 main boxes that form the frame of a window and the pane of glass in the center.
@@ -188,28 +222,5 @@ public class Window : MonoBehaviour {
         gameObject.transform.localPosition = new Vector3(0, 0, 0);
         gameObject.transform.localEulerAngles = new Vector3(0, 0, 0);
         gameObject.transform.localScale = new Vector3(1, 1, 1);
-    }
-
-    public void UpdateWindowPosition() {
-        /*
-         * Update the position of the windows in the world
-         */
-
-        /* Place and rotate the inside and outside windows */
-        insideWindowContainer.transform.position = insidePos;
-        insideWindowContainer.transform.eulerAngles = insideRot;
-        outsideWindowContainer.transform.position = outsidePos;
-        outsideWindowContainer.transform.eulerAngles = outsideRot;
-
-        /* To prevent the portals from being placed behind the room's walls, control it's offset */
-        portalSet.portalOffset = new Vector3(0, 0, -0.01f);
-        Vector3 portalOffset = new Vector3(0, 0, -frameDepth/4f);
-        /* Place the portals at their proper locations */
-        portalSet.EntrancePortal.transform.position = insidePos;
-        portalSet.EntrancePortal.transform.eulerAngles = insideRot;
-        portalSet.EntrancePortal.transform.position += portalSet.EntrancePortal.transform.rotation*portalOffset;
-        portalSet.ExitPortal.transform.position = outsidePos;
-        portalSet.ExitPortal.transform.eulerAngles = outsideRot;
-        portalSet.ExitPortal.transform.position -= portalSet.ExitPortal.transform.rotation*portalOffset;
     }
 }

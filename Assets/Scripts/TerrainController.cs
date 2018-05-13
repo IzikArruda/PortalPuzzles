@@ -55,6 +55,9 @@ public class TerrainController : MonoBehaviour {
     /* The lighting used in the game */
     public Light directionalLight;
     public Light pointLight;
+    public float heightAngle;
+    public float horizonAngle;
+    public float distance;
 
 
     /* ----------- Built-in Functions ------------------------------------------------------------- */
@@ -175,13 +178,24 @@ public class TerrainController : MonoBehaviour {
          * the direction light, while the sun and it's flare are determined by the point light.
          */
 
+        /* Get the direction of the sun's position from the focus point */
+        Vector3 direction = Quaternion.AngleAxis(horizonAngle, Vector3.up)*Quaternion.AngleAxis(heightAngle, Vector3.left)*Vector3.forward;
+
+        /* Place the sun */
+        pointLight.transform.position = skySphereScript.transform.position + distance*direction;
+
+        /* Update the directional light to match the sun */
+        directionalLight.transform.rotation = pointLight.transform.rotation;
+
+
+
         //One needed value is the direction of the sunlight
 
-        pointLight.transform.position = skySphereScript.transform.position;
+        //pointLight.transform.position = skySphereScript.transform.position;
         //So far, just place the light directly above the center 
-        float sunDistance = skySphereScript.transform.localScale.y;
-        pointLight.transform.position = skySphereScript.transform.position + new Vector3(0, sunDistance, 0);
-        
+        //float sunDistance = skySphereScript.transform.localScale.y;
+        //pointLight.transform.position = skySphereScript.transform.position + new Vector3(0, sunDistance, 0);
+
         //Leave the direction light in it's current direction
     }
     

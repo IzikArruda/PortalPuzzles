@@ -235,6 +235,12 @@ public class StartingRoom : ConnectedRoom {
             window.windowPieces[9].GetComponent<DetectPlayerLegRay>().objectType = 1;
         }
 
+        /* Add the flare layer to the window's camera as it will be viewing the sun */
+        window.AddFlareLayer();
+
+        /* To ensure the window's cameras will render a sun flare, remove the colliders on the outside window */
+        window.windowPieces[9].AddComponent<BoxCollider>().enabled = false;
+        
         /* Create the particle system used by the otuside window's glass */
         UpdateParticleSystem();
     }

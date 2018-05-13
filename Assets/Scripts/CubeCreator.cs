@@ -113,12 +113,9 @@ public class CubeCreator : MonoBehaviour {
          * Reset the required components
          */
 
-        if(GetComponent<MeshFilter>() != null) { DestroyImmediate(GetComponent<MeshFilter>()); }
-        if(GetComponent<MeshRenderer>() != null) { DestroyImmediate(GetComponent<MeshRenderer>()); }
-        if(GetComponent<BoxCollider>() != null) { DestroyImmediate(GetComponent<BoxCollider>()); }
-        gameObject.AddComponent<MeshFilter>();
-        gameObject.AddComponent<MeshRenderer>();
-        gameObject.AddComponent<BoxCollider>();
+        if(GetComponent<MeshFilter>() == null) { gameObject.AddComponent<MeshFilter>(); }
+        if(GetComponent<MeshRenderer>() == null) { gameObject.AddComponent<MeshRenderer>(); }
+        if(GetComponent<BoxCollider>() == null) { gameObject.AddComponent<BoxCollider>(); }
 
         //THIS SETS THE TEXTURE FOR THE MATERIAL AS A WHOLE, SO DO NOT ACTUALLY DO THIS (unless we want to reset the materail's textures)
         /* If certain materials are not set, simply use the main material as their replacement */

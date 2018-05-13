@@ -1473,7 +1473,7 @@ public class CustomPlayerController : MonoBehaviour {
         if(Input.GetKeyDown(KeyCode.Escape)) {
             
             /* Pressing escape will skip the intro */
-            if(PlayerIsInIntro()) {
+            if(PlayerIsInIntro() && currentlyLeavingInIntro) {
                 if(state == (int) PlayerStates.InIntro) {
                     remainingInIntroTime = 0;
                     ChangeState((int) PlayerStates.LeavingIntro);

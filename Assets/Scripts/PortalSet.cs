@@ -323,6 +323,19 @@ public class PortalSet : MonoBehaviour {
         }
     }
 
+    public void AddFlareLayer() {
+        /*
+         * Add the flare layer to each camera used by the portals
+         */
+
+        EntrancePortal.portalMesh.GetComponent<PortalView>().AddFlareLayer();
+        EntrancePortal.backwardsPortalMesh.GetComponent<PortalView>().AddFlareLayer();
+        ExitPortal.portalMesh.GetComponent<PortalView>().AddFlareLayer();
+        ExitPortal.backwardsPortalMesh.GetComponent<PortalView>().AddFlareLayer();
+
+        /* Disable the exit portal's teleport trigger as it will block the lens flare of the camera */
+        ExitPortal.TriggerContainer.GetChild(0).GetComponent<BoxCollider>().enabled = false;
+    }
 
     /* -------- Helper Functions ---------------------------------------------------- */
 
