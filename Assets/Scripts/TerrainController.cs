@@ -55,6 +55,8 @@ public class TerrainController : MonoBehaviour {
     /* The lighting used in the game */
     public Light directionalLight;
     public Light pointLight;
+    public float flareIntensity;
+    private float flareIntensityMod = 1;
     public float heightAngle;
     public float horizonAngle;
     public float distance;
@@ -172,6 +174,9 @@ public class TerrainController : MonoBehaviour {
         UpdateLight();
     }
 
+
+    /* ----------- Lighting Functions ------------------------------------------------------------- */
+
     void UpdateLight() {
         /*
          * Update the lights and the sun's position. The lighting of the scene is determined by 
@@ -184,21 +189,21 @@ public class TerrainController : MonoBehaviour {
         /* Place the sun */
         pointLight.transform.position = skySphereScript.transform.position + distance*direction;
 
-        /* Update the directional light to match the sun */
+        /* Update the directional light to match the sun's placement */
         directionalLight.transform.rotation = pointLight.transform.rotation;
 
-
-
-        //One needed value is the direction of the sunlight
-
-        //pointLight.transform.position = skySphereScript.transform.position;
-        //So far, just place the light directly above the center 
-        //float sunDistance = skySphereScript.transform.localScale.y;
-        //pointLight.transform.position = skySphereScript.transform.position + new Vector3(0, sunDistance, 0);
-
-        //Leave the direction light in it's current direction
+        /* Update the intensity of the flare */
+        pointLight.GetComponent<LensFlare>().brightness = flareIntensity*flareIntensityMod;
     }
-    
+
+    public void UpdateSunFlareMod(float mod) {
+        /*
+         * Update the flareIntensityMod value used to multiply the flare intensity
+         */
+
+        flareIntensityMod = mod;
+    }
+
 
     /* ----------- Set-up Functions ------------------------------------------------------------- */
 

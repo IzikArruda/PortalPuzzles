@@ -208,6 +208,9 @@ public class Menu : MonoBehaviour {
     private Vector3 savedRotation;
     private float recoveryTime;
 
+    /* The main terrainController of the game. Used to access it's sunflare functions */
+    public TerrainController terrainController;
+
     /* Global values with minor/single uses */
     private Vector2 newQuitSize = new Vector2(0, 0);
 
@@ -232,6 +235,9 @@ public class Menu : MonoBehaviour {
 
         /* Update the transition values. Only change states once the per-frame updates are done. */
         UpdateTransitionValues();
+
+        /* Update the sun flare */
+        UpdateSunFlare();
 
         /* 
          * Run the per-frame update functions of each UI element 
@@ -1017,6 +1023,22 @@ public class Menu : MonoBehaviour {
         /* Set the camera's rotation */
         playerController.extraCamRot = extraCamRotation;
     }
+
+    void UpdateSunFlare() {
+        /*
+         * Update the intensity mod of the sunflare depending on the current state of the menu. 
+         * This is used in the intro of the menu opening to transition from the white startup to the menu.
+         */
+        float bonus = 1;
+        if(state == MenuStates.Startup) {
+            Transition transition = GetTransitionFromState(state);
+            float transitionBonus = 1 - TimeRatio(transition.timeRemaining, transition.timeMax);
+            bonus += transitionBonus*20;
+            Debug.Log(bonus);
+        }
+        terrainController.UpdateSunFlareMod(bonus);
+    }
+
 
     /* ----------- UI Element Update Functions ------------------------------------------------------------- */
 
