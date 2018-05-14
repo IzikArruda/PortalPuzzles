@@ -104,7 +104,7 @@ public class Menu : MonoBehaviour {
      * make the state transition into itself as it will be handlede manually in UpdateCurrentState().
      */
     Transition[] transitionStates = {
-        new Transition(MenuStates.Startup, MenuStates.Main, 1.0f, 0f),
+        new Transition(MenuStates.Startup, MenuStates.Main, 5.0f, 0f),
         new Transition(MenuStates.EmptyToMain, MenuStates.Main, 0.325f, 0f),
         new Transition(MenuStates.MainToEmpty, MenuStates.Empty, 0.325f, 0f),
         new Transition(MenuStates.MainToIntro, MenuStates.Empty, 0.5f, 0f),
@@ -235,9 +235,6 @@ public class Menu : MonoBehaviour {
 
         /* Update the transition values. Only change states once the per-frame updates are done. */
         UpdateTransitionValues();
-
-        /* Update the sun flare */
-        UpdateSunFlare();
 
         /* 
          * Run the per-frame update functions of each UI element 
@@ -1008,7 +1005,6 @@ public class Menu : MonoBehaviour {
 
             /* Apply the mouse movement to the extraCamRotation */
             extraCamRotation += sens*new Vector3(-Input.GetAxis("Mouse Y"), Input.GetAxis("Mouse X"), 0);
-            Debug.Log(extraCamRotation);
             recoveryTime = 0;
             savedRotation = extraCamRotation;
         }
@@ -1032,9 +1028,8 @@ public class Menu : MonoBehaviour {
         float bonus = 1;
         if(state == MenuStates.Startup) {
             Transition transition = GetTransitionFromState(state);
-            float transitionBonus = 1 - TimeRatio(transition.timeRemaining, transition.timeMax);
+            float transitionBonus = 1 - AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 0.5f);
             bonus += transitionBonus*20;
-            Debug.Log(bonus);
         }
         terrainController.UpdateSunFlareMod(bonus);
     }
@@ -1049,12 +1044,36 @@ public class Menu : MonoBehaviour {
          */
         int panelEnum = (int) Panels.Cover;
         Image rectImage = panelRects[panelEnum].GetComponent<Image>();
-        //Start fading 10% into the startup and end 80% into it
+        float transitionFade;
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.1f, 0.8f);
 
         /* Fade the color out relative to the remaining time before the game closes */
-        rectImage.color = new Color(0, 0, 0, 1 - transitionFade);
+        //Start fading 5% into the startup and end 15% into it
+        transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.05f, 0.15f);
+        rectImage.color = new Color(1, 1, 1, 1 - transitionFade);
+
+        /* Update the camera's rotation and the sun flare's power during the startup */
+        UpdateSunFlare();
+        transitionFade = TimeRatio(transition.timeRemaining, transition.timeMax);
+        float startResettingAngleRatio = 0.5f;
+        float ratio = 1 - AdjustRatio(transitionFade, startResettingAngleRatio, 1);
+
+        /* Get the angle that will make the camera face the sun */
+        float camX = -terrainController.directionalLight.transform.eulerAngles.x;
+        float camY = terrainController.directionalLight.transform.eulerAngles.y;
+        /* Adjust the roation amount to prevent rotations above 180 degrees */
+        Debug.Log(camX + " " + camY);
+        if(camX / 360 > 0) { camX -= ((int) camX/360)*360; }
+        if(camX / 180 > 0) { camX -= ((int) camX/180)*360; }
+        if(camY / 360 > 0) { camY -= ((int)camY/360)*360; }
+        if(camY / 180 > 0) { camY -= ((int) camY/180)*360; }
+        extraCamRotation = new Vector3(camX, camY, 0);
+
+        /* Reduce the angle as we are leaving the startup */
+        extraCamRotation *= ratio;
+
+        /* Apply the angle to the camera */
+        playerController.extraCamRot = extraCamRotation;
     }
 
     void UCoverPanelMainToQuit() {

@@ -184,13 +184,14 @@ public class TerrainController : MonoBehaviour {
          */
 
         /* Get the direction of the sun's position from the focus point */
-        Vector3 direction = Quaternion.AngleAxis(horizonAngle, Vector3.up)*Quaternion.AngleAxis(heightAngle, Vector3.left)*Vector3.forward;
+        Vector3 direction = Quaternion.AngleAxis(horizonAngle, Vector3.up)*Quaternion.AngleAxis(heightAngle, Vector3.right)*Vector3.back;
 
         /* Place the sun */
         pointLight.transform.position = skySphereScript.transform.position + distance*direction;
+        pointLight.transform.eulerAngles = new Vector3(0, 0, 0);
 
         /* Update the directional light to match the sun's placement */
-        directionalLight.transform.rotation = pointLight.transform.rotation;
+        directionalLight.transform.eulerAngles = new Vector3(heightAngle, horizonAngle, 0);
 
         /* Update the intensity of the flare */
         pointLight.GetComponent<LensFlare>().brightness = flareIntensity*flareIntensityMod;
