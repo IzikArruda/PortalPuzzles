@@ -104,7 +104,7 @@ public class Menu : MonoBehaviour {
      * make the state transition into itself as it will be handlede manually in UpdateCurrentState().
      */
     Transition[] transitionStates = {
-        new Transition(MenuStates.Startup, MenuStates.Main, 5.0f, 0f),
+        new Transition(MenuStates.Startup, MenuStates.Main, 8.0f, 0f),
         new Transition(MenuStates.EmptyToMain, MenuStates.Main, 0.325f, 0f),
         new Transition(MenuStates.MainToEmpty, MenuStates.Empty, 0.325f, 0f),
         new Transition(MenuStates.MainToIntro, MenuStates.Empty, 0.5f, 0f),
@@ -1028,7 +1028,12 @@ public class Menu : MonoBehaviour {
         float bonus = 1;
         if(state == MenuStates.Startup) {
             Transition transition = GetTransitionFromState(state);
-            float transitionBonus = 1 - AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 0.5f);
+            /* Start fading the sun flare amount 5% in, ending 75% into the startup */
+            float transitionBonus = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.05f, 0.75f);
+            /* Use a cosine function to smooth out the flare changes */
+            transitionBonus = (Mathf.Cos(transitionBonus*Mathf.PI)+1)/2f;
+
+            /* Make the fade out use a sin function */
             bonus += transitionBonus*20;
         }
         terrainController.UpdateSunFlareMod(bonus);
@@ -1047,22 +1052,22 @@ public class Menu : MonoBehaviour {
         float transitionFade;
         Transition transition = GetTransitionFromState(state);
 
-        /* Fade the color out relative to the remaining time before the game closes */
-        //Start fading 5% into the startup and end 15% into it
-        transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.05f, 0.15f);
+        /* Start the cover panel as a white cover that starts fading out 5% in and is completely gone at 25%*/
+        transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.05f, 0.25f);
         rectImage.color = new Color(1, 1, 1, 1 - transitionFade);
 
         /* Update the camera's rotation and the sun flare's power during the startup */
         UpdateSunFlare();
         transitionFade = TimeRatio(transition.timeRemaining, transition.timeMax);
-        float startResettingAngleRatio = 0.5f;
-        float ratio = 1 - AdjustRatio(transitionFade, startResettingAngleRatio, 1);
+        /* Start adjusting the camera's position 50% into the startup, ending 90% in */
+        float ratio = AdjustRatio(transitionFade, 0.5f, 0.9f);
+        /* Use a cosine function to smooth out the movement */
+        ratio = (Mathf.Cos(ratio*Mathf.PI)+1)/2f;
 
         /* Get the angle that will make the camera face the sun */
         float camX = -terrainController.directionalLight.transform.eulerAngles.x;
         float camY = terrainController.directionalLight.transform.eulerAngles.y;
         /* Adjust the roation amount to prevent rotations above 180 degrees */
-        Debug.Log(camX + " " + camY);
         if(camX / 360 > 0) { camX -= ((int) camX/360)*360; }
         if(camX / 180 > 0) { camX -= ((int) camX/180)*360; }
         if(camY / 360 > 0) { camY -= ((int)camY/360)*360; }
@@ -1369,9 +1374,9 @@ public class Menu : MonoBehaviour {
          */
         int buttonEnum = (int) Buttons.Start;
         Button button = buttons[buttonEnum];
-        //Start fading in the button 50% into the intro, finish 90% in
+        //Start fading in the button 90% into the intro, finish 100% in
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.5f, 0.9f);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.775f, 1f);
 
         /* Position the button to already be in it's main position */
         StartButtonHoverUpdate();
@@ -1589,9 +1594,9 @@ public class Menu : MonoBehaviour {
          */
         int buttonEnum = (int) Buttons.Video;
         Button button = buttons[buttonEnum];
-        //Start fading in the button 50% into the intro, finish 90% in
+        //Start fading in the button 90% into the intro, finish 100% in
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.5f, 0.9f);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.8f, 1f);
 
         /* Position the button to already be in it's main position */
         VideoButtonHoverUpdate();
@@ -1774,9 +1779,9 @@ public class Menu : MonoBehaviour {
          */
         int buttonEnum = (int) Buttons.Sens;
         Button button = buttons[buttonEnum];
-        //Start fading in the button 50% into the intro, finish 90% in
+        //Start fading in the button 90% into the intro, finish 100% in
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.5f, 0.9f);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.825f, 1f);
 
         /* Position the button to already be in it's main position */
         SensButtonHoverUpdate();
@@ -1986,10 +1991,10 @@ public class Menu : MonoBehaviour {
          */
         int buttonEnum = (int) Buttons.Quit;
         Button button = buttons[buttonEnum];
-        //Start fading in the button 60% into the intro, finish 100% in
+        //Start fading in the button 90% into the intro, finish 100% in
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.6f, 1.0f);
-        
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.85f, 1f);
+
         /* Position the button at it's main position */
         QuitButtonHoverUpdate();
         QuitButtonPositionUpdate(1);
