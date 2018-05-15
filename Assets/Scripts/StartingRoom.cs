@@ -63,11 +63,16 @@ public class StartingRoom : ConnectedRoom {
          */
 
         /* Run the terrainController's start function to create the noise provider, used with placing the outside window. */
+        outsideTerrain.focusPoint = window.portalSet.ExitPortal.transform;
         outsideTerrain.StartAlt();
         
         UpdateWalls();
         UpdateWindow();
         UpdateCollider();
+
+        /* Once the room is setup, link the window's first camera as the outsideTerrain's focus point */
+        ///////////get portals cam
+        outsideTerrain.focusPoint = window.portalSet.EntrancePortal.backwardsPortalMesh.transform.GetChild(0);
     }
 
     void OnTriggerExit(Collider player) {
@@ -81,9 +86,9 @@ public class StartingRoom : ConnectedRoom {
 
             /* Ensure the glass is broken as the player leaves the room */
             if(glassBroken) {
-                
-                /* Update the terrain generator's focus object to be the player instead of the window */
-                outsideTerrain.focusPoint = player.transform;
+
+                /* Set the new focus point to be the player's camera */
+                outsideTerrain.focusPoint = player.GetComponent<CustomPlayerController>().playerCamera.transform;
             }
         }
     }

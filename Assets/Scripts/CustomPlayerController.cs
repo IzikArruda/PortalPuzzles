@@ -1479,6 +1479,10 @@ public class CustomPlayerController : MonoBehaviour {
                     ChangeState((int) PlayerStates.LeavingIntro);
                     introCamDistance = 0;
                 }
+
+                else if(state == (int)PlayerStates.LeavingIntro) {
+                    introCamDistance = 0;
+                }
             }
 
             else {

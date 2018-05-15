@@ -15,7 +15,7 @@ public class TerrainController : MonoBehaviour {
     public TerrainChunkSettings chunkSettings;
     private GameObject terrainContainer;
 
-    /* The object that the terrain will center around. Have this set before startup. */
+    /* The object that the terrain, skysphere and sun will center around. Controlled by the StartingRoom */
     public Transform focusPoint;
     public Vector2 currentChunk;
 

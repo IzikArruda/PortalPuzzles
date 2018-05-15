@@ -521,6 +521,7 @@ public class Menu : MonoBehaviour {
         int panelEnum = (int) Panels.Video;
         RectTransform videoPanel = panelRects[panelEnum];
         videoPanel.name = "Video panel";
+        videoPanel.gameObject.SetActive(false);
 
         /* Set the anchors so it's centered on the right wall */
         videoPanel.anchorMin = new Vector2(1, 0.5f);
@@ -737,6 +738,7 @@ public class Menu : MonoBehaviour {
         int panelEnum = (int) Panels.Sens;
         RectTransform sensPanel = panelRects[panelEnum];
         sensPanel.name = "Sensitivity panel";
+        sensPanel.gameObject.SetActive(false);
 
         /* Set the anchors so it's position based in the bottom right corner */
         sensPanel.anchorMin = new Vector2(1, 0);
@@ -2252,13 +2254,25 @@ public class Menu : MonoBehaviour {
         /*
          * Runs everytime the value in the slider is updated. update the current mouse sensitivity.
          */
-        sensitivity = sensitivitySlider.value;
-        sensitivitySliderValueText.text = ""+Mathf.Round(sensitivity*100)/100f;
-        playerController.mouseSens = sensitivity;
-        /* Change the color of the text depending on how close it is to the edges */
-        float red = 0.8f*Mathf.Clamp((sensitivity - sensitivitySlider.maxValue/2f) / (sensitivitySlider.maxValue/2f), 0, 1);
-        float green = 0.8f*Mathf.Clamp((sensitivitySlider.maxValue/2f - sensitivity) / (sensitivitySlider.maxValue/2f), 0, 1);
-        sensitivitySliderValueText.color = new Color(1 - green, 1 - red, 1 - green - red, 1);
+
+        /* Only let the slider change the sensitivity value if we are in the Sensitivity state */
+        if(state == MenuStates.Sensitivity) {
+            sensitivity = sensitivitySlider.value;
+            sensitivitySliderValueText.text = ""+Mathf.Round(sensitivity*100)/100f;
+            playerController.mouseSens = sensitivity;
+            /* Change the color of the text depending on how close it is to the edges */
+            float red = 0.8f*Mathf.Clamp((sensitivity - sensitivitySlider.maxValue/2f) / (sensitivitySlider.maxValue/2f), 0, 1);
+            float green = 0.8f*Mathf.Clamp((sensitivitySlider.maxValue/2f - sensitivity) / (sensitivitySlider.maxValue/2f), 0, 1);
+            sensitivitySliderValueText.color = new Color(1 - green, 1 - red, 1 - green - red, 1);
+        }
+
+        /* Return the sensitivity to it's original value */
+        else {
+            if(sensitivity != sensitivitySlider.value) {
+                Debug.Log("WARNING: SENSITIVITY HAS CHANGED OUTSIDE THE SENS STATE");
+            }
+            sensitivitySlider.value = sensitivity;
+        }
     }
 
     Transition GetTransitionFromState(MenuStates givenState) {
@@ -2335,17 +2349,23 @@ public class Menu : MonoBehaviour {
         /* Make sure the state being changed to is actually a new state */
         if(state != newState) {
 
+            /*
+             * Check the new state
+             */
             /* Entering a transition state will start it's tranistion value */
             if(newState == MenuStates.Startup ||
-                newState == MenuStates.EmptyToMain ||
-                newState == MenuStates.MainToEmpty ||
-                newState == MenuStates.MainToIntro ||
-                newState == MenuStates.MainToQuit ||
-                newState == MenuStates.MainToSens ||
-                newState == MenuStates.SensToMain ||
-                newState == MenuStates.MainToVideo ||
-                newState == MenuStates.VideoToMain) {
+                    newState == MenuStates.EmptyToMain ||
+                    newState == MenuStates.MainToEmpty ||
+                    newState == MenuStates.MainToIntro ||
+                    newState == MenuStates.MainToQuit ||
+                    newState == MenuStates.MainToSens ||
+                    newState == MenuStates.SensToMain ||
+                    newState == MenuStates.MainToVideo ||
+                    newState == MenuStates.VideoToMain) {
                 ResetRemainingTime(newState);
+                /* Entering the MainToVideo or MainToSens states will set their panels to be active */
+                if(newState == MenuStates.MainToVideo) { panelRects[(int) Panels.Video].gameObject.SetActive(true); }
+                if(newState == MenuStates.MainToSens) { panelRects[(int) Panels.Sens].gameObject.SetActive(true); }
             }
             
             /* Entering Main will reset the quitValueCurrent */
@@ -2357,14 +2377,27 @@ public class Menu : MonoBehaviour {
             else if(newState == MenuStates.Sensitivity) {
                 extraCamRotation = Vector3.zero;
             }
-            
+
+
+            /*
+             * Check the current state
+             */
             /* Leaving the MainToIntro state will change the start button */
             if(state == MenuStates.MainToIntro) {
                 buttons[(int) Buttons.Start].GetComponentInChildren<Text>().text = "CONTINUE";
                 startWidthRatio = continueWidthRatio;
                 isGameStarted = true;
             }
+            
+            /* Leaving the VideoToMain state will set the video panel to be inactive */
+            else if(newState == MenuStates.VideoToMain) {
+                panelRects[(int) Panels.Video].gameObject.SetActive(false);
+            }
 
+            /* Leaving the SensToMain state will set the sensitivity panel to be inactive */
+            else if(newState == MenuStates.SensToMain) {
+                panelRects[(int) Panels.Sens].gameObject.SetActive(false);
+            }
 
             /* Change the current state */
             state = newState;
