@@ -63,16 +63,15 @@ public class StartingRoom : ConnectedRoom {
          */
 
         /* Run the terrainController's start function to create the noise provider, used with placing the outside window. */
-        outsideTerrain.focusPoint = window.portalSet.ExitPortal.transform;
         outsideTerrain.StartAlt();
         
         UpdateWalls();
         UpdateWindow();
         UpdateCollider();
 
-        /* Once the room is setup, link the window's first camera as the outsideTerrain's focus point */
-        ///////////get portals cam
-        outsideTerrain.focusPoint = window.portalSet.EntrancePortal.backwardsPortalMesh.transform.GetChild(0);
+        /* Once the room is setup, link the window's first camera to the TerrainController */
+        outsideTerrain.windowCam = window.portalSet.EntrancePortal.backwardsPortalMesh.transform.GetChild(0);
+        outsideTerrain.windowExitPoint = windowExit;
     }
 
     void OnTriggerExit(Collider player) {
@@ -88,7 +87,7 @@ public class StartingRoom : ConnectedRoom {
             if(glassBroken) {
 
                 /* Set the new focus point to be the player's camera */
-                outsideTerrain.focusPoint = player.GetComponent<CustomPlayerController>().playerCamera.transform;
+                //outsideTerrain.focusPoint = player.GetComponent<CustomPlayerController>().playerCamera.transform;
             }
         }
     }
@@ -212,7 +211,8 @@ public class StartingRoom : ConnectedRoom {
         window.insideRot = new Vector3(0, 180, 0);
         /* Place the window's exit at a distance just outside the player's view distance, ensuring they cannot see the rooms */
         windowExit.position = new Vector3(0, 0, -CustomPlayerController.cameraFarClippingPlane/2f);
-        windowExit.position = new Vector3(0, 0, 0);
+        //For debugging reasons, place it only -50 units along the Z axis
+        windowExit.position = new Vector3(0, 0, -50f);
         windowExitExtraHeight = 25;
         UpdateOutsideWindowPositon(true);
 

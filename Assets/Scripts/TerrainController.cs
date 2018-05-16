@@ -15,8 +15,11 @@ public class TerrainController : MonoBehaviour {
     public TerrainChunkSettings chunkSettings;
     private GameObject terrainContainer;
 
-    /* The object that the terrain, skysphere and sun will center around. Controlled by the StartingRoom */
+    /* The object that the terrain, skysphere and sun will center around. Set to the player's camera */
     public Transform focusPoint;
+    public Transform playerCam;
+    public Transform windowCam;
+    public Transform windowExitPoint;
     public Vector2 currentChunk;
 
     /* How long/wide a chunk is. Chunks are always square shaped. */
@@ -74,8 +77,9 @@ public class TerrainController : MonoBehaviour {
 
         /* Populate the chunk cache with default chunks */
         cache = new ChunkCache(GetVisibleChunksFromPositionCount(new Vector2(0, 0), chunkViewRange), chunkSettings, noiseProvider);
-        
+
         /* Set the current chunk position */
+        UpdateFocusPoint();
         currentChunk = GetChunkPosition(focusPoint.position);
         
         /* Force the chunkCache to update it's chunks all at once */
@@ -91,6 +95,7 @@ public class TerrainController : MonoBehaviour {
          */
 
         /* Get the chunk that the position currently resides in */
+        UpdateFocusPoint();
         Vector2 newChunk = GetChunkPosition(focusPoint.position);
 
         /* If we enter a new chunk or there are remaining inactive chunks, update the active chunks */
@@ -174,6 +179,38 @@ public class TerrainController : MonoBehaviour {
         UpdateLight();
     }
 
+    public void UpdateFocusPoint() {
+        /*
+         * Update the current camera that is used for the focus point
+         */
+
+        /* Both cameras are potential focus points - decide which to focus on */
+        if(playerCam != null && windowCam != null) {
+            /* Check which point is placed further along the Z axis to determine which to focus on */
+            /* This hack is fairly consistent if we keep the rooms going along the +Z axis and the 
+             * outside along the -Z axis. To further solildify this hack, we could set the 
+             * window's camera to null once the player has fallen far enough past the window once outside. */
+            if(windowExitPoint.position.z > playerCam.position.z) {
+                focusPoint = playerCam;
+            }
+            else {
+                focusPoint = windowCam;
+            }
+        }
+
+        /* Assign the camera that is not null */
+        else if(playerCam != null) {
+            focusPoint = playerCam;
+        }
+        else if(windowCam != null) {
+            focusPoint = windowCam;
+        }
+
+        /* Both cameras are null - there is no point to focus on */
+        else {
+            Debug.Log("WARNING: TERRAINCONTROLLER HAS NO FOCUS POINT");
+        }
+    }
 
     /* ----------- Lighting Functions ------------------------------------------------------------- */
 

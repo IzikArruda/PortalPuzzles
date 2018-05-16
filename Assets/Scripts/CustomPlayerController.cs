@@ -1768,6 +1768,8 @@ public class CustomPlayerController : MonoBehaviour {
         /*
          * Calling this function will change the culling mask of the player's camera.
          * True will have the camera render all layers. False will render all but the terrain layer.
+         * 
+         * This is called when the player
          */
 
         if(renderTerrain) {
