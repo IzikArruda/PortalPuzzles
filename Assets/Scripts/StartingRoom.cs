@@ -239,7 +239,7 @@ public class StartingRoom : ConnectedRoom {
             window.windowPieces[9].AddComponent<DetectPlayerLegRay>();
             window.windowPieces[9].GetComponent<DetectPlayerLegRay>().objectType = 1;
         }
-
+        
         /* Add the flare layer to the window's camera as it will be viewing the sun */
         window.AddFlareLayer();
 

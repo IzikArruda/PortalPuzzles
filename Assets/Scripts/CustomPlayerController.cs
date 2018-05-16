@@ -195,9 +195,6 @@ public class CustomPlayerController : MonoBehaviour {
         playerMenu = GetComponent<Menu>();
         if(playerMenu != null) { playerMenu.InitializeMenu(this); }
 
-        /* Set the clipping plane of the player's camera while they are in the puzleRooms */
-        playerCamera.farClipPlane = 1000;
-
         /* Link the player's step tracker to their sound script */
         playerStepTracker.SetSoundsScript(playerSoundsScript);
 
@@ -428,7 +425,6 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Check if there was any movement at all */
         if(movementVector.magnitude != 0 && movementVector != Vector3.zero) {
-
             /* Set the values used to fire the ray */
             float remainingDistance = movementVector.magnitude;
             Vector3 position = lastSavedPosition;
@@ -844,6 +840,7 @@ public class CustomPlayerController : MonoBehaviour {
         PlayerRenderTerrain(teleported);
     }
 
+
     /* ----------------- Value Updating Functions ------------------------------------------------------------- */
 
     void PrimeJumpingValue() {
@@ -1027,7 +1024,11 @@ public class CustomPlayerController : MonoBehaviour {
         /* Reset the camera's effects and any extra animations it has */
         cameraEffectsScript.ResetCameraEffects();
         currentResetTime = -1;
-        
+
+        /* Set the camera's rendering distance to reflect the fact it's outside */
+        playerCamera.farClipPlane = cameraFarClippingPlane;
+        playerCamera.nearClipPlane = 0.2f;
+
         /* Place the player to be standing on the top of the startingRoom's stairs.
          * Add the leg gap distance so the player is not stepping on the stairs. */
         transform.position = startingRoom.exit.exitPointBack.transform.position + new Vector3(0, 0, legGap*playerBodyRadius);
@@ -1474,15 +1475,14 @@ public class CustomPlayerController : MonoBehaviour {
             
             /* Pressing escape will skip the intro */
             if(PlayerIsInIntro() && currentlyLeavingInIntro) {
+                /* Make sure the state properly exits the intro */
                 if(state == (int) PlayerStates.InIntro) {
                     remainingInIntroTime = 0;
                     ChangeState((int) PlayerStates.LeavingIntro);
-                    introCamDistance = 0;
                 }
-
-                else if(state == (int)PlayerStates.LeavingIntro) {
-                    introCamDistance = 0;
-                }
+                introCamDistance = 0;
+                /* Ensure the camera ray is fired so certain functions are run (PlayerRenderTerrain) */
+                FireCameraRayInIntroState();
             }
 
             else {
@@ -1769,14 +1769,18 @@ public class CustomPlayerController : MonoBehaviour {
          * Calling this function will change the culling mask of the player's camera.
          * True will have the camera render all layers. False will render all but the terrain layer.
          * 
-         * This is called when the player
+         * This will also change the player camera's near and far clipping planes.
          */
 
         if(renderTerrain) {
             playerCamera.cullingMask = -1;
+            playerCamera.nearClipPlane = 0.2f;
+            playerCamera.farClipPlane = cameraFarClippingPlane;
         }
         else {
             playerCamera.cullingMask = ~(1 << PortalSet.maxLayer + 2);
+            playerCamera.nearClipPlane = 0.01f;
+            playerCamera.farClipPlane = 1000f;
         }
     }
 }
