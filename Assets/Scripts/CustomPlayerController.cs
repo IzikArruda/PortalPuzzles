@@ -826,6 +826,14 @@ public class CustomPlayerController : MonoBehaviour {
         }
         startingRoom.UpdateOutsideWindowPositon(false);
 
+        /* Get the distance between the player's position and the startingRoom's portal */
+        float portalDistance = startingRoom.window.portalSet.EntrancePortal.backwardsPortalMesh.transform.position.z;
+        portalDistance = Mathf.Abs(portalDistance - transform.position.z) - 0.2f;
+        float closeDistance = 0.2f;
+        /* Prevent the cameraDistance from placing the camera too close to the portal mesh */
+        if(introCamDistance < portalDistance && introCamDistance > portalDistance - closeDistance) {
+            introCamDistance = portalDistance - closeDistance;
+        }
 
         /* Set the parameters required for the ray trace */
         Vector3 currentCameraPosition = camDestinationPos;
@@ -1780,7 +1788,7 @@ public class CustomPlayerController : MonoBehaviour {
         else {
             playerCamera.cullingMask = ~(1 << PortalSet.maxLayer + 2);
             playerCamera.nearClipPlane = 0.01f;
-            playerCamera.farClipPlane = 1000f;
+            playerCamera.farClipPlane = cameraFarClippingPlane;
         }
     }
 }
