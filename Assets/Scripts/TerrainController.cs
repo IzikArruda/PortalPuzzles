@@ -175,10 +175,6 @@ public class TerrainController : MonoBehaviour {
         /* Reposition the sky sphere at the given window exit point */
         skySphereScript.UpdateSkySpherePosition(focusPointPosition);
 
-        /* Resize the sky sphere */
-        float sphereSize = 500;
-        skySphereScript.transform.localScale = new Vector3(sphereSize, sphereSize, sphereSize);
-
         /* Reposition the point light of the scene that is used for the sun flare */
         UpdateLight();
     }
@@ -403,5 +399,26 @@ public class TerrainController : MonoBehaviour {
         }
 
         return chunkState;
+    }
+
+    public float GetLoadingPercent() {
+        /*
+         * Return a 0 to 1 value which represents how much of the terrain is loaded.
+         * A terrain is considered loaded once it's heightmap is loaded in.
+         */
+        float loadingPercent = 0;
+        
+        /* Print the state of the chunks */
+        List<Vector2> visibleChunks = GetVisibleChunksFromPosition(currentChunk, chunkViewRange);
+        /* Print the state of each chunk */
+        for(int i = 0; i < visibleChunks.Count; i++) {
+            if(GetChunkState(visibleChunks[i]) > 2) {
+                loadingPercent++;
+            }
+        }
+        loadingPercent /= visibleChunks.Count;
+        Debug.Log(loadingPercent);
+
+        return loadingPercent;
     }
 }

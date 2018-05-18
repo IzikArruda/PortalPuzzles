@@ -158,7 +158,7 @@ public class CustomPlayerController : MonoBehaviour {
     private bool outsideState = false;
 
     /* The far clipping plane of the player's camera. The portals will use this for their cameras. */
-    public static float cameraFarClippingPlane = 20000f;
+    public static float cameraFarClippingPlane = 10000f;
 
     /* The type of step sound is played for the player footstep tracker */
     private int currentStepType = 0;

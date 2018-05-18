@@ -168,6 +168,7 @@ public class Menu : MonoBehaviour {
     public Slider sensSliderReference;
     public Dropdown videoOptionsDropwdownReference;
     public Toggle videoOptionsToggleReference;
+    public RectTransform loadingBox;
 
     /* The sensitivity slider and it's current value */
     private Slider sensitivitySlider;
@@ -256,17 +257,6 @@ public class Menu : MonoBehaviour {
            
         /* Change the current state if needed after all the per-frame update functions are done */
         UpdateCurrentState();
-
-
-
-
-        /* Print the state of the chunks */
-        List<Vector2> visibleChunks = terrainController.GetVisibleChunksFromPosition(terrainController.currentChunk, terrainController.chunkViewRange);
-        Debug.Log("Count : " + visibleChunks.Count);
-        /* Print the state of each chunk */
-        for(int i = 0; i < visibleChunks.Count; i++) {
-            Debug.Log(terrainController.GetChunkState(visibleChunks[i]));
-        }
     }
 
 
@@ -457,8 +447,11 @@ public class Menu : MonoBehaviour {
          * Reorder the hierarchy of the canvas.
          */
 
-        /* So far, simply have the cover panel above all else */
+        /* Have the cover panel above all else */
         panelRects[(int) Panels.Cover].transform.SetAsLastSibling();
+
+        /* Have the loading bar above the cover panel */
+        loadingBox.SetAsLastSibling();
     }
 
 
@@ -928,9 +921,17 @@ public class Menu : MonoBehaviour {
         
         /* Update the more unique per-frame update values */
         switch(state) {
+            /* Update the value used to determine when to quit the game */
             case MenuStates.Main:
                 quitValueCurrent -= Time.deltaTime*quitValueDecreaseMod;
                 if(quitValueCurrent < 0) { quitValueCurrent = 0; }
+                break;
+            /* In the startup, prevent the timine from being reduced if the terrain is not 100% loaded */
+            case MenuStates.Startup:
+                if(terrainController.GetLoadingPercent() < 1) {
+                    //Reset the remainingTime of the current state
+                    ResetRemainingTime(state);
+                }
                 break;
         }
     }
@@ -1052,6 +1053,36 @@ public class Menu : MonoBehaviour {
         terrainController.UpdateSunFlareMod(bonus);
     }
 
+    void UpdateLoadingBar() {
+        /*
+         * Update the sizes and colors of the loading bar to reflect the current
+         */
+        float transitionFade;
+        Transition transition = GetTransitionFromState(state);
+        loadingBox.gameObject.SetActive(true);
+        RectTransform loadingBar = loadingBox.GetChild(0).gameObject.GetComponent<RectTransform>();
+
+        /* Update the colors of the bar/box relative to the timing of the current state */
+        transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.05f, 0.1f);
+        loadingBar.GetComponent<Image>().color = new Color(0, 0, 0, 1 - transitionFade*2);
+        if(transitionFade > 0) {
+            loadingBox.GetComponent<Image>().color = new Color(0, 0, 0, 0);
+        }else {
+            loadingBox.GetComponent<Image>().color = new Color(0, 0, 0, 1 - transitionFade*2);
+        }
+
+        /* Update the size of the loading box */
+        loadingBox.anchorMin = new Vector2(0.2f, 0.1f);
+        loadingBox.anchorMax = new Vector2(0.8f, 0.2f);
+        loadingBox.sizeDelta = new Vector2(0, 0);
+        loadingBox.anchoredPosition = new Vector2(0, 0);
+
+        /* Update the size of the loading bar relative to the loading completion rate */
+        float loadingRatio = terrainController.GetLoadingPercent();
+        loadingBar.anchorMax = new Vector2(loadingRatio, 1);
+        loadingBar.sizeDelta = new Vector2(0, 0);
+        loadingBar.anchoredPosition = new Vector3(0, 0, 0);
+    }
 
     /* ----------- UI Element Update Functions ------------------------------------------------------------- */
 
@@ -1092,6 +1123,9 @@ public class Menu : MonoBehaviour {
 
         /* Apply the angle to the camera */
         playerController.extraCamRot = extraCamRotation;
+
+        /* Update the loading bar used in the intro */
+        UpdateLoadingBar();
     }
 
     void UCoverPanelMainToQuit() {
@@ -2523,6 +2557,7 @@ public class Menu : MonoBehaviour {
             Application.runInBackground = false;
         }
     }
+
 
     /* ----------- Mouse Enter/Hover Functions ------------------------------------------------------------- */
 
