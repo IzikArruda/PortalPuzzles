@@ -30,8 +30,8 @@ public class TerrainController : MonoBehaviour {
 
     /* The resolution of each chunk */
     public int chunkResolution;
-
-    /* All data saved on the current collection of chunks  */
+    
+    /* Many chunks will load along each direction of the center chunk */
     private ChunkCache cache;
 
     /* How far the player can see in chunks */
@@ -175,6 +175,10 @@ public class TerrainController : MonoBehaviour {
         /* Reposition the sky sphere at the given window exit point */
         skySphereScript.UpdateSkySpherePosition(focusPointPosition);
 
+        /* Resize the sky sphere */
+        float sphereSize = 500;
+        skySphereScript.transform.localScale = new Vector3(sphereSize, sphereSize, sphereSize);
+
         /* Reposition the point light of the scene that is used for the sun flare */
         UpdateLight();
     }
@@ -211,6 +215,7 @@ public class TerrainController : MonoBehaviour {
             Debug.Log("WARNING: TERRAINCONTROLLER HAS NO FOCUS POINT");
         }
     }
+
 
     /* ----------- Lighting Functions ------------------------------------------------------------- */
 
@@ -287,7 +292,7 @@ public class TerrainController : MonoBehaviour {
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
 
-    private List<Vector2> GetVisibleChunksFromPosition(Vector2 chunkPosition, int radius) {
+    public List<Vector2> GetVisibleChunksFromPosition(Vector2 chunkPosition, int radius) {
         /*
          * Return a list of all chunks that should be rendered given the position.
          * The position and radius values are relative to chunk sizes.
@@ -306,7 +311,7 @@ public class TerrainController : MonoBehaviour {
         return visibleChunks;
     }
 
-    private int GetVisibleChunksFromPositionCount(Vector2 chunkPosition, int radius) {
+    public int GetVisibleChunksFromPositionCount(Vector2 chunkPosition, int radius) {
         /*
          * Get the count of how many chunks are visible from a given position.
          */
@@ -342,5 +347,61 @@ public class TerrainController : MonoBehaviour {
         terrainHeight = noiseProvider.GetHeightFromWorldPos(x, z);
         
         return terrainHeight;
+    }
+
+    public int GetReadyTerrain() {
+        /*
+         * Return an integer of how many chunks are fully loaded
+         */
+        int readyChunks = 0;
+
+        /* Get the amount of loaded chunks in the area */
+
+        return readyChunks;
+    }
+
+    public int GetChunkState(Vector2 chunkCoords) {
+        /*
+         * Return an integer that determines what state the given chunk is at. 
+         * 0 : Chunk is not used by the game and will/is unloaded
+         * 1 : Chunk is idle waiting to start generating it's heightmap
+         * 2 : Chunk is generating it's heightmap
+         * 3 : Chunk is idle with a complete heightmap
+         * 4 : Chunk is generating it's textures
+         * 5 : Chunk is finished loading
+         */
+        int chunkState = -1;
+
+        /* Chunk is Due to start generating - Currently is data and not an object */
+        if(cache.chunksToBeGenerated.ContainsKey(chunkCoords)) {
+            chunkState = 1;
+        }
+
+        /* Chunk is currently generating it's height map */
+        else if(cache.chunksGeneratingHeightMap.ContainsKey(chunkCoords)) {
+            chunkState = 2;
+        }
+
+        /* Chunk has finished it's height map and is waiting to start generating it's textures */
+        else if(cache.chunksFinishedHeightMaps.ContainsKey(chunkCoords)) {
+            chunkState = 3;
+        }
+
+        /* Chunk is generating it's textures */
+        else if(cache.chunksGeneratingTextureMap.ContainsKey(chunkCoords)) {
+            chunkState = 4;
+        }
+
+        /* Chunk is fully generated */
+        else if(cache.loadedChunks.ContainsKey(chunkCoords)) {
+            chunkState = 5;
+        }
+
+        /* Chunk will not be used by the game */
+        else {
+            chunkState = 0;
+        }
+
+        return chunkState;
     }
 }

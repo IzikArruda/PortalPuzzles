@@ -256,6 +256,17 @@ public class Menu : MonoBehaviour {
            
         /* Change the current state if needed after all the per-frame update functions are done */
         UpdateCurrentState();
+
+
+
+
+        /* Print the state of the chunks */
+        List<Vector2> visibleChunks = terrainController.GetVisibleChunksFromPosition(terrainController.currentChunk, terrainController.chunkViewRange);
+        Debug.Log("Count : " + visibleChunks.Count);
+        /* Print the state of each chunk */
+        for(int i = 0; i < visibleChunks.Count; i++) {
+            Debug.Log(terrainController.GetChunkState(visibleChunks[i]));
+        }
     }
 
 
