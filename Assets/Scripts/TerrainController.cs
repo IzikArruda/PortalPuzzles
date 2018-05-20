@@ -81,9 +81,6 @@ public class TerrainController : MonoBehaviour {
         /* Set the current chunk position */
         UpdateFocusPoint();
         currentChunk = GetChunkPosition(focusPoint.position);
-        
-        /* Force the chunkCache to update it's chunks all at once */
-        ForceCacheUpdate();
 
         /* Create the skySphere */
         CreateSkySphere();

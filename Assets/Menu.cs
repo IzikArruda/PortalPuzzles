@@ -134,8 +134,8 @@ public class Menu : MonoBehaviour {
     private float videoWidthRatio = 2.9f;
     private float sensWidthRatio = 5.65f;
     private float quitWidthRatio = 2.25f;
-    private float resolutionWidthRatio = 8f;
-    private float framerateWidthRatio = 3.5f;
+    private float resolutionWidthRatio = 7f;
+    private float framerateWidthRatio = 3f;
     //Set this to the largest ratio we currently have. This is to make sure each element goes offscreen at the same speed
     private float largestRaio;
 
@@ -1402,6 +1402,12 @@ public class Menu : MonoBehaviour {
         RectTransform resolutionDropdownRect = videoPanel.GetChild(0).GetChild(1).GetComponent<RectTransform>();
         resolutionDropdownRect.anchoredPosition = new Vector3((optionPanelHeight/2f)*resolutionWidthRatio/2f, 0, 0);
         resolutionDropdownRect.sizeDelta = new Vector2((optionPanelHeight/2f)*resolutionWidthRatio, 0);
+        /////
+        //This gets the Dropdown object
+        Debug.Log(resolutionDropdownRect.name);
+
+
+        /////
 
         /* Update the framerate limit dropdown size */
         RectTransform framerateDropdownRect = videoPanel.GetChild(2).GetChild(1).GetComponent<RectTransform>();
