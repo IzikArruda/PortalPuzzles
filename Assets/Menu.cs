@@ -319,6 +319,9 @@ public class Menu : MonoBehaviour {
         SetupSensButton();
         SetupQuitButton();
 
+        /* After setting up each component, make sure they are properly sized */
+        Resize(true);
+
         /* Re-order the hierarchy so that certain objects are rendered ontop of others */
         ReorderHeirarchy();
     }
@@ -568,7 +571,7 @@ public class Menu : MonoBehaviour {
             textRect.SetParent(panelRect);
             /* Set the anchors so that the text stays on the left side of the panel */
             textRect.anchorMin = new Vector2(0, 0);
-            textRect.anchorMax = new Vector2(0.5f, 1);
+            textRect.anchorMax = new Vector2(0.48f, 1);
             textRect.anchoredPosition = new Vector3(0, 0, 0);
             textRect.sizeDelta = new Vector2(0, 0);
             /* Set the text properties */
@@ -1402,12 +1405,6 @@ public class Menu : MonoBehaviour {
         RectTransform resolutionDropdownRect = videoPanel.GetChild(0).GetChild(1).GetComponent<RectTransform>();
         resolutionDropdownRect.anchoredPosition = new Vector3((optionPanelHeight/2f)*resolutionWidthRatio/2f, 0, 0);
         resolutionDropdownRect.sizeDelta = new Vector2((optionPanelHeight/2f)*resolutionWidthRatio, 0);
-        /////
-        //This gets the Dropdown object
-        Debug.Log(resolutionDropdownRect.name);
-
-
-        /////
 
         /* Update the framerate limit dropdown size */
         RectTransform framerateDropdownRect = videoPanel.GetChild(2).GetChild(1).GetComponent<RectTransform>();
@@ -1415,6 +1412,24 @@ public class Menu : MonoBehaviour {
         framerateDropdownRect.sizeDelta = new Vector2((optionPanelHeight/2f)*framerateWidthRatio, 0);
 
 
+        /* Update the size of the content & items of the resolution dropdown list */
+        RectTransform resDropdownContent = resolutionDropdownRect.GetChild(2).GetChild(0).GetChild(0).GetComponent<RectTransform>();
+        RectTransform resDropdownItem = resDropdownContent.GetChild(0).GetComponent<RectTransform>();
+        float resOptionHeight = videoPanel.GetChild(0).GetComponent<RectTransform>().sizeDelta.y;
+        resDropdownContent.sizeDelta = new Vector2(0f, resOptionHeight*0.75f);
+        resDropdownItem.sizeDelta = new Vector2(0, resDropdownContent.sizeDelta.y);
+        resolutionDropdownRect.GetChild(0).GetComponent<Outline>().effectDistance = 0.01f*new Vector2(resOptionHeight, resOptionHeight);
+        resDropdownItem.GetChild(1).GetComponent<Outline>().effectDistance = 0.01f*new Vector2(resOptionHeight, resOptionHeight);
+        
+        /* Update the size of the content & items of the framerate dropdown list */
+        RectTransform frameDropdownContent = framerateDropdownRect.GetChild(2).GetChild(0).GetChild(0).GetComponent<RectTransform>();
+        RectTransform frameDropdownItem = frameDropdownContent.GetChild(0).GetComponent<RectTransform>();
+        float frameOptionHeight = videoPanel.GetChild(2).GetComponent<RectTransform>().sizeDelta.y;
+        frameDropdownContent.sizeDelta = new Vector2(0f, frameOptionHeight*0.75f);
+        frameDropdownItem.sizeDelta = new Vector2(0, frameDropdownContent.sizeDelta.y);
+        framerateDropdownRect.GetChild(0).GetComponent<Outline>().effectDistance = 0.01f*new Vector2(frameOptionHeight, frameOptionHeight);
+        frameDropdownItem.GetChild(1).GetComponent<Outline>().effectDistance = 0.01f*new Vector2(frameOptionHeight, frameOptionHeight);
+        
 
         VideoPanelPositionUpdate(0);
     }
