@@ -822,7 +822,7 @@ public class CustomPlayerController : MonoBehaviour {
         
         /* Animate the intro menu's background by moving the startingRoom window's exit point to the side during this state */
         if(state == (int) PlayerStates.InIntro) {
-            startingRoom.windowExit.position = startingRoom.windowExit.position + new Vector3(strafeSpeed, 0, 0);
+            startingRoom.windowExit.position = startingRoom.windowExit.position + new Vector3(strafeSpeed*Time.deltaTime*40, 0, 0);
         }
         startingRoom.UpdateOutsideWindowPositon(false);
 

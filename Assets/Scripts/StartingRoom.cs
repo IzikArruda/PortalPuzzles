@@ -314,7 +314,7 @@ public class StartingRoom : ConnectedRoom {
         /* Add a portion of the heightDifference to the current window to have it smoothly adjust to the height changes */
         /* Only add a portion of heightDifference if the portion is large enough */
         if(!instantUpdate && Mathf.Abs(heightDifference) > 0.025f) {
-            terrainHeight = windowExit.transform.position.y + heightDifference*0.05f;
+            terrainHeight = windowExit.transform.position.y + heightDifference*0.05f*Time.deltaTime*60;
         }
 
         /* Update the window's world positions */
