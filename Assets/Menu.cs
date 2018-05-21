@@ -460,25 +460,28 @@ public class Menu : MonoBehaviour {
 
     /* ----------- Set-up Functions ------------------------------------------------------------- */
 
-    public void SetupText(Text text) {
+    public void SetupButtonText(Text textObject, string textString) {
         /*
-         * Set the properties of the text object. This is to keep all text objects consistent
+         * Set the properties of the button's text object. This is to keep all button text objects consistent
          */
 
         /* Set the font */
-        text.font = usedFont;
-        text.fontStyle = FontStyle.Normal;
+        textObject.font = usedFont;
+        textObject.fontStyle = FontStyle.Normal;
+        textObject.text = textString;
 
         /* Set the outlines for the text. There will be two outlines used for each text. */
-        if(text.gameObject.GetComponent<Outline>() == null) { text.gameObject.AddComponent<Outline>(); text.gameObject.AddComponent<Outline>(); }
-        Outline[] outlines = text.gameObject.GetComponents<Outline>();
+        if(textObject.gameObject.GetComponent<Outline>() == null) {
+            textObject.gameObject.AddComponent<Outline>();
+            textObject.gameObject.AddComponent<Outline>();
+        }
+        Outline[] outlines = textObject.gameObject.GetComponents<Outline>();
 
         /* Set size relative values for the text */
-        text.alignment = TextAnchor.MiddleRight;
-        text.resizeTextForBestFit = true;
-        text.resizeTextMinSize = 1;
-        text.resizeTextMaxSize = 10000;
-
+        textObject.alignment = TextAnchor.MiddleRight;
+        textObject.resizeTextForBestFit = true;
+        textObject.resizeTextMinSize = 1;
+        textObject.resizeTextMaxSize = 10000;
     }
 
     public void SetupButtonEvents(ref Button button, UnityAction mouseEnter, UnityAction mouseExit) {
@@ -527,45 +530,41 @@ public class Menu : MonoBehaviour {
          */
         int panelEnum = (int) Panels.Video;
         RectTransform videoPanel = panelRects[panelEnum];
+        
+        /*
+         * Setup the video panel
+         */
         videoPanel.name = "Video panel";
         videoPanel.gameObject.SetActive(false);
-        
         /* Set the anchors so it's centered on the right wall */
         videoPanel.anchorMin = new Vector2(1, 0.5f);
         videoPanel.anchorMax = new Vector2(1, 0.5f);
-
         /* The size of the panel should be 80% the screen width and 100% for height */
         panelsWidth[panelEnum] = 0.8f;
         panelsHeight[panelEnum] = 1f;
-        float panelWidth = Screen.width*panelsWidth[panelEnum];
-        float panelHeight = Screen.height*panelsHeight[panelEnum];
-        float optionPanelHeight = buttonHeight/2f;
-        videoPanel.sizeDelta = new Vector2(panelWidth, panelHeight);
-
         /* Set the color so that the panel is invisible */
         videoPanel.GetComponent<Image>().color = new Color(0, 0, 0, 0.2f);
 
+        
+        float panelWidth = Screen.width*panelsWidth[panelEnum];
+        float panelHeight = Screen.height*panelsHeight[panelEnum];
+        float optionPanelHeight = buttonHeight/2f;
         /*
-         * Add the components that make up the panel. The order of the options controls their positions.
+         * Setup the panel for each option along with it's text component
          */
-        string[] videoButtonTexts = { "Windowed", "Lock mouse", "Run without focus", "Resolution", "Lock framerate"};
+        string[] videoButtonTexts = { "Windowed", "Lock mouse", "Run without focus", "Resolution", "Lock framerate" };
         GameObject[] videoOptionPanels = new GameObject[videoButtonTexts.Length];
-        /* Create each panel that is used as an option in the video panel */
         for(int i = 0; i < videoOptionPanels.Length; i++) {
-            /* Create the option and add it's components */
-            videoOptionPanels[i] = new GameObject("Option panel " + videoButtonTexts[i], typeof(RectTransform));
+            /* Create the panel and set it's anchors */
+            videoOptionPanels[i] = new GameObject("Option panel [" + videoButtonTexts[i] + "]", typeof(RectTransform));
             RectTransform panelRect = videoOptionPanels[i].GetComponent<RectTransform>();
             panelRect.SetParent(videoPanel);
-            videoOptionPanels[i].AddComponent<Image>().color = new Color(0, 1, 0, 0.3f);//Add an image so we can see the placement
-            /* The panel will fill the video panel's width */
             panelRect.anchorMin = new Vector2(0, 0.5f);
             panelRect.anchorMax = new Vector2(1, 0.5f);
-            /* The position of the panel depends on it's index */
-            panelRect.anchoredPosition = new Vector3(0, (panelHeight/2f-buttonHeight/2f) -i*optionPanelHeight*3/2f, 0);
-            panelRect.sizeDelta = new Vector2(0, optionPanelHeight);
+            videoOptionPanels[i].AddComponent<Image>().color = new Color(0, 1, 0, 0.3f);//Add an image so we can see the placement
 
-            /* Add a text element that will occupy the left side of the panel */
-            GameObject textObject = new GameObject("Option text " + videoButtonTexts[i], typeof(RectTransform));
+            /* Create the text component used for each option */
+            GameObject textObject = new GameObject("Option text [" + videoButtonTexts[i] + "]", typeof(RectTransform));
             Text text = textObject.AddComponent<Text>();
             RectTransform textRect = textObject.GetComponent<RectTransform>();
             textRect.SetParent(panelRect);
@@ -575,178 +574,122 @@ public class Menu : MonoBehaviour {
             textRect.anchoredPosition = new Vector3(0, 0, 0);
             textRect.sizeDelta = new Vector2(0, 0);
             /* Set the text properties */
-            text.gameObject.AddComponent<Outline>().effectDistance = heightRatio*new Vector2(1, 1);
-            text.text = videoButtonTexts[i];
             text.font = usedFont;
+            text.fontStyle = FontStyle.Normal;
+            text.text = videoButtonTexts[i];
+            text.gameObject.AddComponent<Outline>();
             text.alignment = TextAnchor.MiddleRight;
             text.resizeTextForBestFit = true;
             text.resizeTextMinSize = 1;
             text.resizeTextMaxSize = 10000;
 
-            /* The last two options will both have the same height */
+            /* The last two options will be on the same height, so set their anchors to not overlap */
             if(i == videoOptionPanels.Length - 2) {
                 panelRect.anchorMin = new Vector2(0, 0.5f);
                 panelRect.anchorMax = new Vector2(0.5f, 0.5f);
-                textRect.anchorMin = new Vector2(0, 0);
-                textRect.anchorMax = new Vector2(0.5f, 1);
             }
             else if(i == videoOptionPanels.Length - 1) {
                 panelRect.anchorMin = new Vector2(0.5f, 0.5f);
                 panelRect.anchorMax = new Vector2(1f, 0.5f);
             }
         }
-        
 
-        /* 
-         * Add components to the right side of each newly added panels in the video panel 
+
+        /*
+         * Add the UI toggle components for the defined amount of toggle options
          */
-        /* Panel 1 controls whether the game will run in windowed mode using a toggle */
-        GameObject windowToggleObject = Instantiate(videoOptionsToggleReference.gameObject);
-        windowToggleObject.name = "Windowed toggle";
-        windowToggleObject.SetActive(true);
-        Toggle windowedToggle = windowToggleObject.GetComponent<Toggle>();
-        RectTransform windowedToggleRect = windowToggleObject.GetComponent<RectTransform>();
-        RectTransform windowedTogglePanel = videoOptionPanels[0].GetComponent<RectTransform>();
-        windowedToggleRect.SetParent(windowedTogglePanel);
-        /* Link a function to it's onValueChange */
-        windowedToggle.onValueChanged.AddListener(delegate { UpdatedWindowedToggle(windowedToggle); });
-        /* Position the object to be placed on the right side of it's panel */
-        windowedToggleRect.anchorMin = new Vector2(0.51f, 0);
-        windowedToggleRect.anchorMax = new Vector2(1, 1);
-        windowedToggleRect.anchoredPosition = new Vector3(0, 0, 0);
-        windowedToggleRect.sizeDelta = new Vector2(optionPanelHeight, 0);
-        /* Resize the images of the button to reflect the panel's height */
-        //Resize the background object, ie the checkbox
-        RectTransform backgroundRect = windowedToggle.transform.GetChild(0).GetComponent<RectTransform>();
-        backgroundRect.anchorMin = new Vector2(0, 0);
-        backgroundRect.anchorMax = new Vector2(0, 1);
-        backgroundRect.anchoredPosition = new Vector3(buttonHeight/2f, 0, 0);
-        backgroundRect.sizeDelta = new Vector2(buttonHeight/2f, 0);
-        //Resize the tick indicator, ie the checkmark
-        RectTransform checkRect = backgroundRect.GetChild(0).GetComponent<RectTransform>();
-        checkRect.anchorMin = new Vector2(0.5f, 0.5f);
-        checkRect.anchorMax = new Vector2(0.5f, 0.5f);
-        checkRect.sizeDelta = new Vector2(buttonHeight/2f, buttonHeight/2f);
-        /* Set the current toggle setting to reflect the current window state */
-        windowedToggle.isOn = !Screen.fullScreen;
+        string[] toggleOptions = { "Windowed toggle", "Mouse lock", "Focus pause" };
+        for(int i = 0; i < toggleOptions.Length; i++) {
+            /* Create the transforms and objects for the toggle options */
+            RectTransform panel = videoOptionPanels[i].GetComponent<RectTransform>();
+            GameObject toggleObject = Instantiate(videoOptionsToggleReference.gameObject);
+            toggleObject.name = "Toggle [" + toggleOptions[i] + "]";
+            toggleObject.SetActive(true);
+            Toggle toggle = toggleObject.GetComponent<Toggle>();
+            RectTransform toggleRect = toggleObject.GetComponent<RectTransform>();
+            toggleRect.SetParent(panel);
 
-        /* Panel 2 controls whether the mouse should be locked within the window */
-        GameObject mouseLockObject = Instantiate(videoOptionsToggleReference.gameObject);
-        mouseLockObject.name = "Mouse lock";
-        mouseLockObject.SetActive(true);
-        Toggle mouseToggle = mouseLockObject.GetComponent<Toggle>();
-        RectTransform mouseToggleRect = mouseLockObject.GetComponent<RectTransform>();
-        RectTransform mouseTogglePanel = videoOptionPanels[1].GetComponent<RectTransform>();
-        mouseToggleRect.SetParent(mouseTogglePanel);
-        /* Link a function to it's onValueChange */
-        mouseToggle.onValueChanged.AddListener(delegate { LockMouseToggle(mouseToggle); });
-        /* Position the object to be placed on the right side of it's panel */
-        mouseToggleRect.anchorMin = new Vector2(0.51f, 0);
-        mouseToggleRect.anchorMax = new Vector2(1, 1);
-        mouseToggleRect.anchoredPosition = new Vector3(0, 0, 0);
-        mouseToggleRect.sizeDelta = new Vector2(optionPanelHeight, 0);
-        //Resize the background object, ie the checkbox
-        backgroundRect = mouseToggle.transform.GetChild(0).GetComponent<RectTransform>();
-        backgroundRect.anchorMin = new Vector2(0, 0);
-        backgroundRect.anchorMax = new Vector2(0, 1);
-        backgroundRect.anchoredPosition = new Vector3(buttonHeight/2f, 0, 0);
-        backgroundRect.sizeDelta = new Vector2(buttonHeight/2f, 0);
-        //Resize the tick indicator, ie the checkmark
-        checkRect = backgroundRect.GetChild(0).GetComponent<RectTransform>();
-        checkRect.anchorMin = new Vector2(0.5f, 0.5f);
-        checkRect.anchorMax = new Vector2(0.5f, 0.5f);
-        checkRect.sizeDelta = new Vector2(buttonHeight/2f, buttonHeight/2f);
-        /* Set the toggles starting state to reflect the current mouse state */
-        mouseToggle.isOn = Cursor.lockState == CursorLockMode.Confined;
-
-        /* Panel 3 controls whether the game will still run when out of focus */
-        GameObject focusObject = Instantiate(videoOptionsToggleReference.gameObject);
-        focusObject.name = "Pause when not in focus";
-        focusObject.SetActive(true);
-        Toggle focusToggle = focusObject.GetComponent<Toggle>();
-        RectTransform focusToggleRect = focusObject.GetComponent<RectTransform>();
-        RectTransform focusTogglePanel = videoOptionPanels[2].GetComponent<RectTransform>();
-        focusToggleRect.SetParent(focusTogglePanel);
-        /* Link a function to it's onValueChange */
-        focusToggle.onValueChanged.AddListener(delegate { RunWithoutFocusToggle(focusToggle); });
-        /* Position the object to be placed on the right side of it's panel */
-        focusToggleRect.anchorMin = new Vector2(0.51f, 0);
-        focusToggleRect.anchorMax = new Vector2(1, 1);
-        focusToggleRect.anchoredPosition = new Vector3(0, 0, 0);
-        focusToggleRect.sizeDelta = new Vector2(optionPanelHeight, 0);
-        //Resize the background object, ie the checkbox
-        backgroundRect = focusToggle.transform.GetChild(0).GetComponent<RectTransform>();
-        backgroundRect.anchorMin = new Vector2(0, 0);
-        backgroundRect.anchorMax = new Vector2(0, 1);
-        backgroundRect.anchoredPosition = new Vector3(buttonHeight/2f, 0, 0);
-        backgroundRect.sizeDelta = new Vector2(buttonHeight/2f, 0);
-        //Resize the tick indicator, ie the checkmark
-        checkRect = backgroundRect.GetChild(0).GetComponent<RectTransform>();
-        checkRect.anchorMin = new Vector2(0.5f, 0.5f);
-        checkRect.anchorMax = new Vector2(0.5f, 0.5f);
-        checkRect.sizeDelta = new Vector2(buttonHeight/2f, buttonHeight/2f);
-        /* Set the toggle's state to reflect the game's current running without focus status */
-        focusToggle.isOn = Application.runInBackground;
-
-        /* Panel 4 controls the screen's resolution using a dropdown menu of the monitor's usable resolutions.
-         * Duplicate the dropdown object currently referenced by this script */
-        GameObject dropdownObject = Instantiate(videoOptionsDropwdownReference.gameObject);
-        dropdownObject.name = "Resolution Dropdown";
-        dropdownObject.SetActive(true);
-        Dropdown dropdown = dropdownObject.GetComponent<Dropdown>();
-        RectTransform dropdownRect = dropdownObject.GetComponent<RectTransform>();
-        RectTransform dropdownPanel = videoOptionPanels[3].GetComponent<RectTransform>();
-        dropdownRect.SetParent(dropdownPanel);
-        /* Populate the dropdown with the resolutions */
-        Resolution[] res = Screen.resolutions;
-        List<string> newOptions = new List<string>();
-        for(int i = 0; i < res.Length; i++) {
-            newOptions.Add(res[i].width + "x" + res[i].height);
-        }
-        dropdown.ClearOptions();
-        dropdown.AddOptions(newOptions);
-        dropdown.RefreshShownValue();
-        /* Link a function to it's onValueChanged */
-        dropdown.onValueChanged.AddListener(delegate { UpdatedResolutionDropdown(dropdown); });
-        /* Position the object to be placed on the right side of it's panel */
-        dropdownRect.anchorMin = new Vector2(0.5f, 0);
-        dropdownRect.anchorMax = new Vector2(0.5f, 1);
-        dropdownRect.anchoredPosition = new Vector3((optionPanelHeight/2f)*resolutionWidthRatio/2f, 0, 0);
-        dropdownRect.sizeDelta = new Vector2((optionPanelHeight/2f)*resolutionWidthRatio, 0);
-        /* Set the currently selected dropwdown item menu to reflect the current resolution */
-        string currentRes = Screen.currentResolution.width + "x" + Screen.currentResolution.height;
-        dropdown.value = res.Length-1;
-        for(int i = 0; i < res.Length; i++) {
-            if(currentRes.Equals(res[i].width + "x" + res[i].height)) {
-                dropdown.value = i;
-                i = res.Length;
+            /* Link a function to it's onValueChange */
+            if(i == 0) {
+                toggle.onValueChanged.AddListener(delegate { UpdatedWindowedToggle(toggle); });
+                toggle.isOn = !Screen.fullScreen;
+            }else if(i == 1) {
+                toggle.onValueChanged.AddListener(delegate { LockMouseToggle(toggle); });
+                toggle.isOn = Cursor.lockState == CursorLockMode.Confined;
             }
+            else if(i == 2) {
+                toggle.onValueChanged.AddListener(delegate { RunWithoutFocusToggle(toggle); });
+                toggle.isOn = Application.runInBackground;
+            }
+
+            /* Position the toggle to be placed on the right side of it's panel */
+            toggleRect.anchorMin = new Vector2(0.51f, 0);
+            toggleRect.anchorMax = new Vector2(1, 1);
+            toggleRect.anchoredPosition = new Vector3(0, 0, 0);
+            toggleRect.sizeDelta = new Vector2(optionPanelHeight, 0);
+
+            /* Resize the images of the button to reflect the panel's height */
+            RectTransform background = toggleRect.GetChild(0).GetComponent<RectTransform>();
+            background.anchorMin = new Vector2(0, 0);
+            background.anchorMax = new Vector2(0, 1);
+            /**/background.anchoredPosition = new Vector3(buttonHeight/2f, 0, 0);
+            /**/background.sizeDelta = new Vector2(buttonHeight/2f, 0);
+            RectTransform checkbox = background.GetChild(0).GetComponent<RectTransform>();
+            checkbox.anchorMin = new Vector2(0.5f, 0.5f);
+            checkbox.anchorMax = new Vector2(0.5f, 0.5f);
+            checkbox.sizeDelta = new Vector2(buttonHeight/2f, buttonHeight/2f);
         }
 
-        /* Panel 5 controls the framerate lock/target framerate */
-        GameObject framerateDropdownObject = Instantiate(videoOptionsDropwdownReference.gameObject);
-        framerateDropdownObject.name = "Framerate Dropdown";
-        framerateDropdownObject.SetActive(true);
-        Dropdown framerateDropdown = framerateDropdownObject.GetComponent<Dropdown>();
-        RectTransform framerateDropdownRect = framerateDropdownObject.GetComponent<RectTransform>();
-        RectTransform framerateDropdownPanel = videoOptionPanels[4].GetComponent<RectTransform>();
-        framerateDropdownRect.SetParent(framerateDropdownPanel);
-        /* Link a function to it's onValueChange */
-        framerateDropdown.onValueChanged.AddListener(delegate { UpdateLockedFramerate(framerateDropdown); });
-        /* Populate the dropdown with potential locked framerates */
-        List<string> newFramerates = new List<string>() { "Inf", "10", "30", "60", "69", "144", "420"};
-        framerateDropdown.ClearOptions();
-        framerateDropdown.AddOptions(newFramerates);
-        framerateDropdown.RefreshShownValue();
-        /* Position the object to be placed on the right side of it's panel */
-        framerateDropdownRect.anchorMin = new Vector2(0.5f, 0);
-        framerateDropdownRect.anchorMax = new Vector2(0.5f, 1);
-        framerateDropdownRect.anchoredPosition = new Vector3((optionPanelHeight/2f)*framerateWidthRatio/2f, 0, 0);
-        framerateDropdownRect.sizeDelta = new Vector2((optionPanelHeight/2f)*framerateWidthRatio, 0);
-        /* Start the framerate as unlocked */
-        framerateDropdown.value = 0;
-        UpdateLockedFramerate(framerateDropdown);
 
+        /*
+         * Add the UI dropdown menu component for the defined amount of option panels
+         */
+        string[] dropdownOptions = { "Resolution Dropdown", "Framerate Dropdown" };
+        for(int i = 0; i < dropdownOptions.Length; i++) {
+            /* Create the transforms and objects for the dropdown options */
+            int optionIndex = videoOptionPanels.Length-dropdownOptions.Length + i;
+            RectTransform panel = videoOptionPanels[optionIndex].GetComponent<RectTransform>();
+            GameObject dropObject = Instantiate(videoOptionsDropwdownReference.gameObject);
+            Dropdown drop = dropObject.GetComponent<Dropdown>();
+            RectTransform dropRect = dropObject.GetComponent<RectTransform>();
+            dropObject.name = "Dropdown [" + dropdownOptions[i] + "]";
+            dropObject.SetActive(true);
+            dropRect.SetParent(panel);
+            /* Position the object to be placed on the right side of it's panel */
+            dropRect.anchorMin = new Vector2(0.5f, 0);
+            dropRect.anchorMax = new Vector2(0.5f, 1);
+            dropRect.anchoredPosition = new Vector3((optionPanelHeight/2f)*resolutionWidthRatio/2f, 0, 0);
+            dropRect.sizeDelta = new Vector2((optionPanelHeight/2f)*resolutionWidthRatio, 0);
+
+            /* Link a function to it's onValueChanged and populate the dropdown options */
+            List<string> options = new List<string>();
+            int selectedOption = 0;
+            if(i == 0) {
+                /* Get the usable resolutions by the current screen */
+                drop.onValueChanged.AddListener(delegate { UpdatedResolutionDropdown(drop); });
+                Resolution[] resolutions = Screen.resolutions;
+                string currentResolution = Screen.currentResolution.width + "x" + Screen.currentResolution.height;
+                for(int j = 0; j < resolutions.Length; j++) {
+                    options.Add(resolutions[j].width + "x" + resolutions[j].height);
+                    /* Set the selected resolution to the currently used resolution */
+                    if(currentResolution.Equals(resolutions[j].width + "x" + resolutions[j].height)) {
+                        selectedOption = j;
+                    }
+                }
+            }
+            else if(i == 1) {
+                /* Use a list of pre-defined framerates */
+                drop.onValueChanged.AddListener(delegate { UpdateLockedFramerate(drop); });
+                options = new List<string>() { "Inf", "10", "30", "60", "69", "144", "420" };
+                /* Set the currently selected framerate to unlocked */
+                selectedOption = 0;
+            }
+            /* Link the new options to the dropdown menu */
+            drop.ClearOptions();
+            drop.AddOptions(options);
+            drop.RefreshShownValue();
+        }
+        
         /* End by setting the position/rotation of the panel after all components have been properly set */
         VideoPanelPositionUpdate(0);
     }
@@ -848,8 +791,7 @@ public class Menu : MonoBehaviour {
         button.name = "Start button";
 
         /* Setup the text of the button */
-        SetupText(button.GetComponentInChildren<Text>());
-        button.GetComponentInChildren<Text>().text = "START";
+        SetupButtonText(button.GetComponentInChildren<Text>(), "START");
 
         /* Setup the event triggers for mouse clicks and hovers */
         button.onClick.AddListener(StartButtonClick);
@@ -864,8 +806,7 @@ public class Menu : MonoBehaviour {
         button.name = "Video button";
 
         /* Setup the text of the button */
-        SetupText(button.GetComponentInChildren<Text>());
-        button.GetComponentInChildren<Text>().text = "VIDEO";
+        SetupButtonText(button.GetComponentInChildren<Text>(), "VIDEO");
 
         /* Setup the event triggers for mouse clicks and hovers */
         button.onClick.AddListener(VideoButtonClick);
@@ -880,8 +821,7 @@ public class Menu : MonoBehaviour {
         button.name = "Sensitivity button";
 
         /* Setup the text of the button */
-        SetupText(button.GetComponentInChildren<Text>());
-        button.GetComponentInChildren<Text>().text = "SENSITIVITY";
+        SetupButtonText(button.GetComponentInChildren<Text>(), "SENSITIVITY");
 
         /* Setup the event triggers for mouse clicks and hovers */
         button.onClick.AddListener(SensButtonClick);
@@ -896,8 +836,7 @@ public class Menu : MonoBehaviour {
         button.name = "Quit button";
 
         /* Setup the text of the button */
-        SetupText(button.GetComponentInChildren<Text>());
-        button.GetComponentInChildren<Text>().text = "QUIT";
+        SetupButtonText(button.GetComponentInChildren<Text>(), "QUIT");
 
         /* Setup the event triggers for mouse clicks and hovers */
         button.onClick.AddListener(QuitButtonClick);
@@ -1346,6 +1285,7 @@ public class Menu : MonoBehaviour {
         RectTransform toggleRect;
         RectTransform checkBoxRect;
         RectTransform videoPanel = panelRects[panelEnum];
+        Text text;
         float optionPanelHeight = buttonHeight/2f;
         float fromCenterToTopOfVideoPanel = (screenHeight*panelsHeight[panelEnum])/2f - buttonHeight/2f;
         
@@ -1401,6 +1341,16 @@ public class Menu : MonoBehaviour {
             dropdownItem.sizeDelta = new Vector2(0, dropdownContent.sizeDelta.y);
             dropdownRect.GetChild(0).GetComponent<Outline>().effectDistance = 0.01f*new Vector2(optionHeight, optionHeight);
             dropdownItem.GetChild(1).GetComponent<Outline>().effectDistance = 0.01f*new Vector2(optionHeight, optionHeight);
+        }
+         
+        /*
+         * Adjust the outline of the text of each option to reflect the size change
+         */
+        for(int i = 0; i < videoPanel.childCount; i++) {
+            panelRect = videoPanel.GetChild(i).GetComponent<RectTransform>();
+            text = panelRect.GetChild(0).GetComponent<Text>();
+            float optionHeight = panelRect.GetComponent<RectTransform>().sizeDelta.y;
+            text.GetComponent<Outline>().effectDistance = 0.025f*new Vector2(optionHeight, optionHeight);
         }
 
         VideoPanelPositionUpdate(0);
