@@ -529,7 +529,7 @@ public class Menu : MonoBehaviour {
         RectTransform videoPanel = panelRects[panelEnum];
         videoPanel.name = "Video panel";
         videoPanel.gameObject.SetActive(false);
-
+        
         /* Set the anchors so it's centered on the right wall */
         videoPanel.anchorMin = new Vector2(1, 0.5f);
         videoPanel.anchorMax = new Vector2(1, 0.5f);
@@ -1339,116 +1339,69 @@ public class Menu : MonoBehaviour {
 
     void VideoPanelReset() {
         /*
-         * Reset the video panel's position and size
+         * Reset the position and size of the video panel and it's components
          */
         int panelEnum = (int) Panels.Video;
-        RectTransform videoPanel = panelRects[panelEnum];
-
-        /* Set the anchors so it's centered on the right wall */
-        videoPanel.anchorMin = new Vector2(1, 0.5f);
-        videoPanel.anchorMax = new Vector2(1, 0.5f);
-
-        /* The size of the panel should be 80% the screen width and 100% for height */
-        panelsWidth[panelEnum] = 0.8f;
-        panelsHeight[panelEnum] = 1f;
-        float panelWidth = Screen.width*panelsWidth[panelEnum];
-        float panelHeight = Screen.height*panelsHeight[panelEnum];
-        videoPanel.sizeDelta = new Vector2(panelWidth, panelHeight);
-
-        /* Resize the option panels to fit the screen */
         RectTransform panelRect;
+        RectTransform toggleRect;
+        RectTransform checkBoxRect;
+        RectTransform videoPanel = panelRects[panelEnum];
         float optionPanelHeight = buttonHeight/2f;
-        for(int i = 0; i < videoPanel.childCount; i++) {
+        float fromCenterToTopOfVideoPanel = (screenHeight*panelsHeight[panelEnum])/2f - buttonHeight/2f;
+        
+        /* Set the new size of the video panel */
+        videoPanel.sizeDelta = new Vector2(screenWidth*panelsWidth[panelEnum], screenHeight*panelsHeight[panelEnum]);
+        
+        /*
+         * Windowed, Mouse lock & Mouse focus options
+         */
+        for(int i = 0; i < 3; i++) {
+            /* Get the components of the option */
             panelRect = videoPanel.GetChild(i).GetComponent<RectTransform>();
-            if(panelRect != null) {
-                panelRect.anchoredPosition = new Vector3(0, (panelHeight/2f-buttonHeight/2f) -i*optionPanelHeight*3/2f, 0);
-                panelRect.sizeDelta = new Vector2(0, optionPanelHeight);
-            }
+            toggleRect = panelRect.GetChild(1).GetComponent<RectTransform>();
+            checkBoxRect = toggleRect.GetChild(0).GetComponent<RectTransform>();
+
+            /* Resize the panel */
+            panelRect.anchoredPosition = new Vector3(0, fromCenterToTopOfVideoPanel -i*optionPanelHeight*3/2f, 0);
+            panelRect.sizeDelta = new Vector2(0, optionPanelHeight);
+
+            /* Resize the toggle and checkbox */
+            toggleRect.sizeDelta = new Vector2(optionPanelHeight, 0);
+            checkBoxRect.anchoredPosition = new Vector3(optionPanelHeight, 0, 0);
+            checkBoxRect.sizeDelta = new Vector2(optionPanelHeight, 0);
         }
-        /* Place the final two panels on the same line (and slightly lower) */
-        panelRect = videoPanel.GetChild(videoPanel.childCount-1).GetComponent<RectTransform>();
-        panelRect.anchoredPosition = new Vector3(0, (panelHeight/2f-buttonHeight/2f) -(videoPanel.childCount-1.5f)*optionPanelHeight*3/2f, 0);
-        panelRect = videoPanel.GetChild(videoPanel.childCount-2).GetComponent<RectTransform>();
-        panelRect.anchoredPosition = new Vector3(0, (panelHeight/2f-buttonHeight/2f) -(videoPanel.childCount-1.5f)*optionPanelHeight*3/2f, 0);
-
-
-        /* Update the windowed toggle box */
-        RectTransform windowedToggle = videoPanel.GetChild(0).GetChild(1).GetComponent<RectTransform>();
-        windowedToggle.anchoredPosition = new Vector3(0, 0, 0);
-        windowedToggle.sizeDelta = new Vector2(optionPanelHeight, 0);
-        //Resize the background object, ie the checkbox
-        RectTransform backgroundRect = windowedToggle.transform.GetChild(0).GetComponent<RectTransform>();
-        backgroundRect.anchorMin = new Vector2(0, 0);
-        backgroundRect.anchorMax = new Vector2(0, 1);
-        backgroundRect.anchoredPosition = new Vector3(buttonHeight/2f, 0, 0);
-        backgroundRect.sizeDelta = new Vector2(buttonHeight/2f, 0);
-        //Resize the tick indicator, ie the checkmark
-        RectTransform checkRect = backgroundRect.GetChild(0).GetComponent<RectTransform>();
-        checkRect.anchorMin = new Vector2(0.5f, 0.5f);
-        checkRect.anchorMax = new Vector2(0.5f, 0.5f);
-        checkRect.sizeDelta = new Vector2(buttonHeight/2f, buttonHeight/2f);
-
-        /* Update the mouse lock toggle box */
-        RectTransform mouseToggle = videoPanel.GetChild(1).GetChild(1).GetComponent<RectTransform>();
-        mouseToggle.anchoredPosition = new Vector3(0, 0, 0);
-        mouseToggle.sizeDelta = new Vector2(optionPanelHeight, 0);
-        //Resize the background object, ie the checkbox
-        backgroundRect = mouseToggle.transform.GetChild(0).GetComponent<RectTransform>();
-        backgroundRect.anchorMin = new Vector2(0, 0);
-        backgroundRect.anchorMax = new Vector2(0, 1);
-        backgroundRect.anchoredPosition = new Vector3(buttonHeight/2f, 0, 0);
-        backgroundRect.sizeDelta = new Vector2(buttonHeight/2f, 0);
-        //Resize the tick indicator, ie the checkmark
-        checkRect = backgroundRect.GetChild(0).GetComponent<RectTransform>();
-        checkRect.anchorMin = new Vector2(0.5f, 0.5f);
-        checkRect.anchorMax = new Vector2(0.5f, 0.5f);
-        checkRect.sizeDelta = new Vector2(buttonHeight/2f, buttonHeight/2f);
-
-        /* Update the mouse focus toggle box */
-        RectTransform focusToggle = videoPanel.GetChild(2).GetChild(1).GetComponent<RectTransform>();
-        focusToggle.anchoredPosition = new Vector3(0, 0, 0);
-        focusToggle.sizeDelta = new Vector2(optionPanelHeight, 0);
-        //Resize the background object, ie the checkbox
-        backgroundRect = focusToggle.transform.GetChild(0).GetComponent<RectTransform>();
-        backgroundRect.anchorMin = new Vector2(0, 0);
-        backgroundRect.anchorMax = new Vector2(0, 1);
-        backgroundRect.anchoredPosition = new Vector3(buttonHeight/2f, 0, 0);
-        backgroundRect.sizeDelta = new Vector2(buttonHeight/2f, 0);
-        //Resize the tick indicator, ie the checkmark
-        checkRect = backgroundRect.GetChild(0).GetComponent<RectTransform>();
-        checkRect.anchorMin = new Vector2(0.5f, 0.5f);
-        checkRect.anchorMax = new Vector2(0.5f, 0.5f);
-        checkRect.sizeDelta = new Vector2(buttonHeight/2f, buttonHeight/2f);
-
-        /* Update the Resolution dropdown size */
-        RectTransform resolutionDropdownRect = videoPanel.GetChild(3).GetChild(1).GetComponent<RectTransform>();
-        resolutionDropdownRect.anchoredPosition = new Vector3((optionPanelHeight/2f)*resolutionWidthRatio/2f, 0, 0);
-        resolutionDropdownRect.sizeDelta = new Vector2((optionPanelHeight/2f)*resolutionWidthRatio, 0);
-
-        /* Update the framerate limit dropdown size */
-        RectTransform framerateDropdownRect = videoPanel.GetChild(4).GetChild(1).GetComponent<RectTransform>();
-        framerateDropdownRect.anchoredPosition = new Vector3((optionPanelHeight/2f)*framerateWidthRatio/2f, 0, 0);
-        framerateDropdownRect.sizeDelta = new Vector2((optionPanelHeight/2f)*framerateWidthRatio, 0);
-
-
-        /* Update the size of the content & items of the resolution dropdown list */
-        RectTransform resDropdownContent = resolutionDropdownRect.GetChild(2).GetChild(0).GetChild(0).GetComponent<RectTransform>();
-        RectTransform resDropdownItem = resDropdownContent.GetChild(0).GetComponent<RectTransform>();
-        float resOptionHeight = videoPanel.GetChild(3).GetComponent<RectTransform>().sizeDelta.y;
-        resDropdownContent.sizeDelta = new Vector2(0f, resOptionHeight*0.75f);
-        resDropdownItem.sizeDelta = new Vector2(0, resDropdownContent.sizeDelta.y);
-        resolutionDropdownRect.GetChild(0).GetComponent<Outline>().effectDistance = 0.01f*new Vector2(resOptionHeight, resOptionHeight);
-        resDropdownItem.GetChild(1).GetComponent<Outline>().effectDistance = 0.01f*new Vector2(resOptionHeight, resOptionHeight);
         
-        /* Update the size of the content & items of the framerate dropdown list */
-        RectTransform frameDropdownContent = framerateDropdownRect.GetChild(2).GetChild(0).GetChild(0).GetComponent<RectTransform>();
-        RectTransform frameDropdownItem = frameDropdownContent.GetChild(0).GetComponent<RectTransform>();
-        float frameOptionHeight = videoPanel.GetChild(4).GetComponent<RectTransform>().sizeDelta.y;
-        frameDropdownContent.sizeDelta = new Vector2(0f, frameOptionHeight*0.75f);
-        frameDropdownItem.sizeDelta = new Vector2(0, frameDropdownContent.sizeDelta.y);
-        framerateDropdownRect.GetChild(0).GetComponent<Outline>().effectDistance = 0.01f*new Vector2(frameOptionHeight, frameOptionHeight);
-        frameDropdownItem.GetChild(1).GetComponent<Outline>().effectDistance = 0.01f*new Vector2(frameOptionHeight, frameOptionHeight);
-        
+        /*
+         * Resolution & Framerate dropdowns
+         */
+         for(int i = 0; i < 2; i++) {
+            /* Get the components of the dropdown */
+            panelRect = videoPanel.GetChild(videoPanel.childCount-1 - i).GetComponent<RectTransform>();
+            RectTransform dropdownRect = panelRect.GetChild(1).GetComponent<RectTransform>();
+            RectTransform dropdownContent = dropdownRect.GetChild(2).GetChild(0).GetChild(0).GetComponent<RectTransform>();
+            RectTransform dropdownItem = dropdownContent.GetChild(0).GetComponent<RectTransform>();
+
+            /* Set the sizes of the panel */
+            panelRect.anchoredPosition = new Vector3(0, fromCenterToTopOfVideoPanel -(videoPanel.childCount-1.5f)*optionPanelHeight*3/2f, 0);
+            panelRect.sizeDelta = new Vector2(0, optionPanelHeight);
+            
+            /* Update the dropdown rect's size */
+            float wdithRatio;
+            if(i == 0) {
+                wdithRatio = framerateWidthRatio;
+            }else {
+                wdithRatio = resolutionWidthRatio;
+            }
+            dropdownRect.anchoredPosition = new Vector3((optionPanelHeight/2f)*wdithRatio/2f, 0, 0);
+            dropdownRect.sizeDelta = new Vector2((optionPanelHeight/2f)*wdithRatio, 0);
+
+            /* Update the size of the content & items of the resolution dropdown list */
+            float optionHeight = panelRect.GetComponent<RectTransform>().sizeDelta.y;
+            dropdownContent.sizeDelta = new Vector2(0f, optionHeight*0.75f);
+            dropdownItem.sizeDelta = new Vector2(0, dropdownContent.sizeDelta.y);
+            dropdownRect.GetChild(0).GetComponent<Outline>().effectDistance = 0.01f*new Vector2(optionHeight, optionHeight);
+            dropdownItem.GetChild(1).GetComponent<Outline>().effectDistance = 0.01f*new Vector2(optionHeight, optionHeight);
+        }
 
         VideoPanelPositionUpdate(0);
     }
