@@ -2378,12 +2378,12 @@ public class Menu : MonoBehaviour {
             }
             
             /* Leaving the VideoToMain state will set the video panel to be inactive */
-            else if(newState == MenuStates.VideoToMain) {
+            else if(state == MenuStates.VideoToMain) {
                 panelRects[(int) Panels.Video].gameObject.SetActive(false);
             }
 
             /* Leaving the SensToMain state will set the sensitivity panel to be inactive */
-            else if(newState == MenuStates.SensToMain) {
+            else if(state == MenuStates.SensToMain) {
                 panelRects[(int) Panels.Sens].gameObject.SetActive(false);
             }
 

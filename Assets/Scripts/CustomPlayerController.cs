@@ -358,7 +358,9 @@ public class CustomPlayerController : MonoBehaviour {
          * independent of the player's state. Each animation should have a "Stop" and "Start" command.
          * --------
          */
-         
+        //Update the rendeirng layer
+        UpdateRenderingLayer();
+
         /* Prevent the mouse from moving the camera while in a menu */
         if(!inMenu) {
             AdjustCameraRotation();
@@ -403,6 +405,10 @@ public class CustomPlayerController : MonoBehaviour {
         if(!inMenu) {
             cameraEffectsScript.UpdateCameraEffects();
         }
+
+
+        //Update the rendeirng layer
+        UpdateRenderingLayer();
     }
 
     
@@ -828,12 +834,13 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Get the distance between the player's position and the startingRoom's portal */
         float portalDistance = startingRoom.window.portalSet.EntrancePortal.backwardsPortalMesh.transform.position.z;
-        portalDistance = Mathf.Abs(portalDistance - transform.position.z) - 0.2f;
+        portalDistance = Mathf.Abs(portalDistance - transform.position.z);
         float closeDistance = 0.2f;
         /* Prevent the cameraDistance from placing the camera too close to the portal mesh */
         if(introCamDistance < portalDistance && introCamDistance > portalDistance - closeDistance) {
             introCamDistance = portalDistance - closeDistance;
         }
+
 
         /* Set the parameters required for the ray trace */
         Vector3 currentCameraPosition = camDestinationPos;
@@ -845,7 +852,7 @@ public class CustomPlayerController : MonoBehaviour {
         currentCameraTransform.position = currentCameraPosition;
 
         /* Depending on whether the camera has teleported or not, handle whether the camera will render terrain */
-        PlayerRenderTerrain(teleported);
+        //PlayerRenderTerrain(teleported);
     }
 
 
@@ -1524,6 +1531,13 @@ public class CustomPlayerController : MonoBehaviour {
         /* Start a timer for when we will leave the inMenu state */
         currentlyLeavingInIntro = true;
         remainingInIntroTime = timeToLeaveIntro;
+        
+        /* Set the startingRoom's outside window to be in the terrain layer so we can render it later */
+        startingRoom.window.outsideWindowContainer.layer = LayerMask.NameToLayer("Terrain");
+        for(int i = 0; i < startingRoom.window.outsideWindowContainer.transform.childCount; i++) {
+            startingRoom.window.outsideWindowContainer.transform.GetChild(i).gameObject.layer = LayerMask.NameToLayer("Terrain");
+        }
+        startingRoom.window.portalSet.ExitPortal.backwardsPortalMesh.layer = LayerMask.NameToLayer("Terrain");
     }
 
     public void ContinueButtonPressed() {
@@ -1581,22 +1595,15 @@ public class CustomPlayerController : MonoBehaviour {
         outsideState = true;
         fastFallMod = 5;
         maxYVelocity = 1.5f;
-
-        /* Set the player camera's close clipping plane to a higher value as it fixes issues when rendering
-         * objects far away and we will not be encoutering another portal anymore. */
-        playerCamera.nearClipPlane = 0.1f;
-
+        
         /* Change the player camera's layers so that they are rendering the terrain layer */
-        PlayerRenderTerrain(true);
+        //PlayerRenderTerrain(true);
 
         /* The player's steps will now be stepping on soft ground */
         currentStepType = 1;
 
         /* Tell the player's sound script that they are now in the outside state */
         playerSoundsScript.EnteringOutside();
-
-        /* Update the player camera's rendering distance */
-        playerCamera.farClipPlane = cameraFarClippingPlane;
     }
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
@@ -1775,20 +1782,49 @@ public class CustomPlayerController : MonoBehaviour {
     public void PlayerRenderTerrain(bool renderTerrain) {
         /*
          * Calling this function will change the culling mask of the player's camera.
-         * True will have the camera render all layers. False will render all but the terrain layer.
+         * True will have the camera render only the terrain layer layers. 
+         * False will render all but the terrain layer.
          * 
-         * This will also change the player camera's near and far clipping planes.
+         * Do not change the player's clipping planes as the camera will still be very close to 
+         * the outside window while they start entering the outside.
+         * 
          */
 
         if(renderTerrain) {
-            playerCamera.cullingMask = -1;
-            playerCamera.nearClipPlane = 0.2f;
+            playerCamera.cullingMask = 1 << PortalSet.maxLayer + 2;
+            playerCamera.nearClipPlane = 0.01f;
             playerCamera.farClipPlane = cameraFarClippingPlane;
         }
         else {
             playerCamera.cullingMask = ~(1 << PortalSet.maxLayer + 2);
             playerCamera.nearClipPlane = 0.01f;
             playerCamera.farClipPlane = cameraFarClippingPlane;
+        }
+    }
+
+    public void UpdateRenderingLayer() {
+        /*
+         * Update the camera's rendering layer relative to it's position from the outside window.
+         * 
+         * When the player enters and leaves the inside and outside states, update the 
+         * outside window's portal's trigger to be active/inactive so that when outside,
+         * the camera can collide with it and while inside, the sunflare won't be blocked.
+         */
+
+        /* Get the Z positions of the player camera and the staringRoom's outside window */
+        float windowExit = startingRoom.windowExit.position.z + 3;
+        float camPos = playerCamera.transform.position.z;
+        
+        /* The camera is past the window - The camera is outside */
+        if(windowExit > camPos) {
+            PlayerRenderTerrain(true);
+            startingRoom.window.portalSet.ExitPortal.TriggerContainer.GetChild(0).GetComponent<BoxCollider>().enabled = true;
+        }
+        /* Camera is behind the window - Camera is inside */
+        else {
+            PlayerRenderTerrain(false);
+            //This one should be false
+            startingRoom.window.portalSet.ExitPortal.TriggerContainer.GetChild(0).GetComponent<BoxCollider>().enabled = true;
         }
     }
 }
