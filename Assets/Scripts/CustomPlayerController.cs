@@ -179,6 +179,9 @@ public class CustomPlayerController : MonoBehaviour {
     private float timeToLeaveIntro = 3;
 
 
+    /* --- One-time use Variables --------------------------- */
+    public bool fallingOutWindow = false;
+
     /* Debugging trackers */
     public static int renderedCameraCount = 0;
     private System.DateTime before;
@@ -358,8 +361,9 @@ public class CustomPlayerController : MonoBehaviour {
          * independent of the player's state. Each animation should have a "Stop" and "Start" command.
          * --------
          */
-        //Update the rendeirng layer
-        UpdateRenderingLayer();
+         
+        /* Update the outside window's portal collider (enable it if we are outside so the camera can hit it) */
+        if(fallingOutWindow) { FallingOutWindowUpdate(false); }
 
         /* Prevent the mouse from moving the camera while in a menu */
         if(!inMenu) {
@@ -407,8 +411,8 @@ public class CustomPlayerController : MonoBehaviour {
         }
 
 
-        //Update the rendeirng layer
-        UpdateRenderingLayer();
+        /* Update the camera's rendering layer if needed */
+        if(fallingOutWindow) { FallingOutWindowUpdate(true); }
     }
 
     
@@ -852,7 +856,7 @@ public class CustomPlayerController : MonoBehaviour {
         currentCameraTransform.position = currentCameraPosition;
 
         /* Depending on whether the camera has teleported or not, handle whether the camera will render terrain */
-        //PlayerRenderTerrain(teleported);
+        PlayerRenderTerrain(teleported);
     }
 
 
@@ -1137,6 +1141,53 @@ public class CustomPlayerController : MonoBehaviour {
         playerSoundsScript.ResetAudioMixerVolume();
     }
 
+    void FallingOutWindowUpdate(bool updateLayer) {
+        /*
+         * This is called every update when the player has broken the startingRoom's window 
+         * and has not yet made it outside. It observes the player's position relative to 
+         * the outside camera and decides what to do about the window's portal collider 
+         * and the player camera's rendering layer.
+         * 
+         * The given boolean determines whether we update the camera layer or the window collider
+         */
+
+        /* Get the Z positions of the player camera and the staringRoom's outside window */
+        float windowExit = startingRoom.windowExit.position.z + 0000000;
+        float camPos = playerCamera.transform.position.z;
+        float playerPos = transform.position.z;
+
+        /* Check the camera's position and update the camera's rendering layer */
+        if(updateLayer) {
+            if(windowExit > camPos) {
+                /* The camera is past the window - The camera is outside */
+                PlayerRenderTerrain(true);
+            }
+            else {
+                /* Camera is behind the window - Camera is inside */
+                PlayerRenderTerrain(false);
+            }
+        }
+
+        /* Check the player's position and update the outside window's collider */
+        else {
+            if(windowExit > playerPos) {
+                /* The player's body is outside */
+                startingRoom.window.portalSet.ExitPortal.TriggerContainer.GetChild(0).GetComponent<BoxCollider>().enabled = true;
+                EnteredOutside();
+            }
+            else {
+                /* The player is inside */
+                startingRoom.window.portalSet.ExitPortal.TriggerContainer.GetChild(0).GetComponent<BoxCollider>().enabled = false;
+            }
+        }
+        
+        Debug.Log("running");
+
+        /* If the player has fallen far enough away from the window, stop running this update call */
+        if(windowExit > playerPos + 10) {
+            fallingOutWindow = false;
+        }
+    }
 
     /* ----------- Event Functions ------------------------------------------------------------- */
 
@@ -1547,7 +1598,27 @@ public class CustomPlayerController : MonoBehaviour {
 
         inMenu = false;
     }
+    
+    public void EnteredOutside() {
+        /*
+         * This is called (multiple times) when the player first enters the outside state.
+         * Changes certain values of the player controller to change how it plays.
+         */
 
+        /* When outside, give the player's fastFall a slow speed increases but high max velocity */
+        outsideState = true;
+        fastFallMod = 5;
+        maxYVelocity = 1.5f;
+
+        /* The player's steps will now be stepping on soft ground */
+        currentStepType = 1;
+
+        /* Tell the player's sound script that they are now in the outside state */
+        playerSoundsScript.EnteringOutside();
+
+        /* Change the layer of the startingRoom so that the player can see the particles while outside */
+        startingRoom.gameObject.layer = LayerMask.NameToLayer("Terrain");
+    }
 
     /* ----------- Outside Called Functions ------------------------------------------------------------- */
 
@@ -1584,27 +1655,17 @@ public class CustomPlayerController : MonoBehaviour {
 
         lastRoom = newRoom;
     }
-
-    public void ActiveOutsideState() {
+    
+    public void StartFallingOutside() {
         /*
-         * When called, puts the player into an "outside" state, 
-         * changing certain stats of the controller
+         * Called when the player has entered a state where they are expected to fall out 
+         * of the startingRoom's window. 
          */
 
-        /* When outside, give the player's fastFall a slow speed increases but high max velocity */
-        outsideState = true;
-        fastFallMod = 5;
-        maxYVelocity = 1.5f;
-        
-        /* Change the player camera's layers so that they are rendering the terrain layer */
-        //PlayerRenderTerrain(true);
-
-        /* The player's steps will now be stepping on soft ground */
-        currentStepType = 1;
-
-        /* Tell the player's sound script that they are now in the outside state */
-        playerSoundsScript.EnteringOutside();
+        /* Set the fallingOutWindow to true  */
+        fallingOutWindow = true;
     }
+    
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
 
@@ -1787,7 +1848,6 @@ public class CustomPlayerController : MonoBehaviour {
          * 
          * Do not change the player's clipping planes as the camera will still be very close to 
          * the outside window while they start entering the outside.
-         * 
          */
 
         if(renderTerrain) {
@@ -1799,32 +1859,6 @@ public class CustomPlayerController : MonoBehaviour {
             playerCamera.cullingMask = ~(1 << PortalSet.maxLayer + 2);
             playerCamera.nearClipPlane = 0.01f;
             playerCamera.farClipPlane = cameraFarClippingPlane;
-        }
-    }
-
-    public void UpdateRenderingLayer() {
-        /*
-         * Update the camera's rendering layer relative to it's position from the outside window.
-         * 
-         * When the player enters and leaves the inside and outside states, update the 
-         * outside window's portal's trigger to be active/inactive so that when outside,
-         * the camera can collide with it and while inside, the sunflare won't be blocked.
-         */
-
-        /* Get the Z positions of the player camera and the staringRoom's outside window */
-        float windowExit = startingRoom.windowExit.position.z + 3;
-        float camPos = playerCamera.transform.position.z;
-        
-        /* The camera is past the window - The camera is outside */
-        if(windowExit > camPos) {
-            PlayerRenderTerrain(true);
-            startingRoom.window.portalSet.ExitPortal.TriggerContainer.GetChild(0).GetComponent<BoxCollider>().enabled = true;
-        }
-        /* Camera is behind the window - Camera is inside */
-        else {
-            PlayerRenderTerrain(false);
-            //This one should be false
-            startingRoom.window.portalSet.ExitPortal.TriggerContainer.GetChild(0).GetComponent<BoxCollider>().enabled = true;
         }
     }
 }

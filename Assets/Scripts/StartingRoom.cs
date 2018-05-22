@@ -351,7 +351,7 @@ public class StartingRoom : ConnectedRoom {
         }
 
         /* Once the player breaks the glass, put them into the "outside" state */
-        playerObject.GetComponent<CustomPlayerController>().ActiveOutsideState();
+        playerObject.GetComponent<CustomPlayerController>().StartFallingOutside();
 
         /* Play the audioSource of the glass shattering */
         glassShatterSource.Play();
