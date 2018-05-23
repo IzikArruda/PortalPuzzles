@@ -1540,8 +1540,13 @@ public class CustomPlayerController : MonoBehaviour {
          
         if(Input.GetKeyDown(KeyCode.Escape)) {
             
+            /* Pressing escape during the startup will skip into the main menu */
+            if(playerMenu.state == MenuStates.Startup) {
+                playerMenu.PlayerRequestMenuChange();
+            }
+
             /* Pressing escape will skip the intro */
-            if(PlayerIsInIntro() && currentlyLeavingInIntro) {
+            else if(PlayerIsInIntro() && currentlyLeavingInIntro) {
                 /* Make sure the state properly exits the intro */
                 if(state == PlayerStates.InIntro) {
                     remainingInIntroTime = 0;
@@ -1622,10 +1627,6 @@ public class CustomPlayerController : MonoBehaviour {
 
 
         /*
-         * 
-         * DONT FORGET TO CHANGE IT SO THE PLAYERSTATES IS ACTUAL STATES AND NOT AN INT
-         * 
-         * 
          * SENT AS A MESSAGE IN THE PREVIOUS UPDATE: THE PLAYER'S BODY CAN BLOCK THE SUN.
          * THIS IS BECAUSE THE CAMERA MOVES OUT OF THE BODY WHEN MOVING FAST ENOUGH
          */

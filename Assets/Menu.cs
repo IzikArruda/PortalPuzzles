@@ -96,7 +96,7 @@ public class Transition {
  * already created and assigned in a canvas.
  */
 public class Menu : MonoBehaviour {
-    private MenuStates state;
+    public MenuStates state;
 
     /*
      * Each transitional state and it's Transition object.
@@ -104,7 +104,7 @@ public class Menu : MonoBehaviour {
      * make the state transition into itself as it will be handlede manually in UpdateCurrentState().
      */
     Transition[] transitionStates = {
-        new Transition(MenuStates.Startup, MenuStates.Main, 1.0f, 0f),
+        new Transition(MenuStates.Startup, MenuStates.Main, 6.0f, 0f),
         new Transition(MenuStates.EmptyToMain, MenuStates.Main, 0.325f, 0f),
         new Transition(MenuStates.MainToEmpty, MenuStates.Empty, 0.325f, 0f),
         new Transition(MenuStates.MainToIntro, MenuStates.Empty, 0.5f, 0f),
@@ -543,7 +543,7 @@ public class Menu : MonoBehaviour {
         panelsWidth[panelEnum] = 0.8f;
         panelsHeight[panelEnum] = 1f;
         /* Set the color so that the panel is invisible */
-        videoPanel.GetComponent<Image>().color = new Color(0, 0, 0, 0.2f);
+        videoPanel.GetComponent<Image>().color = new Color(0, 0, 0, 0);
 
         
         float panelWidth = Screen.width*panelsWidth[panelEnum];
@@ -561,7 +561,6 @@ public class Menu : MonoBehaviour {
             panelRect.SetParent(videoPanel);
             panelRect.anchorMin = new Vector2(0, 0.5f);
             panelRect.anchorMax = new Vector2(1, 0.5f);
-            videoOptionPanels[i].AddComponent<Image>().color = new Color(0, 1, 0, 0.3f);//Add an image so we can see the placement
 
             /* Create the text component used for each option */
             GameObject textObject = new GameObject("Option text [" + videoButtonTexts[i] + "]", typeof(RectTransform));
@@ -715,7 +714,7 @@ public class Menu : MonoBehaviour {
         sensPanel.sizeDelta = new Vector2(panelWidth, panelHeight);
 
         /* Set the color so that the panel is invisible */
-        sensPanel.GetComponent<Image>().color = new Color(0, 0, 0, 0.1f);
+        sensPanel.GetComponent<Image>().color = new Color(0, 0, 0, 0);
 
         /*
          * Add new components to the panel
@@ -747,7 +746,7 @@ public class Menu : MonoBehaviour {
         sliderText.transform.SetParent(sensPanel);
         sliderText.SetActive(true);
         /* Set the text properties */
-        text.gameObject.AddComponent<Outline>().effectDistance = heightRatio*new Vector2(1, 1);
+        text.gameObject.AddComponent<Outline>().effectColor = new Color(0, 0, 0, 1);
         text.text = "Hold right-click to test the mouse sensitivity";
         text.font = usedFont;
         text.alignment = TextAnchor.MiddleCenter;
@@ -768,7 +767,7 @@ public class Menu : MonoBehaviour {
         sliderValue.transform.SetParent(sensPanel);
         sliderValue.SetActive(true);
         /* Set the text properties */
-        sensitivitySliderValueText.gameObject.AddComponent<Outline>().effectDistance = heightRatio*new Vector2(1, 1);
+        sensitivitySliderValueText.gameObject.AddComponent<Outline>().effectColor = new Color(0, 0, 0, 1);
         sensitivitySliderValueText.text = ""+sensitivity;
         sensitivitySliderValueText.font = usedFont;
         sensitivitySliderValueText.alignment = TextAnchor.MiddleCenter;
@@ -1201,11 +1200,13 @@ public class Menu : MonoBehaviour {
         aboveText.anchorMax = new Vector2(1, 0.75f);
         aboveText.anchoredPosition = new Vector3(0, 0, 0);
         aboveText.sizeDelta = new Vector2(0, panelHeight/2f);
+        aboveText.GetComponent<Outline>().effectDistance = panelHeight*new Vector2(0.009f, 0.009f);
         /* Set the sizes of the description text bellow */
         bellowText.anchorMin = new Vector2(0, 0.25f);
         bellowText.anchorMax = new Vector2(1, 0.25f);
         bellowText.anchoredPosition = new Vector3(0, 0, 0);
         bellowText.sizeDelta = new Vector2(0, panelHeight/2f);
+        bellowText.GetComponent<Outline>().effectDistance = panelHeight*new Vector2(0.009f, 0.009f);
         SensPanelPositionUpdate(0);
     }
     #endregion
@@ -1366,7 +1367,7 @@ public class Menu : MonoBehaviour {
         Button button = buttons[buttonEnum];
         //Start fading in the button 90% into the intro, finish 100% in
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.775f, 1f);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.875f, 1f);
 
         /* Position the button to already be in it's main position */
         StartButtonHoverUpdate();
@@ -1586,7 +1587,7 @@ public class Menu : MonoBehaviour {
         Button button = buttons[buttonEnum];
         //Start fading in the button 90% into the intro, finish 100% in
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.8f, 1f);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.9f, 1f);
 
         /* Position the button to already be in it's main position */
         VideoButtonHoverUpdate();
@@ -1771,7 +1772,7 @@ public class Menu : MonoBehaviour {
         Button button = buttons[buttonEnum];
         //Start fading in the button 90% into the intro, finish 100% in
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.825f, 1f);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.925f, 1f);
 
         /* Position the button to already be in it's main position */
         SensButtonHoverUpdate();
@@ -1983,7 +1984,7 @@ public class Menu : MonoBehaviour {
         Button button = buttons[buttonEnum];
         //Start fading in the button 90% into the intro, finish 100% in
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.85f, 1f);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.95f, 1f);
 
         /* Position the button at it's main position */
         QuitButtonHoverUpdate();
@@ -2246,7 +2247,7 @@ public class Menu : MonoBehaviour {
         /* Only let the slider change the sensitivity value if we are in the Sensitivity state */
         if(state == MenuStates.Sensitivity) {
             sensitivity = sensitivitySlider.value;
-            sensitivitySliderValueText.text = ""+Mathf.Round(sensitivity*100)/100f;
+            sensitivitySliderValueText.text = "" +Mathf.Round(sensitivity*100)/100f;
             playerController.mouseSens = sensitivity;
             /* Change the color of the text depending on how close it is to the edges */
             float red = 0.8f*Mathf.Clamp((sensitivity - sensitivitySlider.maxValue/2f) / (sensitivitySlider.maxValue/2f), 0, 1);
@@ -2293,8 +2294,16 @@ public class Menu : MonoBehaviour {
          */
         bool inMenu = true;
 
+        /* If the menu is in the startup, skip to the main menu */
+        if(state == MenuStates.Startup) {
+            //Check if the thing is loaded
+            if(terrainController.GetLoadingPercent() >= 1) {
+                GetTransitionFromState(state).timeRemaining = 0;
+            }
+        }
+
         /* If the menu is empty, Start opening the main menu */
-        if(state == MenuStates.Empty) {
+        else if(state == MenuStates.Empty) {
             ChangeState(MenuStates.EmptyToMain);
         }
 
