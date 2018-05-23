@@ -17,6 +17,7 @@ using System.Collections;
  * speed and terminal velocity. 
  */
 public enum PlayerStates{
+    NULL,
     InIntro,
     LeavingIntro,
     Standing,
@@ -37,7 +38,7 @@ public enum PlayerStates{
  * their previous movement and allow the ray to interact with a teleport trigger.
  */
 public class CustomPlayerController : MonoBehaviour {
-    public int state;
+    public PlayerStates state;
     public bool inMenu;
     /* How long the player has spent in the current state */
     public float stateTime;
@@ -371,21 +372,21 @@ public class CustomPlayerController : MonoBehaviour {
         }
 
         /* Update currentCameraTransform to control the transform of the camera, depending on the current state */
-        if(state == (int) PlayerStates.Landing) {
+        if(state == PlayerStates.Landing) {
             /* Apply an animation to the camera while in the landing state */
             AnimatedCameraLanding();
         }
-        else if(state == (int) PlayerStates.FastFalling) {
+        else if(state == PlayerStates.FastFalling) {
             /* Apply an animation to the camera while in the fastFalling state */
             AnimateCameraFastFalling();
         }
         else if(PlayerIsInIntro()) {       
             /* Depending on the player's current state in the intro, re-position the camera */
-            if(state == (int) PlayerStates.InIntro) {
+            if(state == PlayerStates.InIntro) {
                 /* While in the intro, leave the camera immobile */
                 AnimatedCameraInIntro();
             }
-            else if(state == (int) PlayerStates.LeavingIntro) {
+            else if(state == PlayerStates.LeavingIntro) {
                 /* Move the camera back to the player's default camera position, then give them control */
                 AnimatedCameraLeavingIntro();
             }
@@ -523,7 +524,7 @@ public class CustomPlayerController : MonoBehaviour {
         /* Change to the "falling" state and attempt to jump if the player lost their footing */
         if(currentGroundedCount < requiredGroundedCount) {
             JumpAttempt();
-            ChangeState((int) PlayerStates.Falling);
+            ChangeState(PlayerStates.Falling);
         }
 
         /* Update the footPosition and the player's position if they are still standing */
@@ -568,7 +569,7 @@ public class CustomPlayerController : MonoBehaviour {
         /* If enough legs are grounded, the player will change to the standing state */
         if(currentGroundedCount >= requiredGroundedCount) {
             /* Now that the player has landed, reset them to their expected standing position */
-            ChangeState((int) PlayerStates.Standing);
+            ChangeState(PlayerStates.Standing);
             UpdateLegLengths();
 
             /* Calculate the current foot position of the player by finding the new leg length */
@@ -587,8 +588,8 @@ public class CustomPlayerController : MonoBehaviour {
         else {
 
             /* If the player is falling at nearly their maximum falling speed, force them into the fastFalling state */
-            if(state == (int)PlayerStates.Falling && Mathf.Abs(currentYVelocity) > maxYVelocity*0.95f) {
-                ChangeState((int) PlayerStates.FastFalling);
+            if(state == PlayerStates.Falling && Mathf.Abs(currentYVelocity) > maxYVelocity*0.95f) {
+                ChangeState(PlayerStates.FastFalling);
             }
         }
     }
@@ -744,7 +745,7 @@ public class CustomPlayerController : MonoBehaviour {
         /* Switch to the standing state if the camera animation is complete */
         if(stateTime > posState2 && stateTime > rotState2) {
             cameraHeightOffset = 0;
-            ChangeState((int) PlayerStates.Standing);
+            ChangeState(PlayerStates.Standing);
         }
 
         /* Set the rotation of the camera on it's own */
@@ -812,7 +813,7 @@ public class CustomPlayerController : MonoBehaviour {
         else {
             currentCameraTransform.position = camDestinationPos;
             currentCameraTransform.rotation = camDestinationRot;
-            ChangeState((int) PlayerStates.Standing);
+            ChangeState(PlayerStates.Standing);
         }
     }
 
@@ -831,7 +832,7 @@ public class CustomPlayerController : MonoBehaviour {
         }
         
         /* Animate the intro menu's background by moving the startingRoom window's exit point to the side during this state */
-        if(state == (int) PlayerStates.InIntro) {
+        if(state == PlayerStates.InIntro) {
             startingRoom.windowExit.position = startingRoom.windowExit.position + new Vector3(strafeSpeed*Time.deltaTime*40, 0, 0);
         }
         startingRoom.UpdateOutsideWindowPositon(false);
@@ -988,8 +989,8 @@ public class CustomPlayerController : MonoBehaviour {
         playerStepTracker.ResetStepBuffer();
 
         /* Start the player in the standing state */
-        state = -1;
-        ChangeState((int) PlayerStates.Standing);
+        state = PlayerStates.NULL;
+        ChangeState(PlayerStates.Standing);
 
         /* Empty the arraylist of vectors that track the player's upcomming movement */
         if(expectedMovements != null) { expectedMovements.Clear(); }
@@ -1069,9 +1070,9 @@ public class CustomPlayerController : MonoBehaviour {
         cameraYOffset = 0;
 
         /* Start the player in the InIntro state */
-        state = -1;
+        state = PlayerStates.NULL;
         inMenu = true;
-        ChangeState((int) PlayerStates.InIntro);
+        ChangeState(PlayerStates.InIntro);
         //After entering the intro state, we want to update certain values that will be used with the intro animation
         AdjustCameraPosition(GetCameraHeight());
         camDestinationPos = currentCameraTransform.position;
@@ -1191,7 +1192,7 @@ public class CustomPlayerController : MonoBehaviour {
 
     /* ----------- Event Functions ------------------------------------------------------------- */
 
-    void ChangeState(int newState) {
+    void ChangeState(PlayerStates newState) {
         /*
          * Change the player's current state to the given newState. Run certain lines if
          * certain states change into other specific states (fast falling > standing)
@@ -1201,7 +1202,7 @@ public class CustomPlayerController : MonoBehaviour {
         if(state != newState) {
 
             /* Going from FastFalling to a grounded state... */
-            if(state == (int) PlayerStates.FastFalling && StateIsGrounded(newState)) {
+            if(state == PlayerStates.FastFalling && StateIsGrounded(newState)) {
                 /*... Will have the player undergo a hard landing. */
                 if(outsideState) {
                     /* If the player is outside, a hard landing will play a normal landing sound */
@@ -1221,40 +1222,40 @@ public class CustomPlayerController : MonoBehaviour {
             }
 
             /* Entering the Standing state... */
-            if(newState == (int) PlayerStates.Standing){
+            if(newState == PlayerStates.Standing){
 			
 				/*... When leaving the Falling state... */
-				if(state == (int) PlayerStates.Falling){
+				if(state == PlayerStates.Falling){
 					/*... Will lower the camera offset relative to the falling speed */
 					cameraYOffset = -(headHeight + playerBodyLength/2f)*RatioWithinRange(0, (maxYVelocity), -currentYVelocity);
 
                 }
 				
 				/*... When leaving the FastFalling state... */
-				if(state == (int) PlayerStates.FastFalling){
+				if(state == PlayerStates.FastFalling){
 					/*... Causes a "hard fall", forcing the player into a landing animation. */
 					Debug.Log("HARD FALL");
-                	newState = (int) PlayerStates.Landing;
+                	newState = PlayerStates.Landing;
                 	cameraYOffset = 0;
                 }
 			}
 
             /* Exitting the LeavingIntro state will set certain values pertinent to leaving the intro */
-            if(state == (int) PlayerStates.LeavingIntro) {
+            if(state == PlayerStates.LeavingIntro) {
                 inMenu = false;
             }
 			
 			/* Entering the Falling state... */
-			if(newState == (int) PlayerStates.Falling){
+			if(newState == PlayerStates.Falling){
 				
 				/*...When leaving the Landing state... */
-				if(state == (int) PlayerStates.Landing){
+				if(state == PlayerStates.Landing){
 					//Should we set the camera height to its relative position in the landing animstion?
 				}
 			}
 			
 			/* Entering the FastFalling state... */
-			if(newState == (int) PlayerStates.FastFalling){
+			if(newState == PlayerStates.FastFalling){
 
                 /*... Will start playing the fastfalling audio (if the player is not outside) */
                 if(!outsideState) { playerSoundsScript.PlayFastFall(); }
@@ -1278,7 +1279,7 @@ public class CustomPlayerController : MonoBehaviour {
 
         if(jumpPrimed == true && PlayerIsGrounded()) {
             jumpPrimed = false;
-            ChangeState((int) PlayerStates.Falling);
+            ChangeState(PlayerStates.Falling);
             currentYVelocity = jumpSpeed;
         }
     }
@@ -1410,7 +1411,7 @@ public class CustomPlayerController : MonoBehaviour {
         if(PlayerIsAirborn()) {
 
             /* If the player is FastFalling, Increase the falling speed and maximum limit */
-            if(state == (int) PlayerStates.FastFalling) {
+            if(state == PlayerStates.FastFalling) {
                 currentYVelocity -= gravity*Time.deltaTime*60*fastFallMod/5f;
                 if(currentYVelocity < -maxYVelocity*fastFallMod) { currentYVelocity = -maxYVelocity*fastFallMod; }
             }
@@ -1521,8 +1522,8 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* If the player presses y, force the player into fastFall if they are falling */
         if(Input.GetKeyDown("y")) {
-            if(state == (int) PlayerStates.Falling) {
-                ChangeState((int) PlayerStates.FastFalling);
+            if(state == PlayerStates.Falling) {
+                ChangeState(PlayerStates.FastFalling);
             }
         }
 
@@ -1542,9 +1543,9 @@ public class CustomPlayerController : MonoBehaviour {
             /* Pressing escape will skip the intro */
             if(PlayerIsInIntro() && currentlyLeavingInIntro) {
                 /* Make sure the state properly exits the intro */
-                if(state == (int) PlayerStates.InIntro) {
+                if(state == PlayerStates.InIntro) {
                     remainingInIntroTime = 0;
-                    ChangeState((int) PlayerStates.LeavingIntro);
+                    ChangeState(PlayerStates.LeavingIntro);
                 }
                 introCamDistance = 0;
                 /* Ensure the camera ray is fired so certain functions are run (PlayerRenderTerrain) */
@@ -1569,7 +1570,7 @@ public class CustomPlayerController : MonoBehaviour {
             remainingInIntroTime -= Time.deltaTime;
             if(remainingInIntroTime <= 0) {
                 /* When time runs out, change to the leavingIntro state */
-                ChangeState((int) PlayerStates.LeavingIntro);
+                ChangeState(PlayerStates.LeavingIntro);
             }
         }
     }
@@ -1584,11 +1585,11 @@ public class CustomPlayerController : MonoBehaviour {
         remainingInIntroTime = timeToLeaveIntro;
         
         /* Set the startingRoom's outside window to be in the terrain layer so we can render it later */
-        startingRoom.window.outsideWindowContainer.layer = LayerMask.NameToLayer("Terrain");
+        startingRoom.window.outsideWindowContainer.layer = PortalSet.maxLayer + 2;
         for(int i = 0; i < startingRoom.window.outsideWindowContainer.transform.childCount; i++) {
-            startingRoom.window.outsideWindowContainer.transform.GetChild(i).gameObject.layer = LayerMask.NameToLayer("Terrain");
+            startingRoom.window.outsideWindowContainer.transform.GetChild(i).gameObject.layer = PortalSet.maxLayer + 2;
         }
-        startingRoom.window.portalSet.ExitPortal.backwardsPortalMesh.layer = LayerMask.NameToLayer("Terrain");
+        startingRoom.window.portalSet.ExitPortal.backwardsPortalMesh.layer = PortalSet.maxLayer + 2;
     }
 
     public void ContinueButtonPressed() {
@@ -1617,7 +1618,26 @@ public class CustomPlayerController : MonoBehaviour {
         playerSoundsScript.EnteringOutside();
 
         /* Change the layer of the startingRoom so that the player can see the particles while outside */
-        startingRoom.gameObject.layer = LayerMask.NameToLayer("Terrain");
+        startingRoom.gameObject.layer = PortalSet.maxLayer + 2;
+
+
+        /*
+         * 
+         * DONT FORGET TO CHANGE IT SO THE PLAYERSTATES IS ACTUAL STATES AND NOT AN INT
+         * 
+         * 
+         * SENT AS A MESSAGE IN THE PREVIOUS UPDATE: THE PLAYER'S BODY CAN BLOCK THE SUN.
+         * THIS IS BECAUSE THE CAMERA MOVES OUT OF THE BODY WHEN MOVING FAST ENOUGH
+         */
+
+
+
+
+
+
+
+
+
     }
 
     /* ----------- Outside Called Functions ------------------------------------------------------------- */
@@ -1633,8 +1653,8 @@ public class CustomPlayerController : MonoBehaviour {
     	 */
 
         /* Do not go into fastfall if the player is not currently falling or already fastfalling */
-        if(PlayerIsAirborn() && state != (int) PlayerStates.FastFalling) {
-            ChangeState((int) PlayerStates.FastFalling);
+        if(PlayerIsAirborn() && state != PlayerStates.FastFalling) {
+            ChangeState(PlayerStates.FastFalling);
         }
     }
 
@@ -1697,11 +1717,11 @@ public class CustomPlayerController : MonoBehaviour {
         teleported = false;
 
         /* Include teleport triggers into the layerMask */
-        if(detectTeleportTriggers) {rayLayerMask = rayLayerMask | (1 << LayerMask.NameToLayer("Portal Trigger"));}
+        if(detectTeleportTriggers) {rayLayerMask = rayLayerMask | (1 << 8);}
         /* Include all colliders into the layerMask. Assume all colliders use the "Default" layer.  */
-        if(detectOtherColliders) { rayLayerMask = rayLayerMask | (1 << LayerMask.NameToLayer("Default")); }
+        if(detectOtherColliders) { rayLayerMask = rayLayerMask | (1 << 0); }
         /* Include terrain to stop the player when outside */
-        rayLayerMask = rayLayerMask | (1 << LayerMask.NameToLayer("Terrain"));
+        rayLayerMask = rayLayerMask | (1 << (PortalSet.maxLayer + 2));
 
         /* Travel towards the rotation's forward for the remaining distance */
         while(distance > 0 && stopRayTrace == false) {
@@ -1758,39 +1778,39 @@ public class CustomPlayerController : MonoBehaviour {
         return totalRotation;
     }
     
-    bool StateIsGrounded(int givenState){
+    bool StateIsGrounded(PlayerStates givenState){
         /*
     	 * Return true if the player is in a grounded state with their legs linked to an object
     	 */
         bool isGrounded = false;
 
-        if(givenState == (int) PlayerStates.Standing || givenState == (int) PlayerStates.Landing) {
+        if(givenState == PlayerStates.Standing || givenState == PlayerStates.Landing) {
             isGrounded = true;
         }
 
         return isGrounded;
     }
 
-    bool StateIsAirborn(int givenState) {
+    bool StateIsAirborn(PlayerStates givenState) {
         /* 
     	 * Return true if the given state is airborn, with their legs not connected to an object
     	 */
         bool isFalling = false;
 
-        if(givenState == (int) PlayerStates.Falling || givenState == (int) PlayerStates.FastFalling) {
+        if(givenState == PlayerStates.Falling || givenState == PlayerStates.FastFalling) {
             isFalling = true;
         }
 
         return isFalling;
     }
 
-    bool StateIsIntro(int givenState) {
+    bool StateIsIntro(PlayerStates givenState) {
         /*
          * Return true if the player is in a "intro" state.
          */
         bool inIntro = false;
 
-        if(givenState == (int) PlayerStates.LeavingIntro || givenState == (int) PlayerStates.InIntro) {
+        if(givenState == PlayerStates.LeavingIntro || givenState == PlayerStates.InIntro) {
             inIntro = true;
         }
 

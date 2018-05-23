@@ -111,7 +111,7 @@ public class CustomPlayerCameraEffects : MonoBehaviour {
         }
     }
 
-    public void UpdateEffectVignette(int playerState, float playerStateTime, float velocityRatio) {
+    public void UpdateEffectVignette(PlayerStates playerState, float playerStateTime, float velocityRatio) {
         /*
     	 * The vignette effect adds a border around the camera's view.
          * When the player is resetting, have a sharp, closing vignette.
@@ -141,12 +141,12 @@ public class CustomPlayerCameraEffects : MonoBehaviour {
         }
 
         /* Set the intensity relative to the player speed */
-        else if(playerState == (int) PlayerStates.FastFalling) {
+        else if(playerState == PlayerStates.FastFalling) {
             intensity = 0.15f*velocityRatio;
         }
 
         /* Set the intensity depending on the stateTime */
-        else if(playerState == (int) PlayerStates.Landing && playerStateTime < minTime) {
+        else if(playerState == PlayerStates.Landing && playerStateTime < minTime) {
             intensity = 0.15f + 0.15f*Mathf.Sin((Mathf.PI/2f)*(playerStateTime/minTime));
         }
 
@@ -168,7 +168,7 @@ public class CustomPlayerCameraEffects : MonoBehaviour {
         cameraVignette.settings = vignetteSettings;
     }
 
-    public void UpdateEffectChromaticAberration(int playerState, float velocityRatio) {
+    public void UpdateEffectChromaticAberration(PlayerStates playerState, float velocityRatio) {
         /*
     	 * The intensity of this effect will remain at max when in the landing state.
     	 * Any other state will cause a reduction in it's intensity.
@@ -176,12 +176,12 @@ public class CustomPlayerCameraEffects : MonoBehaviour {
         float intensity = 0f;
 
         /* Set the intensity relative to the player speed */
-        if(playerState == (int) PlayerStates.FastFalling) {
+        if(playerState == PlayerStates.FastFalling) {
             intensity = 3*velocityRatio;
         }
 
         /* Keep the intensity at a set value for the duration of the landing state */
-        else if(playerState == (int) PlayerStates.Landing) {
+        else if(playerState == PlayerStates.Landing) {
             intensity = 4;
         }
 
