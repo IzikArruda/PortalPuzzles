@@ -128,7 +128,8 @@ public class Menu : MonoBehaviour {
     StateFunction[] sensPanelTransitions;
 
     /* Button height to width ratios. Set manually and is unique for each font + text content. */
-    private float startBonusSize = 1.3f;
+    private float startBonusSize = 1.75f;
+    private float quitBonusSize = 0.75f;
     private float startWidthRatio = 4.45f;
     private float continueWidthRatio = 7.125f;
     private float videoWidthRatio = 4.25f;
@@ -148,9 +149,8 @@ public class Menu : MonoBehaviour {
     /* Global values used for sizes of UI elements */
     private float minHeight = 20f;
     private float maxHeight = 150f;
-    private float avgHeight = 100f;
+    private float buttonSizeMod = 0.8f;
     private float buttonHeight;
-    private float heightRatio;
 
     /* A link to the player's controller */
     private CustomPlayerController playerController;
@@ -432,8 +432,8 @@ public class Menu : MonoBehaviour {
         screenHeight = Screen.height;
 
         /* Update the buttonHeight value used by all buttons */
-        buttonHeight = Mathf.Clamp(screenHeight*0.15f, minHeight, maxHeight);
-        heightRatio = buttonHeight/avgHeight;
+        buttonHeight = buttonSizeMod*Mathf.Clamp(screenHeight*0.15f, minHeight, maxHeight);
+        //heightRatio = buttonHeight/avgHeight;
 
         /* Run the reset functions for each UI element be updated from the new size */
         if(updateUI) {
@@ -1569,8 +1569,8 @@ public class Menu : MonoBehaviour {
         rect.GetChild(0).GetComponent<RectTransform>().sizeDelta = new Vector2(0, -20f * (buttonHeight/100f));
 
         /* Set the outline's distance relative to the hover value */
-        outlines[0].effectDistance = heightRatio*startBonusSize*new Vector2(0.25f + 1f*hoverRatio, 0.25f + 1f*hoverRatio);
-        outlines[1].effectDistance = heightRatio*startBonusSize*new Vector2(0.25f + 1f*hoverRatio, 0.25f + 1f*hoverRatio);
+        outlines[0].effectDistance = (buttonHeight/100f)*startBonusSize*new Vector2(0.25f + 1f*hoverRatio, 0.25f + 1f*hoverRatio);
+        outlines[1].effectDistance = (buttonHeight/100f)*startBonusSize*new Vector2(0.25f + 1f*hoverRatio, 0.25f + 1f*hoverRatio);
         outlines[0].effectColor = new Color(0, 0, 0, 0.5f + 0.25f*hoverRatio);
         outlines[1].effectColor = new Color(0, 0, 0, 0.5f + 0.25f*hoverRatio);
     }
@@ -1711,7 +1711,7 @@ public class Menu : MonoBehaviour {
          */
         //Adjust the transition to reflect the button's size
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, (videoWidthRatio*startBonusSize)/largestRatio);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, (videoWidthRatio)/largestRatio);
 
         /* Move the button from the main position to off-screen */
         VideoButtonHoverUpdate();
@@ -1758,8 +1758,8 @@ public class Menu : MonoBehaviour {
         rect.GetChild(0).GetComponent<RectTransform>().sizeDelta = new Vector2(0, -20f * (buttonHeight/100f));
 
         /* Set the outline's distance relative to the hover value */
-        outlines[0].effectDistance = heightRatio*startBonusSize*new Vector2(0.25f + 1f*hoverRatio, 0.25f + 1f*hoverRatio);
-        outlines[1].effectDistance = heightRatio*startBonusSize*new Vector2(0.25f + 1f*hoverRatio, 0.25f + 1f*hoverRatio);
+        outlines[0].effectDistance = (buttonHeight/100f)*new Vector2(0.25f + 1f*hoverRatio, 0.25f + 1f*hoverRatio);
+        outlines[1].effectDistance = (buttonHeight/100f)*new Vector2(0.25f + 1f*hoverRatio, 0.25f + 1f*hoverRatio);
         outlines[0].effectColor = new Color(0, 0, 0, 0.5f + 0.25f*hoverRatio);
         outlines[1].effectColor = new Color(0, 0, 0, 0.5f + 0.25f*hoverRatio);
     }
@@ -1974,8 +1974,8 @@ public class Menu : MonoBehaviour {
         rect.GetChild(0).GetComponent<RectTransform>().sizeDelta = new Vector2(0, -20f * (buttonHeight/100f));
 
         /* Set the outline's distance relative to the hover value */
-        outlines[0].effectDistance = heightRatio*startBonusSize*new Vector2(0.25f + 1f*hoverRatio, 0.25f + 1f*hoverRatio);
-        outlines[1].effectDistance = heightRatio*startBonusSize*new Vector2(0.25f + 1f*hoverRatio, 0.25f + 1f*hoverRatio);
+        outlines[0].effectDistance = (buttonHeight/100f)*new Vector2(0.25f + 1f*hoverRatio, 0.25f + 1f*hoverRatio);
+        outlines[1].effectDistance = (buttonHeight/100f)*new Vector2(0.25f + 1f*hoverRatio, 0.25f + 1f*hoverRatio);
         outlines[0].effectColor = new Color(0, 0, 0, 0.5f + 0.25f*hoverRatio);
         outlines[1].effectColor = new Color(0, 0, 0, 0.5f + 0.25f*hoverRatio);
     }
@@ -2016,7 +2016,7 @@ public class Menu : MonoBehaviour {
          */
         //Adjust the transition to reflect the button's size
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, quitWidthRatio/largestRatio);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, quitBonusSize*quitWidthRatio/largestRatio);
 
         /* Move the button from it's off-screen position to the main position */
         QuitButtonHoverUpdate();
@@ -2029,7 +2029,7 @@ public class Menu : MonoBehaviour {
          */
         //Adjust the transition to reflect the button's size
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, quitWidthRatio/largestRatio);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, quitBonusSize*quitWidthRatio/largestRatio);
 
         /* Move the button from it's main position to off-screen */
         QuitButtonHoverUpdate();
@@ -2100,7 +2100,7 @@ public class Menu : MonoBehaviour {
          */
         //Adjust the transition to reflect the button's size
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, quitWidthRatio/largestRatio);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, quitBonusSize*quitWidthRatio/largestRatio);
 
         /* Move the button from the main to off-screen position */
         QuitButtonHoverUpdate();
@@ -2115,7 +2115,7 @@ public class Menu : MonoBehaviour {
          */
         //The transition starts fading at the start and ends 50% through
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 0.5f*quitWidthRatio/largestRatio);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 0.5f*quitBonusSize*quitWidthRatio/largestRatio);
 
         /* Move the button from the main to off-screen position */
         QuitButtonHoverUpdate();
@@ -2130,7 +2130,7 @@ public class Menu : MonoBehaviour {
          */
         //Adjust the transition to reflect the button's size
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, quitWidthRatio/largestRatio);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, quitBonusSize*quitWidthRatio/largestRatio);
 
         /* Move the button from it's main position to off-screen */
         QuitButtonHoverUpdate();
@@ -2143,7 +2143,7 @@ public class Menu : MonoBehaviour {
          */
         //Adjust the transition to reflect the button's size
         Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, quitWidthRatio/largestRatio);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, quitBonusSize*quitWidthRatio/largestRatio);
 
         /* Move the button from it's off-screen position to the main position */
         QuitButtonHoverUpdate();
@@ -2163,7 +2163,7 @@ public class Menu : MonoBehaviour {
         /* The button that this quit button will be placed bellow */
         RectTransform aboveButton = buttonRects[(int) Buttons.Sens];
         
-        float relativeHeight = aboveButton.position.y - aboveButton.sizeDelta.y/2f - buttonHeight/2f;
+        float relativeHeight = aboveButton.position.y - aboveButton.sizeDelta.y/2f - rect.sizeDelta.y/2f;
         rect.position = new Vector3(-rect.sizeDelta.x/2f + rect.sizeDelta.x*sideRatio, relativeHeight, 0);
 
         /* Depending on the current quitValueCurrent value, adjust certain aspects of the quit button */
@@ -2183,7 +2183,7 @@ public class Menu : MonoBehaviour {
                 Transition transition = GetTransitionFromState(state);
                 quitTimeRatio = transition.timeRemaining/transition.timeMax;
                 baseExtraHeight = (1 - quitTimeRatio)*buttonHeight*0.075f;
-                baseExtraWidth = (1 - quitTimeRatio)*baseExtraHeight*quitWidthRatio;
+                baseExtraWidth = (1 - quitTimeRatio)*baseExtraHeight*quitBonusSize*quitWidthRatio;
                 ratioDist += 10*(1 - quitTimeRatio);
             }
             //Set the color of the quit button
@@ -2224,22 +2224,22 @@ public class Menu : MonoBehaviour {
         RectTransform rect = buttonRects[buttonEnum];
         Outline[] outlines = button.GetComponentInChildren<Text>().gameObject.GetComponents<Outline>();
         float hoverRatio = HoverRatio(buttonEnum, true);
-        float extraHoverWidth = -hoverReductionAmount*(1 - hoverRatio)*buttonHeight *quitWidthRatio/largestRatio;
+        float extraHoverWidth = -hoverReductionAmount*(1 - hoverRatio)*buttonHeight *quitBonusSize*quitWidthRatio/largestRatio;
 
         /* Set the color of the button to reflect the current hover value */
         float hoverColor = 1f - 0.10f*hoverRatio;
         button.GetComponentInChildren<Text>().color = new Color(hoverColor, hoverColor, hoverColor, 1);
 
         /* Set the button's size to reflect the current hover value */
-        rect.sizeDelta = new Vector2(buttonHeight*quitWidthRatio + extraHoverWidth, buttonHeight);
+        rect.sizeDelta = new Vector2(quitBonusSize*buttonHeight*quitWidthRatio + extraHoverWidth, buttonHeight);
         
         /* Add a portion of the height into the label object to prevent the text from overflowing using the current font */
         rect.GetChild(0).GetComponent<RectTransform>().anchoredPosition = new Vector3(0, 0, 0);
         rect.GetChild(0).GetComponent<RectTransform>().sizeDelta = new Vector2(0, -20f * (buttonHeight/100f));
 
         /* Set the outline's distance relative to the hover value */
-        outlines[0].effectDistance = heightRatio*new Vector2(0.25f + 1f*hoverRatio, 0.25f + 1f*hoverRatio);
-        outlines[1].effectDistance = heightRatio*new Vector2(0.25f + 1f*hoverRatio, 0.25f + 1f*hoverRatio);
+        outlines[0].effectDistance = (buttonHeight/100f)*quitBonusSize*new Vector2(0.25f + 1f*hoverRatio, 0.25f + 1f*hoverRatio);
+        outlines[1].effectDistance = (buttonHeight/100f)*quitBonusSize*new Vector2(0.25f + 1f*hoverRatio, 0.25f + 1f*hoverRatio);
         outlines[0].effectColor = new Color(0, 0, 0, 0.5f + 0.25f*hoverRatio);
         outlines[1].effectColor = new Color(0, 0, 0, 0.5f + 0.25f*hoverRatio);
     }
@@ -2328,6 +2328,11 @@ public class Menu : MonoBehaviour {
         /* Wanting to quit the sensitivity menu will bring the game back to the main menu */
         else if(state == MenuStates.Sensitivity) {
             ChangeState(MenuStates.SensToMain);
+        }
+
+        /* Wanting to quit the sensitivity menu will bring the game back to the main menu */
+        else if(state == MenuStates.Video) {
+            ChangeState(MenuStates.VideoToMain);
         }
 
         /* give the player control if they are exiting the menu */
