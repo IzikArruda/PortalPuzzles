@@ -1595,6 +1595,10 @@ public class CustomPlayerController : MonoBehaviour {
             startingRoom.window.outsideWindowContainer.transform.GetChild(i).gameObject.layer = PortalSet.maxLayer + 2;
         }
         startingRoom.window.portalSet.ExitPortal.backwardsPortalMesh.layer = PortalSet.maxLayer + 2;
+
+        /* Hide and lock the cursor since the player will regain control */
+        Cursor.lockState = CursorLockMode.Locked;
+        Debug.Log("locked");
     }
 
     public void ContinueButtonPressed() {
@@ -1603,6 +1607,10 @@ public class CustomPlayerController : MonoBehaviour {
          */
 
         inMenu = false;
+
+        /* Hide and lock the cursor since the player will regain control */
+        Cursor.lockState = CursorLockMode.Locked;
+        Debug.Log("locked");
     }
     
     public void EnteredOutside() {
@@ -1687,6 +1695,13 @@ public class CustomPlayerController : MonoBehaviour {
         fallingOutWindow = true;
     }
     
+    public void PlayClickSound() {
+        /*
+         * Play a click sound for the menu
+         */
+
+        Debug.Log("click sound");
+    }
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
 

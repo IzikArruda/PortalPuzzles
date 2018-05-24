@@ -217,6 +217,7 @@ public class Menu : MonoBehaviour {
 
     /* Global values with minor/single uses */
     private Vector2 bonusQuitSize = new Vector2(0, 0);
+    private bool mouseLock = false;
 
 
     /* ----------- Built-in Functions ------------------------------------------------------------- */
@@ -617,7 +618,9 @@ public class Menu : MonoBehaviour {
                 toggle.isOn = !Screen.fullScreen;
             }else if(i == 1) {
                 toggle.onValueChanged.AddListener(delegate { LockMouseToggle(toggle); });
-                toggle.isOn = Cursor.lockState == CursorLockMode.Confined;
+                mouseLock = Cursor.lockState == CursorLockMode.Confined;
+                toggle.isOn = mouseLock;
+                UpdateCursorState();
             }
             else if(i == 2) {
                 toggle.onValueChanged.AddListener(delegate { RunWithoutFocusToggle(toggle); });
@@ -2351,8 +2354,16 @@ public class Menu : MonoBehaviour {
                 inMenu = false;
             }
         }
-
-
+        
+        /* Update the mouse's visibility depending on the menu state */
+        if(!inMenu) {
+            Cursor.lockState = CursorLockMode.Locked;
+            Debug.Log("locked");
+        }
+        else {
+            UpdateCursorState();
+        }
+        
         return inMenu;
     }
 
@@ -2386,6 +2397,12 @@ public class Menu : MonoBehaviour {
                 /* Entering the MainToVideo or MainToSens states will set their panels to be active */
                 if(newState == MenuStates.MainToVideo) { panelRects[(int) Panels.Video].gameObject.SetActive(true); }
                 if(newState == MenuStates.MainToSens) { panelRects[(int) Panels.Sens].gameObject.SetActive(true); }
+
+                /* Changing the transition state (other than entering the quitting state) will reset the quitting value */
+                if(newState != MenuStates.MainToQuit) {
+                    quitValueCurrent = 0;
+                    bonusQuitSize = new Vector2(0, 0);
+                }
             }
             
             /* Entering Main will reset the quitValueCurrent */
@@ -2418,7 +2435,7 @@ public class Menu : MonoBehaviour {
             else if(state == MenuStates.SensToMain) {
                 panelRects[(int) Panels.Sens].gameObject.SetActive(false);
             }
-
+            
             /* Change the current state */
             state = newState;
         }
@@ -2508,13 +2525,14 @@ public class Menu : MonoBehaviour {
 
         /* Lock the mouse in the window */
         if(toggle.isOn) {
-            Cursor.lockState = CursorLockMode.Confined;
+            mouseLock = true;
         }
-
         /* Unlock the mouse from the window */
         else {
-            Cursor.lockState = CursorLockMode.None;
+            mouseLock = false;
         }
+
+        UpdateCursorState();
     }
 
     void RunWithoutFocusToggle(Toggle toggle) {
@@ -2533,6 +2551,31 @@ public class Menu : MonoBehaviour {
         }
     }
 
+    void PlayerClickSound() {
+        /*
+         * Play the sound of the player clicking a button with the mouse
+         */
+
+        playerController.PlayClickSound();
+    }
+
+    public void UpdateCursorState() {
+        /*
+         * Update the mouse lock state
+         */
+
+        /* Lock the mouse (confined) during the menu */
+        if(mouseLock) {
+            Cursor.lockState = CursorLockMode.Confined;
+            Debug.Log("confine");
+        }
+
+        /* Let the mouse go off the screen */
+        else {
+            Cursor.lockState = CursorLockMode.None;
+            Debug.Log("open");
+        }
+    }
 
     /* ----------- Mouse Enter/Hover Functions ------------------------------------------------------------- */
 
@@ -2542,6 +2585,11 @@ public class Menu : MonoBehaviour {
          */
 
         if(IsButtonClickable(Buttons.Start)) {
+            /* Play a mouse click sound when selecting the button in the right state */
+            if(state == MenuStates.Main) {
+                PlayerClickSound();
+            }
+
             /* Start the game by entering the intro state */
             if(!isGameStarted) {
                 ChangeState(MenuStates.MainToIntro);
@@ -2578,6 +2626,11 @@ public class Menu : MonoBehaviour {
          */
 
         if(IsButtonClickable(Buttons.Video)) {
+            /* Play a mouse click sound when selecting the button in the right state */
+            if(state == MenuStates.Main || state == MenuStates.Video) {
+                PlayerClickSound();
+            }
+
             /* Clicking the button on the main menu will bring it to the video state */
             if(state == MenuStates.Main) {
                 ChangeState(MenuStates.MainToVideo);
@@ -2587,6 +2640,7 @@ public class Menu : MonoBehaviour {
             else if(state == MenuStates.Video) {
                 ChangeState(MenuStates.VideoToMain);
             }
+
         }
     }
 
@@ -2612,6 +2666,11 @@ public class Menu : MonoBehaviour {
          */
 
         if(IsButtonClickable(Buttons.Sens)) {
+            /* Play a mouse click sound when selecting the button in the right state */
+            if(state == MenuStates.Main || state == MenuStates.Sensitivity) {
+                PlayerClickSound();
+            }
+
             /* Clicking the button in the main menu will bring it to the sensitivity menu */
             if(state == MenuStates.Main) {
                 ChangeState(MenuStates.MainToSens);
@@ -2646,6 +2705,12 @@ public class Menu : MonoBehaviour {
          */
 
         if(IsButtonClickable(Buttons.Quit)) {
+            /* Play a mouse click sound when selecting the button in the right state */
+            if(state == MenuStates.Main) {
+                PlayerClickSound();
+            }
+
+            /* Clicking the quit button will increase the current quit value */
             if(quitValueCurrent == 0) {
                 quitValueCurrent += quitValueIncrease*3;
             }else {

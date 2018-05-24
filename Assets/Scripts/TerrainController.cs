@@ -418,7 +418,6 @@ public class TerrainController : MonoBehaviour {
             }
         }
         loadingPercent /= visibleChunks.Count;
-        Debug.Log(loadingPercent);
 
         return loadingPercent;
     }
