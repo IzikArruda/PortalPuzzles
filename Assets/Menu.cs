@@ -2567,13 +2567,11 @@ public class Menu : MonoBehaviour {
         /* Lock the mouse (confined) during the menu */
         if(mouseLock) {
             Cursor.lockState = CursorLockMode.Confined;
-            Debug.Log("confine");
         }
 
         /* Let the mouse go off the screen */
         else {
             Cursor.lockState = CursorLockMode.None;
-            Debug.Log("open");
         }
     }
 

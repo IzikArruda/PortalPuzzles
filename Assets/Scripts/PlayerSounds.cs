@@ -33,6 +33,7 @@ public class PlayerSounds : MonoBehaviour {
     private GameObject musicContainerMuted;
     private GameObject musicContainerUpgraded;
     private GameObject fallingContainer;
+    private GameObject meunContainer;
 	/* The main soundEffect container that contains all the source's containers */
 	public GameObject sourceContainer;
     
@@ -44,6 +45,7 @@ public class PlayerSounds : MonoBehaviour {
     private AudioSource musicSourceMuted;
     private AudioSource musicSourceUpgraded;
     private AudioSource fallingSource;
+    private AudioSource menuSource;
 	
 	
 	/* --- Audio Filters ------------------- */
@@ -58,9 +60,9 @@ public class PlayerSounds : MonoBehaviour {
     public AudioClip[] landingClips;
     public AudioClip[] musicClipsMuted;
     public AudioClip[] musicClipsUpgraded;
+    public AudioClip menuClickClip;
     public AudioClip startingMusic;
 	public AudioClip hardLandingClip;
-	//fastfall audio : bus and jet engine?
 	public AudioClip fallingClip;
 
 
@@ -109,6 +111,7 @@ public class PlayerSounds : MonoBehaviour {
         InitializeAudioObject(ref musicSourceUpgraded, ref musicContainerUpgraded, "Music(upgraded)", musicTransformContainer.transform, audioMixerMusic);
         InitializeAudioObject(ref fallingSource, ref fallingContainer, "Falling", effectsTransformContainer.transform, audioMixerMusic);
 		InitializeAudioArray(ref landingSources, ref landingContainers, 3, "Landing", effectsTransformContainer.transform, audioMixerFootsteps);
+        InitializeAudioObject(ref menuSource, ref meunContainer, "Menu", effectsTransformContainer.transform, audioMixerFootsteps);
 
         /* Initialize the fade values for the steps */
         stepFade = new float[maxSimultaniousStepEffects];
@@ -134,6 +137,7 @@ public class PlayerSounds : MonoBehaviour {
         musicSourceMuted.volume = maxVolume;
         musicSourceUpgraded.volume = maxVolume;
 		fallingSource.volume = maxVolume;
+        menuSource.volume = maxVolume;
 
         /* Set the volume for the audio mixer */
         ResetAudioMixerVolume();
@@ -380,6 +384,15 @@ public class PlayerSounds : MonoBehaviour {
         if(!outside) {
             PlayMusic();
         }
+    }
+
+    public void PlayMenuClick() {
+        /*
+         * Play the sound of a menu click
+         */
+
+        menuSource.clip = menuClickClip;
+        menuSource.Play();
     }
 
 

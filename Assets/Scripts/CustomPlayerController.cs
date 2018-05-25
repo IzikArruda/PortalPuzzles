@@ -1598,7 +1598,6 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Hide and lock the cursor since the player will regain control */
         Cursor.lockState = CursorLockMode.Locked;
-        Debug.Log("locked");
     }
 
     public void ContinueButtonPressed() {
@@ -1610,7 +1609,6 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Hide and lock the cursor since the player will regain control */
         Cursor.lockState = CursorLockMode.Locked;
-        Debug.Log("locked");
     }
     
     public void EnteredOutside() {
@@ -1700,7 +1698,8 @@ public class CustomPlayerController : MonoBehaviour {
          * Play a click sound for the menu
          */
 
-        Debug.Log("click sound");
+        /* Play the menu sound clicking clip */
+        playerSoundsScript.PlayMenuClick();
     }
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
