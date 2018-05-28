@@ -217,9 +217,6 @@ public class CustomPlayerController : MonoBehaviour {
         /* Adjust the player's height and width */
         GetComponent<CapsuleCollider>().height = playerBodyLength;
         GetComponent<CapsuleCollider>().radius = playerBodyRadius;
-        
-        /* Enable the waitingRoom that connects the game's startingRoom. This will also enable the startingRoom. */
-        firstWaitingRoom.EnableRoom();
 
         /* Reset the player's positional values and camera effects */
         //ResetPlayer(false);
@@ -301,7 +298,7 @@ public class CustomPlayerController : MonoBehaviour {
         before = System.DateTime.Now;
 
         //Print how many cams were rendered this frame
-        //Debug.Log(renderedCameraCount);
+        //Debug.Log("CAM COUNT: " + renderedCameraCount);
         renderedCameraCount = 0;
 
         /* Pressing the escape button will send a request to the menu and either open/close the menu */

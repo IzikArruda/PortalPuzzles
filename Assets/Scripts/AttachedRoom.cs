@@ -139,7 +139,30 @@ public class AttachedRoom : ConnectedRoom {
          * Disable the attached puzzle room
          */
          
-        if(puzzleRoomParent != null) { puzzleRoomParent.SetActive(false); }
+
+        /*
+         * 
+         * 
+         * IDEA: instead of disabling the entire room, just set the portal meshes to invisible???
+         * we still want to prevent multiple portal rendering
+         * 
+         * ALSO: have each room start disabled, then have the player send a request to their waitingRoom to start
+         * 
+         */
+        if(puzzleRoomParent != null) {
+            
+            /* Check if the puzzle room uses portals */
+            Transform portalContainer = puzzleRoomParent.transform.FindChild("Portals");
+            if(portalContainer != null) {
+                portalContainer.gameObject.SetActive(false);
+            }
+
+            /* Check if the puzzle room is actually the starting room */
+            else if(puzzleRoomParent.GetComponent<StartingRoom>() != null) {
+                //Disable the starting room
+                puzzleRoomParent.SetActive(false);
+            }
+        }
     }
 
     public void EnablePuzzleRoom() {
@@ -147,22 +170,20 @@ public class AttachedRoom : ConnectedRoom {
          * Enable the attached puzzle room
          */
          
-        if(puzzleRoomParent != null) { puzzleRoomParent.SetActive(true); }
-    }
+        if(puzzleRoomParent != null) {
+            
+            /* Check if the puzzle room uses portals */
+            Transform portalContainer = puzzleRoomParent.transform.FindChild("Portals");
+            if(portalContainer != null) {
+                Debug.Log("activate " + portalContainer.childCount + " portals");
+                portalContainer.gameObject.SetActive(true);
+            }
 
-    public void DisableRoom() {
-        /*
-         * Disable only this room
-         */
-
-        gameObject.SetActive(false);
-    }
-
-    public void EnableRoom() {
-        /*
-         * Enable only this room
-         */
-
-        gameObject.SetActive(true);
+            /* Check if the puzzle room is actually the starting room */
+            else if(puzzleRoomParent.GetComponent<StartingRoom>() != null) {
+                //Enable the starting room
+                puzzleRoomParent.SetActive(true);
+            }
+        }
     }
 }

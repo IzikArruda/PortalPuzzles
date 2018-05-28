@@ -74,6 +74,9 @@ public class WaitingRoom : ConnectedRoom {
 
         /* Update the sky sphere */
         UpdateSkySphere();
+
+        /* Every waitingRoom will start disabled */
+        DisableRoom();
     }
 
     void OnTriggerEnter(Collider player) {
@@ -86,6 +89,7 @@ public class WaitingRoom : ConnectedRoom {
         if(player.GetComponent<CustomPlayerController>() != null) {
             entranceRoom.EnablePuzzleRoom();
             exitRoom.EnablePuzzleRoom();
+            SoftEnable();
             if(previousRoom != null) { previousRoom.SoftEnable(); }
             if(nextRoom != null) { nextRoom.SoftEnable(); }
 
@@ -106,18 +110,16 @@ public class WaitingRoom : ConnectedRoom {
 
             /* Player progressed forward */
             if(player.transform.position.z > center.z) {
-                /*entranceRoom.DisablePuzzleRoom();
                 exitRoom.EnablePuzzleRoom();
                 if(nextRoom != null) { nextRoom.SoftEnable(); }
-                if(previousRoom != null) { previousRoom.DisableRoom(); }*/
+                if(previousRoom != null) { previousRoom.DisableRoom(); }
             }
 
             /* Player moved backwards through the puzzles */
             else {
-                /*exitRoom.DisablePuzzleRoom();
                 entranceRoom.EnablePuzzleRoom();
                 if(previousRoom != null) { previousRoom.SoftEnable(); }
-                if(nextRoom != null) { nextRoom.DisableRoom(); }*/
+                if(nextRoom != null) { nextRoom.DisableRoom(); }
             }
         }
     }
@@ -354,35 +356,29 @@ public class WaitingRoom : ConnectedRoom {
 
     public void DisableRoom() {
         /*
-         * Disable the trigger, the objects that make this room and the connected rooms.
+         * Disable the room's portals and the rooms connected to it
          */
 
-        /*roomTrigger.enabled = false;
-        gameObject.SetActive(false);
-        windowContainer.gameObject.SetActive(false);
-        roomObjectsContainer.gameObject.SetActive(false);
-        skySphere.gameObject.SetActive(false);
+        /* Disable the windows of the room */
+        ChangeWindowState(false);
+         
+        /* Disable the adjecent puzzle rooms */
         entranceRoom.DisablePuzzleRoom();
         exitRoom.DisablePuzzleRoom();
-        entranceRoom.DisableRoom();
-        exitRoom.DisableRoom();*/
     }
 
     public void EnableRoom() {
         /*
-         * Enable this WaitingRoom, it's AttachedRooms and their corresponding puzzleRooms 
-         * and the two potential WaitingRooms that are behind and ahead of this room.
+         * Enable the room's portals and the rooms connected to it.
+         * This is used on startup to ensure the connected rooms are fully loaded
          */
-         
-        roomTrigger.enabled = true;
-        gameObject.SetActive(true);
-        windowContainer.gameObject.SetActive(true);
-        roomObjectsContainer.gameObject.SetActive(true);
-        skySphere.gameObject.SetActive(true);
+
+        /* Enable this room's portals if they havent already (used just for the player startup) */
+        SoftEnable();
+
+        /* Enable the portals of the adjacent puzzle rooms */
         entranceRoom.EnablePuzzleRoom();
         exitRoom.EnablePuzzleRoom();
-        entranceRoom.EnableRoom();
-        exitRoom.EnableRoom();
 
         /* Soft enable the other nearby WaitingRooms (if applicable) */
         if(previousRoom != null) { previousRoom.SoftEnable(); }
@@ -391,17 +387,22 @@ public class WaitingRoom : ConnectedRoom {
 
     public void SoftEnable() {
         /*
-         * Only enable this waitingRoom and it's AttachedRooms. Do not change any other
-         * puzzle rooms and other waiting rooms.
+         * Only enable the portals of the windows in this waiting room
          */
 
-        roomTrigger.enabled = true;
-        gameObject.SetActive(true);
-        windowContainer.gameObject.SetActive(true);
-        roomObjectsContainer.gameObject.SetActive(true);
-        skySphere.gameObject.SetActive(true);
-        entranceRoom.EnableRoom();
-        exitRoom.EnableRoom();
+        //Enable the window's portals
+        ChangeWindowState(true);
+    }
+
+    public void ChangeWindowState(bool state) {
+        /*
+         * Change the rendering state of this waitingRoom's windows. This is used
+         * to disable and enable the windows while the player moves between rooms.
+         */
+         
+        for(int i = 0; i < windowContainer.childCount; i++) {
+            windowContainer.GetChild(i).GetComponent<Window>().SetWindowState(state);
+        }
     }
 
     public float GetRoomWidth() {

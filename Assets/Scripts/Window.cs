@@ -132,6 +132,15 @@ public class Window : MonoBehaviour {
         portalSet.AddFlareLayer();
     }
 
+    public void SetWindowState(bool state) {
+        /*
+         * Set the state of the window's portal to either be visible or invisible.
+         * This is to prevent the player from rendering the portals out of view.
+         */
+         
+        portalSet.gameObject.SetActive(state);
+    }
+
 
     /* -------- Helper Functions ---------------------------------------------------- */
 
