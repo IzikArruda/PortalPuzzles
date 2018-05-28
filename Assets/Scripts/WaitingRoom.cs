@@ -134,7 +134,7 @@ public class WaitingRoom : ConnectedRoom {
         if(player.GetComponent<CustomPlayerController>() != null) {
             playerCameraPosition = player.GetComponent<CustomPlayerController>().playerCamera.transform.position;
             centerDifference = playerCameraPosition - playerEnterOffset;
-            OffsetSkySphere(centerDifference);
+            //OffsetSkySphere(centerDifference);
         }
     }
 
@@ -158,7 +158,7 @@ public class WaitingRoom : ConnectedRoom {
         
         /* Set the sky spheres in a place to that will not be near other spheres or puzzle rooms */
         windowExit.eulerAngles = new Vector3(0, 0, 0);
-        windowExit.position = roomCenter + new Vector3(0, 3000, roomCenter.z*10);
+        windowExit.position = roomCenter + new Vector3(0, 3000, roomCenter.z*1000);
         
         /* Calculate the sizes of this waitingRoom */
         xDist = Mathf.Abs(entranceRoom.exitPointFront.position.x - exitRoom.exitPointBack.position.x) + xEntranceDist/2f + xExitDist/2f;
@@ -270,10 +270,13 @@ public class WaitingRoom : ConnectedRoom {
         if(skySphere != null) { DestroyImmediate(skySphere); }
         skySphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         skySphere.transform.parent = transform;
-        OffsetSkySphere(new Vector3(0, 0, 0));
-        skySphere.transform.localScale = new Vector3(250, 250, 250);
+        float viewDistance = CustomPlayerController.cameraFarClippingPlane*0.2f;
+        skySphere.transform.localScale = new Vector3(viewDistance, viewDistance, viewDistance);
         skySphere.name = "Sky sphere";
         skySphere.layer = PortalSet.maxLayer + 1;
+
+        /* Place the sky sphere around the window exit */
+        skySphere.transform.position = windowExit.position;
 
         /* Rotate the material with the same rotation of the outside window */
         skySphere.transform.rotation = windowExit.rotation;
@@ -327,19 +330,6 @@ public class WaitingRoom : ConnectedRoom {
     
 
     /* -------- Event Functions ---------------------------------------------------- */
-    
-    public void OffsetSkySphere(Vector3 offset) {
-        /*
-         * Apply an offset to the skySphere of this room to ensure the sky sphere 
-         * does not seem like a small sphere but a proper large environment.
-         */
-         
-        /* Reposition the sky sphere at the given window exit point */
-        skySphere.transform.position = windowExit.position;
-        
-        /* Apply the offset relative to the sphere's rotation */
-        skySphere.transform.localPosition += skySphere.transform.localRotation*offset;
-    }
     
     void CreateTrigger() {
         /*

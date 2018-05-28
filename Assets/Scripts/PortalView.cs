@@ -448,6 +448,12 @@ public class PortalView : MonoBehaviour {
                         recursiveCameras[i].GetComponent<Camera>().cullingMask = recursiveCameras[i].GetComponent<Camera>().cullingMask & ~(1 << PortalSet.maxLayer + 2);
                     }
                 }
+                /* If renderTerrain is true, only render the terrain layer */
+                else {
+                    for(int i = 0; i < recursiveCameras.Length; i++) {
+                        recursiveCameras[i].GetComponent<Camera>().cullingMask = 1 << PortalSet.maxLayer + 2;
+                    }
+                }
             }
         }
     }

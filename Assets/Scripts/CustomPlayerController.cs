@@ -1181,8 +1181,6 @@ public class CustomPlayerController : MonoBehaviour {
                 startingRoom.window.portalSet.ExitPortal.TriggerContainer.GetChild(0).GetComponent<BoxCollider>().enabled = false;
             }
         }
-        
-        Debug.Log("running");
 
         /* If the player has fallen far enough away from the window, stop running this update call */
         if(windowExit > playerPos + 10) {
@@ -1627,24 +1625,6 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Tell the player's sound script that they are now in the outside state */
         playerSoundsScript.EnteringOutside();
-
-        /* Change the layer of the startingRoom so that the player can see the particles while outside */
-        startingRoom.gameObject.layer = PortalSet.maxLayer + 2;
-
-
-        /*
-         * SENT AS A MESSAGE IN THE PREVIOUS UPDATE: THE PLAYER'S BODY CAN BLOCK THE SUN.
-         * THIS IS BECAUSE THE CAMERA MOVES OUT OF THE BODY WHEN MOVING FAST ENOUGH
-         */
-
-
-
-
-
-
-
-
-
     }
 
     /* ----------- Outside Called Functions ------------------------------------------------------------- */

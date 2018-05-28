@@ -42,6 +42,7 @@ public class StartingRoom : ConnectedRoom {
     private bool glassBroken;
 
     /* The particleSystem that will produce a bunch of shattered glass */
+    private ParticleSystem particleSystem;
     public Material particleMaterial;
 
     /* The audio source that will play the glass shattering sound effect. Have it linked to the sound and mixer group in the editor. */
@@ -226,8 +227,8 @@ public class StartingRoom : ConnectedRoom {
         /* Make the window's portal's camera render the terrain layer */
         window.portalSet.EntrancePortal.portalMesh.GetComponent<PortalView>().SetRenderTerrain(true);
         window.portalSet.EntrancePortal.backwardsPortalMesh.GetComponent<PortalView>().SetRenderTerrain(true);
-        window.portalSet.ExitPortal.portalMesh.GetComponent<PortalView>().SetRenderTerrain(true);
-        window.portalSet.ExitPortal.backwardsPortalMesh.GetComponent<PortalView>().SetRenderTerrain(true);
+        window.portalSet.ExitPortal.portalMesh.GetComponent<PortalView>().SetRenderTerrain(false);
+        window.portalSet.ExitPortal.backwardsPortalMesh.GetComponent<PortalView>().SetRenderTerrain(false);
 
         /* Add a DetectPlayerLegRay script onto the glass of the window, making the window's glass break upon player leg contact */
         if(window.windowPieces[4].GetComponent<DetectPlayerLegRay>() == null) {
@@ -255,7 +256,7 @@ public class StartingRoom : ConnectedRoom {
          * Create and set the stats of the particle emitter placed on the outside window 
          * if it is not already created
          */
-        ParticleSystem particleSystem = gameObject.GetComponent<ParticleSystem>();
+        particleSystem = gameObject.GetComponent<ParticleSystem>();
 
         /* Create a new particle system if there is not already one attached */
         if(particleSystem == null) {
@@ -285,6 +286,8 @@ public class StartingRoom : ConnectedRoom {
         /* Create the room collider if it does not exist */
         if(roomCollider == null) { roomCollider = gameObject.AddComponent<BoxCollider>(); }
         roomCollider.isTrigger = true;
+
+        /* Set the layer to ignoreRaycast for the room's collider */
         gameObject.layer = 2;
 
         /* Position the collider into the center of the room */
@@ -342,13 +345,15 @@ public class StartingRoom : ConnectedRoom {
         roomWalls[4].GetComponent<Collider>().enabled = false;
 
         /* Create a burst of glass particles */
-        ParticleSystem particleSystem = gameObject.GetComponent<ParticleSystem>();
         if(particleSystem != null) {
             ParticleSystem.EmitParams emitParams = new ParticleSystem.EmitParams();
             emitParams.position = windowExit.position + new Vector3(0, window.windowHeight/2f, 0);
             emitParams.applyShapeToPosition = true;
             particleSystem.Emit(emitParams, 10000);
         }
+
+        /* Put the room into the terrainLayer to ensure the glass particles will render outside */
+        gameObject.layer = PortalSet.maxLayer + 2;
 
         /* Once the player breaks the glass, put them into the "outside" state */
         playerObject.GetComponent<CustomPlayerController>().StartFallingOutside();
