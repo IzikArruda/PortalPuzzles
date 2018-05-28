@@ -55,7 +55,7 @@ public class NoiseProvider {
 
 
         //Create a texture to show what the noise looks like
-        CreateTextureOfNoise();
+        //CreateTextureOfNoise();
     }
 
 

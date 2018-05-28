@@ -50,7 +50,7 @@ public class PortalView : MonoBehaviour {
 
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
 
-    void Start() {
+    public void Start() {
         /*
          * Ensure the portal has all the required objects created and variables initialized.
          */

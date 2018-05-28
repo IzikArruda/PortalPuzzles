@@ -106,18 +106,18 @@ public class WaitingRoom : ConnectedRoom {
 
             /* Player progressed forward */
             if(player.transform.position.z > center.z) {
-                entranceRoom.DisablePuzzleRoom();
+                /*entranceRoom.DisablePuzzleRoom();
                 exitRoom.EnablePuzzleRoom();
                 if(nextRoom != null) { nextRoom.SoftEnable(); }
-                if(previousRoom != null) { previousRoom.DisableRoom(); }
+                if(previousRoom != null) { previousRoom.DisableRoom(); }*/
             }
 
             /* Player moved backwards through the puzzles */
             else {
-                exitRoom.DisablePuzzleRoom();
+                /*exitRoom.DisablePuzzleRoom();
                 entranceRoom.EnablePuzzleRoom();
                 if(previousRoom != null) { previousRoom.SoftEnable(); }
-                if(nextRoom != null) { nextRoom.DisableRoom(); }
+                if(nextRoom != null) { nextRoom.DisableRoom(); }*/
             }
         }
     }
@@ -357,7 +357,7 @@ public class WaitingRoom : ConnectedRoom {
          * Disable the trigger, the objects that make this room and the connected rooms.
          */
 
-        roomTrigger.enabled = false;
+        /*roomTrigger.enabled = false;
         gameObject.SetActive(false);
         windowContainer.gameObject.SetActive(false);
         roomObjectsContainer.gameObject.SetActive(false);
@@ -365,7 +365,7 @@ public class WaitingRoom : ConnectedRoom {
         entranceRoom.DisablePuzzleRoom();
         exitRoom.DisablePuzzleRoom();
         entranceRoom.DisableRoom();
-        exitRoom.DisableRoom();
+        exitRoom.DisableRoom();*/
     }
 
     public void EnableRoom() {

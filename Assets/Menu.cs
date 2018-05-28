@@ -2358,7 +2358,6 @@ public class Menu : MonoBehaviour {
         /* Update the mouse's visibility depending on the menu state */
         if(!inMenu) {
             Cursor.lockState = CursorLockMode.Locked;
-            Debug.Log("locked");
         }
         else {
             UpdateCursorState();

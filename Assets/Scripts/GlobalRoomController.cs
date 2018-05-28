@@ -69,6 +69,8 @@ public class GlobalRoomController : MonoBehaviour {
 	    if(startingRoom == null || puzzleRoomContainer == null || attachedRoomContainer == null || waitingRoomContainer == null) {
             Debug.Log("WARNING: GlobalRoomController is missing a required linked object");
         }
+
+        Debug.Log("controller start");
 	}
 	
 	void Update () {

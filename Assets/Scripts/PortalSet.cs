@@ -69,7 +69,7 @@ public class PortalSet : MonoBehaviour {
 
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
 
-    void Start() {
+    public void Start() {
         /*
          * Enture the proper portals are enabled and name the children of this portalSet.
          */
@@ -134,7 +134,6 @@ public class PortalSet : MonoBehaviour {
          */
 
         if(doubleSided) {
-            Debug.Log("DISABLED DOUBLE SIDED");  
                 
             /* Relenquish control over it's current layers */
             if(occupiedLayer1 != -1) {
@@ -309,12 +308,12 @@ public class PortalSet : MonoBehaviour {
                 if(occupiedLayer1 == -1) {
                     occupiedLayer1 = i;
                     availableLayers[occupiedLayer1] = true;
-                    Debug.Log("NOW USING LAYER " + (occupiedLayer1+minLayer));
+                    //Debug.Log("NOW USING LAYER " + (occupiedLayer1+minLayer));
                 }
                 else if(occupiedLayer2 == -1) {
                     occupiedLayer2 = i;
                     availableLayers[occupiedLayer2] = true;
-                    Debug.Log("NOW USING LAYER " + (occupiedLayer2+minLayer));
+                    //Debug.Log("NOW USING LAYER " + (occupiedLayer2+minLayer));
                 }
                 else {
                     Debug.Log("WARNING: THIS SHOULD NOT BE RUN");

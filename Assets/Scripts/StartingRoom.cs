@@ -71,6 +71,7 @@ public class StartingRoom : ConnectedRoom {
         UpdateCollider();
 
         /* Once the room is setup, link the window's first camera to the TerrainController */
+        window.portalSet.EntrancePortal.backwardsPortalMesh.GetComponent<PortalView>().Start();
         outsideTerrain.windowCam = window.portalSet.EntrancePortal.backwardsPortalMesh.transform.GetChild(0);
         outsideTerrain.windowExitPoint = windowExit;
     }
