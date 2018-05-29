@@ -185,6 +185,7 @@ public class CustomPlayerController : MonoBehaviour {
 
     /* Debugging trackers */
     public static int renderedCameraCount = 0;
+    public static int renderedCameraCount2 = 0;
     private System.DateTime before;
 
 
@@ -297,9 +298,20 @@ public class CustomPlayerController : MonoBehaviour {
         //Debug.Log(" ------- Since update: " + duration.Milliseconds);
         before = System.DateTime.Now;
 
+        if(duration.Milliseconds > 100) {
+            Debug.Log(" ------- Since update: " + duration.Milliseconds);
+            Debug.Log("LOOP COUNT: " + renderedCameraCount);
+            Debug.Log("RAYTRACE COUNT: " + renderedCameraCount2);
+        }
         //Print how many cams were rendered this frame
         //Debug.Log("CAM COUNT: " + renderedCameraCount);
         renderedCameraCount = 0;
+        renderedCameraCount2 = 0;
+
+
+
+
+
 
         /* Pressing the escape button will send a request to the menu and either open/close the menu */
         MenuKey();
@@ -433,6 +445,7 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Check if there was any movement at all */
         if(movementVector.magnitude != 0 && movementVector != Vector3.zero) {
+            
             /* Set the values used to fire the ray */
             float remainingDistance = movementVector.magnitude;
             Vector3 position = lastSavedPosition;
@@ -1716,15 +1729,24 @@ public class CustomPlayerController : MonoBehaviour {
         rayLayerMask = rayLayerMask | (1 << (PortalSet.maxLayer + 2));
 
         /* Travel towards the rotation's forward for the remaining distance */
+        renderedCameraCount2++;
         while(distance > 0 && stopRayTrace == false) {
             //reduce the distance every loop to prevent infinite loops
-            distance -= 0.001f;
+            //distance -= 0.001f;
+            renderedCameraCount++;
+
+            /*
+             * Player can still pass through a portal. Are they teleporting but not far enough? or are they 
+             * simply missing the collider? we can figure this out by printing when they teleport,
+             * but we first need to find a consistent way to reproduce the pass-through glitch
+             */
+
             if(distance < 0) {
-                Debug.Log("DISTANCE IS LESS THAN 0. MAYBE THIS CAUSES THE NON-TELEPORT GLITCH?");
+
             }
 
             /* Check for any collisions from the current position towards the current direction */
-            if(Physics.Raycast(position, rotation*Vector3.forward, out hitInfo, distance, rayLayerMask)) {
+            else if(Physics.Raycast(position, rotation*Vector3.forward, out hitInfo, distance, rayLayerMask)) {
                 /* When hitting a collider, move the position up to the collision point */
                 Debug.DrawLine(position, position + rotation*Vector3.forward*hitInfo.distance, Color.green);
                 position += rotation * Vector3.forward * hitInfo.distance;

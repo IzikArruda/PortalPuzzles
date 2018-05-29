@@ -242,7 +242,7 @@ public class PortalView : MonoBehaviour {
 
             /* Render the scoutCamera's view with it's new projection matrix */
             scoutCamera.Render();
-            CustomPlayerController.renderedCameraCount++;
+            //CustomPlayerController.renderedCameraCount++;
 
             /* Extract the scoutingCamera's view after rendering as a static texture */
             //Material[] materials = rend.sharedMaterials;

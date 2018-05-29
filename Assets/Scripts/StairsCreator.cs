@@ -118,7 +118,11 @@ public class StairsCreator : MonoBehaviour {
         /*
          * Re-create the stairs using the the set of points given to this script
          */
-         
+
+        /* Remove any of the previously created points */
+        while(startPoint.childCount > 0) {
+            GameObject.DestroyImmediate(startPoint.GetChild(0).gameObject);
+        }
 
         /* Create the three positionnal gameObjects */
         CreateEmptyObject(ref sideEdgePoint, "Side point", startPoint);
