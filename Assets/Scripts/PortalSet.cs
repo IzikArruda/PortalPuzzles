@@ -336,6 +336,18 @@ public class PortalSet : MonoBehaviour {
         ExitPortal.TriggerContainer.GetChild(0).GetComponent<BoxCollider>().enabled = false;
     }
 
+    public void UpdatePortalState(bool state) {
+        /*
+         * Update the MeshRenderer state of the portal
+         */
+
+        EntrancePortal.backwardsPortalMesh.GetComponent<MeshRenderer>().enabled = state;
+        EntrancePortal.portalMesh.GetComponent<MeshRenderer>().enabled = state;
+        ExitPortal.backwardsPortalMesh.GetComponent<MeshRenderer>().enabled = state;
+        ExitPortal.portalMesh.GetComponent<MeshRenderer>().enabled = state;
+    }
+
+
     /* -------- Helper Functions ---------------------------------------------------- */
 
     public void SetRenderTerrain(bool renderTer) {

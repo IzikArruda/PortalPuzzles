@@ -154,13 +154,16 @@ public class AttachedRoom : ConnectedRoom {
             /* Check if the puzzle room uses portals */
             Transform portalContainer = puzzleRoomParent.transform.FindChild("Portals");
             if(portalContainer != null) {
-                portalContainer.gameObject.SetActive(false);
+                /* Disable the puzzleRoom's portal's */
+                for(int i = 0; i < portalContainer.childCount; i++) {
+                    portalContainer.GetChild(i).GetChild(0).GetComponent<PortalSet>().UpdatePortalState(false);
+                }
             }
 
             /* Check if the puzzle room is actually the starting room */
             else if(puzzleRoomParent.GetComponent<StartingRoom>() != null) {
-                //Disable the starting room
-                puzzleRoomParent.SetActive(false);
+                /* Disable the startingRoom's portals */
+                puzzleRoomParent.GetComponent<StartingRoom>().window.portalSet.UpdatePortalState(false);
             }
         }
     }
@@ -175,14 +178,16 @@ public class AttachedRoom : ConnectedRoom {
             /* Check if the puzzle room uses portals */
             Transform portalContainer = puzzleRoomParent.transform.FindChild("Portals");
             if(portalContainer != null) {
-                Debug.Log("activate " + portalContainer.childCount + " portals");
-                portalContainer.gameObject.SetActive(true);
+                /* Enable the puzzleRoom's portal's */
+                for(int i = 0; i < portalContainer.childCount; i++) {
+                    portalContainer.GetChild(i).GetChild(0).GetComponent<PortalSet>().UpdatePortalState(true);
+                }
             }
 
             /* Check if the puzzle room is actually the starting room */
             else if(puzzleRoomParent.GetComponent<StartingRoom>() != null) {
-                //Enable the starting room
-                puzzleRoomParent.SetActive(true);
+                /* Enable the startingRoom's portals */
+                puzzleRoomParent.GetComponent<StartingRoom>().window.portalSet.UpdatePortalState(true);
             }
         }
     }
