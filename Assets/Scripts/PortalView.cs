@@ -37,7 +37,7 @@ public class PortalView : MonoBehaviour {
     private GameObject[] recursiveCameras;
 
     /* The max viewing depth for recursive portal calls */
-    private static int maxCameraDepth = 5;
+    public int maxCameraDepth = 1;
 
     /* Values that track what the camera's culling layers will be */
     private int cameraIgnoreLayer = -1;
@@ -242,7 +242,6 @@ public class PortalView : MonoBehaviour {
 
             /* Render the scoutCamera's view with it's new projection matrix */
             scoutCamera.Render();
-            //CustomPlayerController.renderedCameraCount++;
 
             /* Extract the scoutingCamera's view after rendering as a static texture */
             //Material[] materials = rend.sharedMaterials;

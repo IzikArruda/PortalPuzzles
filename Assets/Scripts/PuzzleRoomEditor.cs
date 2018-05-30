@@ -134,7 +134,6 @@ public class PuzzleRoomEditor : MonoBehaviour {
 
         /* Update the position of the clouds using cloudOffset */
         UpdateClouds();
-        
     }
 
     void OnTriggerStay(Collider collider) {

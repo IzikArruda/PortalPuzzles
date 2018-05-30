@@ -292,27 +292,21 @@ public class CustomPlayerController : MonoBehaviour {
          * after a physics update, we detected a teleport SHOULD have occured, but we did not update the frame yet,
          * so by teleporting the player in that moment they will NOT render a frame of them PAST the teleport trigger.
          */
-        /* Get how long it's been since a time update */
+        /* Get how long it's been since a time update *//*
         System.DateTime current = System.DateTime.Now;
         System.TimeSpan duration = current.Subtract(before);
         //Debug.Log(" ------- Since update: " + duration.Milliseconds);
         before = System.DateTime.Now;
 
         if(duration.Milliseconds > 100) {
-            Debug.Log(" ------- Since update: " + duration.Milliseconds);
-            Debug.Log("LOOP COUNT: " + renderedCameraCount);
-            Debug.Log("RAYTRACE COUNT: " + renderedCameraCount2);
+            Debug.Log(" ------ NEW SLOW FRAME --------- ");
+            Debug.Log("UPDATE TIME: " + duration.Milliseconds);
+            Debug.Log("CAM COUNT: " + renderedCameraCount);
+            Debug.Log("CAM UPDATE TIME: " + renderedCameraCount2);
         }
-        //Print how many cams were rendered this frame
-        //Debug.Log("CAM COUNT: " + renderedCameraCount);
         renderedCameraCount = 0;
-        renderedCameraCount2 = 0;
-
-
-
-
-
-
+        renderedCameraCount2 = 0;*/
+        
         /* Pressing the escape button will send a request to the menu and either open/close the menu */
         MenuKey();
 
@@ -1729,11 +1723,9 @@ public class CustomPlayerController : MonoBehaviour {
         rayLayerMask = rayLayerMask | (1 << (PortalSet.maxLayer + 2));
 
         /* Travel towards the rotation's forward for the remaining distance */
-        renderedCameraCount2++;
         while(distance > 0 && stopRayTrace == false) {
             //reduce the distance every loop to prevent infinite loops
             //distance -= 0.001f;
-            renderedCameraCount++;
 
             /*
              * Player can still pass through a portal. Are they teleporting but not far enough? or are they 
