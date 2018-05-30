@@ -107,7 +107,6 @@ public class StairsCreator : MonoBehaviour {
         if(updateStairs) {
             UpdateStairs();
             updateStairs = false;
-            Debug.Log("Updated stairs object");
         }
     }
 

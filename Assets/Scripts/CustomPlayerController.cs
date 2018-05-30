@@ -307,6 +307,7 @@ public class CustomPlayerController : MonoBehaviour {
         renderedCameraCount = 0;
         renderedCameraCount2 = 0;*/
         
+    
         /* Pressing the escape button will send a request to the menu and either open/close the menu */
         MenuKey();
 
@@ -452,6 +453,7 @@ public class CustomPlayerController : MonoBehaviour {
             if(teleported) {
                 transform.position = position;
                 transform.rotation = rotationDifference * transform.rotation;
+                Debug.Log("TELEPORTED PLAYER");
             }
         }
 
