@@ -20,9 +20,6 @@ public class PortalView : MonoBehaviour {
     /* The forward vector of the portal */
     public Vector3 faceNormal = Vector3.forward; 
 
-    /* Quality of the texture rendered and applied to the portal mesh. 2048 is recommended. */
-	public static int m_TextureSize = 2048;
-
     /* Offset to the camera's clipping plane when rendering. 0 is recommended */
     public float m_ClipPlaneOffset;
         
@@ -357,21 +354,22 @@ public class PortalView : MonoBehaviour {
          */
 
         /* Recreate the texture if it doesnt exist or it's sizes are incorrect */
-        if(!renderTexture || renderTexture.width != m_TextureSize || renderTexture.height != m_TextureSize) {
+        if(!renderTexture || renderTexture.width != Screen.width || renderTexture.height != Screen.height) {
 
             /* Destroy the old texture if needed */
             if(renderTexture) {
                 DestroyImmediate(renderTexture);
             }
+            Debug.Log("Made new rendTex");
 
             /* Create the new renderTexture, naming it using the portalMesh's ID */
-            renderTexture = new RenderTexture(m_TextureSize, m_TextureSize, 16);
+            renderTexture = new RenderTexture(Screen.width, Screen.height, 24);
             renderTexture.name = "__PortalRendTex " + GetInstanceID();
 
             /* Set default values for the renderTexture */
             renderTexture.hideFlags = HideFlags.DontSave;
             renderTexture.isPowerOfTwo = true;
-
+            
             /*  Reassign the renderTexture to it's camera */
             camera.targetTexture = renderTexture;
         }
