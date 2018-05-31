@@ -26,7 +26,6 @@ public enum PlayerStates{
     FastFalling
 };
 
-
 /*
  * A custom character controller that uses UserInputs to handle movement. It uses "legs" to keep
  * it's "body" above the floor, letting the player walk up and down stairs or slopes smoothly. 
@@ -182,6 +181,7 @@ public class CustomPlayerController : MonoBehaviour {
 
     /* --- One-time use Variables --------------------------- */
     public bool fallingOutWindow = false;
+    private Quaternion savedRotation = Quaternion.Euler(0, 0, 0);
 
     /* Debugging trackers */
     public static int renderedCameraCount = 0;
@@ -1011,14 +1011,15 @@ public class CustomPlayerController : MonoBehaviour {
         if(expectedMovements != null) { expectedMovements.Clear(); }
         expectedMovements = new ArrayList();
 
-        /* Reset the player's position depending on whether the player is given a starting room */
+        /* Reset the player's position and rotation depending on whether the player is given a starting room */
         if(lastRoom != null) {
             /* Use the lastRoom as the player's starting room by using it's reset function */
             Transform newTransform = lastRoom.ResetPlayer();
             gameObject.transform.position = newTransform.position;
-            gameObject.transform.rotation = newTransform.rotation;
+            gameObject.transform.rotation = savedRotation;
             cameraXRotation = 0;
             cameraYRotation = 0;
+
         }
         else {
             Debug.Log("Player was not linked a starting room");
@@ -1673,9 +1674,16 @@ public class CustomPlayerController : MonoBehaviour {
     public void ChangeLastRoom(AttachedRoom newRoom) {
         /*
          * Called by an attachedRoom when the player enters, it changes the player's last room to the given one.
+         * Also update their saved rotation value when they enter the room.
          */
 
         lastRoom = newRoom;
+
+        /* If the player is right-side up, do not use it's Y axis (This ensures they reset facing forward) */
+        savedRotation = transform.rotation;
+        if(savedRotation.eulerAngles.x == 0 && savedRotation.eulerAngles.z == 0) {
+            savedRotation = Quaternion.Euler(0, 0, 0);
+        }
     }
     
     public void StartFallingOutside() {

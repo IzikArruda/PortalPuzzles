@@ -360,7 +360,6 @@ public class PortalView : MonoBehaviour {
             if(renderTexture) {
                 DestroyImmediate(renderTexture);
             }
-            Debug.Log("Made new rendTex");
 
             /* Create the new renderTexture, naming it using the portalMesh's ID */
             renderTexture = new RenderTexture(Screen.width, Screen.height, 24);

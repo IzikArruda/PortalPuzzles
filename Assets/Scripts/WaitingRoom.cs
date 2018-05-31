@@ -92,9 +92,6 @@ public class WaitingRoom : ConnectedRoom {
             SoftEnable();
             if(previousRoom != null) { previousRoom.SoftEnable(); }
             if(nextRoom != null) { nextRoom.SoftEnable(); }
-
-            /* Set the playerEnterOffset */
-            playerEnterOffset = player.GetComponent<CustomPlayerController>().playerCamera.transform.position;
         }
     }
 
@@ -123,23 +120,7 @@ public class WaitingRoom : ConnectedRoom {
             }
         }
     }
-
-    void OnTriggerStay(Collider player) {
-        /*
-         * Whenever the player is inside the waitingRoom, move the window's sky sphere
-         * relative to the player's camera to this room's center.
-         */
-        Vector3 playerCameraPosition;
-        Vector3 centerDifference;
-         
-        /* Ensure the collider entering the trigger is a player */
-        if(player.GetComponent<CustomPlayerController>() != null) {
-            playerCameraPosition = player.GetComponent<CustomPlayerController>().playerCamera.transform.position;
-            centerDifference = playerCameraPosition - playerEnterOffset;
-            //OffsetSkySphere(centerDifference);
-        }
-    }
-
+    
 
     /* -------- Event Functions ---------------------------------------------------- */
 
