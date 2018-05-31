@@ -175,6 +175,26 @@ public class PuzzleRoomEditor : MonoBehaviour {
             else {
                 cloudOffset = 0;
             }
+
+            /* As the player gets further away from the room's center, increase their falling velocity */
+            float fromCenterToEdgeRatio = (Mathf.Abs(playerFromCenter) - minYTeleport/5f) / (minYTeleport - minYTeleport/5f);
+            if(Mathf.Abs(playerFromCenter) > minYTeleport/5f) {
+                collider.GetComponent<CustomPlayerController>().gravityVectorMod = 1 + 10*fromCenterToEdgeRatio;
+            }
+            else {
+                collider.GetComponent<CustomPlayerController>().gravityVectorMod = 1;
+            }
+
+            /* When far from the room, make the player camera's near clipping large. This is to
+             * prevent the depth buffer issue when having a small near clip plane value.
+             * It is safe to change the value because the player is far from any portals at this point. */
+            if(Mathf.Abs(playerFromCenter) > maxYPlayArea) {
+                collider.GetComponent<CustomPlayerController>().playerCamera.nearClipPlane = 0.2f;
+            }
+            /* Set the player camera's near clip plane to it's saved value */
+            else {
+                collider.GetComponent<CustomPlayerController>().playerCamera.nearClipPlane = CustomPlayerController.cameraNearClippingPlane;
+            }
         }
     }
 

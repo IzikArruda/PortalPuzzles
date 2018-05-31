@@ -79,7 +79,16 @@ public class CustomPlayerController : MonoBehaviour {
     public float maxYVelocity;
     /* The velocity modifier when the player is FastFalling */
     public int fastFallMod;
-    
+    /* Unique values for the fastFallMod value */
+    [HideInInspector]
+    public int fastFallModNormal = 15;
+    [HideInInspector]
+    public int fastFallModOutside = 5;
+
+    /* Howm uch the gravity vector is modified. This is changed by the PuzzleRoomEditor to control falling speed */
+    [HideInInspector]
+    public float gravityVectorMod = 1;
+
     /* How fast a player travels upward when they jump */
     public float jumpSpeed;
     /* Used to determine the state of the jump. If true, the next jump opportunity will cause the player to jump. */
@@ -157,8 +166,9 @@ public class CustomPlayerController : MonoBehaviour {
     /* The player is in the outside state if they enter outside through the startingRoom's window portal */
     private bool outsideState = false;
 
-    /* The far clipping plane of the player's camera. The portals will use this for their cameras. */
+    /* The clipping plane of the player's camera. The portals will use this for their cameras. */
     public static float cameraFarClippingPlane = 10000f;
+    public static float cameraNearClippingPlane = 0.01f;
 
     /* The type of step sound is played for the player footstep tracker */
     private int currentStepType = 0;
@@ -1011,6 +1021,9 @@ public class CustomPlayerController : MonoBehaviour {
         if(expectedMovements != null) { expectedMovements.Clear(); }
         expectedMovements = new ArrayList();
 
+        /* Set the fastFall mod to it's normal value */
+        fastFallMod = fastFallModNormal;
+
         /* Reset the player's position and rotation depending on whether the player is given a starting room */
         if(lastRoom != null) {
             /* Use the lastRoom as the player's starting room by using it's reset function */
@@ -1081,6 +1094,9 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* The player starts immobile */
         lastStepMovement = Vector3.zero;
+
+        /* Set the fastFall mod to it's normal value */
+        fastFallMod = fastFallModNormal;
 
         /* Set the camera's offset to it's natural default value */
         cameraYOffset = 0;
@@ -1434,7 +1450,7 @@ public class CustomPlayerController : MonoBehaviour {
                 currentYVelocity -= gravity*Time.deltaTime*60;
                 if(currentYVelocity < -maxYVelocity) { currentYVelocity = -maxYVelocity; }
             }
-            gravityVector = currentYVelocity*transform.up;
+            gravityVector = currentYVelocity*transform.up*gravityVectorMod;
         }
 
         /* Reset the player's yVelocity if they are grounded */
@@ -1633,7 +1649,7 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* When outside, give the player's fastFall a slow speed increases but high max velocity */
         outsideState = true;
-        fastFallMod = 5;
+        fastFallMod = fastFallModOutside;
         maxYVelocity = 1.5f;
 
         /* The player's steps will now be stepping on soft ground */
@@ -1897,12 +1913,12 @@ public class CustomPlayerController : MonoBehaviour {
 
         if(renderTerrain) {
             playerCamera.cullingMask = 1 << PortalSet.maxLayer + 2;
-            playerCamera.nearClipPlane = 0.01f;
+            playerCamera.nearClipPlane = cameraNearClippingPlane;
             playerCamera.farClipPlane = cameraFarClippingPlane;
         }
         else {
             playerCamera.cullingMask = ~(1 << PortalSet.maxLayer + 2);
-            playerCamera.nearClipPlane = 0.01f;
+            playerCamera.nearClipPlane = cameraNearClippingPlane;
             playerCamera.farClipPlane = cameraFarClippingPlane;
         }
     }

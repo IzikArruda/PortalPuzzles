@@ -637,12 +637,10 @@ public class Menu : MonoBehaviour {
             RectTransform background = toggleRect.GetChild(0).GetComponent<RectTransform>();
             background.anchorMin = new Vector2(0, 0);
             background.anchorMax = new Vector2(0, 1);
-            /**/background.anchoredPosition = new Vector3(buttonHeight/2f, 0, 0);
-            /**/background.sizeDelta = new Vector2(buttonHeight/2f, 0);
             RectTransform checkbox = background.GetChild(0).GetComponent<RectTransform>();
-            checkbox.anchorMin = new Vector2(0.5f, 0.5f);
-            checkbox.anchorMax = new Vector2(0.5f, 0.5f);
-            checkbox.sizeDelta = new Vector2(buttonHeight/2f, buttonHeight/2f);
+            checkbox.anchorMin = new Vector2(0, 0);
+            checkbox.anchorMax = new Vector2(1, 1);
+            checkbox.sizeDelta = new Vector2(0, 0);
         }
 
 
