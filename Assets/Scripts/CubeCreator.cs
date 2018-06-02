@@ -56,6 +56,9 @@ public class CubeCreator : MonoBehaviour {
     /* Set to true to force the cube to re-create itself */
     public bool updateCube;
 
+    /* The puzzleRoom this cube is a part of. not required if the cube is not in a puzzleRoom */
+    public PuzzleRoomEditor puzzleRoom;
+
 
     /* -------- Built-in Unity Functions ---------------------------------------------------- */
 

@@ -21,20 +21,6 @@ public class PuzzleRoomEditor : MonoBehaviour {
     public GameObject puzzleRoomWalls;
     public GameObject puzzleRoomClouds;
 
-    /* The materials used in the puzzleRoom */
-    public Material unlitMaterial;
-    private Material wallMaterial;
-    private Material cloudBlockerMaterial;
-    private Material marbleMaterial;
-    private Material marbleDarkMaterial;
-    private Material pillarMaterial;
-    public Material cloudMaterial;
-    public Texture2D mainWallTexture;
-    public Texture2D secondWallTexture;
-    public Texture2D noiseWallTexture;
-    public Texture2D marbleTexture;
-    public Texture2D marbleDarkTexture;
-    public Texture2D pillarTexture;
     /* The extra priority added into the noise function */
     public float gradPriority;
     /* Scaling of the main, second and noise wall textures on the wall material */
@@ -94,7 +80,22 @@ public class PuzzleRoomEditor : MonoBehaviour {
     public Vector2 mainTexAnim;
     public Vector2 secondTexAnim;
     public Vector2 noiseTexAnim;
-    
+
+    /* The materials used in the puzzleRoom */
+    public Material cloudMaterial;
+    public Material cloudBlockerMaterial;
+    public Material wallMaterial;
+    public Material columnMaterial;
+    public Material marbleMaterial;
+    public Material marbleDarkMaterial;
+    public Material marbleEdgeMaterial;
+    public Texture2D mainWallTexture;
+    public Texture2D secondWallTexture;
+    public Texture2D noiseWallTexture;
+    public Texture2D marbleTexture;
+    public Texture2D marbleDarkTexture;
+    public Texture2D pillarTexture;
+
 
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
 
@@ -325,17 +326,18 @@ public class PuzzleRoomEditor : MonoBehaviour {
         cloudBlockerMaterial.color = Color.black;
         
         /* Set the materials used for the room's objects */
-        marbleMaterial = Instantiate(unlitMaterial);
         marbleMaterial.SetTexture("_MainTex", marbleTexture);
-        marbleMaterial.name = "Marble Floor";
-
-        marbleDarkMaterial = Instantiate(unlitMaterial);
+        marbleMaterial.name = "Marble Floor (" + transform.parent.name + ")";
+        
         marbleDarkMaterial.SetTexture("_MainTex", marbleDarkTexture);
-        marbleDarkMaterial.name = "Dark Marble Floor";
+        marbleDarkMaterial.name = "Marble Dark Floor (" + transform.parent.name + ")";
+        
+        marbleEdgeMaterial.SetTexture("_MainTex", marbleMaterial.GetTexture("_MainTex"));
+        marbleEdgeMaterial.SetTexture("_SecondTex", marbleDarkMaterial.GetTexture("_MainTex"));
+        marbleEdgeMaterial.name = "Marble Edge Floor (" + transform.parent.name + ")";
 
-        pillarMaterial = Instantiate(unlitMaterial);
-        marbleDarkMaterial.SetTexture("_MainTex", pillarTexture);
-        pillarMaterial.name = "Pillar";
+        columnMaterial.SetTexture("_MainTex", pillarTexture);
+        columnMaterial.name = "Column (" + transform.parent.name + ")";
     }
 
     public void AnimateUVS() {
@@ -582,7 +584,9 @@ public class PuzzleRoomEditor : MonoBehaviour {
 
         marbleMaterial.SetTexture("_MainTex", null);
         marbleDarkMaterial.SetTexture("_MainTex", null);
-        pillarMaterial.SetTexture("_MainTex", null);
+        columnMaterial.SetTexture("_MainTex", null);
+        marbleEdgeMaterial.SetTexture("_MainTex", null);
+        marbleEdgeMaterial.SetTexture("_SecondTex", null);
     }
 
 
