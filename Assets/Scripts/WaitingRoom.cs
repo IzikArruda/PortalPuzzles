@@ -35,15 +35,23 @@ public class WaitingRoom : ConnectedRoom {
     private float yDist;
     private float zDist;
     private Vector3 roomCenter;
-    
+
     /* The materials and textures used by this room */
-    public Material windowFrameMaterial;
     public Material windowGlassMaterial;
     public Texture skySphereTexture;
     private Material skySphereMaterial;
 
     /* The GameObject object used as the skysphere for the outside window */
     public GameObject skySphere;
+
+    /* The textures used for the materials of the objects that form the room */
+    public Material unlitMaterial;
+    private Material windowFrameMaterial;
+    public Texture floorTexture;
+    public Texture wallTexture;
+    public Texture ceilingTexture;
+    public Texture windowFrameTexture;
+
 
     /* -------- Built-In Functions ---------------------------------------------------- */
 
@@ -65,6 +73,9 @@ public class WaitingRoom : ConnectedRoom {
         /*
          * On start-up, recreate the room's skeleton any puzzle rooms from the AttachedRooms.
          */
+
+        /* Update the materials used by this room and the attachedRooms */
+        UpdateMaterials();
 
         /* Update the walls of the room */
         UpdateRoom();
@@ -120,7 +131,7 @@ public class WaitingRoom : ConnectedRoom {
             }
         }
     }
-    
+
 
     /* -------- Event Functions ---------------------------------------------------- */
 
@@ -128,7 +139,7 @@ public class WaitingRoom : ConnectedRoom {
         /*
          * Given the position of the attached rooms, re-create this room's bounderies
          */
-         
+
         /* Extract the needed values from the two AttachedRooms */
         float xEntranceDist = entranceRoom.exitWidth;
         float yEntranceDist = entranceRoom.exitHeight;
@@ -138,11 +149,11 @@ public class WaitingRoom : ConnectedRoom {
         /* Re-position the room to the center position between the two attachedRooms */
         roomCenter = (entranceRoom.exitPointFront.position + exitRoom.exitPointBack.position)/2f;
         roomCenter -= new Vector3((xEntranceDist/2f - xExitDist/2f)/2f, 0, 0);
-        
+
         /* Set the sky spheres in a place to that will not be near other spheres or puzzle rooms */
         windowExit.eulerAngles = new Vector3(0, 0, 0);
         windowExit.position = roomCenter + new Vector3(0, 3000, roomCenter.z*1000);
-        
+
         /* Calculate the sizes of this waitingRoom */
         xDist = Mathf.Abs(entranceRoom.exitPointFront.position.x - exitRoom.exitPointBack.position.x) + xEntranceDist/2f + xExitDist/2f;
         yDist = Mathf.Max(yEntranceDist, yExitDist);
@@ -150,7 +161,7 @@ public class WaitingRoom : ConnectedRoom {
 
         /* Re-create the trigger that is used to determine if the player has entered either AttachedRooms */
         CreateTrigger();
-        
+
         /* Re-create each wall for the room as a default, centered, empty object */
         CreateObjects(ref roomWalls, 8, roomCenter);
 
@@ -229,7 +240,7 @@ public class WaitingRoom : ConnectedRoom {
         ontoWallOffset = new Vector3(xDist/2f - (xDist - entranceRoom.exitWidth)/2f, yDist/2f - windowHeight/2f, -zDist/2f);
         ontoWallEuler = new Vector3(0, 180, 0);
         UpdateWindowTransform(windows[3], ontoWallOffset, ontoWallEuler, windowWidthRatio*wallWidth);
-        
+
         /* Make each portal's camera only render the skySphere layer */
         for(int i = 0; i < windows.Length; i++) {
             windows[i].portalSet.EntrancePortal.portalMesh.GetComponent<PortalView>().SetSkySphereLayer(true);
@@ -243,7 +254,7 @@ public class WaitingRoom : ConnectedRoom {
             windows[i].UpdateWindow();
         }
     }
-    
+
     void UpdateSkySphere() {
         /*
          * Create a sky sphere to place around the outside window to simulate a new environment
@@ -264,7 +275,7 @@ public class WaitingRoom : ConnectedRoom {
         /* Rotate the material with the same rotation of the outside window */
         skySphere.transform.rotation = windowExit.rotation;
         skySphere.transform.rotation = Quaternion.Euler(new Vector3(0, 0, 0));
-        
+
         /* Adjust the components */
         DestroyImmediate(skySphere.GetComponent<SphereCollider>());
 
@@ -286,7 +297,7 @@ public class WaitingRoom : ConnectedRoom {
         skySphere.GetComponent<MeshRenderer>().sharedMaterial = skySphereMaterial;
     }
 
-    void UpdateWindow(Window window, float thickness, float depth, float height, 
+    void UpdateWindow(Window window, float thickness, float depth, float height,
             Material frameMaterial, Material glassMaterial) {
         /*
          * Update the values of the single window script given
@@ -310,10 +321,45 @@ public class WaitingRoom : ConnectedRoom {
         window.outsidePos = windowExit.position + pos;
         window.outsideRot = windowExit.eulerAngles + eul;
     }
-    
+
+    void UpdateMaterials() {
+        /*
+         * Update the materials used by this WaitingRoom and it's ConnectedRooms
+         */
+
+        /* Floor */
+        floorMaterial = Instantiate(unlitMaterial);
+        floorMaterial.SetTexture("_MainTex", floorTexture);
+        floorMaterial.SetTextureScale("_MainTex", new Vector2(5, 5));
+        floorMaterial.name = "Floor (WaitingRoom " + this.GetInstanceID() + ")";
+
+        /* Wall */
+        wallMaterial = Instantiate(unlitMaterial);
+        wallMaterial.SetTexture("_MainTex", wallTexture);
+        wallMaterial.name = "Wall (WaitingRoom " + this.GetInstanceID() + ")";
+
+        /* Ceiling */
+        ceilingMaterial = Instantiate(unlitMaterial);
+        ceilingMaterial.SetTexture("_MainTex", ceilingTexture);
+        ceilingMaterial.name = "Ceiling (WaitingRoom " + this.GetInstanceID() + ")";
+
+        /* Window Frame */
+        windowFrameMaterial = Instantiate(unlitMaterial);
+        windowFrameMaterial.SetTexture("_MainTex", windowFrameTexture);
+        windowFrameMaterial.name = "Window Border (WaitingRoom " + this.GetInstanceID() + ")";
+
+        /* Link the materials to it's AttachedRooms */
+        entranceRoom.floorMaterial = floorMaterial;
+        entranceRoom.wallMaterial = wallMaterial;
+        entranceRoom.ceilingMaterial = ceilingMaterial;
+        exitRoom.floorMaterial = floorMaterial;
+        exitRoom.wallMaterial = wallMaterial;
+        exitRoom.ceilingMaterial = ceilingMaterial;
+    }
+
 
     /* -------- Event Functions ---------------------------------------------------- */
-    
+
     void CreateTrigger() {
         /*
          * Create the trigger that encompasses both this WaitingRoom and both the connected AttachedRooms
@@ -324,7 +370,7 @@ public class WaitingRoom : ConnectedRoom {
         /* Get the proper width of the collider to encompass both AttachedRooms */
         float xFull = Mathf.Abs(frontPoint.x - backPoint.x) + entranceRoom.exitWidth/2f + exitRoom.exitWidth/2f;
         float zFull = Mathf.Abs(frontPoint.z - backPoint.z);
-        
+
         /* Get the Z axis offset of the room center due to inequal exit/entrance z sizes */
         float zDiff = entranceRoom.roomLength - exitRoom.roomLength;
 
@@ -342,7 +388,7 @@ public class WaitingRoom : ConnectedRoom {
 
         /* Disable the windows of the room */
         ChangeWindowState(false);
-         
+
         /* Disable the adjecent puzzle rooms */
         entranceRoom.DisablePuzzleRoom();
         exitRoom.DisablePuzzleRoom();
@@ -380,7 +426,7 @@ public class WaitingRoom : ConnectedRoom {
          * Change the rendering state of this waitingRoom's windows. This is used
          * to disable and enable the windows while the player moves between rooms.
          */
-         
+
         for(int i = 0; i < windowContainer.childCount; i++) {
             windowContainer.GetChild(i).GetComponent<Window>().SetWindowState(state);
         }
@@ -408,5 +454,18 @@ public class WaitingRoom : ConnectedRoom {
          */
 
         return yDist;
+    }
+
+    public void ChangeTextures() {
+        /*
+         * Update the textures used in this room. This to called when the player starts falling into previous rooms
+         */
+
+        Debug.Log("Update waitingRoom and it's attachedRooms textures");
+        //For now, just remove the textures used on all the room's materials
+        floorMaterial.SetTexture("_MainTex", null);
+        wallMaterial.SetTexture("_MainTex", null);
+        ceilingMaterial.SetTexture("_MainTex", null);
+        windowFrameMaterial.SetTexture("_MainTex", null);
     }
 }

@@ -551,6 +551,17 @@ public class PuzzleRoomEditor : MonoBehaviour {
     }
 
 
+    /* -------- Event Functions ---------------------------------------------------- */
+
+    public void ChangeTextures() {
+        /*
+         * Update the textures used in this room. This to called when the player starts falling into previous rooms
+         */
+
+        Debug.Log("Update puzzleRoom textures");
+    }
+
+
     /* -------- Helper Functions ---------------------------------------------------- */
 
     private void CreateWallMesh(GameObject wall, float xScale, float yScale, bool sideWall, Vector3 objectPos, float UV4YOffset) {
