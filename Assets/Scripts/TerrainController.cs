@@ -3,6 +3,41 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
+
+
+
+/*
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * MAKE THIS A LOT SMALLER
+ * 
+ * there are too many objects on creation. the terraincontroller always has objects
+ * as when running the game it doesnt delet ethe previous obkjects
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */
+
+
+
+
+
+
+
+
+
+
 /*
  * Used to control the creation of terrain using the TerrainChunk script.
  * Attach this to an empty object to turn it into a container for perlin noise generated terrain.
@@ -71,6 +106,11 @@ public class TerrainController : MonoBehaviour {
         /*
          * Acts as unity's built-in Start function, but is instead called by the StartingRoom's Start function. 
          */
+
+        /* Remove any previous terrain and skySpheres already built */
+        for(int i = transform.childCount; i > 0; i--) {
+            GameObject.DestroyImmediate(transform.GetChild(0).gameObject);
+        }
 
         /* Initialize any objects that will be used */
         InitializeVariables();
