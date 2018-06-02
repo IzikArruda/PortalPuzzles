@@ -13,8 +13,6 @@ public class StartingRoom : ConnectedRoom {
 
     /* Stairs that connects the room's exit to the floor */
     public StairsCreator stairs;
-    public Material stairsStepMaterial;
-    public Material stairsOtherMaterial;
 
     /* The breakable window used in this room */
     public Window window;
@@ -36,7 +34,6 @@ public class StartingRoom : ConnectedRoom {
     public float frameDepth;
     public float windowFromWall;
     public Transform windowExit;
-    public Material windowFrameMaterial;
     public Material windowGlassMaterial;
     public Texture skySphereTexture;
     private bool glassBroken;
@@ -54,7 +51,19 @@ public class StartingRoom : ConnectedRoom {
     /* How high the outside window aims to be above the ground */
     [HideInInspector]
     public float windowExitExtraHeight;
-
+    
+    /* The textures used for the materials of the objects that form the room */
+    public Material unlitMaterial;
+    public Material windowFrameMaterial;
+    private Material stairsStepMaterial;
+    private Material stairsOtherMaterial;
+    public Texture floorTexture;
+    public Texture wallTexture;
+    public Texture ceilingTexture;
+    public Texture windowFrameTexture;
+    public Texture stairsStepTexture;
+    public Texture stairsOtherTexture;
+    
 
     /* -------- Built-In Functions ---------------------------------------------------- */
 
@@ -65,7 +74,7 @@ public class StartingRoom : ConnectedRoom {
 
         /* Run the terrainController's start function to create the noise provider, used with placing the outside window. */
         outsideTerrain.StartAlt();
-        
+        UpdateMaterials();
         UpdateWalls();
         UpdateWindow();
         UpdateCollider();
@@ -298,6 +307,41 @@ public class StartingRoom : ConnectedRoom {
         roomCollider.size = new Vector3((extraRoomWidth + exit.exitWidth), (extraHeight + exit.exitHeight + roomBellowHeight), (roomDepth));
     }
 
+    void UpdateMaterials() {
+        /*
+         * Update the materials used by the startingRoom
+         */
+
+        /* Floor */
+        floorMaterial = Instantiate(unlitMaterial);
+        floorMaterial.SetTexture("_MainTex", floorTexture);
+        floorMaterial.SetTextureScale("_MainTex", new Vector2(5, 5));
+        floorMaterial.name = "Floor (StartingRoom)";
+
+        /* Wall */
+        wallMaterial = Instantiate(unlitMaterial);
+        wallMaterial.SetTexture("_MainTex", wallTexture);
+        wallMaterial.name = "Wall (StartingRoom)";
+
+        /* Ceiling */
+        ceilingMaterial = Instantiate(unlitMaterial);
+        ceilingMaterial.SetTexture("_MainTex", ceilingTexture);
+        ceilingMaterial.name = "Ceiling (StartingRoom)";
+        
+        /* Window Frame */
+        windowFrameMaterial = Instantiate(unlitMaterial);
+        windowFrameMaterial.SetTexture("_MainTex", windowFrameTexture);
+        windowFrameMaterial.name = "Window Border (StartingRoom)";
+
+        /* Stairs */
+        stairsStepMaterial = Instantiate(unlitMaterial);
+        stairsStepMaterial.SetTexture("_MainTex", stairsStepTexture);
+        stairsStepMaterial.name = "Stairs Step (StartingRoom)";
+        stairsOtherMaterial = Instantiate(unlitMaterial);
+        stairsOtherMaterial.SetTexture("_MainTex", stairsOtherTexture);
+        stairsOtherMaterial.name = "Stairs Other (StartingRoom)";
+    }
+
 
     /* -------- Event Functions ---------------------------------------------------- */
 
@@ -361,5 +405,19 @@ public class StartingRoom : ConnectedRoom {
 
         /* Play the audioSource of the glass shattering */
         glassShatterSource.Play();
+    }
+
+    public void ChangeTextures() {
+        /*
+         * Update the textures used in this room. This to called when the player starts falling into previous rooms
+         */
+
+        //For now, just remove the textures used on all the room's materials
+        floorMaterial.SetTexture("_MainTex", null);
+        wallMaterial.SetTexture("_MainTex", null);
+        ceilingMaterial.SetTexture("_MainTex", null);
+        windowFrameMaterial.SetTexture("_MainTex", null);
+        stairsStepMaterial.SetTexture("_MainTex", null);
+        stairsOtherMaterial.SetTexture("_MainTex", null);
     }
 }

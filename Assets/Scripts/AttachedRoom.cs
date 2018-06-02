@@ -9,6 +9,9 @@ using System.Collections;
 [ExecuteInEditMode]
 public class AttachedRoom : ConnectedRoom {
 
+    /* The globalRoomController which has links to all the rooms of the game */
+    public GlobalRoomController globalRoomController;
+
     /* The two exit points of the room's two exits. Used to connect rooms. */
     public Transform exitPointFront;
     public Transform exitPointBack;
@@ -59,6 +62,11 @@ public class AttachedRoom : ConnectedRoom {
         if(player.GetComponent<CustomPlayerController>() != null) {
             /* Tell the CustomPlayerController to change their linked attachedRoom */
             player.GetComponent<CustomPlayerController>().ChangeLastRoom(this);
+            
+            /* If the player is "falling" backwards through the rooms, send a message to the global room controller */
+            if(player.transform.up == new Vector3(0, 0, 1)) {
+                globalRoomController.UpdateAllRoomTextures(this);
+            }
         }
     }
 
@@ -139,16 +147,6 @@ public class AttachedRoom : ConnectedRoom {
          * Disable the attached puzzle room
          */
          
-
-        /*
-         * 
-         * 
-         * IDEA: instead of disabling the entire room, just set the portal meshes to invisible???
-         * we still want to prevent multiple portal rendering
-         * 
-         * ALSO: have each room start disabled, then have the player send a request to their waitingRoom to start
-         * 
-         */
         if(puzzleRoomParent != null) {
             
             /* Check if the puzzle room uses portals */

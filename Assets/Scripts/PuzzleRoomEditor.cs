@@ -550,6 +550,17 @@ public class PuzzleRoomEditor : MonoBehaviour {
         GetComponent<BoxCollider>().size = new Vector3(roomWidth, roomHeight, roomLength);
     }
 
+    
+    /* -------- Event Functions ---------------------------------------------------- */
+    
+    public void ChangeTextures() {
+        /*
+         * Update the textures used in this room. This to called when the player starts falling into previous rooms
+         */
+
+        Debug.Log("Update puzzleRoom textures");
+    }
+
 
     /* -------- Helper Functions ---------------------------------------------------- */
 

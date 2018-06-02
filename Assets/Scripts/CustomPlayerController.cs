@@ -265,23 +265,25 @@ public class CustomPlayerController : MonoBehaviour {
             /* Move the player using their given input and the gravity vector */
             UpdateInputVector();
             MovePlayer(inputVector + GetGravityVector());
-            
+
             /* Get the tallied movements the player wants to undergo */
             Rigidbody rigidBody = GetComponent<Rigidbody>();
             Vector3 movementVector = Vector3.zero;
             for(int i = 0; i < expectedMovements.Count; i++) {
                 movementVector += (Vector3) expectedMovements[i];
             }
-            
+
             /* Use the custom RayTrace function to check if the movements will cause the player to teleport */
-            float remainingDistance = movementVector.magnitude;
-            Vector3 position = lastSavedPosition;
-            Quaternion direction = Quaternion.LookRotation(movementVector.normalized, transform.up);
-            bool temp = false;
-            /* Fire a ray of the player's movement that interracts with the world, including teleporters */
-            Quaternion rotationDifference = RayTrace(ref position, ref direction, ref remainingDistance, ref temp, true, true, false);
-            transform.position = position;
-            transform.rotation = rotationDifference * transform.rotation;
+            if(movementVector.magnitude != 0 && movementVector != Vector3.zero) {
+                float remainingDistance = movementVector.magnitude;
+                Vector3 position = lastSavedPosition;
+                Quaternion direction = Quaternion.LookRotation(movementVector.normalized, transform.up);
+                bool temp = false;
+                /* Fire a ray of the player's movement that interracts with the world, including teleporters */
+                Quaternion rotationDifference = RayTrace(ref position, ref direction, ref remainingDistance, ref temp, true, true, false);
+                transform.position = position;
+                transform.rotation = rotationDifference * transform.rotation;
+            }
             
             /* Freeze the player's rigidbody's velocity */
             rigidBody.velocity = Vector3.zero;

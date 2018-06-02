@@ -560,4 +560,26 @@ public class GlobalRoomController : MonoBehaviour {
 
         //StartingRoom will move with it's linked exit.
     }
+
+    public void UpdateAllRoomTextures(AttachedRoom calledRoom) {
+        /*
+         * Run when the player enters the first attachedRoom while "falling" backwards through the rooms
+         */
+
+        /* Get the waitingRoom linked to the given AttachedRoom */
+        for(int i = 0; i < waitingRooms.Length; i++) {
+            if(waitingRooms[i].entranceRoom == calledRoom || waitingRooms[i].exitRoom == calledRoom) {
+                Debug.Log("entered waitingRoom: " + i);
+
+                /* Send a command to each previous waiting and puzzle rooms to change their textures */
+                startingRoom.ChangeTextures();
+                for(int j = 0; j < i; j++) {
+                    puzzleRooms[j].ChangeTextures();
+                    waitingRooms[j].ChangeTextures();
+                }
+
+                i = waitingRooms.Length;
+            }
+        }
+    }
 }

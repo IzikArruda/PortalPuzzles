@@ -409,4 +409,12 @@ public class WaitingRoom : ConnectedRoom {
 
         return yDist;
     }
+    
+    public void ChangeTextures() {
+        /*
+         * Update the textures used in this room. This to called when the player starts falling into previous rooms
+         */
+
+        Debug.Log("Update waitingRoom and it's attachedRooms textures");
+    }
 }
