@@ -22,12 +22,19 @@ public class PuzzleRoomEditor : MonoBehaviour {
     public GameObject puzzleRoomClouds;
 
     /* The materials used in the puzzleRoom */
-    public Material wallMaterial;
+    public Material unlitMaterial;
+    private Material wallMaterial;
     private Material cloudBlockerMaterial;
+    private Material marbleMaterial;
+    private Material marbleDarkMaterial;
+    private Material pillarMaterial;
     public Material cloudMaterial;
     public Texture2D mainWallTexture;
     public Texture2D secondWallTexture;
     public Texture2D noiseWallTexture;
+    public Texture2D marbleTexture;
+    public Texture2D marbleDarkTexture;
+    public Texture2D pillarTexture;
     /* The extra priority added into the noise function */
     public float gradPriority;
     /* Scaling of the main, second and noise wall textures on the wall material */
@@ -96,12 +103,6 @@ public class PuzzleRoomEditor : MonoBehaviour {
 		 * force the walls to update on startup. 
 		 */
 		
-		/* Make sure the blocker material is properly created */
-		if(cloudBlockerMaterial == null){
-			cloudBlockerMaterial = new Material(Shader.Find("Unlit/Color"));
-			cloudBlockerMaterial.color = Color.black;
-		}
-
         updateWalls = true;
         Update();
     }
@@ -112,6 +113,9 @@ public class PuzzleRoomEditor : MonoBehaviour {
          */
 
         if(updateWalls) {
+
+            /* Update the material used by this room's walls */
+            UpdateMaterial();
 
             /* Move the attached rooms into their given positions and link them to this room */
             UpdateAttachedRooms();
@@ -299,12 +303,12 @@ public class PuzzleRoomEditor : MonoBehaviour {
 
     public void UpdateMaterial() {
         /*
-         * Update the material used by this wall
+         * Update the materials used by this puzzleRoom and it's contents
          */
 
         /* Re-create the material with the proper shader */
         wallMaterial = new Material(Shader.Find("Unlit/PuzzleWallShader"));
-        wallMaterial.name = transform.parent.name + " Wall Material";
+        wallMaterial.name =  "Wall (" + transform.parent.name + ")";
 
         /* Assign the textures to the new material */
         wallMaterial.SetTexture("_MainTex", mainWallTexture);
@@ -315,6 +319,23 @@ public class PuzzleRoomEditor : MonoBehaviour {
         wallMaterial.SetTextureScale("_MainTex", mainScale);
         wallMaterial.SetTextureScale("_SecondTex", secondScale);
         wallMaterial.SetTextureScale("_RepeatingNoiseTex", noiseScale);
+        
+        /* Make sure the blocker material is properly created */
+        cloudBlockerMaterial = new Material(Shader.Find("Unlit/Color"));
+        cloudBlockerMaterial.color = Color.black;
+        
+        /* Set the materials used for the room's objects */
+        marbleMaterial = Instantiate(unlitMaterial);
+        marbleMaterial.SetTexture("_MainTex", marbleTexture);
+        marbleMaterial.name = "Marble Floor";
+
+        marbleDarkMaterial = Instantiate(unlitMaterial);
+        marbleDarkMaterial.SetTexture("_MainTex", marbleDarkTexture);
+        marbleDarkMaterial.name = "Dark Marble Floor";
+
+        pillarMaterial = Instantiate(unlitMaterial);
+        marbleDarkMaterial.SetTexture("_MainTex", pillarTexture);
+        pillarMaterial.name = "Pillar";
     }
 
     public void AnimateUVS() {
@@ -353,7 +374,8 @@ public class PuzzleRoomEditor : MonoBehaviour {
             UV[i] += animation;
         }
     }
-
+    
+    
     /* -------- Initilizing Functions ---------------------------------------------------- */
 
     private void CreateWalls() {
@@ -367,10 +389,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
 
         /* Reposition the attached rooms to fit the puzzle room's exit and entrance points */
         UpdateAttachedRooms();
-
-        /* Update the material used by this room's walls */
-        UpdateMaterial();
-
+        
         /* Ensure the walls array is emptied before creating new ones */
         if(walls != null) {
             for(int i = 0; i < walls.Length; i++) {
@@ -558,7 +577,12 @@ public class PuzzleRoomEditor : MonoBehaviour {
          * Update the textures used in this room. This to called when the player starts falling into previous rooms
          */
 
-        Debug.Log("Update puzzleRoom textures");
+        wallMaterial.SetTexture("_MainTex", null);
+        wallMaterial.SetTexture("_SecondTex", null);
+
+        marbleMaterial.SetTexture("_MainTex", null);
+        marbleDarkMaterial.SetTexture("_MainTex", null);
+        pillarMaterial.SetTexture("_MainTex", null);
     }
 
 
