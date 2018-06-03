@@ -96,19 +96,12 @@ public class PuzzleRoomEditor : MonoBehaviour {
     public Texture2D marbleDarkTexture;
     public Texture2D pillarTexture;
 
-    /* The textures to apply to the materials after the texture change is run.
-     * These textures must have the same resolution as their replacement counterparts */
-    public float altTexturePriority;
+    /* The textures to apply to the materials after the texture change is run. */
     public Texture2D mainWallTextureAlt;
     public Texture2D secondWallTextureAlt;
     public Texture2D marbleTextureAlt;
     public Texture2D marbleDarkTextureAlt;
     public Texture2D pillarTextureAlt;
-    private Texture2D mainWallTextureCombined;
-    private Texture2D secondWallTextureCombined;
-    private Texture2D marbleTextureCombined;
-    private Texture2D marbleDarkTextureCombined;
-    private Texture2D pillarTextureCombined;
 
 
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
@@ -592,71 +585,14 @@ public class PuzzleRoomEditor : MonoBehaviour {
         /*
          * Update the textures used in this room. This to called when the player starts falling into previous rooms
          */
-
-        /* Check if the textures share the same resolution */
-        if(mainWallTexture.width == mainWallTextureAlt.width && mainWallTexture.height == mainWallTextureAlt.height) {
-            mainWallTextureCombined = new Texture2D(mainWallTexture.width, mainWallTexture.height);
-            var tex1 = mainWallTexture.GetPixels();
-            var tex2 = mainWallTexture.GetPixels();
-
-            /* Combine both textures and apply it to the material's used texture */
-            for(int i = 0; i < tex1.Length; i++) {
-                tex1[i] += tex2[i];
-            }
-            mainWallTextureCombined.SetPixels(tex1);
-            mainWallTextureCombined.Apply();
-        }
-        else {
-            Debug.Log("WARNING: TEXTURES " + mainWallTexture.name + " AND " + mainWallTextureAlt.name + " HAVE DIFFERENT RESOLUTIONS");
-        }
+         
         wallMaterial.SetTexture("_MainTex", mainWallTextureAlt);
-
-
-
-
-
-
-
-
-
-        /* Use altTexturePriority to apply a certain amount of alt texture to each material */
-
-
         wallMaterial.SetTexture("_SecondTex", secondWallTextureAlt);
-
         marbleMaterial.SetTexture("_MainTex", marbleTextureAlt);
         marbleDarkMaterial.SetTexture("_MainTex", marbleDarkTextureAlt);
         columnMaterial.SetTexture("_MainTex", pillarTextureAlt);
         marbleEdgeMaterial.SetTexture("_MainTex", marbleTextureAlt);
         marbleEdgeMaterial.SetTexture("_SecondTex", marbleDarkTextureAlt);
-    }
-
-
-    void CombineTexturesToMaterial(Texture2D tex1, Texture2D tex2, ref Texture2D tex3) {
-        /*
-         * Combine the two given textures and apply them to the 3rd.
-         * 
-         * The two given textures must have the same resolution for this to work.
-         */
-         
-        /* Check if the textures share the same resolution */
-        if(tex1.width == tex2.width && tex1.height == tex2.height) {
-            mainWallTextureCombined = new Texture2D(mainWallTexture.width, mainWallTexture.height);
-            var tex1Pixles = mainWallTexture.GetPixels();
-            var tex2Pixles = mainWallTexture.GetPixels();
-
-            /* Combine both the textures */
-            for(int i = 0; i < tex1Pixles.Length; i++) {
-                tex1Pixles[i] += tex2Pixles[i];
-            }
-
-            /* Apply the combination to the third texture */
-            tex3.SetPixels(tex1Pixles);
-            tex3.Apply();
-        }
-        else {
-            Debug.Log("WARNING: TEXTURES " + tex1.name + " AND " + tex2.name + " HAVE DIFFERENT RESOLUTIONS");
-        }
     }
 
 
