@@ -6,7 +6,7 @@ Material:
   m_ObjectHideFlags: 0
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
-  m_Name: PR6 MarbleEdgeMaterial
+  m_Name: Marble Edge Floor (Puzzle 6)
   m_Shader: {fileID: 4800000, guid: de5a458b606158f44940318bd7b6fc7d, type: 3}
   m_ShaderKeywords: _EMISSION
   m_LightmapFlags: 1
