@@ -64,6 +64,15 @@ public class StartingRoom : ConnectedRoom {
     public Texture stairsStepTexture;
     public Texture stairsOtherTexture;
 
+    /* The textures the room will use once it changes textures */
+    public Texture floorTextureAlt;
+    public Texture wallTextureAlt;
+    public Texture ceilingTextureAlt;
+    public Texture windowFrameTextureAlt;
+    public Texture stairsStepTextureAlt;
+    public Texture stairsOtherTextureAlt;
+
+
 
     /* -------- Built-In Functions ---------------------------------------------------- */
 
@@ -413,11 +422,11 @@ public class StartingRoom : ConnectedRoom {
          */
 
         //For now, just remove the textures used on all the room's materials
-        floorMaterial.SetTexture("_MainTex", null);
-        wallMaterial.SetTexture("_MainTex", null);
-        ceilingMaterial.SetTexture("_MainTex", null);
-        windowFrameMaterial.SetTexture("_MainTex", null);
-        stairsStepMaterial.SetTexture("_MainTex", null);
-        stairsOtherMaterial.SetTexture("_MainTex", null);
+        floorMaterial.SetTexture("_MainTex", floorTextureAlt);
+        wallMaterial.SetTexture("_MainTex", wallTextureAlt);
+        ceilingMaterial.SetTexture("_MainTex", ceilingTextureAlt);
+        windowFrameMaterial.SetTexture("_MainTex", windowFrameTextureAlt);
+        stairsStepMaterial.SetTexture("_MainTex", stairsStepTextureAlt);
+        stairsOtherMaterial.SetTexture("_MainTex", stairsOtherTextureAlt);
     }
 }

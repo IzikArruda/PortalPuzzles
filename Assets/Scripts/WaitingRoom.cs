@@ -52,6 +52,12 @@ public class WaitingRoom : ConnectedRoom {
     public Texture ceilingTexture;
     public Texture windowFrameTexture;
 
+    /* The alternative textures the room will use once it changes textures */
+    public Texture2D floorTextureAlt;
+    public Texture2D wallTextureAlt;
+    public Texture2D ceilingTextureAlt;
+    public Texture2D windowFrameTextureAlt;
+
 
     /* -------- Built-In Functions ---------------------------------------------------- */
 
@@ -463,9 +469,9 @@ public class WaitingRoom : ConnectedRoom {
 
         Debug.Log("Update waitingRoom and it's attachedRooms textures");
         //For now, just remove the textures used on all the room's materials
-        floorMaterial.SetTexture("_MainTex", null);
-        wallMaterial.SetTexture("_MainTex", null);
-        ceilingMaterial.SetTexture("_MainTex", null);
-        windowFrameMaterial.SetTexture("_MainTex", null);
+        floorMaterial.SetTexture("_MainTex", floorTextureAlt);
+        wallMaterial.SetTexture("_MainTex", wallTextureAlt);
+        ceilingMaterial.SetTexture("_MainTex", ceilingTextureAlt);
+        windowFrameMaterial.SetTexture("_MainTex", windowFrameTextureAlt);
     }
 }
