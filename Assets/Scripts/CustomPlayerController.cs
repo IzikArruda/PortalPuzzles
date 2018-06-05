@@ -855,12 +855,21 @@ public class CustomPlayerController : MonoBehaviour {
             if(remainingTimeRatio < 0) { remainingTimeRatio = 0; }
             strafeSpeed *= remainingTimeRatio;
         }
-        
-        /* Animate the intro menu's background by moving the startingRoom window's exit point to the side during this state */
-        if(state == PlayerStates.InIntro) {
+
+
+        /* Animate the intro menu's background by moving the startingRoom window's exit point to the side during this state.
+         * Do not make the camera move while in the menu is still loading the terrain. */
+        if(playerMenu.terrainController.GetLoadingPercent() != 1) {
+            //Do not move. Place camera just past teh change
+        }
+        else if(state == PlayerStates.InIntro) {
             startingRoom.windowExit.position = startingRoom.windowExit.position + new Vector3(strafeSpeed*Time.deltaTime*40, 0, 0);
         }
+
         startingRoom.UpdateOutsideWindowPositon(false);
+
+
+
 
         /* Get the distance between the player's position and the startingRoom's portal */
         float portalDistance = startingRoom.window.portalSet.EntrancePortal.backwardsPortalMesh.transform.position.z;

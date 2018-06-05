@@ -111,28 +111,8 @@ public class StartingRoom : ConnectedRoom {
             }
         }
     }
-
-    void OnEnable() {
-        /*
-         * When this room is enabled, make sure the outside terrain is also enabled
-         */
-
-        if(outsideTerrain != null) {
-            outsideTerrain.gameObject.SetActive(true);
-        }
-    }
     
-    void OnDisable() {
-        /*
-         * When this room is disabled, make sure the outside terrain is also disabled
-         */
-
-        if(outsideTerrain != null) {
-            outsideTerrain.gameObject.SetActive(false);
-        }
-    }
     
-
     /* -------- Update Functions ---------------------------------------------------- */
 
     void UpdateWalls() {
@@ -229,10 +209,10 @@ public class StartingRoom : ConnectedRoom {
         Vector3 backWallCenter = exit.exitPointBack.position + new Vector3(0, -roomBellowHeight + frameThickness + windowFromWall/2f, -roomDepth);
         window.insidePos = backWallCenter;
         window.insideRot = new Vector3(0, 180, 0);
-        /* Place the window's exit at a distance just outside the player's view distance, ensuring they cannot see the rooms */
-        windowExit.position = new Vector3(0, 0, -CustomPlayerController.cameraFarClippingPlane/2f);
-        //For debugging reasons, place it only -50 units along the Z axis
-        windowExit.position = new Vector3(0, 0, -50f);
+        /* Place the window's exit at a distance just outside the player's view distance, ensuring they cannot see the rooms.
+         * Also, place the window in the center of a chunk using the terrain's chunkLength. */
+        float chunkDist = outsideTerrain.chunkLength;
+        windowExit.position = -new Vector3(chunkDist/2f, 0, (outsideTerrain.chunkViewRange+0.5f)*chunkDist);
         windowExitExtraHeight = 25;
         UpdateOutsideWindowPositon(true);
 

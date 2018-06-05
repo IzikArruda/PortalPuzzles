@@ -2572,6 +2572,7 @@ public class Menu : MonoBehaviour {
         }
     }
 
+
     /* ----------- Mouse Enter/Hover Functions ------------------------------------------------------------- */
 
     void StartButtonClick() {
