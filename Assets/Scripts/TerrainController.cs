@@ -52,7 +52,6 @@ public class TerrainController : MonoBehaviour {
 
     /* The skySphere and it's texture that will surround the focus point */
     public Texture2D skySphereTexture;
-    private GameObject skySphere;
     private SkySphere skySphereScript;
 
     /* The lighting used in the game */
@@ -277,18 +276,22 @@ public class TerrainController : MonoBehaviour {
          * to judge how large the sky sphere will be.
          */
 
+        /* Make sure we have a skySphere script */
+        skySphereScript = new GameObject().AddComponent<SkySphere>();
+        skySphereScript.transform.parent = transform;
+
+        /* Set the radius of the sphere to be relative to the terrain chunk's reach */
+        skySphereScript.radius = chunkLength*(chunkViewRange - 1.25f);
+
         /* Create the sphere object and add the skySphere script to it */
-        if(skySphere != null) { DestroyImmediate(skySphere); }
-        skySphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        skySphere.transform.parent = transform;
-        skySphereScript = skySphere.AddComponent<SkySphere>();
+        skySphereScript.CreateSkySphere();
         UpdateSkySphere(new Vector3(0, 0, 0));
 
         /* Apply the skyTexture to the skySphere */
-        skySphereScript.ApplyColor(new Color(0.45f, 0.50f, 0.65f));
+        skySphereScript.ApplyTexture(skySphereTexture);
 
         /* Put the sky sphere in the terrain layer as it will only be used when outside */
-        skySphere.layer = LayerMask.NameToLayer("Terrain");
+        skySphereScript.gameObject.layer = LayerMask.NameToLayer("Terrain");
     }
     
 
