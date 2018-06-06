@@ -1637,6 +1637,9 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Hide and lock the cursor since the player will regain control */
         Cursor.lockState = CursorLockMode.Locked;
+
+        /* Play the starting music for the game */
+        playerSoundsScript.PlayIntroMusic();
     }
 
     public void ContinueButtonPressed() {
@@ -1667,6 +1670,7 @@ public class CustomPlayerController : MonoBehaviour {
         /* Tell the player's sound script that they are now in the outside state */
         playerSoundsScript.EnteringOutside();
     }
+
 
     /* ----------- Outside Called Functions ------------------------------------------------------------- */
 
@@ -1729,6 +1733,7 @@ public class CustomPlayerController : MonoBehaviour {
         /* Play the menu sound clicking clip */
         playerSoundsScript.PlayMenuClick();
     }
+
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
 

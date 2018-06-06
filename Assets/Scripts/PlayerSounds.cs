@@ -60,6 +60,7 @@ public class PlayerSounds : MonoBehaviour {
     public AudioClip[] landingClips;
     public AudioClip[] musicClipsMuted;
     public AudioClip[] musicClipsUpgraded;
+    public AudioClip outsideSounds;
     public AudioClip menuClickClip;
     public AudioClip startingMusic;
 	public AudioClip hardLandingClip;
@@ -142,8 +143,8 @@ public class PlayerSounds : MonoBehaviour {
         /* Set the volume for the audio mixer */
         ResetAudioMixerVolume();
 
-        /* Start playing the starting music */
-        musicSourceMuted.clip = startingMusic;
+        /* Start playing the outside background sounds */
+        musicSourceMuted.clip = outsideSounds;
         musicSourceMuted.Play();
     }
 
@@ -395,6 +396,14 @@ public class PlayerSounds : MonoBehaviour {
         menuSource.Play();
     }
 
+    public void PlayIntroMusic() {
+        /*
+         * Play the starting song 
+         */
+         
+        musicSourceMuted.clip = startingMusic;
+        musicSourceMuted.Play();
+    }
 
     /* ----------- Audio Mixing Functions ------------------------------------------------------------- */
 

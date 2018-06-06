@@ -57,11 +57,11 @@ public class SkySphere : MonoBehaviour {
         /* Set the fog of the world to be relative to the skysphere's radius */
         //Have the fog start 20% into the player's max view
         RenderSettings.fogStartDistance = radius*0.2f;
-        //Have the fog end before the last 10% of the player's view
-        RenderSettings.fogEndDistance = radius*0.9f;
+        //Have the fog end before the last 25% of the player's view
+        RenderSettings.fogEndDistance = radius*0.75f;
 
         /* Set the color of the fog. If this changes, the skySphere picture will also need to change */
-        RenderSettings.fogColor = new Color(150/255f, 182/255f, 229/255f);
+        RenderSettings.fogColor = new Color(153/255f, 186/255f, 231/255f);
     }
 
 
