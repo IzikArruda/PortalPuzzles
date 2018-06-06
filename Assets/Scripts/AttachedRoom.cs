@@ -161,7 +161,6 @@ public class AttachedRoom : ConnectedRoom {
             /* Check if the puzzle room is actually the starting room */
             else if(puzzleRoomParent.GetComponent<StartingRoom>() != null) {
                 /* Disable the startingRoom's portals and terrain */
-                Debug.Log("disable");
                 puzzleRoomParent.GetComponent<StartingRoom>().window.portalSet.UpdatePortalState(false);
                 puzzleRoomParent.GetComponent<StartingRoom>().outsideTerrain.gameObject.SetActive(false);
             }
@@ -187,7 +186,6 @@ public class AttachedRoom : ConnectedRoom {
             /* Check if the puzzle room is actually the starting room */
             else if(puzzleRoomParent.GetComponent<StartingRoom>() != null) {
                 /* Enable the startingRoom's portals and terrain */
-                Debug.Log("enable");
                 puzzleRoomParent.GetComponent<StartingRoom>().window.portalSet.UpdatePortalState(true);
                 puzzleRoomParent.GetComponent<StartingRoom>().outsideTerrain.gameObject.SetActive(true);
             }

@@ -18,6 +18,7 @@ using System.Collections;
  */
 public enum PlayerStates{
     NULL,
+    LoadingIntro,
     InIntro,
     LeavingIntro,
     Standing,
@@ -185,7 +186,7 @@ public class CustomPlayerController : MonoBehaviour {
     private float IntroWindowStrafeSpeed = 0.25f;
     //Used to smoothly transition between InIntro and LeavingIntro
     private float remainingInIntroTime;
-    private bool currentlyLeavingInIntro = false;
+    private bool aboutToLeaveIntro = false;
     private float timeToLeaveIntro = 3;
 
 
@@ -403,16 +404,18 @@ public class CustomPlayerController : MonoBehaviour {
             /* Apply an animation to the camera while in the fastFalling state */
             AnimateCameraFastFalling();
         }
-        else if(PlayerIsInIntro()) {       
+        else if(PlayerIsInIntro()) {
+            /* All the intro states use the same camera placement function */
+            FireCameraRayInIntroState();
             /* Depending on the player's current state in the intro, re-position the camera */
-            if(state == PlayerStates.InIntro) {
-                /* While in the intro, leave the camera immobile */
-                AnimatedCameraInIntro();
-            }
-            else if(state == PlayerStates.LeavingIntro) {
+            //if(state == PlayerStates.InIntro || state == PlayerStates.LoadingIntro) {
+                /* While loading and in the intro, leave the camera immobile */
+            //    AnimatedCameraInIntro();
+            //}
+            //else if(state == PlayerStates.LeavingIntro) {
                 /* Move the camera back to the player's default camera position, then give them control */
-                AnimatedCameraLeavingIntro();
-            }
+            //    AnimatedCameraLeavingIntro();
+            //}
         }
         else {
             /* Any other state simply places the camera into it's default position */
@@ -797,90 +800,12 @@ public class CustomPlayerController : MonoBehaviour {
                 Random.Range(-r, r), Random.Range(-r, r), Random.Range(-r, r));
         //playerCamera.transform.rotation = currentCameraTransform.rotation;
     }
-
-    void AnimatedCameraInIntro() {
-        /*
-         * While in the intro, the camera will remain immobile
-         */
-
-        /* Fire a ray from the player's current position */
-        FireCameraRayInIntroState();
-    }
-
-    void AnimatedCameraLeavingIntro() {
-        /*
-         * While in one of the "Menus" state, take control over the camera. 
-         */
-         
-        /* Get the distance from the camDestinationPos to the startingRoom's portal. 
-         * This is to prevent the near-clipping plane from cutting off the portal. */
-        Vector3 portalPos = startingRoom.window.portalSet.EntrancePortal.transform.position;
-        float camToPortalDist = Mathf.Abs(camDestinationPos.z - (portalPos.z + 0));
-
-        /* Reduce the introCamDistance distance every frame during this intro animation.
-         * The amount that gets reduced is relative to the amount of distance remaining. */
-        float consistentReduction = Time.deltaTime;
-        float var1 = 2f;
-        float var2 = 0.9f;
-        if(introCamDistance > var1) {
-            introCamDistance -= consistentReduction;
-        }else {
-            introCamDistance -= (introCamDistance/var1)*(consistentReduction*var2) + (consistentReduction*(1 - var2));
-        }
-        
-        /* Update the position of the camera to reflect the change in introCamDistance */
-        if(introCamDistance > 0) {
-            /* Fire a ray to reposition the camera using the new introCamDistance */
-            FireCameraRayInIntroState();
-        }
-
-        /* If the cam distance reaches 0, have the player enter the standing state as they are done the intro animation */
-        else {
-            currentCameraTransform.position = camDestinationPos;
-            currentCameraTransform.rotation = camDestinationRot;
-            ChangeState(PlayerStates.Standing);
-        }
-    }
-
+    
     private void FireCameraRayInIntroState() {
         /*
-         * A unified function used during the intro states
+         * A unified function used during the intro states for placing the camera
          */
-        float strafeSpeed = IntroWindowStrafeSpeed;
-
-        /* If the player is about the leave the intro, reduce window's strafing speed */
-        if(currentlyLeavingInIntro) {
-            float earlyTimeToStop = 0.5f;
-            float remainingTimeRatio = (remainingInIntroTime / (timeToLeaveIntro - earlyTimeToStop));
-            if(remainingTimeRatio < 0) { remainingTimeRatio = 0; }
-            strafeSpeed *= remainingTimeRatio;
-        }
-
-
-        /* Animate the intro menu's background by moving the startingRoom window's exit point to the side during this state.
-         * Do not make the camera move while in the menu is still loading the terrain. */
-        if(playerMenu.terrainController.GetLoadingPercent() != 1) {
-            //Do not move. Place camera just past teh change
-        }
-        else if(state == PlayerStates.InIntro) {
-            startingRoom.windowExit.position = startingRoom.windowExit.position + new Vector3(strafeSpeed*Time.deltaTime*40, 0, 0);
-        }
-
-        startingRoom.UpdateOutsideWindowPositon(false);
-
-
-
-
-        /* Get the distance between the player's position and the startingRoom's portal */
-        float portalDistance = startingRoom.window.portalSet.EntrancePortal.backwardsPortalMesh.transform.position.z;
-        portalDistance = Mathf.Abs(portalDistance - transform.position.z);
-        float closeDistance = 0.2f;
-        /* Prevent the cameraDistance from placing the camera too close to the portal mesh */
-        if(introCamDistance < portalDistance && introCamDistance > portalDistance - closeDistance) {
-            introCamDistance = portalDistance - closeDistance;
-        }
-
-
+        
         /* Set the parameters required for the ray trace */
         Vector3 currentCameraPosition = camDestinationPos;
         Quaternion currentCameraRotation = camDestinationRot;
@@ -1110,10 +1035,10 @@ public class CustomPlayerController : MonoBehaviour {
         /* Set the camera's offset to it's natural default value */
         cameraYOffset = 0;
 
-        /* Start the player in the InIntro state */
+        /* Start the player in the LoadingIntro state */
         state = PlayerStates.NULL;
         inMenu = true;
-        ChangeState(PlayerStates.InIntro);
+        ChangeState(PlayerStates.LoadingIntro);
         //After entering the intro state, we want to update certain values that will be used with the intro animation
         AdjustCameraPosition(GetCameraHeight());
         camDestinationPos = currentCameraTransform.position;
@@ -1228,6 +1153,85 @@ public class CustomPlayerController : MonoBehaviour {
             fallingOutWindow = false;
         }
     }
+
+    void UpdateIntroValues() {
+        /*
+         * Runs on Update when in the intro, it is used to contain and update all values pertinent to the intro
+         */
+
+        /* The game will only start the intro once the outside terrain has loaded */
+        if(state == PlayerStates.LoadingIntro) {
+            if(playerMenu.terrainController.GetLoadingPercent() == 1) {
+                /* Leave the loading state and start the InIntro state */
+                ChangeState(PlayerStates.InIntro);
+
+                /* Start playing the outside background sounds */
+                playerSoundsScript.PlayStartupMusic();
+            }
+        }
+
+        /* Once in the InIntro, animate the startingRoom's outside window */
+        else if(state == PlayerStates.InIntro) {
+
+            /* If the player is about the leave the intro, reduce window's strafing speed */
+            float strafeSpeed = IntroWindowStrafeSpeed;
+            if(aboutToLeaveIntro) {
+                float earlyTimeToStop = 0.5f;
+                float remainingTimeRatio = (remainingInIntroTime / (timeToLeaveIntro - earlyTimeToStop));
+                if(remainingTimeRatio < 0) { remainingTimeRatio = 0; }
+                strafeSpeed *= remainingTimeRatio;
+            }
+
+            /* Strafe the window */
+            startingRoom.windowExit.position = startingRoom.windowExit.position + new Vector3(strafeSpeed*Time.deltaTime*40, 0, 0);
+            startingRoom.UpdateOutsideWindowPositon(false);
+
+            /* If we are leaving the InMenu state, decrement remainingInMenuTime */
+            if(aboutToLeaveIntro) {
+                /* Decrease remainingInIntroTime */
+                remainingInIntroTime -= Time.deltaTime;
+                if(remainingInIntroTime <= 0) {
+                    /* When time runs out, change to the leavingIntro state */
+                    ChangeState(PlayerStates.LeavingIntro);
+                    aboutToLeaveIntro = false;
+                }
+            }
+        }
+
+        /* When leaving the intro, reduce the distance the camera is from the player */
+        else if(state == PlayerStates.LeavingIntro) {
+            
+            /* Reduce the introCamDistance distance every frame during this intro animation.
+             * The amount that gets reduced is relative to the amount of distance remaining. */
+            float consistentReduction = Time.deltaTime;
+            float var1 = 2f;
+            float var2 = 0.9f;
+            if(introCamDistance > var1) {
+                introCamDistance -= consistentReduction;
+            }
+            else {
+                introCamDistance -= (introCamDistance/var1)*(consistentReduction*var2) + (consistentReduction*(1 - var2));
+            }
+
+            /* Get the distance from the camDestinationPos to the startingRoom's portal. 
+             * This is to prevent the near-clipping plane from cutting off the portal. */
+            float portalDistance = startingRoom.window.portalSet.EntrancePortal.backwardsPortalMesh.transform.position.z;
+            portalDistance = Mathf.Abs(portalDistance - transform.position.z);
+            float closeDistance = 0.2f;
+            /* Prevent the cameraDistance from placing the camera too close to the portal mesh */
+            if(introCamDistance < portalDistance && introCamDistance > portalDistance - closeDistance) {
+                introCamDistance = portalDistance - closeDistance;
+            }
+
+            /* If the cam distance reaches 0, have the player enter the standing state as they are done the intro animation */
+            if(introCamDistance <= 0) {
+                currentCameraTransform.position = camDestinationPos;
+                currentCameraTransform.rotation = camDestinationRot;
+                ChangeState(PlayerStates.Standing);
+            }
+        }
+    }
+
 
     /* ----------- Event Functions ------------------------------------------------------------- */
 
@@ -1582,10 +1586,11 @@ public class CustomPlayerController : MonoBehaviour {
             /* Pressing escape during the startup will skip into the main menu */
             if(playerMenu.state == MenuStates.Startup) {
                 playerMenu.PlayerRequestMenuChange();
+                Debug.Log("UPDAYTSAE");
             }
-
+            
             /* Pressing escape will skip the intro */
-            else if(PlayerIsInIntro() && currentlyLeavingInIntro) {
+            else if(state == PlayerStates.InIntro || state == PlayerStates.LeavingIntro) {
                 /* Make sure the state properly exits the intro */
                 if(state == PlayerStates.InIntro) {
                     remainingInIntroTime = 0;
@@ -1594,8 +1599,11 @@ public class CustomPlayerController : MonoBehaviour {
                 introCamDistance = 0;
                 /* Ensure the camera ray is fired so certain functions are run (PlayerRenderTerrain) */
                 FireCameraRayInIntroState();
-            }
 
+                /* If the intro music has not yet started, force it to start */
+                playerSoundsScript.ForceIntroMusic();
+            }
+            
             else {
                 /* Set whether the menu should prevent user input or not */
                 inMenu = playerMenu.PlayerRequestMenuChange();
@@ -1603,29 +1611,13 @@ public class CustomPlayerController : MonoBehaviour {
         }
     }
     
-    void UpdateIntroValues() {
-        /*
-         * Runs on Update when in the intro, it is used to contain and update all values pertinent to the intro
-         */
-
-        /* If we are leaving the InMenu state, decrement remainingInMenuTime */
-        if(currentlyLeavingInIntro) {
-            /* Decrease remainingInIntroTime */
-            remainingInIntroTime -= Time.deltaTime;
-            if(remainingInIntroTime <= 0) {
-                /* When time runs out, change to the leavingIntro state */
-                ChangeState(PlayerStates.LeavingIntro);
-            }
-        }
-    }
-
     public void StartButtonPressed() {
         /*
          * This is run when the player presses the start button on the main menu in the intro
          */
 
         /* Start a timer for when we will leave the inMenu state */
-        currentlyLeavingInIntro = true;
+        aboutToLeaveIntro = true;
         remainingInIntroTime = timeToLeaveIntro;
         
         /* Set the startingRoom's outside window to be in the terrain layer so we can render it later */
@@ -1865,7 +1857,9 @@ public class CustomPlayerController : MonoBehaviour {
          */
         bool inIntro = false;
 
-        if(givenState == PlayerStates.LeavingIntro || givenState == PlayerStates.InIntro) {
+        if(givenState == PlayerStates.LoadingIntro || 
+                givenState == PlayerStates.LeavingIntro || 
+                givenState == PlayerStates.InIntro) {
             inIntro = true;
         }
 

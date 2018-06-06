@@ -137,15 +137,11 @@ public class PlayerSounds : MonoBehaviour {
         }
         musicSourceMuted.volume = maxVolume;
         musicSourceUpgraded.volume = maxVolume;
-		fallingSource.volume = maxVolume;
+        fallingSource.volume = maxVolume;
         menuSource.volume = maxVolume;
 
         /* Set the volume for the audio mixer */
         ResetAudioMixerVolume();
-
-        /* Start playing the outside background sounds */
-        musicSourceMuted.clip = outsideSounds;
-        musicSourceMuted.Play();
     }
 
     void Update(){
@@ -396,14 +392,46 @@ public class PlayerSounds : MonoBehaviour {
         menuSource.Play();
     }
 
+    public void PlayStartupMusic() {
+        /*
+         * Start fading in the outsideSounds audio clip
+         */
+        Debug.Log("start music");
+         
+        musicSourceMuted.volume = 0;
+        musicSourceUpgraded.volume = 0;
+        musicSourceMuted.clip = outsideSounds;
+        musicSourceMuted.Play();
+        SetMusicFade(-0.45f);
+    }
+
     public void PlayIntroMusic() {
         /*
-         * Play the starting song 
+         * Play the starting song by having the outside background sounds fade out and the intro song fade in.
+         * Only start playing the starting song once this is called.
          */
-         
-        musicSourceMuted.clip = startingMusic;
-        musicSourceMuted.Play();
+        Debug.Log("intro music");
+
+        /* Have the intro music play after a delay */
+        musicSourceUpgraded.clip = startingMusic;
+        musicSourceUpgraded.PlayDelayed(4.5f);
+        SetMusicFade(0.25f);
     }
+
+    public void ForceIntroMusic() {
+        /*
+         * The player has skipped the intro, so force the music to update itself
+         */
+
+        musicSourceMuted.volume = 0;
+        musicSourceUpgraded.volume = maxVolume;
+
+        /* Force the intro song to play if it has not yet started */
+        if(musicSourceUpgraded.time <= 0) {
+            musicSourceUpgraded.Play();
+        }
+    }
+
 
     /* ----------- Audio Mixing Functions ------------------------------------------------------------- */
 
@@ -470,12 +498,12 @@ public class PlayerSounds : MonoBehaviour {
 		}
     }
 
-    void SetMusicFade(int fade) {
+    void SetMusicFade(float fade) {
         /*
          * Set the fade value of both music sources. This will allow the game to swap
          * between the upgraded and normal versions of a song.
-         * -1 = fade out the upgraded version, fade in the normal version
-         * 1 = fade out the normal version, fade in the upgraded version
+         * -1 = fade out the upgraded version, fade in the muted version
+         * 1 = fade out the muted version, fade in the upgraded version
          */
 
         musicFadeMuted = -fade;
