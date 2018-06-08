@@ -611,14 +611,12 @@ public class CustomPlayerController : MonoBehaviour {
             /* Use the new legLength to make the player undergo a "step" */
             DoStep(newLegLength);
         }
+        
+        /* If not enough legs are grounded and the player is in the falling state... */
+        else if(state == PlayerStates.Falling) {
 
-        /* Not enough legs are grounded, so they continue falling */
-        else {
-
-            /* If the player is falling at nearly their maximum falling speed, force them into the fastFalling state */
-            if(state == PlayerStates.Falling && Mathf.Abs(currentYVelocity) > maxYVelocity*0.95f) {
-                ChangeState(PlayerStates.FastFalling);
-            }
+            /* ...Apply the entering fastFall state */
+            ApplyFastfall(false);
         }
     }
     
@@ -1586,11 +1584,10 @@ public class CustomPlayerController : MonoBehaviour {
             /* Pressing escape during the startup will skip into the main menu */
             if(playerMenu.state == MenuStates.Startup) {
                 playerMenu.PlayerRequestMenuChange();
-                Debug.Log("UPDAYTSAE");
             }
             
             /* Pressing escape will skip the intro */
-            else if(state == PlayerStates.InIntro || state == PlayerStates.LeavingIntro) {
+            else if((aboutToLeaveIntro && state == PlayerStates.InIntro) || state == PlayerStates.LeavingIntro) {
                 /* Make sure the state properly exits the intro */
                 if(state == PlayerStates.InIntro) {
                     remainingInIntroTime = 0;
@@ -1663,24 +1660,44 @@ public class CustomPlayerController : MonoBehaviour {
         playerSoundsScript.EnteringOutside();
     }
 
-
-    /* ----------- Outside Called Functions ------------------------------------------------------------- */
-
-    public void ApplyFastfall() {
+    public void ApplyFastfall(bool outsidePuzzlePlayArea) {
         /* 
-    	 * Put the player into the fast fall state if they are currently airborn.
-    	 * This will run any time the player is outside the play area of a room.
-    	 *
-    	 * When the player is standing while outside the play area
-    	 * (Walking on the wall), A good idea will be to have a 
-    	 * "press R to reset". Also add a r to reset function.
-    	 */
+         * Put the player into the FastFalling state if they meet the appropriate conditions:
+         * - In an airborn state that is not the fastFalling state
+         * - Player's current velocity is nearing a specified value relative to their max
+         * 
+         * The given boolean will be true if the function is called from the player being 
+         * outside the puzzleRoom's playArea. This will control whether the outsideState value
+         * must be true. This means the player will only ever enter FastFall state if
+         * they are either outside the puzzleRoom's play area or outside in the terrain.
+         */
+         
+        /* Check if the player is in the right state */
+        if(PlayerIsAirborn() && state != PlayerStates.FastFalling && (outsideState || outsidePuzzlePlayArea)) {
 
-        /* Do not go into fastfall if the player is not currently falling or already fastfalling */
-        if(PlayerIsAirborn() && state != PlayerStates.FastFalling) {
-            ChangeState(PlayerStates.FastFalling);
+            /* The required falling speed is determined by the player's current state */
+            float minimumSpeed = maxYVelocity;
+            if(outsidePuzzlePlayArea) {
+
+                /* Having the correct escape angle requires little speed to enter fastFall */
+                if(transform.up == new Vector3(0, 0, 1)) {
+                    minimumSpeed *= 0.5f;
+                }
+                /* having the incorrect escape angle requires nearly max speed to enter fastFall */
+                else {
+                    minimumSpeed *= 0.95f;
+                }
+
+                /* Check if they are falling at the correct speed */
+                if(Mathf.Abs(currentYVelocity) > minimumSpeed) {
+                    ChangeState(PlayerStates.FastFalling);
+                }
+            }
         }
     }
+
+
+    /* ----------- Outside Called Functions ------------------------------------------------------------- */
 
     public float GetYVelocityFastFallRatio() {
         /*
