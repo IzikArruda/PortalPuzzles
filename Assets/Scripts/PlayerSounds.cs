@@ -190,7 +190,6 @@ public class PlayerSounds : MonoBehaviour {
 		 * each footstep sound effect split the highs and lows into sepperate clips.
 		 * By controlling the volume of each part, we can systematically control the tone.
 		 */
-        int sourceIndex = UnusedSoundSource(upperStepSources);
 		float volumeRatio;
 		float footstepToneRatio;
 		float sampleRatio;
@@ -396,7 +395,6 @@ public class PlayerSounds : MonoBehaviour {
         /*
          * Start fading in the outsideSounds audio clip
          */
-        Debug.Log("start music");
          
         musicSourceMuted.volume = 0;
         musicSourceUpgraded.volume = 0;
@@ -410,7 +408,6 @@ public class PlayerSounds : MonoBehaviour {
          * Play the starting song by having the outside background sounds fade out and the intro song fade in.
          * Only start playing the starting song once this is called.
          */
-        Debug.Log("intro music");
 
         /* Have the intro music play after a delay */
         musicSourceUpgraded.clip = startingMusic;

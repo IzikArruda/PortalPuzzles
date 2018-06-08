@@ -514,52 +514,6 @@ public class GlobalRoomController : MonoBehaviour {
             waitingRooms[waitingRooms.Length-1].previousRoom = waitingRooms[waitingRooms.Length-2];
         }
     }
-
-    private void RepositionRooms() {
-        /*
-         * Reposition the rooms in the game. Certain repositioning requires a group of rooms to move
-         */
-
-        //To move the puzzleRoom's entrance/exit: move their linked entrance and exit gameobject.
-        //This will move the walls of the room, the attached room and then the waiting room(that one requires a run)
-
-        //Note: puzzle room's origin is the same origin as the entrance. IE, assuming the entrance hieght is 0,
-        //the entrance transform will be (0, 0, 0)
-        Vector3 repositionPuzzleRoom = new Vector3(0, 0, 0);
-        int puzzleRoomIndexToMove = 0;
-
-        /* Any change in height (Y), will be pushed down to both entrance and exit transforms */
-        Vector3 puzzleRoomPositionChange = new Vector3(repositionPuzzleRoom.x, 0, repositionPuzzleRoom.z);
-        float puzzleRoomHeightChange = repositionPuzzleRoom.y;
-
-
-
-
-
-
-
-
-        //When moving a waitingRoom, make sure to move the linked attachedRooms too, which in effect will move the puzzleRoom's exit/entrance
-        //Note that moving the fisrt waitingRoom will need to move the attachedRoom instead of the attachedRoom's puzzleRoom.
-        //
-        /*
-         * 
-         * 
-         * NOTE: when moving the StartingRoom, we must move the attachedRoom instead as the startingRoom will not auto-move it's 
-         * attachedRoom and instead the startginRoom is moved along with the attachedRoom
-         * 
-         * 
-         * 
-         * 
-         */
-
-
-
-
-
-
-        //StartingRoom will move with it's linked exit.
-    }
     
     public void UpdateAllRoomTextures(AttachedRoom calledRoom) {
         /*

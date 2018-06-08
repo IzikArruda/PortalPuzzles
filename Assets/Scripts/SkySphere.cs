@@ -35,9 +35,6 @@ public class SkySphere : MonoBehaviour {
         gameObject.AddComponent<MeshRenderer>();
         gameObject.AddComponent<MeshFilter>();
 
-        /* Set the sphere's sizes to match the player's render distance */
-        float renderDist = CustomPlayerController.cameraFarClippingPlane;
-
         /* Create the mesh of the sphere */
         subDivisions = 5;
         GetComponent<MeshFilter>().mesh = CreateOctahedron(subDivisions, radius);

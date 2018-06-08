@@ -51,7 +51,6 @@ public class CustomPlayerController : MonoBehaviour {
     /* The camera used for the player's view */
     public Camera playerCamera;
 
-
     /* --- Player Control/Movement ----------------- */
     /* The Expected movements (in the form of Vector3) of the player for the upcomming physics update */
     private ArrayList expectedMovements;
@@ -500,7 +499,6 @@ public class CustomPlayerController : MonoBehaviour {
          * If not enough "legs" connect to an object, the player will not take
          * a step and instead will change states to "falling".
          */
-        Vector3 upDirection = transform.up;
 
         /* Update the legLengths of the player before making a step */
         UpdateLegLengths();

@@ -63,9 +63,6 @@ public class PortalSet : MonoBehaviour {
     /* When true, will update the given object portal's meshes, triggers and borders */
     public bool updatePortal;
 
-    /* Whether the portal will render the terrain layer or not. By default, do not render it */
-    private bool renderTerrain = false;
-
 
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
 
@@ -349,15 +346,7 @@ public class PortalSet : MonoBehaviour {
 
 
     /* -------- Helper Functions ---------------------------------------------------- */
-
-    public void SetRenderTerrain(bool renderTer) {
-        /*
-         * Set whether this portal set should render the terrain layer or not
-         */
-
-        renderTerrain = renderTer;
-    }
-
+    
     GameObject CreateBox(Vector3 center, float x, float y, float z) {
         /*
          * Create a box using the given parameters

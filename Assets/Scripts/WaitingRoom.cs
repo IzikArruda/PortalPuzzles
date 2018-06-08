@@ -422,8 +422,7 @@ public class WaitingRoom : ConnectedRoom {
         /*
          * Only enable the portals of the windows in this waiting room
          */
-
-        //Enable the window's portals
+         
         ChangeWindowState(true);
     }
 

@@ -478,7 +478,6 @@ public class Menu : MonoBehaviour {
             textObject.gameObject.AddComponent<Outline>();
             textObject.gameObject.AddComponent<Outline>();
         }
-        Outline[] outlines = textObject.gameObject.GetComponents<Outline>();
 
         /* Set size relative values for the text */
         textObject.alignment = TextAnchor.MiddleLeft;
@@ -550,8 +549,6 @@ public class Menu : MonoBehaviour {
         videoPanel.GetComponent<Image>().color = new Color(0, 0, 0, 0);
 
         
-        float panelWidth = Screen.width*panelsWidth[panelEnum];
-        float panelHeight = Screen.height*panelsHeight[panelEnum];
         float optionPanelHeight = buttonHeight/2f;
         /*
          * Setup the panel for each option along with it's text component
@@ -690,6 +687,7 @@ public class Menu : MonoBehaviour {
             /* Link the new options to the dropdown menu */
             drop.ClearOptions();
             drop.AddOptions(options);
+            drop.value = selectedOption;
             drop.RefreshShownValue();
         }
         
@@ -1121,8 +1119,6 @@ public class Menu : MonoBehaviour {
         /*
          * While in the Sensitivity state, make sure the panel occupies the bottom edge of the screen
          */
-        int panelEnum = (int) Panels.Sens;
-        Image rectImage = panelRects[panelEnum].GetComponent<Image>();
 
         /* Place the panel so it can be seen */
         SensPanelPositionUpdate(1);
@@ -1132,9 +1128,8 @@ public class Menu : MonoBehaviour {
         /*
          * Animate the panel comming into view
          */
-        int panelEnum = (int) Panels.Sens;
-        Image rectImage = panelRects[panelEnum].GetComponent<Image>();
-        //Get the transition ratio for the current state
+
+        /* Get the transition ratio for the current state */
         Transition transition = GetTransitionFromState(state);
         float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 1);
 
@@ -1146,9 +1141,8 @@ public class Menu : MonoBehaviour {
         /*
          * Animate the panel leaving the view
          */
-        int panelEnum = (int) Panels.Sens;
-        Image rectImage = panelRects[panelEnum].GetComponent<Image>();
-        //Use a cos function to smooth out the animation
+
+        /* Use a cos function to smooth out the animation */
         Transition transition = GetTransitionFromState(state);
         float transitionFade = Mathf.Cos((Mathf.PI/2f)*AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 1));
 
@@ -1220,8 +1214,6 @@ public class Menu : MonoBehaviour {
         /*
          * While in the Video state, make sure the panel occupies the right side of the screen
          */
-        int panelEnum = (int) Panels.Video;
-        Image rectImage = panelRects[panelEnum].GetComponent<Image>();
 
         /* Place the panel so it can be seen */
         VideoPanelPositionUpdate(1);
@@ -1231,9 +1223,8 @@ public class Menu : MonoBehaviour {
         /*
          * Animate the panel comming into view
          */
-        int panelEnum = (int) Panels.Video;
-        Image rectImage = panelRects[panelEnum].GetComponent<Image>();
-        //Get the transition ratio for the current state
+
+        /* Get the transition ratio for the current state */
         Transition transition = GetTransitionFromState(state);
         float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 1);
 
@@ -1245,9 +1236,8 @@ public class Menu : MonoBehaviour {
         /*
          * Animate the panel leaving the view
          */
-        int panelEnum = (int) Panels.Video;
-        Image rectImage = panelRects[panelEnum].GetComponent<Image>();
-        //Use a cos function to smooth out the animation
+
+        /* Use a cos function to smooth out the animation */
         Transition transition = GetTransitionFromState(state);
         float transitionFade = Mathf.Cos((Mathf.PI/2f)*AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 1));
 
@@ -2110,19 +2100,12 @@ public class Menu : MonoBehaviour {
     
     void UQuitButtonMainToQuit() {
         /*
-         * Animate the button slidding off the left side of the screen as the game quits
-         * 
          * Animate the button as it approaches the center of the screen
          */
-        //The transition starts fading at the start and ends 50% through
-        Transition transition = GetTransitionFromState(state);
-        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 0.5f*quitBonusSize*quitWidthRatio/largestRatio);
 
         /* Move the button from the main to off-screen position */
         QuitButtonHoverUpdate();
         QuitButtonPositionUpdate(1);
-
-        //Reposition the button to be near the center of the screen
     }
 
     void UQuitButtonMainToSens() {

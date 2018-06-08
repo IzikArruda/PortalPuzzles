@@ -315,13 +315,6 @@ public class StairsCreator : MonoBehaviour {
         CreateMesh(top1, top2, bot1, bot2, ref vertices, ref triangles);
 
         /* Set the UVs of the plane */
-        Vector3 properCenter = wall.transform.rotation * wall.transform.position;
-        /*UV = new Vector2[] {
-            (new Vector2(properCenter.x, properCenter.z) + new Vector2(vertices[0].x, vertices[0].z))/UVScaleX,
-            (new Vector2(properCenter.x, properCenter.z) + new Vector2(vertices[1].x, vertices[1].z))/UVScaleX,
-            (new Vector2(properCenter.x, properCenter.z) + new Vector2(vertices[2].x, vertices[2].z))/UVScaleX,
-            (new Vector2(properCenter.x, properCenter.z) + new Vector2(vertices[3].x, vertices[3].z))/UVScaleX
-        };*/
         UV = new Vector2[] {
             new Vector2(+UVScaleX/2f, -stepDistance*UVScaleY),
             new Vector2(-UVScaleX/2f, -stepDistance*UVScaleY),

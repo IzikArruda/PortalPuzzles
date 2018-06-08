@@ -11,10 +11,6 @@ public class CubeCreator : MonoBehaviour {
     public float x;
     public float y;
     public float z;
-    /* The last saved sizes of the cube */
-    private float previousX;
-    private float previousY;
-    private float previousZ;
 
     /* The sizes of each face's edges */
     public bool flipEdges;
@@ -85,6 +81,7 @@ public class CubeCreator : MonoBehaviour {
          */
          
         if(updateCube) {
+
             /* Set the edge array for easy access to the edge values */
             edgeSizes = new float[6][];
             edgeSizes[0] = rightEdgeSize;
@@ -199,11 +196,6 @@ public class CubeCreator : MonoBehaviour {
         /* Update the components of the cube */
         GetComponent<MeshFilter>().mesh = cubeMesh;
         GetComponent<BoxCollider>().size = new Vector3(x, y, z);
-
-        /* Update the values of the box */
-        previousX = x;
-        previousY = y;
-        previousZ = z;
     }
 
 

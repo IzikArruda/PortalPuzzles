@@ -332,7 +332,6 @@ public class ColumnCreator : MonoBehaviour {
          * Create a box mesh using the given width and height that expands outward of the origin equally.
          * Used to create the square bases on the top and bottom of the column.
          */
-        Mesh boxMesh = new Mesh();
         Vector3[] vertices;
         Vector2[] UVs;
         int[] triangles;
@@ -884,7 +883,6 @@ public class ColumnCreator : MonoBehaviour {
          */
         float widthDifference = endWidth - startWidth;
         float maxColumnRadius = Mathf.Max(cylinderTopRadius, cylinderBottomRadius);
-        float minColumnRadius = Mathf.Min(cylinderTopRadius, cylinderBottomRadius);
         ArrayList possibleFillers = new ArrayList();
         
         /* Sandwich a random filler between two identical filler */
@@ -1233,16 +1231,10 @@ public class ColumnCreator : MonoBehaviour {
          * using the given height values in conjunction with the vertice's y position.
          */
         Vector2[] UVs;
-        float lowestVertice;
-        float highestVertice;
         float x, y;
 
 		/* Get the perimeter length of the circle to properly size the x UV value */
 		float perimiter = Mathf.Ceil((vertices[0].z) * Mathf.PI * 2);
-
-        /* Get the limits of the vertices on the y axis to properly value each vert's UV */
-        lowestVertice = vertices[0].y;
-        highestVertice = vertices[vertices.Length-1].y;
 
         /* Create the UVs */
         UVs = new Vector2[vertices.Length];

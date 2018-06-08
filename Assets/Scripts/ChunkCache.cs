@@ -230,15 +230,15 @@ public class ChunkCache {
 
                 /* Create the chunk's object and add it to the loaded chunks dictionary */
                 //Time how long it takes to finish this set of actions
-                System.DateTime after = System.DateTime.Now;
+                //System.DateTime after = System.DateTime.Now;
 
                 chunk.Value.UpdateTerrainLive();
                 chunksGeneratingTextureMap.Remove(chunk.Key);
                 loadedChunks.Add(chunk.Key, chunk.Value);
                 SetChunkNeighborhood(chunk.Value);
 
-                System.DateTime before = System.DateTime.Now;
-                System.TimeSpan duration = after.Subtract(before);
+                //System.DateTime before = System.DateTime.Now;
+                //System.TimeSpan duration = after.Subtract(before);
                 //Debug.Log("Time to create chunk object: " + duration.Milliseconds);
             }
         }

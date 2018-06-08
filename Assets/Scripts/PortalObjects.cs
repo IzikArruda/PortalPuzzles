@@ -61,11 +61,28 @@ public class PortalObjects : MonoBehaviour {
 
     public void SetMesh(Mesh mesh) {
         /*
-         * Link the given mesh to the MeshFilter that is used to display the portal.
+         * Link the given mesh to the MeshFilter and MeshCollider that is used to display the portal.
          */
 
+        /* Ensure the components are attached to the portals */
+        if(portalMesh.GetComponent<MeshFilter>() == null) {
+            portalMesh.AddComponent<MeshFilter>();
+        }
+        if(portalMesh.GetComponent<MeshCollider>() == null) {
+            portalMesh.AddComponent<MeshCollider>();
+        }
+        if(backwardsPortalMesh.GetComponent<MeshFilter>() == null) {
+            backwardsPortalMesh.AddComponent<MeshFilter>();
+        }
+        if(backwardsPortalMesh.GetComponent<MeshCollider>() == null) {
+            backwardsPortalMesh.AddComponent<MeshCollider>();
+        }
+
+        /* Link the meshes to the components of the portals */
         portalMesh.GetComponent<MeshFilter>().mesh = mesh;
         backwardsPortalMesh.GetComponent<MeshFilter>().mesh = mesh;
+        portalMesh.GetComponent<MeshCollider>().sharedMesh = mesh;
+        backwardsPortalMesh.GetComponent<MeshCollider>().sharedMesh = mesh;
     }
 
     public void SetTriggers(float width, float height, float depth, Vector3 offSet) {

@@ -31,11 +31,6 @@ public class TerrainChunk : MonoBehaviour{
     /* The coroutine container for when calculating the steepness in realtime */
     private IEnumerator coroutines;
 
-    private bool test1 = false;
-    private bool test2 = false;
-    private bool test3 = false;
-    private bool test4 = false;
-
 
     /* ----------- Constructor Functions ------------------------------------------------------------- */
 
@@ -171,7 +166,6 @@ public class TerrainChunk : MonoBehaviour{
         
         /* Cycle through each vertices of the terrain, getting which splatMaps have what values due to biome ratios */
         float usedTextureRatio, lengthModifier, xCoord, zCoord;
-        float[] maxAngle = new float[] { 15, 10, 30, 45, 70 };
         float[,,] newSplatMap = new float[settings.AlphamapResolution, settings.AlphamapResolution, biomeTextureCount];
         for(int z = 0; z < settings.AlphamapResolution; z++) {
             for(int x = 0; x < settings.AlphamapResolution; x++) {
@@ -214,20 +208,13 @@ public class TerrainChunk : MonoBehaviour{
          * Set up values for the texture map so it can properly texture the terrain.
          * This will run after the height map is generated and before the texture generation starts.
          */
-        System.DateTime before = System.DateTime.Now;
-
-
-
-
-
+        //System.DateTime before = System.DateTime.Now;
+        
         /* Apply the heightMap to the terrain */
         terrainData.SetHeights(0, 0, heightMap);
-
-
-
-
-        System.DateTime after = System.DateTime.Now;
-        System.TimeSpan duration = after.Subtract(before);
+        
+        //System.DateTime after = System.DateTime.Now;
+        //System.TimeSpan duration = after.Subtract(before);
         //Debug.Log("Texturemap setup: " + duration.Milliseconds);
     }
 

@@ -163,7 +163,6 @@ public class PuzzleRoomEditor : MonoBehaviour {
             /* Teleport the player to the other top/bottom boundary */
             if(Mathf.Abs(playerFromCenter) > minYTeleport) {
                 /* Teleport the player to the other side */
-                float newHeight = playerFromCenter - minYTeleport*2;
                 collider.transform.position -= new Vector3(0, Mathf.Sign(playerFromCenter)*minYTeleport*2, 0);
 
                 /* If the player teleported, update the playerFromCenter value and the player's lastSavedPosition */
@@ -353,7 +352,6 @@ public class PuzzleRoomEditor : MonoBehaviour {
          */
         Vector2[] UV, UV2, UV3;
         Mesh mesh;
-        float deltaTime = Time.deltaTime;
 
         for(int i = 0; i < walls.Length; i++) {
             mesh = walls[i].GetComponent<MeshFilter>().sharedMesh;

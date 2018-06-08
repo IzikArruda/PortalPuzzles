@@ -15,11 +15,6 @@ public class NoiseProvider {
     private float frequency;
     private int octave;
 
-    private float pathWidth = 0.1f;
-    private float pathMeldWidth = 0.65f;
-    private float centerOffset = 0f;
-    private float pathHeight = 0.25f;
-
     /* The maximum height of the terrain given by the TerrainController */
     private float maxTerrainHeight;
 
@@ -86,59 +81,7 @@ public class NoiseProvider {
         
         return noiseSum;
     }
-
-
-    /* ----------- Path Functions ------------------------------------------------------------- */
-
-    public float GetPathRatio(float x) {
-        /*
-         * The path's ratio map uses only one dimension (X). The path has a similar representation as:
-         * [0, 0, 0, 0.25, 0.5, 0.75, 1, 1, 1, 1, 0.75, 0.50, 0.25, 0, 0, 0]
-         * 
-         * PathWidth gives how wide the full path is, ie the white/1 part of the map.
-         * PathMeldWidth gives how much space it takes for the path to go from 1 to 0.
-         * 
-         * 1 is the shown value, but the value that is actually used in practice is maxRatioValue.
-         */
-        float ratioValue = 0;
-        float maxRatioValue = 0.85f;
-
-        if(x < centerOffset - pathWidth - pathMeldWidth || x > centerOffset + pathWidth + pathMeldWidth) {
-            /* The given position is on the outside of the path*/
-            ratioValue = 0;
-        }
-
-        else if(x < centerOffset - pathWidth || x > centerOffset + pathWidth) {
-            /* The given position is on the [0, 1] part of the path */
-            if(x < centerOffset) {
-                ratioValue = maxRatioValue*(1 - (-(x + centerOffset + pathWidth)/pathMeldWidth));
-            }
-            else {
-                ratioValue = maxRatioValue*(1 - ((x - centerOffset - pathWidth)/pathMeldWidth));
-            }
-        }
-
-        else {
-            /* The given position is directly on the path */
-            ratioValue = maxRatioValue;
-        }
-
-        return ratioValue;
-    }
-
-    public float GetPathNoise(float x, float z) {
-        /*
-         * Get the noise value of the path map at the given coordinates. The path's noise height value 
-         * will always be 1 as the main way to control the path is using the path's ratio map.
-         */
-        float noiseValue = 0;
-
-        /* The path's noise height value will always be a set value */
-        noiseValue = 0.25f;
-
-        return noiseValue;
-    }
-
+    
 
     /* ----------- Biome Functions ------------------------------------------------------------- */
     

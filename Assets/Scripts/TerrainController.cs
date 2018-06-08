@@ -184,7 +184,6 @@ public class TerrainController : MonoBehaviour {
         /*
          * Update the current camera that is used for the focus point
          */
-        Transform previousFocus = focusPoint;
 
         /* Both cameras are potential focus points - decide which to focus on */
         if(playerCam != null && windowCam != null) {

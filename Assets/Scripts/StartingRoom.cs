@@ -39,7 +39,7 @@ public class StartingRoom : ConnectedRoom {
     private bool glassBroken;
 
     /* The particleSystem that will produce a bunch of shattered glass */
-    private ParticleSystem particleSystem;
+    private new ParticleSystem particleSystem;
     public Material particleMaterial;
 
     /* The audio source that will play the glass shattering sound effect. Have it linked to the sound and mixer group in the editor. */
@@ -255,9 +255,9 @@ public class StartingRoom : ConnectedRoom {
          * Create and set the stats of the particle emitter placed on the outside window 
          * if it is not already created
          */
-        particleSystem = gameObject.GetComponent<ParticleSystem>();
 
         /* Create a new particle system if there is not already one attached */
+        particleSystem = gameObject.GetComponent<ParticleSystem>();
         if(particleSystem == null) {
             particleSystem = gameObject.AddComponent<ParticleSystem>();
         }
