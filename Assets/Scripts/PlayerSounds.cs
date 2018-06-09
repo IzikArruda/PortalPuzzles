@@ -300,6 +300,7 @@ public class PlayerSounds : MonoBehaviour {
             
             /* Remember the index of the clip used to avoid it next step */
             lastStepClipIndex = clipIndex;
+            Debug.Log("play step");
         }
         else{
         	Debug.Log("Footstep effect cannot play - no available audio sources");
@@ -408,6 +409,7 @@ public class PlayerSounds : MonoBehaviour {
          * Play the starting song by having the outside background sounds fade out and the intro song fade in.
          * Only start playing the starting song once this is called.
          */
+        Debug.Log("delayued");
 
         /* Have the intro music play after a delay */
         musicSourceUpgraded.clip = startingMusic;
@@ -419,6 +421,7 @@ public class PlayerSounds : MonoBehaviour {
         /*
          * The player has skipped the intro, so force the music to update itself
          */
+        Debug.Log("forced");
 
         musicSourceMuted.volume = 0;
         musicSourceUpgraded.volume = maxVolume;

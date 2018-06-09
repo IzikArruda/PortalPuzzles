@@ -248,11 +248,6 @@ public class CustomPlayerController : MonoBehaviour {
             /* Handle the conditions that need to be checked after the player moves (teleport, update footstep tracker) */
             HandlePlayerMovement(true);
 
-            /* Update the step tracker with whatever steps were made since the last FixedUpdate call */
-            if(PlayerIsGrounded()) {
-                playerStepTracker.AddHorizontalStep(Quaternion.Inverse(transform.rotation)*lastStepMovement);
-                lastStepMovement = Vector3.zero;
-            }
 
             /* From the player's current position, execute a step check to see if they need to move along their Y axis */
             /* Do not use steps if the player is in the intro */
@@ -285,6 +280,13 @@ public class CustomPlayerController : MonoBehaviour {
 
             /* Freeze the player's rigidbody's velocity */
             rigidBody.velocity = Vector3.zero;
+
+            /* Update the step tracker with whatever steps were made since the last FixedUpdate call */
+            if(PlayerIsGrounded()) {
+                lastStepMovement += movementVector;
+                playerStepTracker.AddHorizontalStep(Quaternion.Inverse(transform.rotation)*lastStepMovement);
+                lastStepMovement = Vector3.zero;
+            }
 
             /* Empty the expectedMovements array as we are about to add new movements */
             expectedMovements.Clear();
@@ -567,6 +569,7 @@ public class CustomPlayerController : MonoBehaviour {
             /* Taking a vertical step will add the depth of the step to the step tracker */
             if(PlayerIsGrounded()) {
                 playerStepTracker.AddVerticalStep((currentLegLength - newLegLength));
+
             }
 
             /* Use the new legLength to make the player undergo a "step" */
