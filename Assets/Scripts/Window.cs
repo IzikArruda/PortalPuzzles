@@ -196,7 +196,7 @@ public class Window : MonoBehaviour {
         cubeScript = windowPieces[index].AddComponent<CubeCreator>();
         cubeScript.x = windowWidth;
         cubeScript.y = windowHeight;
-        cubeScript.z = frameDepth*0.9f;
+        cubeScript.z = frameDepth*0.95f;
         cubeScript.mainMaterial = glassMaterial;
         /* Set the scale and offset of the window */
         cubeScript.UVScale = new Vector2(1f/windowWidth, 1f/windowHeight);
