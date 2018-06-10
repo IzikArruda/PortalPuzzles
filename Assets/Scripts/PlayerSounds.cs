@@ -101,6 +101,9 @@ public class PlayerSounds : MonoBehaviour {
     private bool delayedPlayMuted = false;
     private bool delayedPlayUpgraded = false;
 
+    /* Track what songs have been previously played. This will ensure the player hears each song atleast once */
+    private bool[] previouslyPlayed;
+
 
     /* ----------- Built-in Unity Functions ------------------------------------------------------------- */
 
@@ -117,6 +120,12 @@ public class PlayerSounds : MonoBehaviour {
         InitializeAudioObject(ref fallingSource, ref fallingContainer, "Falling", effectsTransformContainer.transform, audioMixerMusic);
 		InitializeAudioArray(ref landingSources, ref landingContainers, 3, "Landing", effectsTransformContainer.transform, audioMixerFootsteps);
         InitializeAudioObject(ref menuSource, ref meunContainer, "Menu", effectsTransformContainer.transform, audioMixerFootsteps);
+
+        /* Initialize the previously played song tracker */
+        previouslyPlayed = new bool[musicClipsMuted.Length];
+        for(int i = 0; i < previouslyPlayed.Length; i ++) {
+            previouslyPlayed[i] = false;
+        }
 
         /* Initialize the fade values for the steps */
         stepFade = new float[maxSimultaniousStepEffects];
@@ -146,6 +155,7 @@ public class PlayerSounds : MonoBehaviour {
 
         /* Set the volume for the audio mixer */
         ResetAudioMixerVolume();
+
     }
 
     void Update(){
@@ -167,22 +177,19 @@ public class PlayerSounds : MonoBehaviour {
                 /* If we are using upgraded music, select a new song */
                 if(outside && delayedPlayUpgraded == false) {
                     /* Get the index of a new clip/song */
-                    int songIndex = RandomClip(musicClipsMuted, lastMusicClipIndex);
+                    int songIndex = GetNewSongIndex();
 
                     /* Play the clip and it's upgraded version using the two musicSources*/
                     musicSourceMuted.clip = musicClipsMuted[songIndex];
                     musicSourceUpgraded.clip = musicClipsUpgraded[songIndex];
-                    Debug.Log(songIndex);
                 }
 
                 /* Set the boolean to track that we have started to play new songs on a delay */
                 if(!musicSourceMuted.isPlaying) {
-                    Debug.Log("LOOP MUTE");
                     musicSourceMuted.PlayDelayed(2);
                     delayedPlayMuted = true;
                 }
                 if(!musicSourceUpgraded.isPlaying) {
-                    Debug.Log("LOOP UPGR");
                     musicSourceUpgraded.PlayDelayed(2);
                     delayedPlayUpgraded = true;
                 }
@@ -319,7 +326,6 @@ public class PlayerSounds : MonoBehaviour {
             lowerSource.clip = stepClip;
 
             /* Play the full footstep sound clip with the given delay */
-            Debug.Log("test");
             upperSource.PlayDelayed(playDelay);
             lowerSource.PlayDelayed(playDelay);
             
@@ -340,12 +346,11 @@ public class PlayerSounds : MonoBehaviour {
 		int songIndex;
         
         /* Get the index of a new clip/song */
-        songIndex = RandomClip(musicClipsMuted, lastMusicClipIndex);
+        songIndex = GetNewSongIndex();
 
         /* Play the clip and it's upgraded version using the two musicSources*/
         musicSourceMuted.clip = musicClipsMuted[songIndex];
         musicSourceUpgraded.clip = musicClipsUpgraded[songIndex];
-        Debug.Log(songIndex);
 
         /* Set the volume of the clips to reflect the music's upgraded state */
         musicSourceMuted.volume = 0;
@@ -359,7 +364,6 @@ public class PlayerSounds : MonoBehaviour {
         /* play the clips and track the clip's index */
         musicSourceMuted.Play();
         musicSourceUpgraded.Play();
-        Debug.Log("Play music call");
         lastMusicClipIndex = songIndex;
 	}
 	
@@ -378,7 +382,6 @@ public class PlayerSounds : MonoBehaviour {
 		fallingSource.volume = 0;
         fallingSource.loop = true;
         fallingFade = 0.025f;
-        Debug.Log("test");
         fallingSource.Play();
 	}
 	
@@ -394,7 +397,6 @@ public class PlayerSounds : MonoBehaviour {
 			landingSource = landingSources[sourceIndex];
 			landingSource.volume = maxVolume;
 			landingSource.clip = hardLandingClip;
-            Debug.Log("test");
 			landingSource.Play();
 		}
 		else{
@@ -416,7 +418,6 @@ public class PlayerSounds : MonoBehaviour {
          */
 
         menuSource.clip = menuClickClip;
-        Debug.Log("test");
         menuSource.Play();
     }
 
@@ -428,7 +429,7 @@ public class PlayerSounds : MonoBehaviour {
         musicSourceMuted.volume = 0;
         musicSourceUpgraded.volume = 0;
         musicSourceMuted.clip = outsideSounds;
-        Debug.Log("test");
+        musicSourceUpgraded.clip = startingMusic;
         musicSourceMuted.Play();
         SetMusicFade(-0.45f);
     }
@@ -438,7 +439,6 @@ public class PlayerSounds : MonoBehaviour {
          * Play the starting song by having the outside background sounds fade out and the intro song fade in.
          * Only start playing the starting song once this is called.
          */
-        Debug.Log("delayued");
 
         /* Have the intro music play after a delay */
         musicSourceUpgraded.clip = startingMusic;
@@ -450,14 +450,12 @@ public class PlayerSounds : MonoBehaviour {
         /*
          * The player has skipped the intro, so force the music to update itself
          */
-        Debug.Log("forced");
 
         musicSourceMuted.volume = 0;
         musicSourceUpgraded.volume = maxVolume;
 
         /* Force the intro song to play if it has not yet started */
         if(musicSourceUpgraded.time <= 0) {
-            Debug.Log("test");
             musicSourceUpgraded.Play();
         }
     }
@@ -608,7 +606,6 @@ public class PlayerSounds : MonoBehaviour {
          * StopAllAudioSources() will reset these changes. The given float will set the volume
          * of the master channel/group by treating it as a range (0 is near-muted, 1 is normal)
          */
-        Debug.Log(masterVolumeRatio);
 
         /* Set the volume of the master audio group */
         audioMixer.SetFloat("masterVolume", -50 + (50+masterMixerVolume)*masterVolumeRatio);
@@ -633,6 +630,54 @@ public class PlayerSounds : MonoBehaviour {
         musicFadeMuted = -0.1f;
         musicFadeUpgraded = 0.1f;
     }
+
+    private int GetNewSongIndex() {
+        /*
+         * Get the index for a new song from the musicClipsMuted and musicClipsUpgraded arrays.
+         * Update the previouslyPlayed array to track the songs that have been played so far.
+         */
+        int newSongIndex = -1;
+        int songCount = 0;
+        int[] potentialSongs;
+
+        
+        /* Get how many songs can be chosen */
+        for(int i = 0; i < previouslyPlayed.Length; i++) {
+            if(!previouslyPlayed[i]) {
+                songCount++;
+                //track the last non-played song for the case of only one song not yet played
+                newSongIndex = i;
+            }
+        }
+
+        /* If there is only one song that has not yet been played, chose it and reset previouslyPlayed  */
+        if(songCount <= 1) {
+            for(int i = 0; i < previouslyPlayed.Length; i++) {
+                previouslyPlayed[i] = false;
+            }
+        }
+
+        /* Choose a song that has not yet been played */
+        else {
+
+            /* Populate the potentialSongs array */
+            potentialSongs = new int[songCount--];
+            for(int i = 0; i < previouslyPlayed.Length; i++) {
+                if(!previouslyPlayed[i]) {
+                    potentialSongs[songCount--] = i;
+                }
+            }
+
+            /* Choose one of the potential songs */
+            newSongIndex = potentialSongs[Random.Range(0, potentialSongs.Length-1)];
+        }
+
+        /* Update the previouslyPlayed array to reflect the new song that will play */
+        previouslyPlayed[newSongIndex] = true;
+
+        return newSongIndex;
+    }
+
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
 
