@@ -97,6 +97,10 @@ public class PlayerSounds : MonoBehaviour {
     /* When the player is in the outside state, handle certain sounds differently, such as playing upgraded music instead of muted */
     private bool outside = false;
 
+    /* Used to prevent the songs from constantly sending a PlayDelay every update call */
+    private bool delayedPlayMuted = false;
+    private bool delayedPlayUpgraded = false;
+
 
     /* ----------- Built-in Unity Functions ------------------------------------------------------------- */
 
@@ -155,22 +159,42 @@ public class PlayerSounds : MonoBehaviour {
         }
 
         /* If the music ever stops playing, have it start over again */
-        if(!musicSourceMuted.isPlaying) {
-            /* If we are using upgraded music, play a new song */
-            if(outside) {
-                /* Get the index of a new clip/song */
-                int songIndex = RandomClip(musicClipsMuted, lastMusicClipIndex);
+        if(!musicSourceMuted.isPlaying || !musicSourceUpgraded.isPlaying) {
+            
+            /* Make sure this function was not already called */
+            if(delayedPlayMuted == false || delayedPlayUpgraded == false) {
+                
+                /* If we are using upgraded music, select a new song */
+                if(outside && delayedPlayUpgraded == false) {
+                    /* Get the index of a new clip/song */
+                    int songIndex = RandomClip(musicClipsMuted, lastMusicClipIndex);
 
-                /* Play the clip and it's upgraded version using the two musicSources*/
-                musicSourceMuted.clip = musicClipsMuted[songIndex];
-                musicSourceUpgraded.clip = musicClipsUpgraded[songIndex];
-                Debug.Log(songIndex);
+                    /* Play the clip and it's upgraded version using the two musicSources*/
+                    musicSourceMuted.clip = musicClipsMuted[songIndex];
+                    musicSourceUpgraded.clip = musicClipsUpgraded[songIndex];
+                    Debug.Log(songIndex);
+                }
+
+                /* Set the boolean to track that we have started to play new songs on a delay */
+                if(!musicSourceMuted.isPlaying) {
+                    Debug.Log("LOOP MUTE");
+                    musicSourceMuted.PlayDelayed(2);
+                    delayedPlayMuted = true;
+                }
+                if(!musicSourceUpgraded.isPlaying) {
+                    Debug.Log("LOOP UPGR");
+                    musicSourceUpgraded.PlayDelayed(2);
+                    delayedPlayUpgraded = true;
+                }
             }
+        }
 
-            /* Play the source's music clip after a 2 second delay */
-            musicSourceMuted.PlayDelayed(2);
-            musicSourceUpgraded.PlayDelayed(2);
-
+        /* Reset the delayedPlay variable once the songs start up */
+        if(musicSourceMuted.isPlaying) {
+            delayedPlayMuted = false;
+        }
+        if(musicSourceUpgraded.isPlaying) {
+            delayedPlayUpgraded = false;
         }
     }
 
@@ -295,12 +319,12 @@ public class PlayerSounds : MonoBehaviour {
             lowerSource.clip = stepClip;
 
             /* Play the full footstep sound clip with the given delay */
+            Debug.Log("test");
             upperSource.PlayDelayed(playDelay);
             lowerSource.PlayDelayed(playDelay);
             
             /* Remember the index of the clip used to avoid it next step */
             lastStepClipIndex = clipIndex;
-            Debug.Log("play step");
         }
         else{
         	Debug.Log("Footstep effect cannot play - no available audio sources");
@@ -335,6 +359,7 @@ public class PlayerSounds : MonoBehaviour {
         /* play the clips and track the clip's index */
         musicSourceMuted.Play();
         musicSourceUpgraded.Play();
+        Debug.Log("Play music call");
         lastMusicClipIndex = songIndex;
 	}
 	
@@ -353,6 +378,7 @@ public class PlayerSounds : MonoBehaviour {
 		fallingSource.volume = 0;
         fallingSource.loop = true;
         fallingFade = 0.025f;
+        Debug.Log("test");
         fallingSource.Play();
 	}
 	
@@ -368,6 +394,7 @@ public class PlayerSounds : MonoBehaviour {
 			landingSource = landingSources[sourceIndex];
 			landingSource.volume = maxVolume;
 			landingSource.clip = hardLandingClip;
+            Debug.Log("test");
 			landingSource.Play();
 		}
 		else{
@@ -389,6 +416,7 @@ public class PlayerSounds : MonoBehaviour {
          */
 
         menuSource.clip = menuClickClip;
+        Debug.Log("test");
         menuSource.Play();
     }
 
@@ -400,6 +428,7 @@ public class PlayerSounds : MonoBehaviour {
         musicSourceMuted.volume = 0;
         musicSourceUpgraded.volume = 0;
         musicSourceMuted.clip = outsideSounds;
+        Debug.Log("test");
         musicSourceMuted.Play();
         SetMusicFade(-0.45f);
     }
@@ -428,6 +457,7 @@ public class PlayerSounds : MonoBehaviour {
 
         /* Force the intro song to play if it has not yet started */
         if(musicSourceUpgraded.time <= 0) {
+            Debug.Log("test");
             musicSourceUpgraded.Play();
         }
     }
