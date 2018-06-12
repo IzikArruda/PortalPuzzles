@@ -1148,8 +1148,11 @@ public class CustomPlayerController : MonoBehaviour {
         }
 
         /* If the player has fallen far enough away from the window, stop running this update call */
-        if(windowExit > playerPos + 10) {
+        if(fallingOutWindow && windowExit > playerPos + 10) {
             fallingOutWindow = false;
+
+            /* Inform the menu that the player has entered the outside state */
+            playerMenu.PlayerEnteredOutside();
         }
     }
 

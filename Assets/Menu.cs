@@ -51,6 +51,7 @@ public enum Buttons {
  * - Create and run the new panel's Setup function
  */
 public enum Panels {
+    Credit,
     Cover,
     Video,
     Sens
@@ -123,6 +124,7 @@ public class Menu : MonoBehaviour {
     StateFunction[] videoButtonTransitions;
     StateFunction[] sensButtonTransitions;
     StateFunction[] quitButtonTransitions;
+    StateFunction[] CreditPanelTransitions;
     StateFunction[] coverPanelTransitions;
     StateFunction[] videoPanelTransitions;
     StateFunction[] sensPanelTransitions;
@@ -219,6 +221,10 @@ public class Menu : MonoBehaviour {
     private Vector2 bonusQuitSize = new Vector2(0, 0);
     private bool mouseLock = false;
 
+    /* Value that controls the main panel's position. Start at a negative value to delay the credits start */
+    public float creditScrollValue = -0.5f;
+    private bool isOutside = false;
+
 
     /* ----------- Built-in Functions ------------------------------------------------------------- */
 
@@ -252,6 +258,8 @@ public class Menu : MonoBehaviour {
         ExecuteElementFunctions(sensButtonTransitions);
         /* Quit button */
         ExecuteElementFunctions(quitButtonTransitions);
+        /* Main panel */
+        ExecuteElementFunctions(CreditPanelTransitions);
         /* Cover panel */
         ExecuteElementFunctions(coverPanelTransitions);
         /* Video panel */
@@ -300,6 +308,7 @@ public class Menu : MonoBehaviour {
         }
 
         /* Run the initialSetup functions for each panel */
+        SetupMainPanel();
         SetupCoverPanel();
         SetupSensPanel();
         SetupVideoPanel();
@@ -384,6 +393,14 @@ public class Menu : MonoBehaviour {
             new StateFunction(MenuStates.SensToMain, UQuitButtonSensToMain),
             new StateFunction(MenuStates.VideoToMain, UQuitButtonVideoToMain)
         };
+        CreditPanelTransitions = new StateFunction[] {
+            new StateFunction(MenuStates.Empty, UCreditPanelEmptyOrMain),
+            new StateFunction(MenuStates.Main, UCreditPanelEmptyOrMain),
+            new StateFunction(MenuStates.MainToEmpty, UCreditPanelEmptyOrMain),
+            new StateFunction(MenuStates.EmptyToMain, UCreditPanelEmptyOrMain),
+            new StateFunction(MenuStates.Video, UCreditPanelNotInEmpty)
+            
+        };
         coverPanelTransitions = new StateFunction[] {
             new StateFunction(MenuStates.Startup, UCoverPanelStartup),
             new StateFunction(MenuStates.MainToQuit, UCoverPanelMainToQuit)
@@ -438,6 +455,7 @@ public class Menu : MonoBehaviour {
 
         /* Run the reset functions for each UI element be updated from the new size */
         if(updateUI) {
+            CreditPanelReset();
             CoverPanelReset();
             VideoPanelReset();
             SensPanelReset();
@@ -508,6 +526,27 @@ public class Menu : MonoBehaviour {
         buttonTrigger.triggers.Add(buttonExit);
     }
 
+    void SetupMainPanel() {
+        /*
+         * Setup the panel placed in the main menu
+         */
+        int panelEnum = (int) Panels.Credit;
+        RectTransform mainPanel = panelRects[panelEnum];
+        mainPanel.name = "Main panel";
+        mainPanel.gameObject.SetActive(false);
+
+        /* The main panel covers half the X width and all the Y height */
+        panelsWidth[panelEnum] = 0.5f;
+        panelsHeight[panelEnum] = 1.0f;
+
+        /* Set the anchors so it's centered on the right wall */
+        mainPanel.anchorMin = new Vector2(0.5f, 0);
+        mainPanel.anchorMax = new Vector2(1, 1);
+
+        /* Set the color so that the panel is visible */
+        mainPanel.GetComponent<Image>().color = new Color(0, 0, 0, 1);
+    }
+
     void SetupCoverPanel() {
         /*
          * Setup the cover panel that covers the whole screen
@@ -518,10 +557,6 @@ public class Menu : MonoBehaviour {
         /* Set the anchors so it becomes a full stretch layout */
         mainPanel.anchorMin = new Vector2(0, 0);
         mainPanel.anchorMax = new Vector2(1, 1);
-
-        /* Set the sizes to match the screen size */
-        mainPanel.anchoredPosition = new Vector3(0, 0, 0);
-        mainPanel.sizeDelta = new Vector2(0, 0);
         
         /* Set the color so that the panel is invisible */
         mainPanel.GetComponent<Image>().color = new Color(0, 0, 0, 0);
@@ -890,6 +925,15 @@ public class Menu : MonoBehaviour {
                 }
                 break;
         }
+
+        /* In any of the states that will show the credit panel, increment the creditScrollValue value */
+        if(isOutside && (
+            state == MenuStates.Empty || 
+            state == MenuStates.Main ||
+            state == MenuStates.EmptyToMain ||
+            state == MenuStates.MainToEmpty)) {
+            creditScrollValue += Time.deltaTime/10f;
+        }
     }
 
     void UpdateTransitionValue(ref float current) {
@@ -1041,6 +1085,63 @@ public class Menu : MonoBehaviour {
     }
 
     /* ----------- UI Element Update Functions ------------------------------------------------------------- */
+
+    #region Credit Panel Updates
+    void UCreditPanelEmptyOrMain() {
+        /*
+         * Place the panel in the center. The panel will only be visible if the player is outside.
+         */
+        int panelEnum = (int) Panels.Credit;
+        RectTransform mainPanel = panelRects[panelEnum];
+
+        //Make sure the panel is outside
+        if(isOutside) {
+            mainPanel.gameObject.SetActive(true);
+
+            CreditPanelPositionUpdate(creditScrollValue);
+        }
+
+    }
+
+    void UCreditPanelNotInEmpty() {
+        /*
+         * For now, disable the panel when in the video panel
+         */
+        int panelEnum = (int) Panels.Credit;
+        RectTransform mainPanel = panelRects[panelEnum];
+        
+        mainPanel.gameObject.SetActive(false);
+    }
+
+    void CreditPanelPositionUpdate(float sideRatio) {
+        /*
+         * Position the panel from either above the bottom line or bellow
+         */
+        int panelEnum = (int) Panels.Credit;
+        RectTransform rect = panelRects[panelEnum];
+
+        /* Get the proper position of the panel */
+        float panelHeight = screenHeight*panelsHeight[panelEnum];
+
+        /* [0, 1] controls it's Y position */
+        rect.anchoredPosition = new Vector3(0, -panelHeight*(1 - AdjustRatio(sideRatio, 0, 1)), 0);
+        rect.sizeDelta = new Vector2(0, 0);
+    }
+
+    void CreditPanelReset() {
+        /*
+         * Reset the sizes of the cover panel 
+         */
+        int panelEnum = (int) Panels.Credit;
+        RectTransform mainPanel = panelRects[panelEnum];
+
+        /* Set the sizes to match the screen size */
+        float panelWidth = Screen.width*panelsWidth[panelEnum];
+        float panelHeight = Screen.height*panelsHeight[panelEnum];
+        mainPanel.anchoredPosition = new Vector3(0, 0, 0);
+        mainPanel.sizeDelta = new Vector2(0, 0);
+    }
+    #endregion
 
     #region Cover Panel Updates
     void UCoverPanelStartup() {
@@ -1687,6 +1788,7 @@ public class Menu : MonoBehaviour {
         VideoButtonHoverUpdate();
         VideoButtonPositionUpdate(1);
     }
+
     void UVideoButtonVideoToMain() {
         /*
          * Place the button in it's default position
@@ -2555,6 +2657,13 @@ public class Menu : MonoBehaviour {
         }
     }
 
+    public void PlayerEnteredOutside() {
+        /*
+         * This is run once the player has entered the outside state
+         */
+
+        isOutside = true;
+    }
 
     /* ----------- Mouse Enter/Hover Functions ------------------------------------------------------------- */
 
