@@ -188,9 +188,9 @@ public class PuzzleRoomEditor : MonoBehaviour {
             }
 
             /* As the player gets further away from the room's center, increase their falling velocity */
-            float fromCenterToEdgeRatio = (Mathf.Abs(playerFromCenter) - minYTeleport/5f) / (minYTeleport - minYTeleport/5f);
-            if(Mathf.Abs(playerFromCenter) > minYTeleport/5f) {
-                collider.GetComponent<CustomPlayerController>().gravityVectorMod = 1 + 10*fromCenterToEdgeRatio;
+            float fromCenterToEdgeRatio = (Mathf.Abs(playerFromCenter) - minYTeleport/3f) / (minYTeleport - minYTeleport/3f);
+            if(Mathf.Abs(playerFromCenter) > minYTeleport/3f) {
+                collider.GetComponent<CustomPlayerController>().gravityVectorMod = 1 + 6*fromCenterToEdgeRatio;
             }
             else {
                 collider.GetComponent<CustomPlayerController>().gravityVectorMod = 1;

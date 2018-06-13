@@ -547,8 +547,98 @@ public class Menu : MonoBehaviour {
         mainPanel.anchorMin = new Vector2(0.5f, 0);
         mainPanel.anchorMax = new Vector2(1, 1);
 
-        /* Set the color so that the panel is visible */
-        mainPanel.GetComponent<Image>().color = new Color(0, 0, 0, 1);
+        /* Set the color so that the panel is invisible */
+        mainPanel.GetComponent<Image>().color = new Color(0, 0, 0, 0);
+        
+        /* 
+         * Create the "Thank you for playing" text that is placed on the bottom
+         */
+        GameObject thanksTextObject = new GameObject("Thank you text", typeof(RectTransform));
+        Text thanksText = thanksTextObject.AddComponent<Text>();
+        RectTransform thanksTextRect = thanksTextObject.GetComponent<RectTransform>();
+        thanksTextRect.SetParent(mainPanel);
+        /* Set the anchors so that the text stays in the center top of the panel */
+        thanksTextRect.anchorMin = new Vector2(0.025f, 0.025f);
+        thanksTextRect.anchorMax = new Vector2(0.975f, 0.25f);
+        thanksTextRect.anchoredPosition = new Vector2(0, 0);
+        thanksTextRect.sizeDelta = new Vector2(0, 0);
+        /* Set the text properties */
+        thanksText.font = buttonFont;
+        thanksText.fontStyle = FontStyle.Normal;
+        thanksText.gameObject.AddComponent<Outline>();
+        thanksText.alignment = TextAnchor.MiddleCenter;
+        thanksText.resizeTextForBestFit = true;
+        thanksText.resizeTextMinSize = 1;
+        thanksText.resizeTextMaxSize = 10000;
+        thanksText.color = new Color(1, 1, 1, 1);
+        thanksText.GetComponent<Outline>().effectColor = new Color(0, 0, 0, 1);
+        thanksText.text = "thanks for playing";
+        //Set the line spacing to a high value to ensure it will stay on one line
+        thanksText.lineSpacing = 100;
+        
+        /* 
+         * Create the text that indicates the following names are the songs used in the game  
+         */
+        GameObject songListObject = new GameObject("Song list text", typeof(RectTransform));
+        Text songListText = songListObject.AddComponent<Text>();
+        RectTransform songListRect = songListObject.GetComponent<RectTransform>();
+        songListRect.SetParent(mainPanel);
+        /* Set the anchors so that the text stays on the top left side of the panel */
+        songListRect.anchorMin = new Vector2(0, 0.8f);
+        songListRect.anchorMax = new Vector2(1, 0.875f);
+        songListRect.anchoredPosition = new Vector2(0, 0);
+        songListRect.sizeDelta = new Vector2(0, 0);
+        /* Set the text properties */
+        songListText.font = buttonFont;
+        songListText.fontStyle = FontStyle.Normal;
+        songListText.gameObject.AddComponent<Outline>();
+        songListText.alignment = TextAnchor.MiddleLeft;
+        songListText.resizeTextForBestFit = true;
+        songListText.resizeTextMinSize = 1;
+        songListText.resizeTextMaxSize = 10000;
+        songListText.color = new Color(1, 1, 1, 1);
+        songListText.GetComponent<Outline>().effectColor = new Color(0, 0, 0, 1);
+        songListText.text = " song list";
+        
+        /*
+         * Create a text for each song used in the game
+         */
+        string[] songs = { "Erik Satie - Gymnopédie No.1",
+            "Animal Crossing: New Leaf - 5PM (Soulful Evening Remix)",
+            "Chrono Trigger - Black Omen (Orchestral Remix)",
+            "Donkey Kong Country - Aquatic Ambience (iSWM Remix)",
+            "DJ Okawari - A Cup of Coffee",
+            "DJ Okawari - Pack Light" };
+        float anchorSpacing = 0.0125f;
+        float songAnchorSize = 0.04f;
+        float currentAnchorY = songListRect.anchorMin.y - anchorSpacing;
+        GameObject songObject;
+        Text songText;
+        RectTransform songRect;
+        for(int i = 0; i < songs.Length; i++) {
+            songObject = new GameObject("Song " + i, typeof(RectTransform));
+            songText = songObject.AddComponent<Text>();
+            songRect = songObject.GetComponent<RectTransform>();
+            songRect.SetParent(mainPanel);
+            /* Set the anchors so that the text stays on the left side of the panel */
+            songRect.anchorMin = new Vector2(0, currentAnchorY - songAnchorSize);
+            songRect.anchorMax = new Vector2(1, currentAnchorY);
+            currentAnchorY -= songAnchorSize + anchorSpacing;
+            songRect.anchoredPosition = new Vector2(0, 0);
+            songRect.sizeDelta = new Vector2(0, 0);
+            /* Set the text properties */
+            songText.font = otherTextFont;
+            songText.fontStyle = FontStyle.Normal;
+            songText.gameObject.AddComponent<Outline>();
+            songText.alignment = TextAnchor.MiddleLeft;
+            songText.resizeTextForBestFit = true;
+            songText.resizeTextMinSize = 1;
+            songText.resizeTextMaxSize = 10000;
+            songText.color = new Color(1, 1, 1, 1);
+            songText.GetComponent<Outline>().effectColor = new Color(0, 0, 0, 1);
+            songText.text = songs[i];
+        }
+
     }
 
     void SetupCoverPanel() {
@@ -936,7 +1026,7 @@ public class Menu : MonoBehaviour {
             state == MenuStates.Main ||
             state == MenuStates.EmptyToMain ||
             state == MenuStates.MainToEmpty)) {
-            creditScrollValue += Time.deltaTime/10f;
+            creditScrollValue += Time.deltaTime/20f;
         }
     }
 
@@ -1209,16 +1299,10 @@ public class Menu : MonoBehaviour {
 
     void CreditPanelReset() {
         /*
-         * Reset the sizes of the cover panel 
+         * Reset the sizes of the cover panel. The content does not need to be resized.
          */
         int panelEnum = (int) Panels.Credit;
         RectTransform mainPanel = panelRects[panelEnum];
-
-        /* Set the sizes to match the screen size */
-        float panelWidth = Screen.width*panelsWidth[panelEnum];
-        float panelHeight = Screen.height*panelsHeight[panelEnum];
-        mainPanel.anchoredPosition = new Vector2(0, 0);
-        mainPanel.sizeDelta = new Vector2(0, 0);
     }
     #endregion
 

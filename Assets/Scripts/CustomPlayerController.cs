@@ -1064,8 +1064,9 @@ public class CustomPlayerController : MonoBehaviour {
          */
         float currentResetProgress = (1 - (resetTime - currentResetTime)/resetTime);
 
-        /* Check if the user inputted any movement inputs */
-        if(inputs.spaceBarHeld == true || inputs.playerMovementXRaw != 0 || inputs.playerMovementYRaw != 0) {
+        /* Check if the user inputted any movement inputs or is outside */
+        if(inputs.spaceBarHeld == true || inputs.playerMovementXRaw != 0 || 
+                inputs.playerMovementYRaw != 0f || fallingOutWindow || outsideState) {
             /* Stop the animation */
             StopResetAnimation();
         }

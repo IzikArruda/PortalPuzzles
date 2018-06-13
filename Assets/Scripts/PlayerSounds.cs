@@ -169,7 +169,7 @@ public class PlayerSounds : MonoBehaviour {
         }
 
         /* If the music ever stops playing, have it start over again */
-        if(!musicSourceMuted.isPlaying || !musicSourceUpgraded.isPlaying) {
+        if((!musicSourceMuted.isPlaying && musicSourceMuted.time == 0) || (!musicSourceUpgraded.isPlaying && musicSourceUpgraded.time == 0)) {
             
             /* Make sure this function was not already called */
             if(delayedPlayMuted == false || delayedPlayUpgraded == false) {
@@ -374,8 +374,8 @@ public class PlayerSounds : MonoBehaviour {
 		 */
 
         /* fade out the music */
-        musicFadeMuted = -1f;
-        musicFadeUpgraded = -1f;
+        musicFadeMuted = -0.75f;
+        musicFadeUpgraded = -0.75f;
 
         /* Start and fade in the FastFalling state audio */
         fallingSource.clip = fallingClip;
