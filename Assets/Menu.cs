@@ -308,7 +308,7 @@ public class Menu : MonoBehaviour {
         }
 
         /* Run the initialSetup functions for each panel */
-        SetupMainPanel();
+        SetupCreditPanel();
         SetupCoverPanel();
         SetupSensPanel();
         SetupVideoPanel();
@@ -398,7 +398,11 @@ public class Menu : MonoBehaviour {
             new StateFunction(MenuStates.Main, UCreditPanelEmptyOrMain),
             new StateFunction(MenuStates.MainToEmpty, UCreditPanelEmptyOrMain),
             new StateFunction(MenuStates.EmptyToMain, UCreditPanelEmptyOrMain),
-            new StateFunction(MenuStates.Video, UCreditPanelNotInEmpty)
+            new StateFunction(MenuStates.VideoToMain, UCreditPanelVideoToMain),
+            new StateFunction(MenuStates.MainToVideo, UCreditPanelMainToVideo),
+            new StateFunction(MenuStates.SensToMain, UCreditPanelSensToMain),
+            new StateFunction(MenuStates.MainToSens, UCreditPanelMainToSens),
+            new StateFunction(MenuStates.MainToQuit, UCreditPanelQuit)
             
         };
         coverPanelTransitions = new StateFunction[] {
@@ -526,13 +530,13 @@ public class Menu : MonoBehaviour {
         buttonTrigger.triggers.Add(buttonExit);
     }
 
-    void SetupMainPanel() {
+    void SetupCreditPanel() {
         /*
-         * Setup the panel placed in the main menu
+         * Setup the credits panel that scrolls up into the main menu
          */
         int panelEnum = (int) Panels.Credit;
         RectTransform mainPanel = panelRects[panelEnum];
-        mainPanel.name = "Main panel";
+        mainPanel.name = "Credit panel"; 
         mainPanel.gameObject.SetActive(false);
 
         /* The main panel covers half the X width and all the Y height */
@@ -606,7 +610,7 @@ public class Menu : MonoBehaviour {
             /* Set the anchors so that the text stays on the left side of the panel */
             textRect.anchorMin = new Vector2(0, 0);
             textRect.anchorMax = new Vector2(0.49f, 1);
-            textRect.anchoredPosition = new Vector3(0, 0, 0);
+            textRect.anchoredPosition = new Vector2(0, 0);
             textRect.sizeDelta = new Vector2(0, 0);
             /* Set the text properties */
             text.font = otherTextFont;
@@ -662,7 +666,7 @@ public class Menu : MonoBehaviour {
             /* Position the toggle to be placed on the right side of it's panel */
             toggleRect.anchorMin = new Vector2(0.51f, 0);
             toggleRect.anchorMax = new Vector2(1, 1);
-            toggleRect.anchoredPosition = new Vector3(0, 0, 0);
+            toggleRect.anchoredPosition = new Vector2(0, 0);
             toggleRect.sizeDelta = new Vector2(optionPanelHeight, 0);
 
             /* Resize the images of the button to reflect the panel's height */
@@ -693,7 +697,7 @@ public class Menu : MonoBehaviour {
             /* Position the object to be placed on the right side of it's panel */
             dropRect.anchorMin = new Vector2(0.5f, 0);
             dropRect.anchorMax = new Vector2(0.5f, 1);
-            dropRect.anchoredPosition = new Vector3((optionPanelHeight/2f)*resolutionWidthRatio/2f, 0, 0);
+            dropRect.anchoredPosition = new Vector2((optionPanelHeight/2f)*resolutionWidthRatio/2f, 0);
             dropRect.sizeDelta = new Vector2((optionPanelHeight/2f)*resolutionWidthRatio, 0);
 
             /* Link a function to it's onValueChanged and populate the dropdown options */
@@ -766,7 +770,7 @@ public class Menu : MonoBehaviour {
         /* Set the sizes of the slider */
         sliderRect.anchorMin = new Vector2(0, 0.5f);
         sliderRect.anchorMax = new Vector2(1, 0.5f);
-        sliderRect.anchoredPosition = new Vector3(0, 0, 0);
+        sliderRect.anchoredPosition = new Vector2(0, 0);
         sliderRect.sizeDelta = new Vector2(0, 20);
         /* Assign a function to when the slider updates */
         sensitivitySlider.maxValue = sensMax;
@@ -794,7 +798,7 @@ public class Menu : MonoBehaviour {
         /* Set the sizes of the text */
         rectTex.anchorMin = new Vector2(0, 0.25f);
         rectTex.anchorMax = new Vector2(1, 0.25f);
-        rectTex.anchoredPosition = new Vector3(0, 0, 0);
+        rectTex.anchoredPosition = new Vector2(0, 0);
         rectTex.sizeDelta = new Vector2(0, panelHeight/2f);
 
         /* Add text above the slider giving the sensitivity */
@@ -815,7 +819,7 @@ public class Menu : MonoBehaviour {
         /* Set the sizes of the value */
         valueRect.anchorMin = new Vector2(0, 0.75f);
         valueRect.anchorMax = new Vector2(1, 0.75f);
-        valueRect.anchoredPosition = new Vector3(0, 0, 0);
+        valueRect.anchoredPosition = new Vector2(0, 0);
         valueRect.sizeDelta = new Vector2(0, panelHeight/2f);
     }
 
@@ -1081,7 +1085,7 @@ public class Menu : MonoBehaviour {
         float loadingRatio = terrainController.GetLoadingPercent();
         loadingBar.anchorMax = new Vector2(loadingRatio, 1);
         loadingBar.sizeDelta = new Vector2(0, 0);
-        loadingBar.anchoredPosition = new Vector3(0, 0, 0);
+        loadingBar.anchoredPosition = new Vector2(0, 0);
     }
 
     /* ----------- UI Element Update Functions ------------------------------------------------------------- */
@@ -1093,24 +1097,99 @@ public class Menu : MonoBehaviour {
          */
         int panelEnum = (int) Panels.Credit;
         RectTransform mainPanel = panelRects[panelEnum];
-
-        //Make sure the panel is outside
-        if(isOutside) {
-            mainPanel.gameObject.SetActive(true);
-
-            CreditPanelPositionUpdate(creditScrollValue);
-        }
-
+        
+        CreditPanelPositionUpdate(creditScrollValue);
     }
-
-    void UCreditPanelNotInEmpty() {
+    
+    void UCreditPanelVideoToMain() {
         /*
-         * For now, disable the panel when in the video panel
+         * Animate the credits panel as it rotates from the top of the screen to be viewed by the player
          */
         int panelEnum = (int) Panels.Credit;
-        RectTransform mainPanel = panelRects[panelEnum];
+        RectTransform rect = panelRects[panelEnum];
+
+        /* Get the transition ratio for the current state */
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 1);
+
+        /* Make the panel rotate down from the top into it's current scroll position */
+        rect.pivot = new Vector2(0.5f, 1);
+        rect.localEulerAngles = new Vector3(90 - 90*transitionFade, 0, 0);
+        CreditPanelPositionUpdate(creditScrollValue);
+    }
+
+    void UCreditPanelMainToVideo() {
+        /*
+         * Animate the credits panel as it rotates off the screen from the bottom edge
+         */
+        int panelEnum = (int) Panels.Credit;
+        RectTransform rect = panelRects[panelEnum];
+
+        /* Get the transition ratio for the current state */
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 1);
         
-        mainPanel.gameObject.SetActive(false);
+        /* Make the panel rotate down off screen from it's current scroll position */
+        rect.pivot = new Vector2(0.5f, 0);
+        rect.localEulerAngles = new Vector3(90*transitionFade, 0, 0);
+        CreditPanelPositionUpdate(creditScrollValue);
+    }
+
+    void UCreditPanelMainToSens() {
+        /*
+         * Animate the credits panel as it slides back down off-screen
+         */
+        int panelEnum = (int) Panels.Credit;
+        RectTransform rect = panelRects[panelEnum];
+
+        /* Get the transition ratio for the current state */
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = 1 - Mathf.Cos((Mathf.PI/2f)*AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 1));
+        
+        /* Get the current scrolling position of the panel */
+        CreditPanelPositionUpdate(creditScrollValue);
+
+        /* Slide the panel down */
+        float panelHeight = screenHeight*panelsHeight[panelEnum];
+        rect.anchoredPosition -= new Vector2(0, transitionFade*panelHeight);
+    }
+
+    void UCreditPanelSensToMain() {
+        /*
+         * Animate the credits panel as it slides back up into it's current scrolling position from the right
+         */
+        int panelEnum = (int) Panels.Credit;
+        RectTransform rect = panelRects[panelEnum];
+
+        /* Get the transition ratio for the current state */
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 1);
+        
+        /* Get the current scrolling position of the panel */
+        CreditPanelPositionUpdate(creditScrollValue);
+
+        /* Slide the panel into view from the right */
+        float panelWidth = screenWidth*panelsWidth[panelEnum];
+        rect.anchoredPosition -= new Vector2(-(1 - transitionFade)*panelWidth, 0);
+    }
+
+    void UCreditPanelQuit() {
+        /*
+         * Slide the panel off the right side of the screen
+         */
+        int panelEnum = (int) Panels.Credit;
+        RectTransform rect = panelRects[panelEnum];
+
+        /* Get the transition ratio for the current state */
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = 1 - Mathf.Cos((Mathf.PI/2f)*AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 1));
+
+        /* Get the current scrolling position of the panel */
+        CreditPanelPositionUpdate(creditScrollValue);
+
+        /* Slide the panel out of view to the right */
+        float panelWidth = screenWidth*panelsWidth[panelEnum];
+        rect.anchoredPosition -= new Vector2(-(transitionFade)*panelWidth, 0);
     }
 
     void CreditPanelPositionUpdate(float sideRatio) {
@@ -1124,7 +1203,7 @@ public class Menu : MonoBehaviour {
         float panelHeight = screenHeight*panelsHeight[panelEnum];
 
         /* [0, 1] controls it's Y position */
-        rect.anchoredPosition = new Vector3(0, -panelHeight*(1 - AdjustRatio(sideRatio, 0, 1)), 0);
+        rect.anchoredPosition = new Vector2(0, -panelHeight*(1 - AdjustRatio(sideRatio, 0, 1)));
         rect.sizeDelta = new Vector2(0, 0);
     }
 
@@ -1138,7 +1217,7 @@ public class Menu : MonoBehaviour {
         /* Set the sizes to match the screen size */
         float panelWidth = Screen.width*panelsWidth[panelEnum];
         float panelHeight = Screen.height*panelsHeight[panelEnum];
-        mainPanel.anchoredPosition = new Vector3(0, 0, 0);
+        mainPanel.anchoredPosition = new Vector2(0, 0);
         mainPanel.sizeDelta = new Vector2(0, 0);
     }
     #endregion
@@ -1210,7 +1289,7 @@ public class Menu : MonoBehaviour {
         mainPanel.anchorMax = new Vector2(1, 1);
 
         /* Set the sizes to match the screen size */
-        mainPanel.anchoredPosition = new Vector3(0, 0, 0);
+        mainPanel.anchoredPosition = new Vector2(0, 0);
         mainPanel.sizeDelta = new Vector2(0, 0);
     }
     #endregion
@@ -1270,7 +1349,7 @@ public class Menu : MonoBehaviour {
         /* [0, 1] controls it's X position while [1, 2] controls it's Y position */
         panelWidth = panelWidth/2f - panelWidth*AdjustRatio(sideRatio, 0, 1);
         panelHeight = panelHeight/2f - panelHeight*AdjustRatio(sideRatio, 1, 2);
-        rect.anchoredPosition = new Vector3(panelWidth, panelHeight, 0);
+        rect.anchoredPosition = new Vector2(panelWidth, panelHeight);
     }
 
     void SensPanelReset() {
@@ -1297,13 +1376,13 @@ public class Menu : MonoBehaviour {
         /* Set the sizes of the sens value text above */
         aboveText.anchorMin = new Vector2(0, 0.75f);
         aboveText.anchorMax = new Vector2(1, 0.75f);
-        aboveText.anchoredPosition = new Vector3(0, 0, 0);
+        aboveText.anchoredPosition = new Vector2(0, 0);
         aboveText.sizeDelta = new Vector2(0, panelHeight/2f);
         aboveText.GetComponent<Outline>().effectDistance = panelHeight*new Vector2(0.009f, 0.009f);
         /* Set the sizes of the description text bellow */
         bellowText.anchorMin = new Vector2(0, 0.25f);
         bellowText.anchorMax = new Vector2(1, 0.25f);
-        bellowText.anchoredPosition = new Vector3(0, 0, 0);
+        bellowText.anchoredPosition = new Vector2(0, 0);
         bellowText.sizeDelta = new Vector2(0, panelHeight/2f);
         bellowText.GetComponent<Outline>().effectDistance = panelHeight*new Vector2(0.009f, 0.009f);
         SensPanelPositionUpdate(0);
@@ -1369,7 +1448,7 @@ public class Menu : MonoBehaviour {
         /* Position the Y position of the panel */
         panelWidth = -panelWidth/2f;
         panelHeight = panelHeight/2f - (panelHeight/2f)*sideRatio;
-        rect.anchoredPosition = new Vector3(panelWidth, panelHeight, 0);
+        rect.anchoredPosition = new Vector2(panelWidth, panelHeight);
     }
 
     void VideoPanelReset() {
@@ -1398,12 +1477,12 @@ public class Menu : MonoBehaviour {
             checkBoxRect = toggleRect.GetChild(0).GetComponent<RectTransform>();
 
             /* Resize the panel */
-            panelRect.anchoredPosition = new Vector3(0, fromCenterToTopOfVideoPanel -i*optionPanelHeight*3/2f, 0);
+            panelRect.anchoredPosition = new Vector2(0, fromCenterToTopOfVideoPanel -i*optionPanelHeight*3/2f);
             panelRect.sizeDelta = new Vector2(0, optionPanelHeight);
 
             /* Resize the toggle and checkbox */
             toggleRect.sizeDelta = new Vector2(optionPanelHeight, 0);
-            checkBoxRect.anchoredPosition = new Vector3(optionPanelHeight, 0, 0);
+            checkBoxRect.anchoredPosition = new Vector2(optionPanelHeight, 0);
             checkBoxRect.sizeDelta = new Vector2(optionPanelHeight, 0);
         }
         
@@ -1418,7 +1497,7 @@ public class Menu : MonoBehaviour {
             RectTransform dropdownItem = dropdownContent.GetChild(0).GetComponent<RectTransform>();
 
             /* Set the sizes of the panel */
-            panelRect.anchoredPosition = new Vector3(0, fromCenterToTopOfVideoPanel -(videoPanel.childCount-1.5f)*optionPanelHeight*3/2f, 0);
+            panelRect.anchoredPosition = new Vector2(0, fromCenterToTopOfVideoPanel -(videoPanel.childCount-1.5f)*optionPanelHeight*3/2f);
             panelRect.sizeDelta = new Vector2(0, optionPanelHeight);
             
             /* Update the dropdown rect's size */
@@ -1428,7 +1507,7 @@ public class Menu : MonoBehaviour {
             }else {
                 wdithRatio = resolutionWidthRatio;
             }
-            dropdownRect.anchoredPosition = new Vector3((optionPanelHeight/2f)*wdithRatio/2f, 0, 0);
+            dropdownRect.anchoredPosition = new Vector2((optionPanelHeight/2f)*wdithRatio/2f, 0);
             dropdownRect.sizeDelta = new Vector2((optionPanelHeight/2f)*wdithRatio, 0);
 
             /* Update the size of the content & items of the resolution dropdown list */
@@ -1657,7 +1736,7 @@ public class Menu : MonoBehaviour {
         rect.sizeDelta = new Vector2(startBonusSize*buttonHeight*startWidthRatio + extraHoverWidth, startBonusSize*buttonHeight);
 
         /* Add a portion of the height into the label object to prevent the text from overflowing using the current font */
-        rect.GetChild(0).GetComponent<RectTransform>().anchoredPosition = new Vector3(0, 0, 0);
+        rect.GetChild(0).GetComponent<RectTransform>().anchoredPosition = new Vector2(0, 0);
         rect.GetChild(0).GetComponent<RectTransform>().sizeDelta = new Vector2(0, -20f * (buttonHeight/100f));
 
         /* Set the outline's distance relative to the hover value */
@@ -1847,7 +1926,7 @@ public class Menu : MonoBehaviour {
         rect.sizeDelta = new Vector2(buttonHeight*videoWidthRatio + extraHoverWidth, buttonHeight);
 
         /* Add a portion of the height into the label object to prevent the text from overflowing using the current font */
-        rect.GetChild(0).GetComponent<RectTransform>().anchoredPosition = new Vector3(0, 0, 0);
+        rect.GetChild(0).GetComponent<RectTransform>().anchoredPosition = new Vector2(0, 0);
         rect.GetChild(0).GetComponent<RectTransform>().sizeDelta = new Vector2(0, -20f * (buttonHeight/100f));
 
         /* Set the outline's distance relative to the hover value */
@@ -2063,7 +2142,7 @@ public class Menu : MonoBehaviour {
         rect.sizeDelta = new Vector2(buttonHeight*sensWidthRatio + extraHoverWidth, buttonHeight);
 
         /* Add a portion of the height into the label object to prevent the text from overflowing using the current font */
-        rect.GetChild(0).GetComponent<RectTransform>().anchoredPosition = new Vector3(0, 0, 0);
+        rect.GetChild(0).GetComponent<RectTransform>().anchoredPosition = new Vector2(0, 0);
         rect.GetChild(0).GetComponent<RectTransform>().sizeDelta = new Vector2(0, -20f * (buttonHeight/100f));
 
         /* Set the outline's distance relative to the hover value */
@@ -2320,7 +2399,7 @@ public class Menu : MonoBehaviour {
         rect.sizeDelta = new Vector2(quitBonusSize*buttonHeight*quitWidthRatio + extraHoverWidth, buttonHeight);
         
         /* Add a portion of the height into the label object to prevent the text from overflowing using the current font */
-        rect.GetChild(0).GetComponent<RectTransform>().anchoredPosition = new Vector3(0, 0, 0);
+        rect.GetChild(0).GetComponent<RectTransform>().anchoredPosition = new Vector2(0, 0);
         rect.GetChild(0).GetComponent<RectTransform>().sizeDelta = new Vector2(0, -20f * (buttonHeight/100f));
 
         /* Set the outline's distance relative to the hover value */
@@ -2479,6 +2558,18 @@ public class Menu : MonoBehaviour {
                 /* Entering the MainToVideo or MainToSens states will set their panels to be active */
                 if(newState == MenuStates.MainToVideo) { panelRects[(int) Panels.Video].gameObject.SetActive(true); }
                 if(newState == MenuStates.MainToSens) { panelRects[(int) Panels.Sens].gameObject.SetActive(true); }
+
+                /* Handle the credits panel's state depending on the outside state and menu state */
+                if(isOutside) {
+                    /* Entering the Video or Sensitivity state will disable the credits panel */
+                    if(newState == MenuStates.Video || newState == MenuStates.Sensitivity) {
+                        panelRects[(int) Panels.Credit].gameObject.SetActive(false);
+                    }
+                    /* Entering a transition state from the Video or Sens states will re-enable the panel */
+                    else if(newState == MenuStates.VideoToMain || newState == MenuStates.SensToMain) {
+                        panelRects[(int) Panels.Credit].gameObject.SetActive(true);
+                    }
+                }
 
                 /* Changing the transition state (other than entering the quitting state) will reset the quitting value */
                 if(newState != MenuStates.MainToQuit) {
@@ -2659,10 +2750,12 @@ public class Menu : MonoBehaviour {
 
     public void PlayerEnteredOutside() {
         /*
-         * This is run once the player has entered the outside state
+         * This is run once the player has entered the outside state. 
+         * Enable the credits panel at this time as it will soon begin to scroll into view.
          */
 
         isOutside = true;
+        panelRects[(int) Panels.Credit].gameObject.SetActive(true);
     }
 
     /* ----------- Mouse Enter/Hover Functions ------------------------------------------------------------- */
