@@ -71,6 +71,12 @@ public class CustomPlayerController : MonoBehaviour {
     public float mouseSens = 5;
     [HideInInspector]
     public float mouseSensMod = 5;
+    /* How fast or slow the character acts in relation to time */
+    public float playerTimeRate = 1;
+    private float playerTimeChangeMod = 0.75f;
+    public float soundsTimeRate = 1;
+    private float soundsTimeChangeMod = 0.4f;
+    public float roomTimeRate = 1;
 
     /* How fast a player accelerates towards their feet when falling. */
     public float gravity;
@@ -255,9 +261,9 @@ public class CustomPlayerController : MonoBehaviour {
                 StepPlayer();
             }
 
-            /* Move the player using their given input and the gravity vector */
+            /* Move the player using their given input and the gravity vector. Take into account the player's time rate. */
             UpdateInputVector();
-            MovePlayer(inputVector + GetGravityVector());
+            MovePlayer(inputVector*playerTimeRate + GetGravityVector()*playerTimeRate);
             
             /* Get the tallied movements the player wants to undergo */
             Rigidbody rigidBody = GetComponent<Rigidbody>();
@@ -658,8 +664,8 @@ public class CustomPlayerController : MonoBehaviour {
         /* Copy the player's current rotation before rotating the camera */
         currentCameraTransform.rotation = transform.rotation;
 
-        /* Add the X input rotation and ensure it does not overflow */
-        float sens = mouseSens / mouseSensMod;
+        /* Add the X input rotation and ensure it does not overflow. Add a fraction of the time rate to modify the sens */
+        float sens = (1/3f + playerTimeRate/3f) * mouseSens / mouseSensMod;
         cameraXRotation -= sens*inputs.mouseX;
         if(cameraXRotation < 0) { cameraXRotation += 360; }
         else if(cameraXRotation > 360) { cameraXRotation -= 360; }
@@ -897,7 +903,7 @@ public class CustomPlayerController : MonoBehaviour {
             inputVector.Normalize();
         }
         
-        /* Alter the used movementSpeed relative to the player's falling speed */
+        /* Alter the used movementSpeed relative to the player's airborn state */
         float usedMovementSpeed = movementSpeed;
 
         /* Increase the player's base airborn movement speed if they are falling */
@@ -1119,7 +1125,7 @@ public class CustomPlayerController : MonoBehaviour {
          */
 
         /* Get the Z positions of the player camera and the staringRoom's outside window */
-        float windowExit = startingRoom.windowExit.position.z + 0000000;
+        float windowExit = startingRoom.windowExit.position.z;
         float camPos = playerCamera.transform.position.z;
         float playerPos = transform.position.z;
 
@@ -1147,13 +1153,57 @@ public class CustomPlayerController : MonoBehaviour {
                 startingRoom.window.portalSet.ExitPortal.TriggerContainer.GetChild(0).GetComponent<BoxCollider>().enabled = false;
             }
         }
+        
+        /* 
+		 * Adjust the timeFlow of the player, StartingRoom and playerSounds 
+		 */
+		/* Don't Update the rates in a menu. Instead, freeze the sounds and the room */
+		if(inMenu){
+			if(roomTimeRate != 1){ startingRoom.UpdateTimeRate(0, 0); }
+        	if(soundsTimeRate != 1){ playerSoundsScript.UpdateTimeRate(0); }
+        }
+
+		/* Increment the time rates relative to the player's position */
+		else{
+			if(windowExit > playerPos + 3.8f){
+                playerTimeRate += Time.deltaTime*playerTimeChangeMod;
+                roomTimeRate += Time.deltaTime*playerTimeChangeMod;
+                soundsTimeRate += Time.deltaTime*soundsTimeChangeMod;
+                /* Prevent the rates from going above the default */
+                if(playerTimeRate > 1) { playerTimeRate = 1; }
+                if(roomTimeRate > 1) { roomTimeRate = 1; }
+                if(soundsTimeRate > 1) { soundsTimeRate = 1; }
+            }
+			else {
+                playerTimeRate -= Time.deltaTime*playerTimeChangeMod;
+                roomTimeRate -= Time.deltaTime*playerTimeChangeMod;
+                soundsTimeRate -= Time.deltaTime*soundsTimeChangeMod;
+                /* Prevent the timeRates from going bellow a given limit */
+                if(playerTimeRate < 0.025f) { playerTimeRate = 0.025f; }
+                if(roomTimeRate < 0.025f) { roomTimeRate = 0.025f; }
+                if(soundsTimeRate < 0.5f) { soundsTimeRate = 0.5f; }
+            }
+			/* Update the rooms with their new timeRates */
+			startingRoom.UpdateTimeRate(roomTimeRate, soundsTimeRate);
+            playerSoundsScript.UpdateTimeRate(soundsTimeRate);
+		}
 
         /* If the player has fallen far enough away from the window, stop running this update call */
-        if(fallingOutWindow && windowExit > playerPos + 10) {
+        if(fallingOutWindow && windowExit > playerPos + 20) {
             fallingOutWindow = false;
 
-            /* Inform the menu that the player has entered the outside state */
+            /* Inform the menu that the player has some distance from the outside window */
             playerMenu.PlayerEnteredOutside();
+
+            /* Upgrade the currently playing music */
+            playerSoundsScript.UpgradeMusic();
+
+            /* Reset the timeRates incase they have not yet reached their default */
+            playerTimeRate = 1;
+            roomTimeRate = 1;
+            soundsTimeRate = 1;
+            playerSoundsScript.UpdateTimeRate(soundsTimeRate);
+			startingRoom.UpdateTimeRate(roomTimeRate, soundsTimeRate);
         }
     }
 
@@ -1660,9 +1710,6 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* The player's steps will now be stepping on soft ground */
         currentStepType = 1;
-
-        /* Tell the player's sound script that they are now in the outside state */
-        playerSoundsScript.EnteringOutside();
     }
 
     public void ApplyFastfall(bool outsidePuzzlePlayArea) {

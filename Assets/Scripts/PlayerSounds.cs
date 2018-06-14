@@ -406,10 +406,8 @@ public class PlayerSounds : MonoBehaviour {
         /* Quickly fade out the fastFalling audio */
         fallingFade = -2.5f;
 
-        /* After a hard landing, reset the music if the player is not outside */
-        if(!outside) {
-            PlayMusic();
-        }
+        /* After a hard landing, reset the music */
+        PlayMusic();
     }
 
     public void PlayMenuClick() {
@@ -610,21 +608,14 @@ public class PlayerSounds : MonoBehaviour {
         /* Set the volume of the master audio group */
         audioMixer.SetFloat("masterVolume", -50 + (50+masterMixerVolume)*masterVolumeRatio);
     }
-
-    public void EnteringOutside() {
-        /*
-         * Called when the player enters the outside state, this function will set the outside
-         * boolean to true, making certain sounds play differently when they occur.
-         */
-
-        outside = true;
-        UpgradeMusic();
-    }
-
+    
     public void UpgradeMusic() {
         /*
          * Running this function will upgrade the current the current and all upcomming songs.
          */
+
+        /* Set the  */
+        outside = true;
 
         /* Fade out the current muted song and fade in the upgraded version */
         musicFadeMuted = -0.1f;
@@ -678,6 +669,17 @@ public class PlayerSounds : MonoBehaviour {
         return newSongIndex;
     }
 
+    public void UpdateTimeRate(float pitch) {
+        /*
+         * Update the pitch of the sounds of all audio sources
+         */
+
+        musicSourceMuted.pitch = pitch;
+        musicSourceUpgraded.pitch = pitch;
+        for(int i = 0; i < landingSources.Length; i++) {
+            landingSources[i].pitch = pitch;
+        }
+    }
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
 

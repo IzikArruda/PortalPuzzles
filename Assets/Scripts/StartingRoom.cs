@@ -40,6 +40,7 @@ public class StartingRoom : ConnectedRoom {
 
     /* The particleSystem that will produce a bunch of shattered glass */
     private new ParticleSystem particleSystem;
+    private ParticleSystem.Particle glassParticles;
     public Material particleMaterial;
 
     /* The audio source that will play the glass shattering sound effect. Have it linked to the sound and mixer group in the editor. */
@@ -71,7 +72,9 @@ public class StartingRoom : ConnectedRoom {
     public Texture windowFrameTextureAlt;
     public Texture stairsStepTextureAlt;
     public Texture stairsOtherTextureAlt;
-
+    
+    /* Tracks the speed gained from gravity on the particles */
+    private float gravityMod = 0;
 
 
     /* -------- Built-In Functions ---------------------------------------------------- */
@@ -408,5 +411,30 @@ public class StartingRoom : ConnectedRoom {
         windowFrameMaterial.SetTexture("_MainTex", windowFrameTextureAlt);
         stairsStepMaterial.SetTexture("_MainTex", stairsStepTextureAlt);
         stairsOtherMaterial.SetTexture("_MainTex", stairsOtherTextureAlt);
+    }
+    
+	public void UpdateTimeRate(float roomTimeRate, float soundtimeRate){
+        /*
+         * Given a roomTimeRate and a soundTimeRate, adjust how the glass shattering and
+         * the glass particles react by simmulating time slowing down.
+		 */
+
+        /* Set the breaking glass audio source to use the audio time rate */
+        glassShatterSource.pitch = soundtimeRate;
+
+        /* Depending on how long/distance travelled, decrease the Y velocity to simulate gravity */
+        gravityMod += Time.deltaTime * roomTimeRate * 7.5f;
+
+        /* Edit the velocity over lifetime */
+        ParticleSystem.VelocityOverLifetimeModule velocityOverLifetime = particleSystem.velocityOverLifetime;
+        velocityOverLifetime.x = new ParticleSystem.MinMaxCurve(5*roomTimeRate, -5*roomTimeRate);
+        velocityOverLifetime.y = new ParticleSystem.MinMaxCurve((2 - gravityMod)*roomTimeRate, (-2 - gravityMod)*roomTimeRate);
+        velocityOverLifetime.z = new ParticleSystem.MinMaxCurve(-1*roomTimeRate, -10*roomTimeRate);
+
+        /* Edit the rotation over lifetime */
+        ParticleSystem.RotationOverLifetimeModule rotationOverLifetime = particleSystem.rotationOverLifetime;
+        rotationOverLifetime.x = new ParticleSystem.MinMaxCurve(3.14f*roomTimeRate, 9.42f*roomTimeRate);
+        rotationOverLifetime.y = new ParticleSystem.MinMaxCurve(3.14f*roomTimeRate, 9.42f*roomTimeRate);
+        rotationOverLifetime.z = new ParticleSystem.MinMaxCurve(3.14f*roomTimeRate, 9.42f*roomTimeRate);
     }
 }
