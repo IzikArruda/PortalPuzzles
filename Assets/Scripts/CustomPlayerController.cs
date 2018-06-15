@@ -209,7 +209,7 @@ public class CustomPlayerController : MonoBehaviour {
         /*
          * Initilize required objects and set starting values for certain variables 
          */
-
+         
         /* Set-up the menu used by the player */
         playerMenu = GetComponent<Menu>();
         if(playerMenu != null) { playerMenu.InitializeMenu(this); }
@@ -268,7 +268,7 @@ public class CustomPlayerController : MonoBehaviour {
                 lastStepMovement = Vector3.zero;
             }
 
-            Debug.Log(transform.position.z);
+            ////////////////////Debug.Log(transform.position.z);
         }
     }
 
@@ -305,7 +305,7 @@ public class CustomPlayerController : MonoBehaviour {
         renderedCameraCount2 = 0;*/
 
 
-        Debug.Log(transform.position.z);
+        //////////////////////////////Debug.Log(transform.position.z);
         /* Pressing the escape button will send a request to the menu and either open/close the menu */
         MenuKey();
 
@@ -420,7 +420,18 @@ public class CustomPlayerController : MonoBehaviour {
         if(fallingOutWindow) { FallingOutWindowUpdate(true); }
     }
 
-    
+    void OnCollisionEnter(Collision col) {
+        /*
+         * Print whatever the player  collides into
+         */
+
+        Debug.Log(transform.position.z);
+        Debug.Log("player hit " + col.gameObject.name);
+        Debug.Log(col.gameObject.GetComponent<Collider>().enabled);
+        Debug.Log(transform.position.z);
+    }
+
+
     /* ----------------- Main Movement Function ------------------------------------------------------------- */
 
     void HandlePlayerMovement() {
@@ -447,7 +458,7 @@ public class CustomPlayerController : MonoBehaviour {
                 /* Fire a ray of the player's movement that interracts with the world, including teleporters */
                 Quaternion rotationDifference = RayTrace(ref position, ref direction, ref remainingDistance, ref teleported, true, true, false);
                 /* If the player's movement passes through a teleporter, reposition their transform to reflect the teleport */
-                Debug.Log("-----------NEW HANDLE-------------");
+                /////////////////////Debug.Log("-----------NEW HANDLE-------------");
                 transform.position = position;
                 transform.rotation = rotationDifference * transform.rotation;
                 if(teleported) {
@@ -1812,21 +1823,9 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Travel towards the rotation's forward for the remaining distance */
         while(distance > 0 && stopRayTrace == false) {
-            //reduce the distance every loop to prevent infinite loops
-            //distance -= 0.001f;
-
-            /*
-             * Player can still pass through a portal. Are they teleporting but not far enough? or are they 
-             * simply missing the collider? we can figure this out by printing when they teleport,
-             * but we first need to find a consistent way to reproduce the pass-through glitch
-             */
-
-            if(distance < 0) {
-
-            }
-
+            
             /* Check for any collisions from the current position towards the current direction */
-            else if(Physics.Raycast(position, rotation*Vector3.forward, out hitInfo, distance, rayLayerMask)) {
+            if(Physics.Raycast(position, rotation*Vector3.forward, out hitInfo, distance, rayLayerMask)) {
                 /* When hitting a collider, move the position up to the collision point */
                 Debug.DrawLine(position, position + rotation*Vector3.forward*hitInfo.distance, Color.green);
                 position += rotation * Vector3.forward * hitInfo.distance;
@@ -1838,15 +1837,13 @@ public class CustomPlayerController : MonoBehaviour {
                     rotationDifference = hitInfo.collider.GetComponent<TeleporterTrigger>().TeleportParameters(ref position, ref rotation);
                     totalRotation = rotationDifference*totalRotation;
                     teleported = true;
-                    //Prevent the rayTrace from hitting another trigger after teleporting
-                    //rayLayerMask = 0;
                 }
 
                 /* Hitting a solid collider will stop the rayTrace where it currently is */
                 else if(!hitInfo.collider.isTrigger) {
                     stopRayTrace = true;
 
-                    /* Save the collider hit if needed. Does not save the collider if it was a teleport trigger */
+                    /* Save the collider hit if needed */
                     if(saveCollider) {
                         lastHitCollider = hitInfo.collider;
                     }

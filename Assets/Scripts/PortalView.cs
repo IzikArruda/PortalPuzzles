@@ -59,11 +59,6 @@ public class PortalView : MonoBehaviour {
         if(GetComponent<MeshRenderer>() == null) {
             gameObject.AddComponent<MeshRenderer>();
         }
-        if(GetComponent<MeshCollider>() == null) {
-            gameObject.AddComponent<MeshCollider>();
-            //Keep the component disabled, due to it only behind used in scripts
-            GetComponent<MeshCollider>().enabled = false;
-        }
 
         /* Check if the portalMaterial used for the portal is created and assigned to the portal */
         if(!portalMaterial) {
@@ -485,7 +480,7 @@ public class PortalView : MonoBehaviour {
 
         return state;
     }
-    
+
     public Rect CalculateViewingRect(Camera camera) {
         /*
          * Given a camera and this mesh, calculate the bounding rect that this mesh has for this camera.
@@ -503,52 +498,58 @@ public class PortalView : MonoBehaviour {
         float topBound = 0;
         float leftBound = 1;
         float rightBound = 0;
-
-        /* Get all the points used to define this portal mesh being drawn */
-        Vector3[] vertices = GetComponent<MeshFilter>().mesh.vertices;
-
-        /* Take each vertex that forms this mesh and find it's viewport position on the camera's screen */
-        for(int i = 0; i < vertices.Length; i++) {
-            //Convert the vert to world space
-            vertices[i] = transform.TransformPoint(vertices[i]);
-            //Convert it to a position on the camera's view
-            vertices[i] = camera.WorldToViewportPoint(vertices[i]);
-        }
-
-
+        
         /* Check the corners of the camera's viewport. If they are within the mesh's boundaries, set the boundary values */
-        GetComponent<MeshCollider>().enabled = true;
-
+        GetComponent<BoxCollider>().enabled = true;
+        
+        /*
+         * Fire a ray from each corner of the camera's view and check if it collides with the portal mesh
+         */
         /* Fire a ray from the camera's top left corner to see if it hits this mesh */
         camToMesh = camera.ViewportPointToRay(new Vector3(0, 1, 1));
-        if(GetComponent<MeshCollider>().Raycast(camToMesh, out hitInfo, float.MaxValue)) {
-            //Debug.Log("-- TOP LEFT --");
+        if(GetComponent<BoxCollider>().Raycast(camToMesh, out hitInfo, float.MaxValue)) {
+            //Debug.DrawRay(camToMesh.origin, camToMesh.direction*hitInfo.distance, Color.green, 0.2f);
+            //Debug.Log("-- TOP LEFT -- ");
             topBound = 1;
             leftBound = 0;
         }
         /* Fire a ray from the camera's top right corner to see if it hits this mesh */
         camToMesh = camera.ViewportPointToRay(new Vector3(1, 1, 1));
-        if(GetComponent<MeshCollider>().Raycast(camToMesh, out hitInfo, float.MaxValue)) {
+        if(GetComponent<BoxCollider>().Raycast(camToMesh, out hitInfo, float.MaxValue)) {
+            //Debug.DrawRay(camToMesh.origin, camToMesh.direction*hitInfo.distance, Color.green, 0.2f);
             //Debug.Log("-- TOP RIGHT --");
             topBound = 1;
             rightBound = 1;
         }
         /* Fire a ray from the camera's bottom left corner to see if it hits this mesh */
         camToMesh = camera.ViewportPointToRay(new Vector3(0, 0, 1));
-        if(GetComponent<MeshCollider>().Raycast(camToMesh, out hitInfo, float.MaxValue)) {
+        if(GetComponent<BoxCollider>().Raycast(camToMesh, out hitInfo, float.MaxValue)) {
+            //Debug.DrawRay(camToMesh.origin, camToMesh.direction*hitInfo.distance, Color.green, 0.2f);
             //Debug.Log("-- BOTTOM LEFT --");
             bottomBound = 0;
             leftBound = 0;
         }
         /* Fire a ray from the camera's bottom right corner to see if it hits this mesh */
         camToMesh = camera.ViewportPointToRay(new Vector3(1, 0, 1));
-        if(GetComponent<MeshCollider>().Raycast(camToMesh, out hitInfo, float.MaxValue)) {
+        if(GetComponent<BoxCollider>().Raycast(camToMesh, out hitInfo, float.MaxValue)) {
+            //Debug.DrawRay(camToMesh.origin, camToMesh.direction*hitInfo.distance, Color.green, 0.2f);
             //Debug.Log("-- BOTTOM RIGHT --");
             bottomBound = 0;
             rightBound = 1;
         }
-        GetComponent<MeshCollider>().enabled = false;
+        Debug.Log("----------");
         
+        /* Set the colliders to triggers to prevent interracting with the player */
+        GetComponent<BoxCollider>().enabled = false;
+
+        /* Take each vertex that forms this mesh and find it's viewport position on the camera's screen */
+        Vector3[] vertices = GetComponent<MeshFilter>().mesh.vertices;
+        for(int i = 0; i < vertices.Length; i++) {
+            //Convert the vert to world space
+            vertices[i] = transform.TransformPoint(vertices[i]);
+            //Convert it to a position on the camera's view
+            vertices[i] = camera.WorldToViewportPoint(vertices[i]);
+        }
 
         /* Get the bounding edges of the mesh on the camera's view  */
         /* Go through each vertex forming this portal's mesh and sort them into their proper array */
@@ -765,9 +766,13 @@ public class PortalView : MonoBehaviour {
         boundingEdges.yMin = bottomBound;
         boundingEdges.yMax = topBound;
 
+        if(gameObject.name == "12872|Exit Backwards Mesh") {
+            Debug.Log(leftBound + " " + rightBound +  " " +topBound + " " + bottomBound);
+        }
+
         return boundingEdges;
     }
-    
+
     public bool MeshBehindMesh(MeshFilter meshFilter1, MeshFilter meshFilter2) {
         /*
          * Given the two mesh filters, return true if mesh1 is fully behind mesh2. This is used

@@ -215,8 +215,8 @@ public class PortalSet : MonoBehaviour {
         Mesh normalMesh = CreateDefaultMesh();
 
         /* Assign the mesh to each linked portalObject */
-        EntrancePortal.SetMesh(normalMesh);
-        ExitPortal.SetMesh(normalMesh);
+        EntrancePortal.SetMesh(normalMesh, portalWidth, portalHeight);
+        ExitPortal.SetMesh(normalMesh, portalWidth, portalHeight);
     }
 
     void CreateBorder() {

@@ -59,30 +59,37 @@ public class PortalObjects : MonoBehaviour {
         }
     }
 
-    public void SetMesh(Mesh mesh) {
+    public void SetMesh(Mesh mesh, float width, float height) {
         /*
-         * Link the given mesh to the MeshFilter and MeshCollider that is used to display the portal.
+         * Link the given mesh to the MeshFilter and boxCollider that is used to display the portal.
          */
 
         /* Ensure the components are attached to the portals */
         if(portalMesh.GetComponent<MeshFilter>() == null) {
             portalMesh.AddComponent<MeshFilter>();
         }
-        if(portalMesh.GetComponent<MeshCollider>() == null) {
-            portalMesh.AddComponent<MeshCollider>();
-        }
         if(backwardsPortalMesh.GetComponent<MeshFilter>() == null) {
             backwardsPortalMesh.AddComponent<MeshFilter>();
         }
-        if(backwardsPortalMesh.GetComponent<MeshCollider>() == null) {
-            backwardsPortalMesh.AddComponent<MeshCollider>();
+        if(portalMesh.GetComponent<BoxCollider>() == null) {
+            portalMesh.AddComponent<BoxCollider>();
+        }
+        if(backwardsPortalMesh.GetComponent<BoxCollider>() == null) {
+            backwardsPortalMesh.AddComponent<BoxCollider>();
         }
 
-        /* Link the meshes to the components of the portals */
+        /* Link the meshes to the meshFilters of the portals */
         portalMesh.GetComponent<MeshFilter>().mesh = mesh;
         backwardsPortalMesh.GetComponent<MeshFilter>().mesh = mesh;
-        portalMesh.GetComponent<MeshCollider>().sharedMesh = mesh;
-        backwardsPortalMesh.GetComponent<MeshCollider>().sharedMesh = mesh;
+
+        /* Resize their boxColliders to match the portal sizes and make them triggers */
+        portalMesh.GetComponent<BoxCollider>().size = new Vector3(width, height, 0);
+        backwardsPortalMesh.GetComponent<BoxCollider>().size = new Vector3(width, height, 0);
+        portalMesh.GetComponent<BoxCollider>().isTrigger = true;
+        backwardsPortalMesh.GetComponent<BoxCollider>().isTrigger = true;
+        portalMesh.GetComponent<BoxCollider>().enabled = true;
+        backwardsPortalMesh.GetComponent<BoxCollider>().enabled = true;
+
     }
 
     public void SetTriggers(float width, float height, float depth, Vector3 offSet) {
