@@ -56,8 +56,6 @@ public class CustomPlayerController : MonoBehaviour {
     private ArrayList expectedMovements;
     /* The amount of distance travelled since the last step tracker update */
     private Vector3 lastStepMovement;
-    /* The position the player was in on the previous update frame */
-    private Vector3 lastSavedPosition;
     /* The direction and magnitude of player's movement input */
     private Vector3 inputVector = Vector3.zero;
     /* How fast a player moves using player inputs */
@@ -251,9 +249,9 @@ public class CustomPlayerController : MonoBehaviour {
         /* Do not update the player if they are in the menu */
         if(!inMenu) {
 
-            /* Handle the conditions that need to be checked after the player moves (teleport, update footstep tracker) */
-            HandlePlayerMovement(true);
-
+            /* Move the player using their given input and the gravity vector. Take into account the player's time rate. */
+            UpdateInputVector();
+            MovePlayer(inputVector*playerTimeRate + GetGravityVector()*playerTimeRate);
 
             /* From the player's current position, execute a step check to see if they need to move along their Y axis */
             /* Do not use steps if the player is in the intro */
@@ -261,44 +259,16 @@ public class CustomPlayerController : MonoBehaviour {
                 StepPlayer();
             }
 
-            /* Move the player using their given input and the gravity vector. Take into account the player's time rate. */
-            UpdateInputVector();
-            MovePlayer(inputVector*playerTimeRate + GetGravityVector()*playerTimeRate);
-            
-            /* Get the tallied movements the player wants to undergo */
-            Rigidbody rigidBody = GetComponent<Rigidbody>();
-            Vector3 movementVector = Vector3.zero;
-            for(int i = 0; i < expectedMovements.Count; i++) {
-                movementVector += (Vector3) expectedMovements[i];
-            }
-
-            /* Use the custom RayTrace function to check if the movements will cause the player to teleport */
-            if(movementVector.magnitude != 0 && movementVector != Vector3.zero) {
-                float remainingDistance = movementVector.magnitude;
-                Vector3 position = lastSavedPosition;
-                Quaternion direction = Quaternion.LookRotation(movementVector.normalized, transform.up);
-                bool temp = false;
-                /* Fire a ray of the player's movement that interracts with the world, including teleporters */
-                Quaternion rotationDifference = RayTrace(ref position, ref direction, ref remainingDistance, ref temp, true, true, false);
-                transform.position = position;
-                transform.rotation = rotationDifference * transform.rotation;
-            }
-
-            /* Freeze the player's rigidbody's velocity */
-            rigidBody.velocity = Vector3.zero;
+            /* Handle any movement that needs to be done */
+            HandlePlayerMovement();
 
             /* Update the step tracker with whatever steps were made since the last FixedUpdate call */
             if(PlayerIsGrounded()) {
-                lastStepMovement += movementVector;
                 playerStepTracker.AddHorizontalStep(Quaternion.Inverse(transform.rotation)*lastStepMovement);
                 lastStepMovement = Vector3.zero;
             }
 
-            /* Empty the expectedMovements array as we are about to add new movements */
-            expectedMovements.Clear();
-
-            /* Save the player's current position as the lastSavedPosition */
-            UpdateSavedPositon();
+            Debug.Log(transform.position.z);
         }
     }
 
@@ -333,8 +303,9 @@ public class CustomPlayerController : MonoBehaviour {
         }
         renderedCameraCount = 0;
         renderedCameraCount2 = 0;*/
-        
-    
+
+
+        Debug.Log(transform.position.z);
         /* Pressing the escape button will send a request to the menu and either open/close the menu */
         MenuKey();
 
@@ -345,13 +316,13 @@ public class CustomPlayerController : MonoBehaviour {
         
         /* Do not update the player if they are in the menu */
         if(!inMenu) {
-
+            
             /* Update the player's inputs and stateTime */
             inputs.UpdateInputs();
             stateTime += Time.deltaTime;
 
             /* Handle the conditions that need to be checked after the player moves (teleport, update footstep tracker) */
-            HandlePlayerMovement(false);
+            HandlePlayerMovement();
 
             /* Check the player's inputs to see if they prime a jump */
             PrimeJumpingValue();
@@ -452,47 +423,66 @@ public class CustomPlayerController : MonoBehaviour {
     
     /* ----------------- Main Movement Function ------------------------------------------------------------- */
 
-    void HandlePlayerMovement(bool fixedUpdate) {
+    void HandlePlayerMovement() {
         /*
-         * Given the player's current position and their last known saved position, cast a vector between 
-         * the two points and use it as a movement vecotr. This means teleport the player if it
-         * collides with a teleporter and update the footstep tracker with the vector.
-         * 
-         * We only add to the step tracker if there was movement because this function can run multiple times 
-         * between physics updates and frame updates, meaning immobile steps could accidentally be sent.
-         * 
-         * The given update boolean indicates what function made the call: true for FixedUpdate, false for Update.
+         * Given the player's current position and the movement vectors to be calculated
+         * in the array expectedMovements, calculate the path the user will move in.
+         * Use the custom rayTrace function so that any movements will be teleported if 
+         * collided with a teleporter.
          */
-         
-        /* Get the vector of the player's movement between now and the last time they were checked */
-        Vector3 movementVector = transform.position - lastSavedPosition;
 
-        /* Check if there was any movement at all */
-        if(movementVector.magnitude != 0 && movementVector != Vector3.zero) {
+        /* Calculate the movement for each vector in the array */
+        Vector3 movementVector = Vector3.zero;
+        for(int i = 0; i < expectedMovements.Count; i++) {
+            movementVector = (Vector3) expectedMovements[i];
             
-            /* Set the values used to fire the ray */
-            float remainingDistance = movementVector.magnitude;
-            Vector3 position = lastSavedPosition;
-            Quaternion direction = Quaternion.LookRotation(movementVector.normalized,  transform.up);
-            bool teleported = false;
-            /* Fire a ray of the player's movement that interracts with the world, including teleporters */
-            Quaternion rotationDifference = RayTrace(ref position, ref direction, ref remainingDistance, ref teleported, true, true, false);
+            /* Check if there was any movement at all */
+            if(movementVector.magnitude != 0 && movementVector != Vector3.zero) {
 
-            /* If the player's movement passes through a teleporter, reposition their transform to reflect the teleport */
-            if(teleported) {
+                /* Set the values used to fire the ray */
+                float remainingDistance = movementVector.magnitude;
+                Vector3 position = transform.position;
+                Quaternion direction = Quaternion.LookRotation(movementVector.normalized, transform.up);
+                bool teleported = false;
+                /* Fire a ray of the player's movement that interracts with the world, including teleporters */
+                Quaternion rotationDifference = RayTrace(ref position, ref direction, ref remainingDistance, ref teleported, true, true, false);
+                /* If the player's movement passes through a teleporter, reposition their transform to reflect the teleport */
+                Debug.Log("-----------NEW HANDLE-------------");
                 transform.position = position;
                 transform.rotation = rotationDifference * transform.rotation;
-                Debug.Log("TELEPORTED PLAYER");
+                if(teleported) {
+                    Debug.Log("TELEPORTED PLAYER");
+                    Debug.Log(" ---> " + transform.position.z);
+
+
+                    //288.9 283.7 283.3 
+
+                    
+                    /*
+                     * 
+                     * for some reason, the first teleport will always position the player too far.
+                     * this is very wierd
+                     * 
+                     */
+
+
+
+
+                }
+            }
+
+            /* When grounded, add any movement to the stepTracker vector */
+            if(PlayerIsGrounded()) {
+                lastStepMovement += movementVector;
             }
         }
 
-        /* When grounded, add any movement to the stepTracker vector */
-        if(PlayerIsGrounded()) {
-            lastStepMovement += movementVector;
-        }
+        /* Empty the expectedMovements array after we have used them */
+        expectedMovements.Clear();
 
-        /* Update the player's lastSavedPosition with it's new position */
-        UpdateSavedPositon();
+        /* Freeze the player's rigidbody's velocity */
+        Rigidbody rigidBody = GetComponent<Rigidbody>();
+        rigidBody.velocity = Vector3.zero;
     }
     
     public void StepPlayer() {
@@ -986,9 +976,6 @@ public class CustomPlayerController : MonoBehaviour {
         /* Set the camera's offset to it's natural default value */
         cameraYOffset = 0;
 
-        /* The "previous frame" had the player starting in it's current position */
-        UpdateSavedPositon();
-
         /* The player starts immobile */
         lastStepMovement = Vector3.zero;
 
@@ -1086,7 +1073,6 @@ public class CustomPlayerController : MonoBehaviour {
             if((1 - currentResetProgress) > delayAudioChange) {
                 playerSoundsScript.TemporaryMixerAdjustment((currentResetProgress)/(1-delayAudioChange));
             }
-            /////////////
 
             /* Update the vignette effect for the camera */
             cameraEffectsScript.UpdatePlayerReset(currentResetTime);
@@ -1160,7 +1146,7 @@ public class CustomPlayerController : MonoBehaviour {
 		/* Don't Update the rates in a menu. Instead, freeze the sounds and the room */
 		if(inMenu){
 			if(roomTimeRate != 1){ startingRoom.UpdateTimeRate(0, 0); }
-        	if(soundsTimeRate != 1){ playerSoundsScript.UpdateTimeRate(0); }
+        	if(soundsTimeRate != 1){ playerSoundsScript.UpdateTimeRate(soundsTimeRate); }
         }
 
 		/* Increment the time rates relative to the player's position */
@@ -1581,15 +1567,7 @@ public class CustomPlayerController : MonoBehaviour {
         
         return headOffset;
     }
-
-    public void UpdateSavedPositon() {
-        /*
-         * Update the last saved position value
-         */
-
-        lastSavedPosition = transform.position;
-    }
-
+    
     private void ArbitraryInput() {
         /*
          * Catch any inputs from the keyboard that are used for debugging or other uses.
@@ -1862,7 +1840,6 @@ public class CustomPlayerController : MonoBehaviour {
                     teleported = true;
                     //Prevent the rayTrace from hitting another trigger after teleporting
                     //rayLayerMask = 0;
-                    //Debug.Log("hit tele");
                 }
 
                 /* Hitting a solid collider will stop the rayTrace where it currently is */

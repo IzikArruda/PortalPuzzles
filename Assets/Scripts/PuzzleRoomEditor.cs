@@ -165,11 +165,8 @@ public class PuzzleRoomEditor : MonoBehaviour {
                 /* Teleport the player to the other side */
                 collider.transform.position -= new Vector3(0, Mathf.Sign(playerFromCenter)*minYTeleport*2, 0);
 
-                /* If the player teleported, update the playerFromCenter value and the player's lastSavedPosition */
+                /* If the player teleported, update the playerFromCenter value */
                 playerFromCenter = collider.transform.position.y - centerPoint.y;
-                if(collider.GetComponent<CustomPlayerController>() != null) {
-                    collider.GetComponent<CustomPlayerController>().UpdateSavedPositon(); 
-                }
             }
 
             /* Have the clouds follow the player, with it being more centered the further the player */
