@@ -419,19 +419,8 @@ public class CustomPlayerController : MonoBehaviour {
         /* Update the camera's rendering layer if needed */
         if(fallingOutWindow) { FallingOutWindowUpdate(true); }
     }
-
-    void OnCollisionEnter(Collision col) {
-        /*
-         * Print whatever the player  collides into
-         */
-
-        Debug.Log(transform.position.z);
-        Debug.Log("player hit " + col.gameObject.name);
-        Debug.Log(col.gameObject.GetComponent<Collider>().enabled);
-        Debug.Log(transform.position.z);
-    }
-
-
+    
+    
     /* ----------------- Main Movement Function ------------------------------------------------------------- */
 
     void HandlePlayerMovement() {

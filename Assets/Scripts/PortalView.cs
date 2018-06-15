@@ -499,9 +499,6 @@ public class PortalView : MonoBehaviour {
         float leftBound = 1;
         float rightBound = 0;
         
-        /* Check the corners of the camera's viewport. If they are within the mesh's boundaries, set the boundary values */
-        GetComponent<BoxCollider>().enabled = true;
-        
         /*
          * Fire a ray from each corner of the camera's view and check if it collides with the portal mesh
          */
@@ -537,10 +534,7 @@ public class PortalView : MonoBehaviour {
             bottomBound = 0;
             rightBound = 1;
         }
-        Debug.Log("----------");
-        
-        /* Set the colliders to triggers to prevent interracting with the player */
-        GetComponent<BoxCollider>().enabled = false;
+
 
         /* Take each vertex that forms this mesh and find it's viewport position on the camera's screen */
         Vector3[] vertices = GetComponent<MeshFilter>().mesh.vertices;
@@ -561,11 +555,9 @@ public class PortalView : MonoBehaviour {
             if(vert.z < 0 || vert.x < 0 || vert.x > 1 || vert.y < 0 || vert.y > 1) {
                 verticesOutsideView.Add(i);
             }
-
-            /* If this vert is fully in the camera's view, add it to the boundsVert list immediatly */
-            else {
-                cameraBoundsVerts.Add(vert);
-            }
+            
+            /* Add each vertex to the boundsVert list */
+            cameraBoundsVerts.Add(vert);
         }
 
         /* If there exists any vertices outside the camera's view, find new vertices to calculate the camera's bounds */
@@ -765,11 +757,7 @@ public class PortalView : MonoBehaviour {
         boundingEdges.xMax = rightBound;
         boundingEdges.yMin = bottomBound;
         boundingEdges.yMax = topBound;
-
-        if(gameObject.name == "12872|Exit Backwards Mesh") {
-            Debug.Log(leftBound + " " + rightBound +  " " +topBound + " " + bottomBound);
-        }
-
+        
         return boundingEdges;
     }
 
