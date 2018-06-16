@@ -523,7 +523,7 @@ public class GlobalRoomController : MonoBehaviour {
         /* Get the waitingRoom linked to the given AttachedRoom */
         for(int i = 0; i < waitingRooms.Length; i++) {
             if(waitingRooms[i].entranceRoom == calledRoom || waitingRooms[i].exitRoom == calledRoom) {
-                Debug.Log("entered waitingRoom: " + i);
+                //////Debug.Log("entered waitingRoom: " + i);
 
                 /* Send a command to each previous waiting and puzzle rooms to change their textures */
                 startingRoom.ChangeTextures();

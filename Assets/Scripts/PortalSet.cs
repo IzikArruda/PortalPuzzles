@@ -103,6 +103,14 @@ public class PortalSet : MonoBehaviour {
         EntrancePortal.portalMesh.GetComponent<PortalView>().portalSetID = ID;
         ExitPortal.portalMesh.GetComponent<PortalView>().portalSetID = ID;
         ExitPortal.backwardsPortalMesh.GetComponent<PortalView>().portalSetID = ID;
+
+
+
+        /* Delete the meshCollider attached to each portal */
+        DestroyImmediate(EntrancePortal.portalMesh.GetComponent<MeshCollider>());
+        DestroyImmediate(EntrancePortal.backwardsPortalMesh.GetComponent<MeshCollider>());
+        DestroyImmediate(ExitPortal.portalMesh.GetComponent<MeshCollider>());
+        DestroyImmediate(ExitPortal.backwardsPortalMesh.GetComponent<MeshCollider>());
     }
 
     void OnEnable() {

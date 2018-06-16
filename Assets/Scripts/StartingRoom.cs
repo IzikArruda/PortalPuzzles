@@ -369,9 +369,7 @@ public class StartingRoom : ConnectedRoom {
          * This is called from an outside function when the window of the room needs to be broken.
          */
         glassBroken = true;
-
-        Debug.Log("Destroy the glass objects");
-
+        
         /* Set the hit windows to be inactive */
         window.windowPieces[4].SetActive(false);
         window.windowPieces[4].GetComponent<DetectPlayerLegRay>().objectType = -1;
@@ -386,7 +384,7 @@ public class StartingRoom : ConnectedRoom {
             ParticleSystem.EmitParams emitParams = new ParticleSystem.EmitParams();
             emitParams.position = windowExit.position + new Vector3(0, window.windowHeight/2f, 0);
             emitParams.applyShapeToPosition = true;
-            particleSystem.Emit(emitParams, 10000);
+            particleSystem.Emit(emitParams, 5000);
         }
 
         /* Put the room into the terrainLayer to ensure the glass particles will render outside */

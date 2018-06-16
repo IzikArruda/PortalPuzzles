@@ -267,8 +267,7 @@ public class CustomPlayerController : MonoBehaviour {
                 playerStepTracker.AddHorizontalStep(Quaternion.Inverse(transform.rotation)*lastStepMovement);
                 lastStepMovement = Vector3.zero;
             }
-
-            ////////////////////Debug.Log(transform.position.z);
+            
         }
     }
 
@@ -304,8 +303,7 @@ public class CustomPlayerController : MonoBehaviour {
         renderedCameraCount = 0;
         renderedCameraCount2 = 0;*/
 
-
-        //////////////////////////////Debug.Log(transform.position.z);
+        
         /* Pressing the escape button will send a request to the menu and either open/close the menu */
         MenuKey();
 
@@ -344,8 +342,8 @@ public class CustomPlayerController : MonoBehaviour {
             playerStepTracker.UpdateStride();
 
             //Draw a line in the camera's forward vector
-            Debug.DrawLine(playerCamera.transform.position,
-                    playerCamera.transform.position + playerCamera.transform.rotation*Vector3.forward*0.5f, Color.green);
+            //////Debug.DrawLine(playerCamera.transform.position,
+            //////        playerCamera.transform.position + playerCamera.transform.rotation*Vector3.forward*0.5f, Color.green);
         }
     }
 
@@ -447,28 +445,8 @@ public class CustomPlayerController : MonoBehaviour {
                 /* Fire a ray of the player's movement that interracts with the world, including teleporters */
                 Quaternion rotationDifference = RayTrace(ref position, ref direction, ref remainingDistance, ref teleported, true, true, false);
                 /* If the player's movement passes through a teleporter, reposition their transform to reflect the teleport */
-                /////////////////////Debug.Log("-----------NEW HANDLE-------------");
                 transform.position = position;
                 transform.rotation = rotationDifference * transform.rotation;
-                if(teleported) {
-                    Debug.Log("TELEPORTED PLAYER");
-                    Debug.Log(" ---> " + transform.position.z);
-
-
-                    //288.9 283.7 283.3 
-
-                    
-                    /*
-                     * 
-                     * for some reason, the first teleport will always position the player too far.
-                     * this is very wierd
-                     * 
-                     */
-
-
-
-
-                }
             }
 
             /* When grounded, add any movement to the stepTracker vector */
@@ -1166,7 +1144,7 @@ public class CustomPlayerController : MonoBehaviour {
                 soundsTimeRate -= Time.deltaTime*soundsTimeChangeMod;
                 /* Prevent the timeRates from going bellow a given limit */
                 if(playerTimeRate < 0.025f) { playerTimeRate = 0.025f; }
-                if(roomTimeRate < 0.025f) { roomTimeRate = 0.025f; }
+                if(roomTimeRate < 0.075f) { roomTimeRate = 0.075f; }
                 if(soundsTimeRate < 0.5f) { soundsTimeRate = 0.5f; }
             }
 			/* Update the rooms with their new timeRates */
@@ -1316,7 +1294,6 @@ public class CustomPlayerController : MonoBehaviour {
 				/*... When leaving the FastFalling state... */
 				if(state == PlayerStates.FastFalling){
 					/*... Causes a "hard fall", forcing the player into a landing animation. */
-					Debug.Log("HARD FALL");
                 	newState = PlayerStates.Landing;
                 	cameraYOffset = 0;
                 }
@@ -1816,7 +1793,7 @@ public class CustomPlayerController : MonoBehaviour {
             /* Check for any collisions from the current position towards the current direction */
             if(Physics.Raycast(position, rotation*Vector3.forward, out hitInfo, distance, rayLayerMask)) {
                 /* When hitting a collider, move the position up to the collision point */
-                Debug.DrawLine(position, position + rotation*Vector3.forward*hitInfo.distance, Color.green);
+                //////Debug.DrawLine(position, position + rotation*Vector3.forward*hitInfo.distance, Color.green);
                 position += rotation * Vector3.forward * hitInfo.distance;
                 distance -= hitInfo.distance;
                 
@@ -1848,7 +1825,7 @@ public class CustomPlayerController : MonoBehaviour {
 
             /* The raytrace hit nothing, so travel along the direction for the remaining distance */
             else {
-                Debug.DrawLine(position, position + rotation*Vector3.forward*distance, Color.white);
+                //////Debug.DrawLine(position, position + rotation*Vector3.forward*distance, Color.white);
                 position += rotation*Vector3.forward*distance;
                 distance = 0;
             }

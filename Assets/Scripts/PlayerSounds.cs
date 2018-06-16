@@ -333,7 +333,7 @@ public class PlayerSounds : MonoBehaviour {
             lastStepClipIndex = clipIndex;
         }
         else{
-        	Debug.Log("Footstep effect cannot play - no available audio sources");
+        	//////Debug.Log("Footstep effect cannot play - no available audio sources");
         }
     }
     
@@ -424,12 +424,12 @@ public class PlayerSounds : MonoBehaviour {
          * Start fading in the outsideSounds audio clip
          */
          
-        musicSourceMuted.volume = 0;
         musicSourceUpgraded.volume = 0;
-        musicSourceMuted.clip = outsideSounds;
-        musicSourceUpgraded.clip = startingMusic;
-        musicSourceMuted.Play();
-        SetMusicFade(-0.45f);
+        musicSourceMuted.volume = 0;
+        musicSourceUpgraded.clip = outsideSounds;
+        musicSourceUpgraded.PlayDelayed(0.5f);
+        SetMusicFade(0.25f);
+        delayedPlayUpgraded = true;
     }
 
     public void PlayIntroMusic() {
@@ -439,9 +439,10 @@ public class PlayerSounds : MonoBehaviour {
          */
 
         /* Have the intro music play after a delay */
-        musicSourceUpgraded.clip = startingMusic;
-        musicSourceUpgraded.PlayDelayed(4.5f);
-        SetMusicFade(0.25f);
+        musicSourceMuted.clip = startingMusic;
+        musicSourceMuted.PlayDelayed(4.5f);
+        delayedPlayMuted = true;
+        SetMusicFade(-0.15f);
     }
 
     public void ForceIntroMusic() {
@@ -449,12 +450,12 @@ public class PlayerSounds : MonoBehaviour {
          * The player has skipped the intro, so force the music to update itself
          */
 
-        musicSourceMuted.volume = 0;
-        musicSourceUpgraded.volume = maxVolume;
+        musicSourceUpgraded.volume = 0;
+        musicSourceMuted.volume = maxVolume;
 
         /* Force the intro song to play if it has not yet started */
-        if(musicSourceUpgraded.time <= 0) {
-            musicSourceUpgraded.Play();
+        if(musicSourceMuted.time <= 0) {
+            musicSourceMuted.Play();
         }
     }
 
