@@ -604,9 +604,10 @@ public class Menu : MonoBehaviour {
          * Create a text for each song used in the game
          */
         string[] songs = { "Erik Satie - Gymnopédie No.1",
-            "Animal Crossing: New Leaf - 5PM (Soulful Evening Remix)",
-            "Chrono Trigger - Black Omen (Orchestral Remix)",
-            "Donkey Kong Country - Aquatic Ambience (iSWM Remix)",
+            "Animal Crossing: New Leaf - 5PM (Remix by JezDayy)",
+            "Chrono Trigger - Black Omen (Remix by Malcolm Robinson Music)",
+            "Donkey Kong Country - Aquatic Ambience (Remix by iSWM)",
+            "Donkey Kong Country 2 - Stickerbrush Symphony (Remix by PPF)",
             "DJ Okawari - A Cup of Coffee",
             "DJ Okawari - Pack Light" };
         float anchorSpacing = 0.0125f;
@@ -1142,7 +1143,7 @@ public class Menu : MonoBehaviour {
             transitionBonus = (Mathf.Cos(transitionBonus*Mathf.PI)+1)/2f;
 
             /* Make the fade out use a sin function */
-            bonus += transitionBonus*20;
+            bonus += transitionBonus*40;
         }
         terrainController.UpdateSunFlareMod(bonus);
     }

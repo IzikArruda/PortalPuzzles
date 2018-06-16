@@ -423,7 +423,7 @@ public class CustomPlayerController : MonoBehaviour {
 
     void HandlePlayerMovement() {
         /*
-         * Given the player's current position and the movement vectors to be calculated
+         * ` the player's current position and the movement vectors to be calculated
          * in the array expectedMovements, calculate the path the user will move in.
          * Use the custom rayTrace function so that any movements will be teleported if 
          * collided with a teleporter.
@@ -481,20 +481,13 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Fire the leg rays to get their lengths for the player's current position */
         FireLegRays();
-        /*
-         * 
-         * Make this thing calculate the length of the legs
-         * 
-         */
 
         /* Run sepperate functions depending on the state */
         if(PlayerIsGrounded()) {
             StepPlayerGrounded();
-            Debug.Log("step grounded");
         }
         else if(PlayerIsAirborn()) {
             StepPlayerAirborn();
-            Debug.Log("step airborn");
         }
         else {
             Debug.Log("Warning: state " + state + " does not handle player stepping");
@@ -579,7 +572,6 @@ public class CustomPlayerController : MonoBehaviour {
         if(currentGroundedCount >= requiredGroundedCount) {
             /* Now that the player has landed, reset them to their expected standing position */
             ChangeState(PlayerStates.Standing);
-            //UpdateLegLengths();
 
             /* Calculate the current foot position of the player by finding the new leg length */
             float newLegLength = 0;
@@ -590,7 +582,7 @@ public class CustomPlayerController : MonoBehaviour {
             }
 
             /* Use the new legLength to make the player undergo a "step" */
-            DoStep(newLegLength + givenLegLength + givenStepHeight);
+            DoStep(newLegLength);
         }
 
         /* If not enough legs are grounded and the player is in the falling state... */
@@ -620,7 +612,22 @@ public class CustomPlayerController : MonoBehaviour {
         currentFootPosition = transform.position - upDirection*(stepLegLength);
 
         /* Move the player's body so that their "legs" are now of proper length */
-        MovePlayer(-transform.position + currentFootPosition + upDirection*(currentLegLength));
+        /*
+         * 
+         * 
+         * 
+         * change the upDirection*_______
+         * 
+         * Do we know that the current player position + stepLegLength reaches the floor 100% of the time?
+         * test this by doing a rayTrace to make sure
+         * 
+         * 
+         * 
+         * 
+         * camera offset can change too but thats not imporatnt right now
+         * 
+         */
+        MovePlayer(-transform.position + currentFootPosition + upDirection*(playerBodyLength/2f + givenLegLength));
 
         /* Revert any movement done to the camera to smooth the players view */
         //currentCameraTransform.transform.position -= upDirection*(currentLegLength - stepLegLength);
@@ -842,7 +849,6 @@ public class CustomPlayerController : MonoBehaviour {
             /* While falling upwards, heavily shorten the legs */
             if(currentYVelocity >= 0) {
                 currentLegLength = givenLegLength*0.1f;
-                ///currentStepHeight = givenStepHeight*0.1f;
             }
             /* While falling downwards, have the leg's length become relative to the players falling speed. 
 			 * This will prevent the player's torso from landing onto an object before their legs 
