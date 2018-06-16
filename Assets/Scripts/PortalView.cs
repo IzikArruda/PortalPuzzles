@@ -228,6 +228,15 @@ public class PortalView : MonoBehaviour {
 
         /* Cut out the scoutCamera's edges so it does not render anything outside the portal's view.
          * If the rect of the portal from the camera's view is very small, do not bother rendering it. */
+        /*
+         * 
+         * 
+         * Sometimes when calling this, we get an error of "Screen position out of view fustrum"
+         * 
+         * 
+         * 
+         * 
+         */
         Rect boundingEdges = CalculateViewingRect(viewingCamera);
         if(boundingEdges.width > 0.001f && boundingEdges.height > 0.001f) {
             SetScissorRect(scoutCamera, boundingEdges);

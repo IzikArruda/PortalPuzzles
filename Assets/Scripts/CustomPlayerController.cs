@@ -481,13 +481,20 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Fire the leg rays to get their lengths for the player's current position */
         FireLegRays();
+        /*
+         * 
+         * Make this thing calculate the length of the legs
+         * 
+         */
 
         /* Run sepperate functions depending on the state */
         if(PlayerIsGrounded()) {
             StepPlayerGrounded();
+            Debug.Log("step grounded");
         }
         else if(PlayerIsAirborn()) {
             StepPlayerAirborn();
+            Debug.Log("step airborn");
         }
         else {
             Debug.Log("Warning: state " + state + " does not handle player stepping");
@@ -543,7 +550,6 @@ public class CustomPlayerController : MonoBehaviour {
             /* Taking a vertical step will add the depth of the step to the step tracker */
             if(PlayerIsGrounded()) {
                 playerStepTracker.AddVerticalStep((currentLegLength - newLegLength));
-
             }
 
             /* Use the new legLength to make the player undergo a "step" */
@@ -573,20 +579,20 @@ public class CustomPlayerController : MonoBehaviour {
         if(currentGroundedCount >= requiredGroundedCount) {
             /* Now that the player has landed, reset them to their expected standing position */
             ChangeState(PlayerStates.Standing);
-            UpdateLegLengths();
+            //UpdateLegLengths();
 
             /* Calculate the current foot position of the player by finding the new leg length */
             float newLegLength = 0;
             for(int i = 0; i < extraLegLenths.Length; i++) {
                 if(extraLegLenths[i] >= 0) {
-                    newLegLength += extraLegLenths[i]/currentGroundedCount;
+                    newLegLength += (extraLegLenths[i])/currentGroundedCount;
                 }
             }
-            
+
             /* Use the new legLength to make the player undergo a "step" */
-            DoStep(newLegLength);
+            DoStep(newLegLength + givenLegLength + givenStepHeight);
         }
-        
+
         /* If not enough legs are grounded and the player is in the falling state... */
         else if(state == PlayerStates.Falling) {
 
@@ -1793,7 +1799,7 @@ public class CustomPlayerController : MonoBehaviour {
             /* Check for any collisions from the current position towards the current direction */
             if(Physics.Raycast(position, rotation*Vector3.forward, out hitInfo, distance, rayLayerMask)) {
                 /* When hitting a collider, move the position up to the collision point */
-                //////Debug.DrawLine(position, position + rotation*Vector3.forward*hitInfo.distance, Color.green);
+                Debug.DrawLine(position, position + rotation*Vector3.forward*hitInfo.distance, Color.green);
                 position += rotation * Vector3.forward * hitInfo.distance;
                 distance -= hitInfo.distance;
                 
@@ -1825,7 +1831,7 @@ public class CustomPlayerController : MonoBehaviour {
 
             /* The raytrace hit nothing, so travel along the direction for the remaining distance */
             else {
-                //////Debug.DrawLine(position, position + rotation*Vector3.forward*distance, Color.white);
+                Debug.DrawLine(position, position + rotation*Vector3.forward*distance, Color.white);
                 position += rotation*Vector3.forward*distance;
                 distance = 0;
             }

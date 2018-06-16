@@ -263,7 +263,7 @@ public class FootstepTracker : MonoBehaviour {
     	 */
 
     	playerSoundsScript.PlayHardLanding();
-        Debug.Log("Play hard landing");
+        //////Debug.Log("Play hard landing");
         
         /* Reset the player momentum (current stride and pastDirections) */
         ResetStrideProgress();
