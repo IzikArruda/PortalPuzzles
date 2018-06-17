@@ -197,6 +197,9 @@ public class CustomPlayerController : MonoBehaviour {
     public bool fallingOutWindow = false;
     private Quaternion savedRotation = Quaternion.Euler(0, 0, 0);
 
+    /* Controls how mnay legs need to be grounded for the player to be considered standing */
+    private int requiredGroundedCount = 1;
+
     /* Debugging trackers */
     public static int renderedCameraCount = 0;
     public static int renderedCameraCount2 = 0;
@@ -259,9 +262,6 @@ public class CustomPlayerController : MonoBehaviour {
                 StepPlayer();
             }
 
-            /* Handle any movement that needs to be done */
-            HandlePlayerMovement();
-
             /* Update the step tracker with whatever steps were made since the last FixedUpdate call */
             if(PlayerIsGrounded()) {
                 playerStepTracker.AddHorizontalStep(Quaternion.Inverse(transform.rotation)*lastStepMovement);
@@ -318,9 +318,6 @@ public class CustomPlayerController : MonoBehaviour {
             /* Update the player's inputs and stateTime */
             inputs.UpdateInputs();
             stateTime += Time.deltaTime;
-
-            /* Handle the conditions that need to be checked after the player moves (teleport, update footstep tracker) */
-            HandlePlayerMovement();
 
             /* Check the player's inputs to see if they prime a jump */
             PrimeJumpingValue();
@@ -420,48 +417,6 @@ public class CustomPlayerController : MonoBehaviour {
     
     
     /* ----------------- Main Movement Function ------------------------------------------------------------- */
-
-    void HandlePlayerMovement() {
-        /*
-         * ` the player's current position and the movement vectors to be calculated
-         * in the array expectedMovements, calculate the path the user will move in.
-         * Use the custom rayTrace function so that any movements will be teleported if 
-         * collided with a teleporter.
-         */
-
-        /* Calculate the movement for each vector in the array */
-        Vector3 movementVector = Vector3.zero;
-        for(int i = 0; i < expectedMovements.Count; i++) {
-            movementVector = (Vector3) expectedMovements[i];
-            
-            /* Check if there was any movement at all */
-            if(movementVector.magnitude != 0 && movementVector != Vector3.zero) {
-
-                /* Set the values used to fire the ray */
-                float remainingDistance = movementVector.magnitude;
-                Vector3 position = transform.position;
-                Quaternion direction = Quaternion.LookRotation(movementVector.normalized, transform.up);
-                bool teleported = false;
-                /* Fire a ray of the player's movement that interracts with the world, including teleporters */
-                Quaternion rotationDifference = RayTrace(ref position, ref direction, ref remainingDistance, ref teleported, true, true, false);
-                /* If the player's movement passes through a teleporter, reposition their transform to reflect the teleport */
-                transform.position = position;
-                transform.rotation = rotationDifference * transform.rotation;
-            }
-
-            /* When grounded, add any movement to the stepTracker vector */
-            if(PlayerIsGrounded()) {
-                lastStepMovement += movementVector;
-            }
-        }
-
-        /* Empty the expectedMovements array after we have used them */
-        expectedMovements.Clear();
-
-        /* Freeze the player's rigidbody's velocity */
-        Rigidbody rigidBody = GetComponent<Rigidbody>();
-        rigidBody.velocity = Vector3.zero;
-    }
     
     public void StepPlayer() {
         /*
@@ -496,13 +451,35 @@ public class CustomPlayerController : MonoBehaviour {
     
     void MovePlayer(Vector3 movementVector) {
         /*
-         * Add the given vector to the player's expectedMovements, which will be handled every FixedUpdate.
-         * Do not add the movement if it has a magnitude of 0.
+         * When recieveing a request to move the player, handle the movement instantly.
          */
+         
+        /* Check if there was any movement at all */
+        if(movementVector.magnitude != 0 && movementVector != Vector3.zero) {
 
-        if(movementVector.magnitude != 0) {
-            expectedMovements.Add(movementVector);
+            /* Set the values used to fire the ray */
+            float remainingDistance = movementVector.magnitude;
+            Vector3 position = transform.position;
+            Quaternion direction = Quaternion.LookRotation(movementVector.normalized, transform.up);
+            bool teleported = false;
+            /* Fire a ray of the player's movement that interracts with the world, including teleporters */
+            Quaternion rotationDifference = RayTrace(ref position, ref direction, ref remainingDistance, ref teleported, true, true, false);
+            /* If the player's movement passes through a teleporter, reposition their transform to reflect the teleport */
+            transform.position = position;
+            transform.rotation = rotationDifference * transform.rotation;
         }
+
+        /* When grounded, add any movement to the stepTracker vector */
+        if(PlayerIsGrounded()) {
+            lastStepMovement += movementVector;
+        }
+
+        /* Empty the expectedMovements array after we have used them */
+        expectedMovements.Clear();
+
+        /* Freeze the player's rigidbody's velocity */
+        Rigidbody rigidBody = GetComponent<Rigidbody>();
+        rigidBody.velocity = Vector3.zero;
     }
 
 
@@ -513,7 +490,6 @@ public class CustomPlayerController : MonoBehaviour {
     	 * Check each leg's distance and whether they can reach down to an object. 
     	 * If enough legs are no longer grounded, attempt to jump and enter the falling state.
     	 */
-        int requiredGroundedCount = 1;
 
         /* Get how many legs are keeping the player "grounded" */
         int currentGroundedCount = 0;
@@ -558,7 +534,6 @@ public class CustomPlayerController : MonoBehaviour {
          * 
          * During the falling state, the player's leg lengths will be drastically changed.
 		 */
-        int requiredGroundedCount = 1;
 
         /* Get how many legs are keeping the player "grounded" */
         int currentGroundedCount = 0;
@@ -598,40 +573,21 @@ public class CustomPlayerController : MonoBehaviour {
     	 * Update the player's footingPosition along with the new
     	 * position for the body and the camera to complete a "step"
          * 
-         * I think this is like this:
-         * The player is always trying to go back to their currentLegLength. The given value
-         * is how long their legs are currently. Therefore, the goal of this function
-         * is to find the differnce in the leg lenths, and move the player so that they go from
-         * stepLegLength to current
+         * Given a step length, get the position the legs end at, and send
+         * a request to move the player upward from the footPosition a 
+         * distance equal to their standing leg length.
      	*/
-        
         Vector3 upDirection = transform.up;
-
 
         /* Place the footPosition using the stepLegLength */
         currentFootPosition = transform.position - upDirection*(stepLegLength);
-
-        /* Move the player's body so that their "legs" are now of proper length */
-        /*
-         * 
-         * 
-         * 
-         * change the upDirection*_______
-         * 
-         * Do we know that the current player position + stepLegLength reaches the floor 100% of the time?
-         * test this by doing a rayTrace to make sure
-         * 
-         * 
-         * 
-         * 
-         * camera offset can change too but thats not imporatnt right now
-         * 
-         */
-        MovePlayer(-transform.position + currentFootPosition + upDirection*(playerBodyLength/2f + givenLegLength));
+        
+        /* Move the player's body so that their "legs" are now of proper length with their body in a standing position */
+        float defaultLegLength = playerBodyLength/2f + givenLegLength;
+        MovePlayer((currentFootPosition - transform.position) + upDirection*defaultLegLength);
 
         /* Revert any movement done to the camera to smooth the players view */
-        //currentCameraTransform.transform.position -= upDirection*(currentLegLength - stepLegLength);
-        cameraYOffset -= (currentLegLength - stepLegLength);
+        cameraYOffset -= (defaultLegLength - stepLegLength);
     }
     
 
@@ -1674,6 +1630,9 @@ public class CustomPlayerController : MonoBehaviour {
         outsideState = true;
         fastFallMod = fastFallModOutside;
         maxYVelocity = 1.5f;
+
+        /* Now the player requires all legs to be grounded to be considered standing */
+        requiredGroundedCount = extraLegs;
 
         /* The player's steps will now be stepping on soft ground */
         currentStepType = 1;
