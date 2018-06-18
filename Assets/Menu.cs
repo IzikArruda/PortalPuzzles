@@ -606,6 +606,7 @@ public class Menu : MonoBehaviour {
         string[] songs = { "Erik Satie - Gymnopédie No.1",
             "Animal Crossing: New Leaf - 5PM (Remix by JezDayy)",
             "Chrono Trigger - Black Omen (Remix by Malcolm Robinson Music)",
+            "Pikmin - The Forest of Hope (Remix by Scruffy)",
             "Donkey Kong Country - Aquatic Ambience (Remix by iSWM)",
             "Donkey Kong Country 2 - Stickerbrush Symphony (Remix by PPF)",
             "DJ Okawari - A Cup of Coffee",
