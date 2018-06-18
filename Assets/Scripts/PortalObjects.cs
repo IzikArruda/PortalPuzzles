@@ -59,7 +59,7 @@ public class PortalObjects : MonoBehaviour {
         }
     }
 
-    public void SetMesh(Mesh mesh, float width, float height) {
+    public void SetMesh(Mesh mesh, float width, float height, float depth) {
         /*
          * Link the given mesh to the MeshFilter and boxCollider that is used to display the portal.
          */
@@ -85,6 +85,8 @@ public class PortalObjects : MonoBehaviour {
         /* Resize their boxColliders to match the portal sizes and make them triggers */
         portalMesh.GetComponent<BoxCollider>().size = new Vector3(width, height, 0);
         backwardsPortalMesh.GetComponent<BoxCollider>().size = new Vector3(width, height, 0);
+        portalMesh.GetComponent<BoxCollider>().center = new Vector3(-width/2f, height/2f, depth);
+        backwardsPortalMesh.GetComponent<BoxCollider>().center = new Vector3(-width/2f, height/2f, depth);
         portalMesh.GetComponent<BoxCollider>().isTrigger = true;
         backwardsPortalMesh.GetComponent<BoxCollider>().isTrigger = true;
         portalMesh.GetComponent<BoxCollider>().enabled = true;
