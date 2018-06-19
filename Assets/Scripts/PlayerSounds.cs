@@ -190,7 +190,16 @@ public class PlayerSounds : MonoBehaviour {
                     delayedPlayMuted = true;
                 }
                 if(!musicSourceUpgraded.isPlaying) {
-                    musicSourceUpgraded.PlayDelayed(2);
+
+                    /* If it is playing the outside sounds, replay the song instantly */
+                    if(musicSourceUpgraded.clip == outsideSounds) {
+                        musicSourceUpgraded.Play();
+                        Debug.Log("replay");
+                    }
+                    /* Play the upgraded song after a delay of waiting */
+                    else {
+                        musicSourceUpgraded.PlayDelayed(2);
+                    }
                     delayedPlayUpgraded = true;
                 }
             }
@@ -228,7 +237,7 @@ public class PlayerSounds : MonoBehaviour {
 		/* VolumePowerRatio meassures how loud the footstep effect will be */
 		float minTime = 0.4f;
         float maxTime = 1.1f;
-        float maxVolumeLoss = 0.7f;
+        float maxVolumeLoss = 0.4f;
         volumeRatio = 1 - maxVolumeLoss;
         if(lastStepTime < minTime) {
             volumeRatio += 0;
@@ -374,14 +383,14 @@ public class PlayerSounds : MonoBehaviour {
 		 */
 
         /* fade out the music */
-        musicFadeMuted = -0.75f;
-        musicFadeUpgraded = -0.75f;
+        musicFadeMuted = -0.4f;
+        musicFadeUpgraded = -0.4f;
 
         /* Start and fade in the FastFalling state audio */
         fallingSource.clip = fallingClip;
 		fallingSource.volume = 0;
         fallingSource.loop = true;
-        fallingFade = 0.025f;
+        fallingFade = 0.075f;
         fallingSource.Play();
 	}
 	
@@ -508,7 +517,7 @@ public class PlayerSounds : MonoBehaviour {
          */
 
         if(fade != 0){
-			source.volume = source.volume + maxVolume*fadeRate*fade;
+			source.volume = source.volume + maxVolume*fadeRate*fade*Time.deltaTime*45;
 			
 			/* Stop the fading if the sources reaches max volume or is fully muted */
 			if(source.volume <= 0){

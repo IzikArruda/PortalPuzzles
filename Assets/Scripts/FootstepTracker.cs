@@ -270,16 +270,6 @@ public class FootstepTracker : MonoBehaviour {
         ResetFootTiming();
         ResetStepBuffer();
     }
-
-	public void PlayJump(){
-		/*
-		 * Runs when the player undergoes a jump. Play the sound
-		 * of footsteps, both short and high, one with a small delay.
-		 */
-		
-		playerSoundsScript.PlayFootstep(0, 0, 0, 0, stepType);
-        playerSoundsScript.PlayFootstep(0, 0, 0, 0, stepType);
-	}
     
     public void ChangeStepIndex(int newType) {
         /*
