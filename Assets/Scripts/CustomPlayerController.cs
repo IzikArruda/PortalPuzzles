@@ -948,7 +948,7 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Set the camera's rendering distance to reflect the fact it's outside */
         playerCamera.farClipPlane = cameraFarClippingPlane;
-        playerCamera.nearClipPlane = 0.2f;
+        playerCamera.nearClipPlane = 0.4f;
 
         /* Place the player to be standing on the top of the startingRoom's stairs.
          * Add the leg gap distance so the player is not stepping on the stairs. */
