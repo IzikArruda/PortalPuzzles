@@ -97,9 +97,10 @@ public class PlayerSounds : MonoBehaviour {
     /* When the player is in the outside state, handle certain sounds differently, such as playing upgraded music instead of muted */
     private bool outside = false;
 
-    /* Used to prevent the songs from constantly sending a PlayDelay every update call */
-    private bool delayedPlayMuted = false;
-    private bool delayedPlayUpgraded = false;
+    /* Used to prevent the songs from constantly sending a PlayDelay every update call.
+     * Start them as true to prevent them from playing during the loading startup. */
+    private bool delayedPlayMuted = true;
+    private bool delayedPlayUpgraded = true;
 
     /* Track what songs have been previously played. This will ensure the player hears each song atleast once */
     private bool[] previouslyPlayed;
@@ -171,37 +172,51 @@ public class PlayerSounds : MonoBehaviour {
         /* If the music ever stops playing, have it start over again */
         if((!musicSourceMuted.isPlaying && musicSourceMuted.time == 0) || (!musicSourceUpgraded.isPlaying && musicSourceUpgraded.time == 0)) {
             
-            /* Make sure this function was not already called */
+            /* Make sure a song is now already about to be played */
             if(delayedPlayMuted == false || delayedPlayUpgraded == false) {
                 
-                /* If we are using upgraded music, select a new song */
-                if(outside && delayedPlayUpgraded == false) {
+                /* If we are outside and the upgraded music stops, start playing a new song */
+                if(outside) {
+                    if(!musicSourceUpgraded.isPlaying && delayedPlayUpgraded == false) {
+
+                        /* Get the index of a new clip/song */
+                        int songIndex = GetNewSongIndex();
+
+                        /* Play the clip and it's upgraded version using the two musicSources*/
+                        musicSourceMuted.clip = musicClipsMuted[songIndex];
+                        musicSourceUpgraded.clip = musicClipsUpgraded[songIndex];
+                        musicSourceMuted.PlayDelayed(2);
+                        musicSourceUpgraded.PlayDelayed(2);
+                        /* Set both booleans to true to prevent recalling a song change */
+                        delayedPlayUpgraded = true;
+                        delayedPlayMuted = true;
+
+                        Debug.Log("reset while outside");
+                    }
+                }
+
+                /* If the muted music stops, play a new song */
+                else if(!musicSourceMuted.isPlaying && delayedPlayMuted == false) {
+
                     /* Get the index of a new clip/song */
                     int songIndex = GetNewSongIndex();
 
                     /* Play the clip and it's upgraded version using the two musicSources*/
                     musicSourceMuted.clip = musicClipsMuted[songIndex];
                     musicSourceUpgraded.clip = musicClipsUpgraded[songIndex];
-                }
-
-                /* Set the boolean to track that we have started to play new songs on a delay */
-                if(!musicSourceMuted.isPlaying) {
                     musicSourceMuted.PlayDelayed(2);
-                    delayedPlayMuted = true;
-                }
-                if(!musicSourceUpgraded.isPlaying) {
-
-                    /* If it is playing the outside sounds, replay the song instantly */
-                    if(musicSourceUpgraded.clip == outsideSounds) {
-                        musicSourceUpgraded.Play();
-                        Debug.Log("replay");
-                    }
-                    /* Play the upgraded song after a delay of waiting */
-                    else {
-                        musicSourceUpgraded.PlayDelayed(2);
-                    }
+                    musicSourceUpgraded.PlayDelayed(2);
+                    /* Set both booleans to true to prevent recalling a song change */
                     delayedPlayUpgraded = true;
+                    delayedPlayMuted = true;
+
+                    Debug.Log("reset while inside");
                 }
+            }
+
+            /* If the upgraded music has stopped playing the outside background sounds, make it loop again */
+            if(!musicSourceUpgraded.isPlaying && musicSourceUpgraded.clip == outsideSounds && musicSourceUpgraded.volume > 0) {
+                musicSourceUpgraded.Play();
             }
         }
 
