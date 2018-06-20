@@ -121,16 +121,16 @@ public class PuzzleRoomEditor : MonoBehaviour {
          */
 
         if(updateWalls) {
-
-            /* Update the material used by this room's walls */
-            UpdateMaterial();
-
+            
             /* Move the attached rooms into their given positions and link them to this room */
             UpdateAttachedRooms();
 
             /* Calculate the new positionnal stats of this puzzleRoom */
             UpdateSizes();
-            
+
+            /* Update the material used by this room's walls */
+            UpdateMaterial();
+
             /* Ensure the walls and clouds that form the room are properly created and positioned */
             CreateWalls();
             CreateClouds();
@@ -154,8 +154,12 @@ public class PuzzleRoomEditor : MonoBehaviour {
          * If the distance is more than minYClouds, have the clouds follow the player.
          * If the distance is more than minYTeleport, teleport the player from top to bottom or vice versa.
          */
+
         if(collider.tag == "Player") {
+
+            /* HHave the height of the center of each room be identical (y = 0) */
             Vector3 centerPoint = (puzzleRoomEntrancePoint.position + puzzleRoomExitPoint.position)/2f;
+            centerPoint = new Vector3(centerPoint.x, 0, centerPoint.z);
             //Get the distance that the player is from the room's center
             float playerFromCenter = collider.transform.position.y - centerPoint.y;
 
@@ -323,7 +327,12 @@ public class PuzzleRoomEditor : MonoBehaviour {
         wallMaterial.SetTextureScale("_MainTex", mainScale);
         wallMaterial.SetTextureScale("_SecondTex", secondScale);
         wallMaterial.SetTextureScale("_RepeatingNoiseTex", noiseScale);
-        
+
+        /* Set the parameters of the wall's shader that requires variables set to this room */
+        wallMaterial.SetFloat("_TeleportHeight", minYTeleport);
+        Debug.Log(minYTeleport);
+
+
         /* Make sure the blocker material is properly created */
         cloudBlockerMaterial = new Material(Shader.Find("Unlit/Color"));
         cloudBlockerMaterial.color = Color.black;
