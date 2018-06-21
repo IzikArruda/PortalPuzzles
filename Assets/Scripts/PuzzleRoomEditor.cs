@@ -103,6 +103,10 @@ public class PuzzleRoomEditor : MonoBehaviour {
     public Texture2D marbleDarkTextureAlt;
     public Texture2D pillarTextureAlt;
 
+    /* The color tint that gets appleid to the walls of the room. Ranges are from [0, 1] */
+    public Vector3 wallColorTint;
+    public bool updateWallColor;
+
 
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
 
@@ -119,6 +123,12 @@ public class PuzzleRoomEditor : MonoBehaviour {
         /*
          * Update the walls that form the puzzle room
          */
+
+        /* Update the textures on the wall. This is used for debugging and finding a good color. */
+        if(updateWallColor) {
+            wallMaterial.SetFloat("_TeleportHeight", minYTeleport);
+            wallMaterial.SetVector("_RoomColorTint", wallColorTint);
+        }
 
         if(updateWalls) {
             
@@ -330,7 +340,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
 
         /* Set the parameters of the wall's shader that requires variables set to this room */
         wallMaterial.SetFloat("_TeleportHeight", minYTeleport);
-        Debug.Log(minYTeleport);
+        wallMaterial.SetVector("_RoomColorTint", wallColorTint);
 
 
         /* Make sure the blocker material is properly created */
