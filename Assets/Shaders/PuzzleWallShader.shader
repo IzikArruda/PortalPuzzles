@@ -37,7 +37,7 @@
 			UNITY_INITIALIZE_OUTPUT(Input, o);
 			o.gradientUV = v.texcoord3.y;
 			o.gradPrioritySecondTex = v.texcoord3.x;
-			o.vertYPos = v.vertex.y;
+			o.vertYPos = mul(unity_ObjectToWorld, v.vertex).y;
 		}
 
 		/* Remove the lighting from the texture */
@@ -50,22 +50,12 @@
 
 		fixed3 AdjustColorTint(fixed3 tex, float vertHeight, float teleHeight, fixed3 colorTint) {
 			/* 
-			 * Adjust the color tint of the given fixed3 texture relative to the given values. 
-			 * If an empty colorTint is given, the texture will not be grayscalled or tinted.
+			 * Adjust the color tint of the given fixed3 texture relative to the given values.
 			 */
 			
-			/* If the given colorTint is set to 0, ie there is no tint added, set hasTint to 0. Else, set to 1 */
-			fixed hasTint = saturate(saturate(sign(colorTint.r)) + saturate(sign(colorTint.g)) + saturate(sign(colorTint.b)));
-
-			/* If the value goes above 1, make it retrack by it's overflow amount */
-			fixed invertAmount = abs(vertHeight) / teleHeight;
-			invertAmount = saturate(invertAmount) - saturate(invertAmount - 1);
-
-			/* Force the texture to be black and white */
-			fixed avg = (tex.r + tex.g + tex.b) / 3.0;
-			tex.r = avg*hasTint + tex.r*(1 - hasTint);
-			tex.g = avg*hasTint + tex.g*(1 - hasTint);
-			tex.b = avg*hasTint + tex.b*(1 - hasTint);
+			/* If the height value goes above 1, make it retrack by it's overflow amount */
+			fixed heightAmount = abs(vertHeight) / teleHeight;
+			heightAmount = saturate(heightAmount) - saturate(heightAmount - 1);
 
 			/* Update the color tint to use part of the walls texture */
 			colorTint.x = tex.r + colorTint.r;
@@ -73,9 +63,9 @@
 			colorTint.z = tex.b + colorTint.z;
 
 			/* Depending on the height, use a portion of the wall's default texture and the tinted texture */
-			tex.r = (tex.r*invertAmount + colorTint.r*(1 - invertAmount))*hasTint + tex.r*(1 - hasTint);
-			tex.g = (tex.g*invertAmount + colorTint.y*(1 - invertAmount))*hasTint + tex.g*(1 - hasTint);
-			tex.b = (tex.b*invertAmount + colorTint.z*(1 - invertAmount))*hasTint + tex.b*(1 - hasTint);
+			tex.r = tex.r*heightAmount + colorTint.r*(1 - heightAmount);
+			tex.g = tex.g*heightAmount + colorTint.y*(1 - heightAmount);
+			tex.b = tex.b*heightAmount + colorTint.z*(1 - heightAmount);
 
 			return tex;
 		}

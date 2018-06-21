@@ -609,7 +609,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
         marbleEdgeMaterial.SetTexture("_SecondTex", marbleDarkTextureAlt);
 
         /* Set the colorTint of the walls to be empty once we change textures */
-        wallMaterial.SetVector("_RoomColorTint", Vector3.left);
+        wallMaterial.SetVector("_RoomColorTint", Vector3.zero);
     }
 
 
