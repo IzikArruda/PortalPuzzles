@@ -48,28 +48,34 @@
 			return c;
 		}
 
-		/* Adjust the color tint of the given fixed3 texture relative to the given values */
-		fixed3 AdjustColorTint(fixed3 tex, float vertHeight, float teleHeight, float3 colorTint) {
+		fixed3 AdjustColorTint(fixed3 tex, float vertHeight, float teleHeight, fixed3 colorTint) {
+			/* 
+			 * Adjust the color tint of the given fixed3 texture relative to the given values. 
+			 * If an empty colorTint is given, the texture will not be grayscalled or tinted.
+			 */
 			
-			float invertAmount = abs(vertHeight) / teleHeight;
+			/* If the given colorTint is set to 0, ie there is no tint added, set hasTint to 0. Else, set to 1 */
+			fixed hasTint = saturate(saturate(sign(colorTint.r)) + saturate(sign(colorTint.g)) + saturate(sign(colorTint.b)));
+
 			/* If the value goes above 1, make it retrack by it's overflow amount */
+			fixed invertAmount = abs(vertHeight) / teleHeight;
 			invertAmount = saturate(invertAmount) - saturate(invertAmount - 1);
 
 			/* Force the texture to be black and white */
-			float avg = (tex.r + tex.g + tex.b) / 3.0;
-			tex.r = avg;
-			tex.g = avg;
-			tex.b = avg;
+			fixed avg = (tex.r + tex.g + tex.b) / 3.0;
+			tex.r = avg*hasTint + tex.r*(1 - hasTint);
+			tex.g = avg*hasTint + tex.g*(1 - hasTint);
+			tex.b = avg*hasTint + tex.b*(1 - hasTint);
 
 			/* Update the color tint to use part of the walls texture */
-			colorTint.x = tex.r + colorTint.x;
+			colorTint.x = tex.r + colorTint.r;
 			colorTint.y = tex.g + colorTint.y;
 			colorTint.z = tex.b + colorTint.z;
 
 			/* Depending on the height, use a portion of the wall's default texture and the tinted texture */
-			tex.r = tex.r*invertAmount + colorTint.x*(1 - invertAmount);
-			tex.g = tex.g*invertAmount + colorTint.y*(1 - invertAmount);
-			tex.b = tex.b*invertAmount + colorTint.z*(1 - invertAmount);
+			tex.r = (tex.r*invertAmount + colorTint.r*(1 - invertAmount))*hasTint + tex.r*(1 - hasTint);
+			tex.g = (tex.g*invertAmount + colorTint.y*(1 - invertAmount))*hasTint + tex.g*(1 - hasTint);
+			tex.b = (tex.b*invertAmount + colorTint.z*(1 - invertAmount))*hasTint + tex.b*(1 - hasTint);
 
 			return tex;
 		}
@@ -77,15 +83,15 @@
 		/* Use the UV's X value to control the texture of the surface */
 		void surf(Input IN, inout SurfaceOutput o) {
 			//The UV scale of the gradient. Larger value means the gradient changes faster.
-			float gradScale;
+			fixed gradScale;
 			//The power of the gradient's direct value (default 0). 1 is only use grad, -1 is never use grad.
-			float gradPriority;
+			fixed gradPriority;
 			fixed3 gradient;
 
 			/* Adjust the main texture to use the gradient to make it seem not as obviously tilled */
 			/* Gradient controls how hard and often the re-scaled version of the texture is used */
 			fixed3 tex1 = AdjustColorTint(tex2D(_MainTex, IN.uv_MainTex), IN.vertYPos, _TeleportHeight, _RoomColorTint);
-			float largerTexUVScale = -0.2;
+			fixed largerTexUVScale = -0.2;
 			gradPriority = 0.15;
 			gradScale = 2;
 			gradient = saturate(tex2D(_RepeatingNoiseTex, gradScale*IN.uv3_RepeatingNoiseTex) + gradPriority);
@@ -100,7 +106,7 @@
 			tex2 = tex1*saturate(1 - (gradient)) + tex2*saturate(gradient);
 
 			/* Depending on gradientUV, blend between the mainTex and SecondTex */
-			float blend = saturate(IN.gradientUV);
+			fixed blend = saturate(IN.gradientUV);
 			o.Albedo = blend*tex1 + (1 - blend)*tex2;
 		}
 		ENDCG
