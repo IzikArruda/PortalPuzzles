@@ -114,7 +114,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
         /*
 		 * force the walls to update on startup. 
 		 */
-		
+         
         updateWalls = true;
         Update();
     }
