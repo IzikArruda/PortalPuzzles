@@ -54,7 +54,8 @@
 			 */
 			
 			/* If the height value goes above 1, make it retrack by it's overflow amount */
-			fixed heightAmount = abs(vertHeight) / teleHeight;
+			fixed tintlessRatio = 2.0;
+			fixed heightAmount = saturate(tintlessRatio*(abs(vertHeight) / teleHeight));
 			heightAmount = saturate(heightAmount) - saturate(heightAmount - 1);
 
 			/* Update the color tint to use part of the walls texture */

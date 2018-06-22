@@ -142,7 +142,7 @@ public class CustomPlayerCameraEffects : MonoBehaviour {
 
         /* Set the intensity relative to the player speed */
         else if(playerState == PlayerStates.FastFalling) {
-            intensity = 0.15f*velocityRatio;
+            intensity = 0.45f*velocityRatio;
         }
 
         /* Set the intensity depending on the stateTime */
@@ -177,7 +177,7 @@ public class CustomPlayerCameraEffects : MonoBehaviour {
 
         /* Set the intensity relative to the player speed */
         if(playerState == PlayerStates.FastFalling) {
-            intensity = 3*velocityRatio;
+            intensity = 8*velocityRatio;
         }
 
         /* Keep the intensity at a set value for the duration of the landing state */

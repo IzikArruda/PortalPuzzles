@@ -654,8 +654,9 @@ public class Menu : MonoBehaviour {
         mainPanel.anchorMin = new Vector2(0, 0);
         mainPanel.anchorMax = new Vector2(1, 1);
         
-        /* Set the color so that the panel is invisible */
+        /* Set the color and remove the image so that the panel is invisible */
         mainPanel.GetComponent<Image>().color = new Color(0, 0, 0, 0);
+
     }
 
     void SetupVideoPanel() {

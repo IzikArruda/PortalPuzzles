@@ -380,15 +380,6 @@ public class CustomPlayerController : MonoBehaviour {
         else if(PlayerIsInIntro()) {
             /* All the intro states use the same camera placement function */
             FireCameraRayInIntroState();
-            /* Depending on the player's current state in the intro, re-position the camera */
-            //if(state == PlayerStates.InIntro || state == PlayerStates.LoadingIntro) {
-                /* While loading and in the intro, leave the camera immobile */
-            //    AnimatedCameraInIntro();
-            //}
-            //else if(state == PlayerStates.LeavingIntro) {
-                /* Move the camera back to the player's default camera position, then give them control */
-            //    AnimatedCameraLeavingIntro();
-            //}
         }
         else {
             /* Any other state simply places the camera into it's default position */
@@ -732,7 +723,7 @@ public class CustomPlayerController : MonoBehaviour {
     	 * the player speed ti signify how fast they are falling.
     	 */
         float speedRatio = RatioWithinRange(maxYVelocity, maxYVelocity*fastFallMod, -currentYVelocity);
-        float r = speedRatio*0.2f;
+        float r = speedRatio*0.5f;
 
         /* Put the camera into it's normal resting position */
         AdjustCameraPosition(GetCameraHeight());
@@ -740,7 +731,6 @@ public class CustomPlayerController : MonoBehaviour {
         /* Apply a random rotation effect to the camera */
         currentCameraTransform.rotation *= Quaternion.Euler(
                 Random.Range(-r, r), Random.Range(-r, r), Random.Range(-r, r));
-        //playerCamera.transform.rotation = currentCameraTransform.rotation;
     }
     
     private void FireCameraRayInIntroState() {
