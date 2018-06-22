@@ -105,7 +105,6 @@ public class PuzzleRoomEditor : MonoBehaviour {
 
     /* The color tint that gets appleid to the walls of the room. Ranges are from [0, 1] */
     public Vector3 wallColorTint;
-    public bool updateWallColor;
 
 
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
@@ -123,13 +122,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
         /*
          * Update the walls that form the puzzle room
          */
-
-        /* Update the textures on the wall. This is used for debugging and finding a good color. */
-        if(updateWallColor) {
-            wallMaterial.SetFloat("_TeleportHeight", minYTeleport);
-            wallMaterial.SetVector("_RoomColorTint", wallColorTint);
-        }
-
+         
         if(updateWalls) {
             
             /* Move the attached rooms into their given positions and link them to this room */
