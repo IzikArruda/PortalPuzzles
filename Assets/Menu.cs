@@ -537,7 +537,7 @@ public class Menu : MonoBehaviour {
         int panelEnum = (int) Panels.Credit;
         RectTransform mainPanel = panelRects[panelEnum];
         mainPanel.name = "Credit panel"; 
-        mainPanel.gameObject.SetActive(false);
+
 
         /* The main panel covers half the X width and all the Y height */
         panelsWidth[panelEnum] = 0.5f;
@@ -670,7 +670,7 @@ public class Menu : MonoBehaviour {
          * Setup the video panel
          */
         videoPanel.name = "Video panel";
-        videoPanel.gameObject.SetActive(false);
+
         /* Set the anchors so it's centered on the right wall */
         videoPanel.anchorMin = new Vector2(1, 0.5f);
         videoPanel.anchorMax = new Vector2(1, 0.5f);
@@ -834,7 +834,7 @@ public class Menu : MonoBehaviour {
         int panelEnum = (int) Panels.Sens;
         RectTransform sensPanel = panelRects[panelEnum];
         sensPanel.name = "Sensitivity panel";
-        sensPanel.gameObject.SetActive(false);
+
 
         /* Set the anchors so it's position based in the bottom right corner */
         sensPanel.anchorMin = new Vector2(1, 0);
@@ -1596,6 +1596,9 @@ public class Menu : MonoBehaviour {
             }
             dropdownRect.anchoredPosition = new Vector2((optionPanelHeight/2f)*wdithRatio/2f, 0);
             dropdownRect.sizeDelta = new Vector2((optionPanelHeight/2f)*wdithRatio, 0);
+
+            /* Update the dropdown template's height to reflect the new height of the window */
+            dropdownRect.GetChild(2).GetComponent<RectTransform>().sizeDelta = new Vector3(0, screenHeight/2f);
 
             /* Update the size of the content & items of the resolution dropdown list */
             float optionHeight = panelRect.GetComponent<RectTransform>().sizeDelta.y;
@@ -2643,18 +2646,16 @@ public class Menu : MonoBehaviour {
                     newState == MenuStates.VideoToMain) {
                 ResetRemainingTime(newState);
                 /* Entering the MainToVideo or MainToSens states will set their panels to be active */
-                if(newState == MenuStates.MainToVideo) { panelRects[(int) Panels.Video].gameObject.SetActive(true); }
-                if(newState == MenuStates.MainToSens) { panelRects[(int) Panels.Sens].gameObject.SetActive(true); }
 
                 /* Handle the credits panel's state depending on the outside state and menu state */
                 if(isOutside) {
                     /* Entering the Video or Sensitivity state will disable the credits panel */
                     if(newState == MenuStates.Video || newState == MenuStates.Sensitivity) {
-                        panelRects[(int) Panels.Credit].gameObject.SetActive(false);
+
                     }
                     /* Entering a transition state from the Video or Sens states will re-enable the panel */
                     else if(newState == MenuStates.VideoToMain || newState == MenuStates.SensToMain) {
-                        panelRects[(int) Panels.Credit].gameObject.SetActive(true);
+
                     }
                 }
 
@@ -2688,12 +2689,12 @@ public class Menu : MonoBehaviour {
             
             /* Leaving the VideoToMain state will set the video panel to be inactive */
             else if(state == MenuStates.VideoToMain) {
-                panelRects[(int) Panels.Video].gameObject.SetActive(false);
+
             }
 
             /* Leaving the SensToMain state will set the sensitivity panel to be inactive */
             else if(state == MenuStates.SensToMain) {
-                panelRects[(int) Panels.Sens].gameObject.SetActive(false);
+
             }
             
             /* Change the current state */
@@ -2842,7 +2843,6 @@ public class Menu : MonoBehaviour {
          */
 
         isOutside = true;
-        panelRects[(int) Panels.Credit].gameObject.SetActive(true);
     }
 
     /* ----------- Mouse Enter/Hover Functions ------------------------------------------------------------- */
@@ -2892,7 +2892,7 @@ public class Menu : MonoBehaviour {
         /*
          * Clicking on the Video button will change from the main state to the Video state
          */
-
+         
         if(IsButtonClickable(Buttons.Video)) {
             /* Play a mouse click sound when selecting the button in the right state */
             if(state == MenuStates.Main || state == MenuStates.Video) {
@@ -2908,7 +2908,6 @@ public class Menu : MonoBehaviour {
             else if(state == MenuStates.Video) {
                 ChangeState(MenuStates.VideoToMain);
             }
-
         }
     }
 
