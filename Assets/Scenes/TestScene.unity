@@ -391,6 +391,7 @@ MonoBehaviour:
   loadingBox2: {fileID: 561887772}
   loadingBox3: {fileID: 1889782251}
   loadingBox4: {fileID: 199233650}
+  test: {fileID: 0}
 --- !u!4 &724651303
 Transform:
   m_ObjectHideFlags: 0

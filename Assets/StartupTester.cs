@@ -10,6 +10,9 @@ public class StartupTester : MonoBehaviour {
     /* The camera used to render the scene */
     public Camera sceneCamera;
 
+    /* The coroutine that loads the game */
+    AsyncOperation async;
+
     /* The boxes that are animated during the loading scene */
     public GameObject loadingBox1;
     public GameObject loadingBox2;
@@ -43,9 +46,12 @@ public class StartupTester : MonoBehaviour {
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
 
     void Start() {
-
+        
         /* Track when the scene has loaded */
         startTime = Time.realtimeSinceStartup;
+
+        /* Start loading the new scene */
+        StartCoroutine(LoadGame());
     }
 
     void Update() {
@@ -55,18 +61,23 @@ public class StartupTester : MonoBehaviour {
 
         /* Check if we want to load the scene. This is used for debugging as we want to stay on this screen */
         if(Input.GetKeyDown("f")) {
-            /* Start loading the new scene */
-            //StartCoroutine(LoadGame());
             endTime = Time.realtimeSinceStartup;
         }
 
         /* Position the loading boxes into their default position, relative to the screen size */
         PositionBoxes();
-
+        
+        /* Update the scale of the inner boxes to represent the progress of the loading */
+        UpdateLoadingProgress();
 
         /* Once the scene has finished loading, animate the boxes off-screen */
         if(endTime > 0) {
             AnimateBoxesIntro(1 - ((Time.realtimeSinceStartup - endTime) / endingAnimationTiming));
+
+            /* Activate the scene and leave this loadingScreen once we are done the ending animation */
+            if(Time.realtimeSinceStartup - endTime > endingAnimationTiming) {
+                async.allowSceneActivation = true;
+            }
         }
 
         /* Make sure the boxes start off-screen and animate into view */
@@ -101,6 +112,40 @@ public class StartupTester : MonoBehaviour {
         loadingBox2.transform.position = bottomRight + new Vector3(-3, 1, 0);
         loadingBox3.transform.position = bottomRight + new Vector3(-5, 1, 0);
         loadingBox4.transform.position = bottomRight + new Vector3(-7, 1, 0);
+    }
+
+    void UpdateLoadingProgress() {
+        /*
+         * Resize the inner boxes of each loading box relative to the progress of the scene loading.
+         * 
+         * Through multiple test while loading the game, it was discovered that the game spends 
+         * most of it's loading time before the ranges of [0.013, 0.0145]. Therefore, adjust the
+         * progress to use scale around that range.
+         */
+        float progress = RangeBetween(async.progress, 0.013f, 0.0145f);
+        int boxCount = 4;
+        float maxboxSize = 0.8f;
+        float boxSize;
+        
+        /* Set the size of the fourth box */
+        boxSize = maxboxSize*(1 - RangeBetween(progress, (0f/boxCount), (1f/boxCount)));
+        Debug.Log(boxSize);
+        loadingBox1.transform.GetChild(0).transform.localScale = new Vector3(boxSize, boxSize, 1);
+
+        /* Set the size of the third box */
+        boxSize = maxboxSize*(1 - RangeBetween(progress, (1f/boxCount), (2f/boxCount)));
+        Debug.Log(boxSize);
+        loadingBox2.transform.GetChild(0).transform.localScale = new Vector3(boxSize, boxSize, 1);
+
+        /* Set the size of the second box */
+        boxSize = maxboxSize*(1 - RangeBetween(progress, (2f/boxCount), (3f/boxCount)));
+        Debug.Log(boxSize);
+        loadingBox3.transform.GetChild(0).transform.localScale = new Vector3(boxSize, boxSize, 1);
+
+        /* Set the size of the first box */
+        boxSize = maxboxSize*(1 - RangeBetween(progress, (3f/boxCount), (4f/boxCount)));
+        Debug.Log(boxSize);
+        loadingBox4.transform.GetChild(0).transform.localScale = new Vector3(boxSize, boxSize, 1);
     }
 
     void AnimateBoxesIntro(float timeFrame) {
@@ -230,14 +275,22 @@ public class StartupTester : MonoBehaviour {
 
     IEnumerator LoadGame() {
         /*
-         * Used to start a coroutine of loading the game's scene
+         * Used to start a coroutine of loading the game's scene. 
          */
-        AsyncOperation async = SceneManager.LoadSceneAsync("TestArea");
-
-        /* Wait for the scene to be loaded before starting the ending animation by setting endTime */
+        async = SceneManager.LoadSceneAsync("TestArea");
+        async.allowSceneActivation = false;
+        
+        /* The game is still loading the scene */
         while(!async.isDone) {
-            endTime = Time.realtimeSinceStartup;
-            yield return new WaitForSeconds(endingAnimationTiming + 0.25f);
+
+            /* Check if the loading has finished */
+            if(async.progress >= 0.9f) {
+                /* Set the endTime value to start preparing to finish the scene loading */
+                if(endTime == -1) {
+                    endTime = Time.realtimeSinceStartup;
+                }
+            }
+
             yield return null;
         }
     }
@@ -255,5 +308,17 @@ public class StartupTester : MonoBehaviour {
         sinValue = (Mathf.Sin(Mathf.PI*2*offset + Mathf.PI*2*rate) + 1) / 2f;
 
         return sinValue;
+    }
+
+    float RangeBetween(float value, float min, float max) {
+        /*
+         * Given a value and a min and max, return between [0, 1] whether the value is close to
+         * the minimum (0) or close to the maximum (1). 
+         */
+        float range;
+
+        range = Mathf.Clamp((value - min) / (max - min), 0, 1);
+
+        return range;
     }
 }
