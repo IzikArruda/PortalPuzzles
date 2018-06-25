@@ -54,7 +54,6 @@ public class PlayerSounds : MonoBehaviour {
 
 
     /* --- Audio Clips ------------------- */
-    public AudioClip[] stepClips;
     public AudioClip[] marbleStepClips;
     public AudioClip[] carpetStepClips;
     public AudioClip[] landingClips;
@@ -190,8 +189,6 @@ public class PlayerSounds : MonoBehaviour {
                         /* Set both booleans to true to prevent recalling a song change */
                         delayedPlayUpgraded = true;
                         delayedPlayMuted = true;
-
-                        Debug.Log("reset while outside");
                     }
                 }
 
@@ -209,8 +206,6 @@ public class PlayerSounds : MonoBehaviour {
                     /* Set both booleans to true to prevent recalling a song change */
                     delayedPlayUpgraded = true;
                     delayedPlayMuted = true;
-
-                    Debug.Log("reset while inside");
                 }
             }
 

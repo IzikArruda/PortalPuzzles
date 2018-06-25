@@ -650,7 +650,7 @@ public class CustomPlayerController : MonoBehaviour {
         rotationDifference = RayTrace(ref scoutPos, ref scoutRot, ref scoutDist, ref temp, true, true, false);
 
         /* Reduce the cameraHeight if the scout ray collided with anything */
-        cameraHeight = (cameraHeight - scoutDist) - cameraHeight*0.05f;
+        cameraHeight = (cameraHeight - scoutDist) - 0.25f;
 
         /* fire the actual ray for the camera */
         rotationDifference = RayTrace(ref cameraPosition, ref toCamRotation, ref cameraHeight, ref temp, true, true, false);

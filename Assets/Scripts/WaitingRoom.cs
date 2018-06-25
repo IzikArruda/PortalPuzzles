@@ -465,8 +465,7 @@ public class WaitingRoom : ConnectedRoom {
         /*
          * Update the textures used in this room. This to called when the player starts falling into previous rooms
          */
-
-        Debug.Log("Update waitingRoom and it's attachedRooms textures");
+         
         //For now, just remove the textures used on all the room's materials
         floorMaterial.SetTexture("_MainTex", floorTextureAlt);
         wallMaterial.SetTexture("_MainTex", wallTextureAlt);
