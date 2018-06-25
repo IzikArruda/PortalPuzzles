@@ -1158,21 +1158,24 @@ public class Menu : MonoBehaviour {
         Transition transition = GetTransitionFromState(state);
         loadingBox.gameObject.SetActive(true);
         RectTransform loadingBar = loadingBox.GetChild(0).gameObject.GetComponent<RectTransform>();
+        
+        /* Alter the transitionFade amount relative to the amount of time spent loading */
+        float loadingTime = Mathf.Sin(Mathf.PI*0.5f*Mathf.Clamp(Time.timeSinceLevelLoad/1.5f, 0, 1));
 
         /* Update the colors of the bar/box relative to the timing of the current state */
         transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.05f, 0.1f);
-        loadingBar.GetComponent<Image>().color = new Color(0, 0, 0, 1 - transitionFade*2);
+        loadingBar.GetComponent<Image>().color = new Color(0, 0, 0, (1 - transitionFade*2)*loadingTime);
         if(transitionFade > 0) {
             loadingBox.GetComponent<Image>().color = new Color(0, 0, 0, 0);
         }else {
-            loadingBox.GetComponent<Image>().color = new Color(0, 0, 0, 1 - transitionFade*2);
+            loadingBox.GetComponent<Image>().color = new Color(0, 0, 0, (1 - transitionFade*2)*loadingTime);
         }
 
         /* Update the size of the loading box */
         loadingBox.anchorMin = new Vector2(0.2f, 0.1f);
         loadingBox.anchorMax = new Vector2(0.8f, 0.2f);
         loadingBox.sizeDelta = new Vector2(0, 0);
-        loadingBox.anchoredPosition = new Vector2(0, 0);
+        loadingBox.anchoredPosition = new Vector2(0, -(1 - loadingTime)*screenHeight/10f);
 
         /* Update the size of the loading bar relative to the loading completion rate */
         float loadingRatio = terrainController.GetLoadingPercent();
@@ -2531,7 +2534,7 @@ public class Menu : MonoBehaviour {
         /* Return the sensitivity to it's original value */
         else {
             if(sensitivity != sensitivitySlider.value) {
-                Debug.Log("WARNING: SENSITIVITY HAS CHANGED OUTSIDE THE SENS STATE");
+                //////Debug.Log("WARNING: SENSITIVITY HAS CHANGED OUTSIDE THE SENS STATE");
             }
             sensitivitySlider.value = sensitivity;
         }
