@@ -665,7 +665,7 @@ public class Menu : MonoBehaviour {
          */
         int panelEnum = (int) Panels.Video;
         RectTransform videoPanel = panelRects[panelEnum];
-        
+
         /*
          * Setup the video panel
          */
@@ -2648,8 +2648,10 @@ public class Menu : MonoBehaviour {
                     newState == MenuStates.MainToVideo ||
                     newState == MenuStates.VideoToMain) {
                 ResetRemainingTime(newState);
-                /* Entering the MainToVideo or MainToSens states will set their panels to be active */
-
+                /* Entering the MainToVideo or MainToSens will enable the appropriate panel */
+                if(newState == MenuStates.MainToVideo) { SetVideoPanelStatus(true); }
+                if(newState == MenuStates.MainToSens) { SetSensivityPanelStatus(true); }
+                
                 /* Handle the credits panel's state depending on the outside state and menu state */
                 if(isOutside) {
                     /* Entering the Video or Sensitivity state will disable the credits panel */
@@ -2672,6 +2674,10 @@ public class Menu : MonoBehaviour {
             /* Entering Main will reset the quitValueCurrent */
             else if(newState == MenuStates.Main) {
                 quitValueCurrent = 0;
+
+                /* If we entered the Main state from the video or sens state, disable the appropriate panel */
+                if(state == MenuStates.VideoToMain) { SetVideoPanelStatus(false); }
+                if(state == MenuStates.SensToMain) { SetSensivityPanelStatus(false); }
             }
 
             /* Entering the Sensitivity state will reset the extraCamRotation */
@@ -2847,6 +2853,36 @@ public class Menu : MonoBehaviour {
 
         isOutside = true;
     }
+
+    public void SetVideoPanelStatus(bool active) {
+        /*
+         * Set the clickable elements of the video panel to the given boolean 
+         */
+        int panelEnum = (int) Panels.Video;
+        RectTransform videoPanel = panelRects[panelEnum];
+
+        /* Set the status of the toggle options */
+        for(int i = 0; i < 3; i++) {
+            videoPanel.GetChild(i).GetChild(1).GetComponent<Toggle>().interactable = active;
+        }
+
+        /* Set the status of the dropdown options */
+        for(int i = 3; i < 4; i++) {
+            videoPanel.GetChild(i).GetChild(1).GetComponent<Dropdown>().interactable = active;
+        }
+    }
+
+    public void SetSensivityPanelStatus(bool active) {
+        /*
+         * Set the clickable elements of the sensivity panel to the given boolean
+         */
+        int panelEnum = (int) Panels.Sens;
+        RectTransform sensPanel = panelRects[panelEnum];
+
+        /* Set the status of the sens slider */
+        sensPanel.GetChild(0).GetComponent<Slider>().interactable = active;
+    }
+
 
     /* ----------- Mouse Enter/Hover Functions ------------------------------------------------------------- */
 
