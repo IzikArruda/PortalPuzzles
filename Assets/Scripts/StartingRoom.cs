@@ -5,7 +5,6 @@ using System.Collections;
  * The room the player is expected to start in. This script simply builds the walls to the given variables.
  * It also requires a link to it's AttachedRoom that connects it to the next WaitingRoom to know it's sizes.
  */
-[ExecuteInEditMode]
 public class StartingRoom : ConnectedRoom {
 
     /* The AttachedRoom that leads into this empty room */

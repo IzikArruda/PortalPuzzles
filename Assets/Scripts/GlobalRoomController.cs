@@ -270,7 +270,7 @@ public class GlobalRoomController : MonoBehaviour {
             room.transform.position += distance;
 
             /* Update the startingRoom */
-            startingRoom.Start();
+            //startingRoom.Start();
         }
 
         /* Unknown room link */

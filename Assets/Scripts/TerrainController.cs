@@ -88,6 +88,8 @@ public class TerrainController : MonoBehaviour {
 
         /* Create the skySphere */
         CreateSkySphere();
+
+        Debug.Log(terrainContainer.transform.childCount);
     }
     
     void Update() {
@@ -123,6 +125,19 @@ public class TerrainController : MonoBehaviour {
 
         /* Reposition the skySphere */
         UpdateSkySphere(focusPoint.position);
+    }
+
+    void OnDisable() {
+        /*
+         * Delete the unused terrain chunks when the controller is disabled.
+         * This is to ensure the terrainChunks are not saved into the editor.
+         */
+         
+        //Debug.Log(terrainContainer.transform.childCount);
+        for(int i = terrainContainer.transform.childCount-1; i >= 0; i--) {
+            //DestroyImmediate(terrainContainer.transform.GetChild(i).gameObject);
+        }
+        //Debug.Log(terrainContainer.transform.childCount);
     }
 
 

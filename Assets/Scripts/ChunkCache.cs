@@ -28,9 +28,6 @@ public class ChunkCache {
     /* A hashset of the chunks that need to be removed */
     public HashSet<Vector2> chunksToRemove;
 
-    /* All coroutines */
-    private IEnumerator coroutines;
-
     /* The settings and noise provider that will be linked to all created chunks */
     private TerrainChunkSettings settings;
     private NoiseProvider noise;
