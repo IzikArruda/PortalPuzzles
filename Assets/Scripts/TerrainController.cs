@@ -15,10 +15,13 @@ public class TerrainController : MonoBehaviour {
     public TerrainChunkSettings chunkSettings;
     private GameObject terrainContainer;
 
-    /* The object that the terrain, skysphere and sun will center around. Set to the player's camera */
-    public Transform focusPoint;
+    /* The object that the terrain, skysphere and sun will center around. Only set to the player's camera */
     public Transform playerCam;
+    [HideInInspector]
+    public Transform focusPoint;
+    [HideInInspector]
     public Transform windowCam;
+    [HideInInspector]
     public Transform windowExitPoint;
     public Vector2 currentChunk;
 
@@ -79,13 +82,13 @@ public class TerrainController : MonoBehaviour {
         /* Initialize any objects that will be used */
         InitializeVariables();
 
-        /* Populate the chunk cache with default chunks */
-        cache = new ChunkCache(GetVisibleChunksFromPositionCount(new Vector2(0, 0), chunkViewRange), chunkSettings, noiseProvider);
-
         /* Set the current chunk position */
         UpdateFocusPoint();
         currentChunk = GetChunkPosition(focusPoint.position);
 
+        /* Populate the chunk cache with default chunks */
+        cache = new ChunkCache(GetVisibleChunksFromPositionCount(new Vector2(currentChunk.x, currentChunk.y), chunkViewRange), chunkSettings, noiseProvider);
+        
         /* Create the skySphere */
         CreateSkySphere();
     }
@@ -124,20 +127,7 @@ public class TerrainController : MonoBehaviour {
         /* Reposition the skySphere */
         UpdateSkySphere(focusPoint.position);
     }
-
-    void OnDisable() {
-        /*
-         * Delete the unused terrain chunks when the controller is disabled.
-         * This is to ensure the terrainChunks are not saved into the editor.
-         */
-         
-        //Debug.Log(terrainContainer.transform.childCount);
-        for(int i = terrainContainer.transform.childCount-1; i >= 0; i--) {
-            //DestroyImmediate(terrainContainer.transform.GetChild(i).gameObject);
-        }
-        //Debug.Log(terrainContainer.transform.childCount);
-    }
-
+    
 
     /* ----------- Update Functions ------------------------------------------------------------- */
 

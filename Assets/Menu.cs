@@ -130,15 +130,18 @@ public class Menu : MonoBehaviour {
     StateFunction[] sensPanelTransitions;
 
     /* Button height to width ratios. Set manually and is unique for each font + text content. */
-    private float startBonusSize = 1.75f;
     private float quitBonusSize = 0.75f;
-    private float startWidthRatio = 4.45f;
-    private float continueWidthRatio = 7.125f;
     private float videoWidthRatio = 4.25f;
     private float sensWidthRatio = 8.25f;
     private float quitWidthRatio = 3.125f;
     private float resolutionWidthRatio = 7f;
     private float framerateWidthRatio = 3f;
+    //The many width ratios the start button will use. Make sure to set it when changing text
+    private float startWidthRatio;
+    private float startBonusSize = 1.25f;
+    private float loadingTextWidthRatio = 15f;
+    private float startTextWidthRatio = 4.45f;
+    private float continueTextWidthRatio = 7.125f;
     //Set this to the largest ratio we currently have. This is to make sure each element goes offscreen at the same speed
     private float largestRatio;
     //How much NOT hovering over the button will reduce the button's size
@@ -153,6 +156,8 @@ public class Menu : MonoBehaviour {
     private float maxHeight = 150f;
     private float buttonSizeMod = 0.5f;
     private float buttonHeight;
+    private float buttonEdgeOffset = 35f;
+    private float buttonSepperatorDistance = 20f;
 
     /* A link to the player's controller */
     private CustomPlayerController playerController;
@@ -173,7 +178,6 @@ public class Menu : MonoBehaviour {
     public Slider sensSliderReference;
     public Dropdown videoOptionsDropwdownReference;
     public Toggle videoOptionsToggleReference;
-    public RectTransform loadingBox;
 
     /* The sensitivity slider and it's current value */
     private Slider sensitivitySlider;
@@ -231,11 +235,13 @@ public class Menu : MonoBehaviour {
     private float animationIncrementMod = 0.5f;
     private float loadingAnimationTime = 0;
     private float animationTimeMod = 1f;
+    private float loadingAnimationLoopTime = 2.75f;
+    private float loadingAnimationOffset = 0.25f;
     //Positionnal and size values
     private int boxCount = 4;
     private float boxSize = 50f;
     private float boxSepperationSize = 30f;
-    private float heightFromBottom = 30f;
+    private float heightFromBottom = 25f;
     //References
     private RectTransform[] loadingBoxes;
     private RectTransform[] interiorLoadingBoxes;
@@ -284,6 +290,33 @@ public class Menu : MonoBehaviour {
            
         /* Change the current state if needed after all the per-frame update functions are done */
         UpdateCurrentState();
+
+
+
+
+
+
+
+        /*
+         * For now, leave the loading functions in the update function
+         */
+        if(terrainController.GetLoadingPercent() < 1) {
+            //Increment the loadingAnimationVisible value as we are loading
+            loadingAnimationVisible += animationIncrementMod*Time.deltaTime;
+        }
+        else {
+            //Once we have loaded, decrement the loadingAnimationVisible value to hide the animation
+            loadingAnimationVisible -= animationIncrementMod*Time.deltaTime;
+        }
+
+        /* Prevent the loading animation from leaving the range [0, 1] */
+        loadingAnimationVisible = Mathf.Clamp(loadingAnimationVisible, 0, 1);
+
+        /* Increment the time spent in the loading */
+        loadingAnimationTime += animationTimeMod*Time.deltaTime;
+
+        /* Update the animation effect */
+        UpdateLoadingAnimation();
     }
 
 
@@ -306,9 +339,7 @@ public class Menu : MonoBehaviour {
         ChangeState(MenuStates.Startup);
 
         /* Set the largestRatio to reflect the largest button */
-        largestRatio = startWidthRatio*startBonusSize;
-        largestRatio = Mathf.Max(largestRatio, continueWidthRatio*startBonusSize);
-        largestRatio = Mathf.Max(largestRatio, sensWidthRatio);
+        largestRatio = continueTextWidthRatio*startBonusSize;
 
         /* Link the global variables of the script */
         playerController = controller;
@@ -496,9 +527,6 @@ public class Menu : MonoBehaviour {
         /* Have the cover panel above all else */
         panelRects[(int) Panels.Cover].transform.SetAsLastSibling();
 
-        /* Have the loading bar above the cover panel */
-        loadingBox.SetAsLastSibling();
-
         /* Have the loading boxes above the cover panel */
         for(int i = 0; i < loadingBoxes.Length; i++) {
             loadingBoxes[i].SetAsLastSibling();
@@ -576,8 +604,6 @@ public class Menu : MonoBehaviour {
             
             /* Set the interior box to be a child of it's parent loading box */
             interiorLoadingBoxes[i].SetParent(loadingBoxes[i]);
-            interiorLoadingBoxes[i].anchorMin = new Vector2(0.1f, 0.1f);
-            interiorLoadingBoxes[i].anchorMax = new Vector2(0.9f, 0.9f);
             interiorLoadingBoxes[i].anchoredPosition = new Vector2(0, 0);
             interiorLoadingBoxes[i].sizeDelta = new Vector2(0, 0);
             
@@ -971,11 +997,16 @@ public class Menu : MonoBehaviour {
         button.name = "Start button";
 
         /* Setup the text of the button */
-        SetupButtonText(button.GetComponentInChildren<Text>(), "START");
+        SetupButtonText(button.GetComponentInChildren<Text>(), "LOADING");
+        startWidthRatio = loadingTextWidthRatio;
 
         /* Setup the event triggers for mouse clicks and hovers */
         button.onClick.AddListener(StartButtonClick);
         SetupButtonEvents(ref button, StartButtonMouseEnter, StartButtonMouseExit);
+
+        /* The START button will begin disabled. The button will be grayed out and prevent interraction */
+        button.GetComponent<Image>().raycastTarget = false;
+        button.GetComponent<RectTransform>().GetChild(0).GetComponent<Text>().raycastTarget = false;
     }
     
     void SetupVideoButton() {
@@ -1067,23 +1098,8 @@ public class Menu : MonoBehaviour {
                 if(terrainController.GetLoadingPercent() < 1) {
                     //Reset the remainingTime of the current state
                     ResetRemainingTime(state);
-                    //Increment the loadingAnimationVisible value as we are loading
-                    loadingAnimationVisible += animationIncrementMod*Time.deltaTime;
                 }
-                else {
-                    //Once we have loaded, decrement the loadingAnimationVisible value to hide the animation
-                    loadingAnimationVisible -= animationIncrementMod*Time.deltaTime;
-                }
-
-                /* Prevent the loading animation from leaving the range [0, 1] */
-                loadingAnimationVisible = Mathf.Clamp(loadingAnimationVisible, 0, 1);
-
-                /* Increment the time spent in the loading */
-                loadingAnimationTime += animationTimeMod*Time.deltaTime;
-
-                /* Update the animation effect */
-                UpdateLoadingAnimation();
-
+                
                 break;
         }
 
@@ -1213,45 +1229,19 @@ public class Menu : MonoBehaviour {
         }
         terrainController.UpdateSunFlareMod(bonus);
     }
-
-    void UpdateLoadingBar() {
-        /*
-         * Update the sizes and colors of the loading bar to reflect the current
-         */
-        float transitionFade;
-        Transition transition = GetTransitionFromState(state);
-        loadingBox.gameObject.SetActive(true);
-        RectTransform loadingBar = loadingBox.GetChild(0).gameObject.GetComponent<RectTransform>();
-        
-        /* Alter the transitionFade amount relative to the amount of time spent loading */
-        float loadingTime = Mathf.Sin(Mathf.PI*0.5f*Mathf.Clamp(Time.timeSinceLevelLoad/1.5f, 0, 1));
-
-        /* Update the colors of the bar/box relative to the timing of the current state */
-        transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.05f, 0.1f);
-        loadingBar.GetComponent<Image>().color = new Color(0, 0, 0, (1 - transitionFade*2)*loadingTime);
-        if(transitionFade > 0) {
-            loadingBox.GetComponent<Image>().color = new Color(0, 0, 0, 0);
-        }else {
-            loadingBox.GetComponent<Image>().color = new Color(0, 0, 0, (1 - transitionFade*2)*loadingTime);
-        }
-
-        /* Update the size of the loading box */
-        loadingBox.anchorMin = new Vector2(0.2f, 0.1f);
-        loadingBox.anchorMax = new Vector2(0.8f, 0.2f);
-        loadingBox.sizeDelta = new Vector2(0, 0);
-        loadingBox.anchoredPosition = new Vector2(0, -(1 - loadingTime)*screenHeight/10f);
-
-        /* Update the size of the loading bar relative to the loading completion rate */
-        float loadingRatio = terrainController.GetLoadingPercent();
-        loadingBar.anchorMax = new Vector2(loadingRatio, 1);
-        loadingBar.sizeDelta = new Vector2(0, 0);
-        loadingBar.anchoredPosition = new Vector2(0, 0);
-    }
-
+    
     void UpdateLoadingAnimation() {
         /*
-         * Update the loading boxes as we wait for the scene to load
+         * Update the loading boxes as we wait for the scene to load.
          */
+
+        /* Constantly update the START button's text with an ellipsis */
+        Button button = buttons[(int) Buttons.Start];
+        string periods = "";
+        for(int i = Mathf.FloorToInt(4*(loadingAnimationTime % 1)); i > 0; i--) {
+            periods += ".";
+        }
+        button.GetComponentInChildren<Text>().text = "LOADING" + periods;
 
         /* Position the boxes in their default position to begin with */
         for(int i = 0; i < loadingBoxes.Length; i++) {
@@ -1260,8 +1250,56 @@ public class Menu : MonoBehaviour {
 
         /* Position the boxes either in or out of view relative to the loadingAnimationVisible value */
         for(int i = 0; i < loadingBoxes.Length; i++) {
-            loadingBoxes[i].anchoredPosition += (1 - Mathf.Sin((Mathf.PI/2f)*(loadingAnimationVisible)))*new Vector2(0, -boxSize -heightFromBottom*2);
+            loadingBoxes[i].anchoredPosition += (1 - Mathf.Sin((Mathf.PI/2f)*(loadingAnimationVisible)))*new Vector2(0, -boxSize -heightFromBottom*3);
         }
+
+        /* Animate each loadingBox relative to the currnet time spent loading */
+        for(int i = 0; i < loadingBoxes.Length; i++) {
+            AnimateLoadingBox(i, loadingAnimationTime - loadingAnimationOffset*i);
+        }
+
+        /* Get the progress of the loading process and update the loading boxes */
+        UpdateLoadingProgress();
+    }
+
+    void UpdateLoadingProgress() {
+        /*
+         * Resize the inner boxes of each loading box relative to the progress of the loading time.
+         * 
+         * Through multiple test while loading the game, it was discovered that the game spends 
+         * most of it's loading time before the ranges of [0.013, 0.0145]. Therefore, adjust the
+         * progress to use scale around that range.
+         */
+        float progress = terrainController.GetLoadingPercent();
+        float boxSize;
+        
+        /* Go through each box and adjust their inner box size to meassure the loading progress */
+        for(int i = 0; i < interiorLoadingBoxes.Length; i++) {
+            boxSize = 0.1f + 0.4f*RangeBetween(progress, ((i+0f)/loadingBoxes.Length), ((i+1f)/loadingBoxes.Length));
+            interiorLoadingBoxes[(interiorLoadingBoxes.Length-1) - i].anchorMax = new Vector2((1 - boxSize), (1 - boxSize));
+            interiorLoadingBoxes[(interiorLoadingBoxes.Length-1) - i].anchorMin = new Vector2(boxSize, boxSize);
+        }
+    }
+
+    void AnimateLoadingBox(int boxIndex, float loadingTime) {
+        /*
+         * Animate the loading box given by the index with the given timing.
+         */
+        RectTransform loadingBox = loadingBoxes[boxIndex];
+        Vector2 animation = Vector2.zero;
+        //Adjust the time so it cycles through a range of [0, 1]
+        loadingTime = Mathf.Sin(Mathf.PI*((loadingTime) % loadingAnimationLoopTime)/loadingAnimationLoopTime);
+
+        /* Animate the position of the box */
+        animation = new Vector2(0, heightFromBottom*Mathf.Sin(Mathf.PI*loadingTime));
+        //Add a set amount of height depending on how far into the time it is
+        animation += new Vector2(0, heightFromBottom*loadingTime);
+        loadingBox.anchoredPosition += animation;
+
+        /* Animate the rotation of the box */
+        float rotationTime = Mathf.Sin(-Mathf.PI*0.025f + Mathf.PI*1.05f*loadingTime);
+        if(rotationTime < 0) { rotationTime = 0; }
+        loadingBox.localEulerAngles = new Vector3(0, 0, 180*rotationTime);
     }
 
 
@@ -1430,9 +1468,6 @@ public class Menu : MonoBehaviour {
 
         /* Apply the angle to the camera */
         playerController.extraCamRot = extraCamRotation;
-
-        /* Update the loading bar used in the intro */
-        UpdateLoadingBar();
     }
 
     void UCoverPanelMainToQuit() {
@@ -1886,7 +1921,7 @@ public class Menu : MonoBehaviour {
         int buttonEnum = (int) Buttons.Start;
         RectTransform rect = buttonRects[buttonEnum];
 
-        rect.position = new Vector3(-rect.sizeDelta.x/2f + rect.sizeDelta.x*sideRatio, canvasRect.position.y/1.8f + buttonHeight/2f, 0);
+        rect.position = new Vector3(-(rect.sizeDelta.x + buttonEdgeOffset)/2f + (rect.sizeDelta.x + buttonEdgeOffset)*sideRatio, canvasRect.position.y/1.5f + buttonHeight/2f, 0);
     }
 
     void StartButtonHoverUpdate() {
@@ -2075,8 +2110,8 @@ public class Menu : MonoBehaviour {
         /* The sens button will be placed bellow the start button */
         RectTransform aboveButton = buttonRects[(int) Buttons.Start];
 
-        float relativeHeight = aboveButton.position.y - aboveButton.sizeDelta.y/2f - buttonHeight/2f;
-        rect.position = new Vector3(-rect.sizeDelta.x/2f + rect.sizeDelta.x*sideRatio, relativeHeight, 0);
+        float relativeHeight = aboveButton.position.y - (aboveButton.sizeDelta.y + buttonSepperatorDistance)/2f - buttonHeight/2f;
+        rect.position = new Vector3(-(rect.sizeDelta.x + buttonEdgeOffset)/2f + (rect.sizeDelta.x + buttonEdgeOffset)*sideRatio, relativeHeight, 0);
     }
 
     void VideoButtonHoverUpdate() {
@@ -2291,8 +2326,8 @@ public class Menu : MonoBehaviour {
         /* The sens button will be placed bellow the video button */
         RectTransform aboveButton = buttonRects[(int) Buttons.Video];
 
-        float relativeHeight = aboveButton.position.y - aboveButton.sizeDelta.y/2f - buttonHeight/2f;
-        rect.position = new Vector3(-rect.sizeDelta.x/2f + rect.sizeDelta.x*sideRatio, relativeHeight, 0);
+        float relativeHeight = aboveButton.position.y - (aboveButton.sizeDelta.y + buttonSepperatorDistance)/2f - buttonHeight/2f;
+        rect.position = new Vector3(-(rect.sizeDelta.x + buttonEdgeOffset)/2f + (rect.sizeDelta.x + buttonEdgeOffset)*sideRatio, relativeHeight, 0);
     }
     
     void SensButtonHoverUpdate() {
@@ -2500,8 +2535,8 @@ public class Menu : MonoBehaviour {
         /* The button that this quit button will be placed bellow */
         RectTransform aboveButton = buttonRects[(int) Buttons.Sens];
         
-        float relativeHeight = aboveButton.position.y - aboveButton.sizeDelta.y/2f - rect.sizeDelta.y/2f;
-        rect.position = new Vector3(-rect.sizeDelta.x/2f + rect.sizeDelta.x*sideRatio, relativeHeight, 0);
+        float relativeHeight = aboveButton.position.y - (aboveButton.sizeDelta.y + buttonSepperatorDistance)/2f - rect.sizeDelta.y/2f;
+        rect.position = new Vector3(-(rect.sizeDelta.x + buttonEdgeOffset)/2f + (rect.sizeDelta.x + buttonEdgeOffset)*sideRatio, relativeHeight, 0);
 
         /* Depending on the current quitValueCurrent value, adjust certain aspects of the quit button */
         Text quitText = rect.GetChild(0).GetComponent<Text>();
@@ -2771,7 +2806,7 @@ public class Menu : MonoBehaviour {
             /* Leaving the MainToIntro state will change the start button */
             if(state == MenuStates.MainToIntro) {
                 buttons[(int) Buttons.Start].GetComponentInChildren<Text>().text = "CONTINUE";
-                startWidthRatio = continueWidthRatio;
+                startWidthRatio = continueTextWidthRatio;
                 isGameStarted = true;
             }
             
@@ -2960,6 +2995,19 @@ public class Menu : MonoBehaviour {
 
         /* Set the status of the sens slider */
         sensPanel.GetChild(0).GetComponent<Slider>().interactable = active;
+    }
+
+    public void EnableStartButton() {
+        /*
+         * Change the start button back to it's START text, letting the player start the game.
+         */
+        Button button = buttons[(int) Buttons.Start];
+
+        /* Make the components of the start button clickable */
+        button.GetComponentInChildren<Text>().text = "START";
+        startWidthRatio = startTextWidthRatio;
+        button.GetComponent<Image>().raycastTarget = true;
+        button.GetComponent<RectTransform>().GetChild(0).GetComponent<Text>().raycastTarget = true;
     }
 
 
@@ -3212,5 +3260,17 @@ public class Menu : MonoBehaviour {
         }
 
         return clickable;
+    }
+    
+    float RangeBetween(float value, float min, float max) {
+        /*
+         * Given a value and a min and max, return between [0, 1] whether the value is close to
+         * the minimum (0) or close to the maximum (1). 
+         */
+        float range;
+
+        range = Mathf.Clamp((value - min) / (max - min), 0, 1);
+
+        return range;
     }
 }
