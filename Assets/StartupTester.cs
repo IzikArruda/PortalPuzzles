@@ -51,7 +51,7 @@ public class StartupTester : MonoBehaviour {
         startTime = Time.realtimeSinceStartup;
 
         /* Start loading the new scene */
-        StartCoroutine(LoadGame());
+        //StartCoroutine(LoadGame());
     }
 
     void Update() {
@@ -109,9 +109,9 @@ public class StartupTester : MonoBehaviour {
 
         /* Position the boxes */
         loadingBox1.transform.position = bottomRight + new Vector3(-1, 1, 0);
-        loadingBox2.transform.position = bottomRight + new Vector3(-3, 1, 0);
-        loadingBox3.transform.position = bottomRight + new Vector3(-5, 1, 0);
-        loadingBox4.transform.position = bottomRight + new Vector3(-7, 1, 0);
+        loadingBox2.transform.position = bottomRight + new Vector3(-2, 1, 0);
+        loadingBox3.transform.position = bottomRight + new Vector3(-3, 1, 0);
+        loadingBox4.transform.position = bottomRight + new Vector3(-4, 1, 0);
     }
 
     void UpdateLoadingProgress() {
@@ -122,30 +122,27 @@ public class StartupTester : MonoBehaviour {
          * most of it's loading time before the ranges of [0.013, 0.0145]. Therefore, adjust the
          * progress to use scale around that range.
          */
-        float progress = RangeBetween(async.progress, 0.013f, 0.0145f);
+        //float progress = RangeBetween(async.progress, 0.013f, 0.0145f);
+        float progress = RangeBetween(0, 0.013f, 0.0145f);
         int boxCount = 4;
         float maxboxSize = 0.8f;
         float boxSize;
         
         /* Set the size of the fourth box */
         boxSize = maxboxSize*(1 - RangeBetween(progress, (0f/boxCount), (1f/boxCount)));
-        Debug.Log(boxSize);
-        loadingBox1.transform.GetChild(0).transform.localScale = new Vector3(boxSize, boxSize, 1);
+        loadingBox4.transform.GetChild(0).transform.localScale = new Vector3(boxSize, boxSize, 1);
 
         /* Set the size of the third box */
         boxSize = maxboxSize*(1 - RangeBetween(progress, (1f/boxCount), (2f/boxCount)));
-        Debug.Log(boxSize);
-        loadingBox2.transform.GetChild(0).transform.localScale = new Vector3(boxSize, boxSize, 1);
+        loadingBox3.transform.GetChild(0).transform.localScale = new Vector3(boxSize, boxSize, 1);
 
         /* Set the size of the second box */
         boxSize = maxboxSize*(1 - RangeBetween(progress, (2f/boxCount), (3f/boxCount)));
-        Debug.Log(boxSize);
-        loadingBox3.transform.GetChild(0).transform.localScale = new Vector3(boxSize, boxSize, 1);
+        loadingBox2.transform.GetChild(0).transform.localScale = new Vector3(boxSize, boxSize, 1);
 
         /* Set the size of the first box */
         boxSize = maxboxSize*(1 - RangeBetween(progress, (3f/boxCount), (4f/boxCount)));
-        Debug.Log(boxSize);
-        loadingBox4.transform.GetChild(0).transform.localScale = new Vector3(boxSize, boxSize, 1);
+        loadingBox1.transform.GetChild(0).transform.localScale = new Vector3(boxSize, boxSize, 1);
     }
 
     void AnimateBoxesIntro(float timeFrame) {

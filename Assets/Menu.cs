@@ -151,7 +151,7 @@ public class Menu : MonoBehaviour {
     /* Global values used for sizes of UI elements */
     private float minHeight = 20f;
     private float maxHeight = 150f;
-    private float buttonSizeMod = 0.8f;
+    private float buttonSizeMod = 0.5f;
     private float buttonHeight;
 
     /* A link to the player's controller */
@@ -671,12 +671,12 @@ public class Menu : MonoBehaviour {
          */
         videoPanel.name = "Video panel";
 
-        /* Set the anchors so it's centered on the right wall */
-        videoPanel.anchorMin = new Vector2(1, 0.5f);
-        videoPanel.anchorMax = new Vector2(1, 0.5f);
-        /* The size of the panel should be 80% the screen width and 100% for height */
+        /* Set the anchors so it's centered on the right wall and closer towards the bottom */
+        videoPanel.anchorMin = new Vector2(1, 0.25f);
+        videoPanel.anchorMax = new Vector2(1, 0.25f);
+        /* The size of the panel should be 80% the screen width and 50% for height */
         panelsWidth[panelEnum] = 0.8f;
-        panelsHeight[panelEnum] = 1f;
+        panelsHeight[panelEnum] = 0.5f;
         /* Set the color so that the panel is invisible */
         videoPanel.GetComponent<Image>().color = new Color(0, 0, 0, 0);
 
@@ -692,8 +692,8 @@ public class Menu : MonoBehaviour {
             videoOptionPanels[i] = new GameObject("Option panel [" + videoButtonTexts[i] + "]", typeof(RectTransform));
             RectTransform panelRect = videoOptionPanels[i].GetComponent<RectTransform>();
             panelRect.SetParent(videoPanel);
-            panelRect.anchorMin = new Vector2(0, 0.5f);
-            panelRect.anchorMax = new Vector2(1, 0.5f);
+            panelRect.anchorMin = new Vector2(0.1f, 0.4f);
+            panelRect.anchorMax = new Vector2(1, 0.4f);
 
             /* Create the text component used for each option */
             GameObject textObject = new GameObject("Option text [" + videoButtonTexts[i] + "]", typeof(RectTransform));
@@ -721,7 +721,7 @@ public class Menu : MonoBehaviour {
                 panelRect.anchorMax = new Vector2(0.5f, 0.5f);
             }
             else if(i == videoOptionPanels.Length - 1) {
-                panelRect.anchorMin = new Vector2(0.5f, 0.5f);
+                panelRect.anchorMin = new Vector2(0.6f, 0.5f);
                 panelRect.anchorMax = new Vector2(1f, 0.5f);
             }
         }
@@ -840,9 +840,9 @@ public class Menu : MonoBehaviour {
         sensPanel.anchorMin = new Vector2(1, 0);
         sensPanel.anchorMax = new Vector2(1, 0);
 
-        /* The size of the panel should be 80% the screen width and 30% for height */
-        panelsWidth[panelEnum] = 0.8f;
-        panelsHeight[panelEnum] = 0.3f;
+        /* The size of the panel should be 60% the screen width and 27.5% for height */
+        panelsWidth[panelEnum] = 0.6f;
+        panelsHeight[panelEnum] = 0.275f;
         float panelWidth = Screen.width*panelsWidth[panelEnum];
         float panelHeight = Screen.height*panelsHeight[panelEnum];
         sensPanel.sizeDelta = new Vector2(panelWidth, panelHeight);
@@ -888,11 +888,6 @@ public class Menu : MonoBehaviour {
         text.resizeTextMinSize = 1;
         text.resizeTextMaxSize = 10000;
         text.raycastTarget = false;
-        /* Set the sizes of the text */
-        rectTex.anchorMin = new Vector2(0, 0.25f);
-        rectTex.anchorMax = new Vector2(1, 0.25f);
-        rectTex.anchoredPosition = new Vector2(0, 0);
-        rectTex.sizeDelta = new Vector2(0, panelHeight/2f);
 
         /* Add text above the slider giving the sensitivity */
         GameObject sliderValue = new GameObject("Slider value", typeof(RectTransform));
@@ -909,11 +904,6 @@ public class Menu : MonoBehaviour {
         sensitivitySliderValueText.resizeTextMinSize = 1;
         sensitivitySliderValueText.resizeTextMaxSize = 10000;
         sensitivitySliderValueText.raycastTarget = false;
-        /* Set the sizes of the value */
-        valueRect.anchorMin = new Vector2(0, 0.75f);
-        valueRect.anchorMax = new Vector2(1, 0.75f);
-        valueRect.anchoredPosition = new Vector2(0, 0);
-        valueRect.sizeDelta = new Vector2(0, panelHeight/2f);
     }
 
     void SetupStartButton() {
@@ -1453,9 +1443,7 @@ public class Menu : MonoBehaviour {
         sensPanel.anchorMin = new Vector2(1, 0);
         sensPanel.anchorMax = new Vector2(1, 0);
 
-        /* The size of the panel should be 80% the screen width and 30% for height */
-        panelsWidth[panelEnum] = 0.8f;
-        panelsHeight[panelEnum] = 0.3f;
+        /* Reset the size of the panel */
         float panelWidth = Screen.width*panelsWidth[panelEnum];
         float panelHeight = Screen.height*panelsHeight[panelEnum];
         sensPanel.sizeDelta = new Vector2(panelWidth, panelHeight);
@@ -1464,16 +1452,16 @@ public class Menu : MonoBehaviour {
         RectTransform bellowText = sensPanel.GetChild(1).GetComponent<RectTransform>();
         RectTransform aboveText = sensPanel.GetChild(2).GetComponent<RectTransform>();
         /* Set the sizes of the sens value text above */
-        aboveText.anchorMin = new Vector2(0, 0.75f);
-        aboveText.anchorMax = new Vector2(1, 0.75f);
+        aboveText.anchorMin = new Vector2(0, 0.8f);
+        aboveText.anchorMax = new Vector2(1, 0.8f);
         aboveText.anchoredPosition = new Vector2(0, 0);
-        aboveText.sizeDelta = new Vector2(0, panelHeight/2f);
+        aboveText.sizeDelta = new Vector2(0, panelHeight/3f);
         aboveText.GetComponent<Outline>().effectDistance = panelHeight*new Vector2(0.009f, 0.009f);
         /* Set the sizes of the description text bellow */
-        bellowText.anchorMin = new Vector2(0, 0.25f);
-        bellowText.anchorMax = new Vector2(1, 0.25f);
+        bellowText.anchorMin = new Vector2(0, 0.2f);
+        bellowText.anchorMax = new Vector2(1, 0.2f);
         bellowText.anchoredPosition = new Vector2(0, 0);
-        bellowText.sizeDelta = new Vector2(0, panelHeight/2f);
+        bellowText.sizeDelta = new Vector2(0, panelHeight/4f);
         bellowText.GetComponent<Outline>().effectDistance = panelHeight*new Vector2(0.009f, 0.009f);
         SensPanelPositionUpdate(0);
     }
@@ -1807,7 +1795,7 @@ public class Menu : MonoBehaviour {
         int buttonEnum = (int) Buttons.Start;
         RectTransform rect = buttonRects[buttonEnum];
 
-        rect.position = new Vector3(-rect.sizeDelta.x/2f + rect.sizeDelta.x*sideRatio, canvasRect.position.y + buttonHeight/2f, 0);
+        rect.position = new Vector3(-rect.sizeDelta.x/2f + rect.sizeDelta.x*sideRatio, canvasRect.position.y/1.8f + buttonHeight/2f, 0);
     }
 
     void StartButtonHoverUpdate() {
@@ -2867,7 +2855,7 @@ public class Menu : MonoBehaviour {
         }
 
         /* Set the status of the dropdown options */
-        for(int i = 3; i < 4; i++) {
+        for(int i = 3; i < 5; i++) {
             videoPanel.GetChild(i).GetChild(1).GetComponent<Dropdown>().interactable = active;
         }
     }

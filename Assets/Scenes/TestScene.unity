@@ -154,7 +154,7 @@ Transform:
   m_GameObject: {fileID: 199233650}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.5, y: 0.5, z: 1}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_Children:
   - {fileID: 1065430719}
@@ -353,7 +353,7 @@ Transform:
   m_GameObject: {fileID: 561887772}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.5, y: 0.5, z: 1}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_Children:
   - {fileID: 363777316}
@@ -391,7 +391,6 @@ MonoBehaviour:
   loadingBox2: {fileID: 561887772}
   loadingBox3: {fileID: 1889782251}
   loadingBox4: {fileID: 199233650}
-  test: {fileID: 0}
 --- !u!4 &724651303
 Transform:
   m_ObjectHideFlags: 0
@@ -532,7 +531,7 @@ Transform:
   m_GameObject: {fileID: 1331244294}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.5, y: 0.5, z: 1}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_Children:
   - {fileID: 225867260}
@@ -752,7 +751,7 @@ Transform:
   m_GameObject: {fileID: 1889782251}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.5, y: 0.5, z: 1}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_Children:
   - {fileID: 1748151608}
