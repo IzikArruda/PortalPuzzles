@@ -942,7 +942,7 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Place the player to be standing on the top of the startingRoom's stairs.
          * Add the leg gap distance so the player is not stepping on the stairs. */
-        transform.position = startingRoom.exit.exitPointBack.transform.position + new Vector3(0, 0, legGap*playerBodyRadius);
+        transform.position = startingRoom.stairs.endPoint.position + new Vector3(0, 0, legGap*playerBodyRadius);
 
         /* Adjust the player model's position to reflect the player's body and leg length */
         currentFootPosition = transform.position;
