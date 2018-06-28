@@ -7,9 +7,8 @@ using System.Collections;
  */
 public class StartingRoom : ConnectedRoom {
 
-    /* The sizes of the attachedRoom that connects this room. Must be set by the player. */
-    public float exitWidth;
-    public float exitHeight;
+    /* The AttachedRoom that leads into this empty room */
+    public AttachedRoom exit;
 
     /* Stairs that connects the room's exit to the floor */
     public StairsCreator stairs;
@@ -84,23 +83,17 @@ public class StartingRoom : ConnectedRoom {
          * On startup, build the walls of the room
          */
 
-
-        /* Update the room's walls, window and collider */
-        UpdateMaterials();
-        UpdateWalls();
-        UpdateWindow();
-        UpdateCollider();
+        /* Update the room if possible */
+        UpdateRoom();
 
         /* Once the room is setup, link the window's first camera to the TerrainController */
         window.portalSet.EntrancePortal.backwardsPortalMesh.GetComponent<PortalView>().Start();
         outsideTerrain.windowCam = window.portalSet.EntrancePortal.backwardsPortalMesh.transform.GetChild(0);
         outsideTerrain.windowExitPoint = windowExit;
-        
+
         /* Run the terrainController's start function to create the noise provider, used with placing the outside window. */
         outsideTerrain.StartAlt();
-
-        /* Once the terrain generator is created, re-position the outside window using it's noise provider */
-        UpdateOutsideWindowPositon(true);
+        UpdateMaterials();
     }
 
     void OnTriggerExit(Collider player) {
@@ -121,18 +114,31 @@ public class StartingRoom : ConnectedRoom {
         }
     }
     
-
-    /* -------- Update Functions ---------------------------------------------------- */
     
+    /* -------- Update Functions ---------------------------------------------------- */
+
+    public void UpdateRoom() {
+        /*
+         * Update the room's walls, window and collider
+         */
+
+        /* Only update the room's sizes and positions if it is linked to it's exit */
+        if(exit != null) {
+            UpdateWalls();
+            UpdateWindow();
+            UpdateCollider();
+        }
+    }
+
     void UpdateWalls() {
         /*
          * Build the walls of the room using the linked AttachedRoom as reference
          */
 
         /* Get the desired sizes of the room */
-        float roomWidth = extraRoomWidth + exitWidth;
-        float upperRoomHeight = extraHeight + exitHeight;
-        Vector3 upperCenter = stairs.endPoint.position + new Vector3(0, 0, -roomDepth/2f);
+        float roomWidth = extraRoomWidth + exit.exitWidth;
+        float upperRoomHeight = extraHeight + exit.exitHeight;
+        Vector3 upperCenter = exit.exitPointBack.position + new Vector3(0, 0, -roomDepth/2f);
         float fullRoomHeight = upperRoomHeight + roomBellowHeight;
         
 
@@ -185,12 +191,16 @@ public class StartingRoom : ConnectedRoom {
         stairs.startPoint.position = upperCenter + new Vector3(0, 0, roomDepth/2f) + new Vector3(0, -roomBellowHeight, -roomBellowHeight);
         stairs.stairsMaterial = stairsStepMaterial;
         stairs.otherMaterial = stairsOtherMaterial;
-        stairs.stairsWidth = exitWidth;
+        stairs.stairsWidth = exit.exitWidth;
         stairs.baseDepth = roomBellowHeight;
         stairs.upVector = new Vector3(0, 1, 0);
         stairs.updateStairs = true;
         stairs.resetAngle = true;
         stairs.Update();
+
+        /* Reposition the attachedRoom */
+        exit.update = true;
+        exit.Update();
     }
     
     void UpdateWindow() {
@@ -198,20 +208,21 @@ public class StartingRoom : ConnectedRoom {
          * Update the values of the window and position it in an appropriate spot in the room
          */
         glassBroken = false;
+        Debug.Log("test");
 
         /* Set the size of the window's frame */
         window.frameThickness = frameThickness;
         window.frameDepth = frameDepth;
 
         /* Make the window occupy most of the back wall */
-        float roomWidth = extraRoomWidth + exitWidth;
-        float upperRoomHeight = extraHeight + exitHeight;
+        float roomWidth = extraRoomWidth + exit.exitWidth;
+        float upperRoomHeight = extraHeight + exit.exitHeight;
         float fullRoomHeight = upperRoomHeight + roomBellowHeight;
         window.windowHeight = fullRoomHeight - frameThickness*2 - windowFromWall;
         window.windowWidth = roomWidth - frameThickness*2 - windowFromWall;
 
         /* Set the window's positions and call it's function to reposition them in the world */
-        Vector3 backWallCenter = stairs.endPoint.position + new Vector3(0, -roomBellowHeight + frameThickness + windowFromWall/2f, -roomDepth);
+        Vector3 backWallCenter = exit.exitPointBack.position + new Vector3(0, -roomBellowHeight + frameThickness + windowFromWall/2f, -roomDepth);
         window.insidePos = backWallCenter;
         window.insideRot = new Vector3(0, 180, 0);
         /* Place the window's exit at a distance just outside the player's view distance, ensuring they cannot see the rooms.
@@ -227,7 +238,6 @@ public class StartingRoom : ConnectedRoom {
 
         /* Send a command to update the windows with the new given parameters */
         window.UpdateWindow();
-
 
         /* Make the window's portal's camera render the terrain layer */
         window.portalSet.EntrancePortal.portalMesh.GetComponent<PortalView>().SetRenderTerrain(true);
@@ -254,7 +264,6 @@ public class StartingRoom : ConnectedRoom {
         
         /* Create the particle system used by the otuside window's glass */
         UpdateParticleSystem();
-
     }
     
     void UpdateParticleSystem() {
@@ -297,10 +306,10 @@ public class StartingRoom : ConnectedRoom {
         gameObject.layer = 2;
 
         /* Position the collider into the center of the room */
-        roomCollider.center = stairs.endPoint.position + new Vector3(0, -(roomBellowHeight - (extraHeight + exitHeight))/2f, -roomDepth/2f);
+        roomCollider.center = exit.exitPointBack.position + new Vector3(0, -(roomBellowHeight - (extraHeight + exit.exitHeight))/2f, -roomDepth/2f);
 
         /* Set the size of the collider to encompass the whole room */
-        roomCollider.size = new Vector3((extraRoomWidth + exitWidth), (extraHeight + exitHeight + roomBellowHeight), (roomDepth));
+        roomCollider.size = new Vector3((extraRoomWidth + exit.exitWidth), (extraHeight + exit.exitHeight + roomBellowHeight), (roomDepth));
     }
 
     void UpdateMaterials() {
@@ -366,9 +375,6 @@ public class StartingRoom : ConnectedRoom {
         window.outsidePos = windowExit.position;
         window.outsideRot = windowExit.eulerAngles;
         window.UpdateWindowPosition();
-
-        /* Disable the outside window's box collider */
-        OutsideWindowBoxCollider(false);
     }
 
     public void BreakGlass(GameObject playerObject) {
@@ -441,14 +447,5 @@ public class StartingRoom : ConnectedRoom {
         rotationOverLifetime.x = new ParticleSystem.MinMaxCurve(3.14f*roomTimeRate, 9.42f*roomTimeRate);
         rotationOverLifetime.y = new ParticleSystem.MinMaxCurve(3.14f*roomTimeRate, 9.42f*roomTimeRate);
         rotationOverLifetime.z = new ParticleSystem.MinMaxCurve(3.14f*roomTimeRate, 9.42f*roomTimeRate);
-    }
-
-    public void OutsideWindowBoxCollider(bool state) {
-        /*
-         * Set the state of the outside window's box collider. This is to let the 
-         * outside window's camera render the solar flare.
-         */
-
-        window.portalSet.ExitPortal.backwardsPortalMesh.GetComponent<BoxCollider>().enabled = state;
     }
 }

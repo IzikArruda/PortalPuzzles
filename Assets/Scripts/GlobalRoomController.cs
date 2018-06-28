@@ -473,6 +473,7 @@ public class GlobalRoomController : MonoBehaviour {
          */
 
         /* Link the startingRoom and it's attached room */
+        startingRoom.exit = attachedRooms[0];
         attachedRooms[0].puzzleRoomParent = startingRoom.gameObject;
         
         /* Link the puzzleRooms and their connected AttachedRooms */
