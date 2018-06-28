@@ -82,13 +82,9 @@ public class StartingRoom : ConnectedRoom {
         /*
          * On startup, build the walls of the room
          */
-         
-        /* Only update the room's sizes and positions if it is linked to it's exit */
-        if(exit != null) {
-            UpdateWalls();
-            UpdateWindow();
-            UpdateCollider();
-        }
+
+        /* Update the room if possible */
+        UpdateRoom();
 
         /* Once the room is setup, link the window's first camera to the TerrainController */
         window.portalSet.EntrancePortal.backwardsPortalMesh.GetComponent<PortalView>().Start();
@@ -120,6 +116,19 @@ public class StartingRoom : ConnectedRoom {
     
     
     /* -------- Update Functions ---------------------------------------------------- */
+
+    public void UpdateRoom() {
+        /*
+         * Update the room's walls, window and collider
+         */
+
+        /* Only update the room's sizes and positions if it is linked to it's exit */
+        if(exit != null) {
+            UpdateWalls();
+            UpdateWindow();
+            UpdateCollider();
+        }
+    }
 
     void UpdateWalls() {
         /*
@@ -199,6 +208,7 @@ public class StartingRoom : ConnectedRoom {
          * Update the values of the window and position it in an appropriate spot in the room
          */
         glassBroken = false;
+        Debug.Log("test");
 
         /* Set the size of the window's frame */
         window.frameThickness = frameThickness;

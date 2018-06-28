@@ -2,6 +2,7 @@
 using UnityEngine.UI;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 using System.Collections;
 
@@ -246,6 +247,11 @@ public class Menu : MonoBehaviour {
     private RectTransform[] loadingBoxes;
     private RectTransform[] interiorLoadingBoxes;
 
+    /* Values that handle the puzzle scene loading */
+    private bool puzzleSceneLoading = false;
+    private bool puzzleSceneLoaded = false;
+    private AsyncOperation puzzleSceneCoroutine;
+
 
     /* ----------- Built-in Functions ------------------------------------------------------------- */
 
@@ -296,7 +302,14 @@ public class Menu : MonoBehaviour {
 
 
 
-
+        /* 
+         * Handle the puzzle scene loading and it's animations to represent it's progress 
+         */
+        //Run LoadedPuzzleScene once the scene loads
+        if(!puzzleSceneLoaded && puzzleSceneCoroutine != null && puzzleSceneCoroutine.isDone) {
+            LoadedPuzzleScene();
+        }
+        
         /*
          * For now, leave the loading functions in the update function
          */
@@ -1099,7 +1112,11 @@ public class Menu : MonoBehaviour {
                     //Reset the remainingTime of the current state
                     ResetRemainingTime(state);
                 }
-                
+                /* Once the terrain has loaded, sent a request to start loading the puzzleRooms scene */
+                else {
+                    LoadPuzzleScene();
+                }
+
                 break;
         }
 
@@ -1235,13 +1252,15 @@ public class Menu : MonoBehaviour {
          * Update the loading boxes as we wait for the scene to load.
          */
 
-        /* Constantly update the START button's text with an ellipsis */
-        Button button = buttons[(int) Buttons.Start];
-        string periods = "";
-        for(int i = Mathf.FloorToInt(4*(loadingAnimationTime % 1)); i > 0; i--) {
-            periods += ".";
+        /* If we are still loading the level, update the start button's text */
+        if(!puzzleSceneLoaded) {
+            Button button = buttons[(int) Buttons.Start];
+            string periods = "";
+            for(int i = Mathf.FloorToInt(4*(loadingAnimationTime % 1)); i > 0; i--) {
+                periods += ".";
+            }
+            button.GetComponentInChildren<Text>().text = "LOADING" + periods;
         }
-        button.GetComponentInChildren<Text>().text = "LOADING" + periods;
 
         /* Position the boxes in their default position to begin with */
         for(int i = 0; i < loadingBoxes.Length; i++) {
@@ -3008,6 +3027,66 @@ public class Menu : MonoBehaviour {
         startWidthRatio = startTextWidthRatio;
         button.GetComponent<Image>().raycastTarget = true;
         button.GetComponent<RectTransform>().GetChild(0).GetComponent<Text>().raycastTarget = true;
+    }
+
+    public void LoadPuzzleScene() {
+        /*
+         * Call this when the game should start loading the puzzleScene
+         */
+
+        /* If the scene has not yet started loading, start a coroutine */
+        if(!puzzleSceneLoading) {
+            puzzleSceneLoading = true;
+            StartCoroutine(PuzzleSceneSceneCoroutine());
+        }
+    }
+
+    IEnumerator PuzzleSceneSceneCoroutine() {
+        /*
+         * Use a coroutine to load the puzzleScene
+         */
+        puzzleSceneCoroutine = SceneManager.LoadSceneAsync("TestArea", LoadSceneMode.Additive);
+        
+        yield return null;
+    }
+
+    void LoadedPuzzleScene() {
+        /*
+         * Runs when the puzzle scene has loaded into the game
+         */
+        Scene terrainScene = SceneManager.GetSceneAt(0);
+        Scene puzzleRoomsScene = SceneManager.GetSceneAt(1);
+        GameObject[] objects;
+        puzzleSceneLoaded = true;
+
+        /* Let the user press the start button */
+        EnableStartButton();
+        
+        /* Get the GlobalRoomController from the puzzleRoom scene */
+        GlobalRoomController GRC = null;
+        objects = puzzleRoomsScene.GetRootGameObjects();
+        for(int i = 0; i < objects.Length; i++) {
+            if(objects[i].GetComponent<GlobalRoomController>() != null) {
+                GRC = objects[i].GetComponent<GlobalRoomController>();
+            }
+        }
+
+        /* Get the startingRoom from the terrain scene */
+        StartingRoom SR = null;
+        objects = terrainScene.GetRootGameObjects();
+        for(int i = 0; i < objects.Length; i++) {
+            if(objects[i].GetComponent<StartingRoom>() != null) {
+                SR = objects[i].GetComponent<StartingRoom>();
+            }
+        }
+
+        /* Link the startingRoom and it's attached room */
+        GRC.startingRoom = SR;
+        SR.exit = GRC.attachedRooms[0];
+        GRC.attachedRooms[0].puzzleRoomParent = SR.gameObject;
+
+        /* Re-create the startingRoom once it is relinked */
+        //SR.UpdateRoom();
     }
 
 
