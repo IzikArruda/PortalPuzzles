@@ -225,21 +225,6 @@ public class Menu : MonoBehaviour {
     public float creditScrollValue = -0.5f;
     private bool isOutside = false;
 
-    /* Values that handle the loading animation */
-    //Animation timing values
-    private float loadingAnimationVisible = 0;
-    private float animationIncrementMod = 0.5f;
-    private float loadingAnimationTime = 0;
-    private float animationTimeMod = 1f;
-    //Positionnal and size values
-    private int boxCount = 4;
-    private float boxSize = 50f;
-    private float boxSepperationSize = 30f;
-    private float heightFromBottom = 30f;
-    //References
-    private RectTransform[] loadingBoxes;
-    private RectTransform[] interiorLoadingBoxes;
-
 
     /* ----------- Built-in Functions ------------------------------------------------------------- */
 
@@ -345,9 +330,6 @@ public class Menu : MonoBehaviour {
         SetupVideoButton();
         SetupSensButton();
         SetupQuitButton();
-
-        /* Run the setup for the loading boxes */
-        SetupLoadingBoxes();
 
         /* After setting up each component, make sure they are properly sized */
         Resize(true);
@@ -498,11 +480,6 @@ public class Menu : MonoBehaviour {
 
         /* Have the loading bar above the cover panel */
         loadingBox.SetAsLastSibling();
-
-        /* Have the loading boxes above the cover panel */
-        for(int i = 0; i < loadingBoxes.Length; i++) {
-            loadingBoxes[i].SetAsLastSibling();
-        }
     }
 
 
@@ -551,40 +528,6 @@ public class Menu : MonoBehaviour {
         /* Add the events to the triggers */
         buttonTrigger.triggers.Add(buttonEnter);
         buttonTrigger.triggers.Add(buttonExit);
-    }
-
-    void SetupLoadingBoxes() {
-        /*
-         * Create the loading boxes used to display the progress of the game loading
-         */
-
-        /* Create the boxes to be used during the loading process */
-        loadingBoxes = new RectTransform[boxCount];
-        interiorLoadingBoxes = new RectTransform[boxCount];
-        for(int i = 0; i < boxCount; i++) {
-
-            /* Create the base and interior loading boxes */
-            loadingBoxes[i] = CreatePanel().GetComponent<RectTransform>();
-            loadingBoxes[i].name = "Loading Box " + (i+1);
-            interiorLoadingBoxes[i] = CreatePanel().GetComponent<RectTransform>();
-            interiorLoadingBoxes[i].name = "Interior Loading Box " + (i+1);
-
-            /* Set the position and size of the loading box */
-            loadingBoxes[i].anchorMin = new Vector2(1, 0);
-            loadingBoxes[i].anchorMax = new Vector2(1, 0);
-            loadingBoxes[i].sizeDelta = new Vector2(boxSize, boxSize);
-            
-            /* Set the interior box to be a child of it's parent loading box */
-            interiorLoadingBoxes[i].SetParent(loadingBoxes[i]);
-            interiorLoadingBoxes[i].anchorMin = new Vector2(0.1f, 0.1f);
-            interiorLoadingBoxes[i].anchorMax = new Vector2(0.9f, 0.9f);
-            interiorLoadingBoxes[i].anchoredPosition = new Vector2(0, 0);
-            interiorLoadingBoxes[i].sizeDelta = new Vector2(0, 0);
-            
-            /* Set the color of the boxes */
-            loadingBoxes[i].GetComponent<Image>().color = new Color(0, 0, 0, 1);
-            interiorLoadingBoxes[i].GetComponent<Image>().color = new Color(1, 1, 1, 1);
-        }
     }
 
     void SetupCreditPanel() {
@@ -1024,7 +967,6 @@ public class Menu : MonoBehaviour {
     }
 
 
-
     /* ----------- Update Functions ------------------------------------------------------------- */
 
     void ExecuteElementFunctions(StateFunction[] stateFunction) {
@@ -1062,28 +1004,12 @@ public class Menu : MonoBehaviour {
                 quitValueCurrent -= Time.deltaTime*quitValueDecreaseMod;
                 if(quitValueCurrent < 0) { quitValueCurrent = 0; }
                 break;
-            /* In startup, only reduce the transition timer while fully loaded. Increment the animation timing. */
+            /* In the startup, prevent the timine from being reduced if the terrain is not 100% loaded */
             case MenuStates.Startup:
                 if(terrainController.GetLoadingPercent() < 1) {
                     //Reset the remainingTime of the current state
                     ResetRemainingTime(state);
-                    //Increment the loadingAnimationVisible value as we are loading
-                    loadingAnimationVisible += animationIncrementMod*Time.deltaTime;
                 }
-                else {
-                    //Once we have loaded, decrement the loadingAnimationVisible value to hide the animation
-                    loadingAnimationVisible -= animationIncrementMod*Time.deltaTime;
-                }
-
-                /* Prevent the loading animation from leaving the range [0, 1] */
-                loadingAnimationVisible = Mathf.Clamp(loadingAnimationVisible, 0, 1);
-
-                /* Increment the time spent in the loading */
-                loadingAnimationTime += animationTimeMod*Time.deltaTime;
-
-                /* Update the animation effect */
-                UpdateLoadingAnimation();
-
                 break;
         }
 
@@ -1247,23 +1173,6 @@ public class Menu : MonoBehaviour {
         loadingBar.sizeDelta = new Vector2(0, 0);
         loadingBar.anchoredPosition = new Vector2(0, 0);
     }
-
-    void UpdateLoadingAnimation() {
-        /*
-         * Update the loading boxes as we wait for the scene to load
-         */
-
-        /* Position the boxes in their default position to begin with */
-        for(int i = 0; i < loadingBoxes.Length; i++) {
-            loadingBoxes[i].anchoredPosition = new Vector2(-(i+0.5f)*boxSize -boxSepperationSize*(i + 1), +boxSize/2f + heightFromBottom);
-        }
-
-        /* Position the boxes either in or out of view relative to the loadingAnimationVisible value */
-        for(int i = 0; i < loadingBoxes.Length; i++) {
-            loadingBoxes[i].anchoredPosition += (1 - Mathf.Sin((Mathf.PI/2f)*(loadingAnimationVisible)))*new Vector2(0, -boxSize -heightFromBottom*2);
-        }
-    }
-
 
     /* ----------- UI Element Update Functions ------------------------------------------------------------- */
 
