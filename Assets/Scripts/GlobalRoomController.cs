@@ -60,7 +60,17 @@ public class GlobalRoomController : MonoBehaviour {
 
 
     /* ----------- Built-in Functions ------------------------------------------------------------- */
-    
+
+    void Start () {
+        /*
+         * Set up values and check if the requires values exist
+         */
+
+	    if(startingRoom == null || puzzleRoomContainer == null || attachedRoomContainer == null || waitingRoomContainer == null) {
+            Debug.Log("WARNING: GlobalRoomController is missing a required linked object");
+        }
+	}
+	
 	void Update () {
 
         /* Repopulate the arrays that track the rooms */
