@@ -1626,6 +1626,9 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* The player's steps will now be stepping on soft ground */
         currentStepType = 1;
+
+        /* Re-enable the boxCollider of the startingRoom's outside window */
+        startingRoom.OutsideWindowBoxCollider(true);
     }
 
     public void ApplyFastfall(bool outsidePuzzlePlayArea) {
