@@ -3082,11 +3082,7 @@ public class Menu : MonoBehaviour {
 
         /* Link the startingRoom and it's attached room */
         GRC.startingRoom = SR;
-        SR.exit = GRC.attachedRooms[0];
         GRC.attachedRooms[0].puzzleRoomParent = SR.gameObject;
-
-        /* Re-create the startingRoom once it is relinked */
-        //SR.UpdateRoom();
     }
 
 
