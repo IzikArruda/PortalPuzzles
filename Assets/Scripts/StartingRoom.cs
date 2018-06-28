@@ -82,7 +82,11 @@ public class StartingRoom : ConnectedRoom {
         /*
          * On startup, build the walls of the room
          */
-         
+
+        /* Run the terrainController's start function to create the noise provider, used with placing the outside window. */
+        outsideTerrain.StartAlt();
+        UpdateMaterials();
+
         /* Only update the room's sizes and positions if it is linked to it's exit */
         if(exit != null) {
             UpdateWalls();
@@ -94,10 +98,6 @@ public class StartingRoom : ConnectedRoom {
         window.portalSet.EntrancePortal.backwardsPortalMesh.GetComponent<PortalView>().Start();
         outsideTerrain.windowCam = window.portalSet.EntrancePortal.backwardsPortalMesh.transform.GetChild(0);
         outsideTerrain.windowExitPoint = windowExit;
-
-        /* Run the terrainController's start function to create the noise provider, used with placing the outside window. */
-        outsideTerrain.StartAlt();
-        UpdateMaterials();
     }
 
     void OnTriggerExit(Collider player) {
