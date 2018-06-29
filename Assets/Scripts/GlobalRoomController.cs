@@ -37,7 +37,10 @@ public class GlobalRoomController : MonoBehaviour {
     public bool repopulateArrays = false;
     public bool resetNames = false;
     public bool relink = false;
-    
+
+    /* StartingRoom */
+    public bool startingRoomUpdate = false;
+
     /* PuzzleRoom */
     public bool puzzleRoomUpdate = false;
     public bool puzzleRoomMultipleUpdate = false;
@@ -106,6 +109,12 @@ public class GlobalRoomController : MonoBehaviour {
         if(waitingRoomUpdate) {
             waitingRoomUpdate = false;
             RepositionWaitingRoomRequest();
+        }
+
+        /* Recreate the startingRoom */
+        if(startingRoomUpdate) {
+            startingRoomUpdate = false;
+            startingRoom.UpdateRoom();
         }
 
         /* Create a new room */

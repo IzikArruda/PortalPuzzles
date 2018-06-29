@@ -974,7 +974,7 @@ public class Menu : MonoBehaviour {
         /* Assign a function to when the slider updates */
         sensitivitySlider.maxValue = sensMax;
         sensitivitySlider.minValue = 0f;
-        sensitivitySlider.onValueChanged.AddListener(delegate { UpdateSensitivitySlider(false); });
+        sensitivitySlider.onValueChanged.AddListener(delegate { UpdateSensitivitySlider(-1); });
 
         /* Add text bellow the slider giving instructions */
         GameObject sliderText = new GameObject("Slider text", typeof(RectTransform));
@@ -1070,8 +1070,7 @@ public class Menu : MonoBehaviour {
         SetupButtonEvents(ref button, QuitButtonMouseEnter, QuitButtonMouseExit);
     }
 
-
-
+    
     /* ----------- Update Functions ------------------------------------------------------------- */
 
     void ExecuteElementFunctions(StateFunction[] stateFunction) {
@@ -1325,21 +1324,7 @@ public class Menu : MonoBehaviour {
         if(rotationTime < 0) { rotationTime = 0; }
         loadingBox.localEulerAngles = new Vector3(0, 0, 180*rotationTime);
     }
-
-    void UpdatePlayerSens(float sens) {
-        /*
-         * Update the playerController's sensitivity to the given value if the menu is linked to a controller
-         */
-
-        /* Set the player's sensivity to the given value */
-        playerController.mouseSens = sens;
-
-
-        ////This is used to set the panel
-        //sensitivitySlider.value = playerController.mouseSens;
-        //sensitivity = sensitivitySlider.value;
-        //playerController.mouseSens = sensitivity;
-    }
+    
 
     /* ----------- UI Element Update Functions ------------------------------------------------------------- */
 
@@ -1632,7 +1617,7 @@ public class Menu : MonoBehaviour {
         bellowText.anchoredPosition = new Vector2(0, 0);
         bellowText.sizeDelta = new Vector2(0, panelHeight/4f);
         bellowText.GetComponent<Outline>().effectDistance = panelHeight*new Vector2(0.009f, 0.009f);
-        SensPanelPositionUpdate(0);
+        SensPanelPositionUpdate(2);
     }
     #endregion
 
@@ -2673,17 +2658,19 @@ public class Menu : MonoBehaviour {
 
     /* ----------- Event/Listener Functions ------------------------------------------------------------- */
 
-    void UpdateSensitivitySlider(bool overrideState) {
+    void UpdateSensitivitySlider(float overrideValue) {
         /*
          * Runs everytime the value in the slider is updated. update the current mouse sensitivity.
-         * If the given overrideState value is true, then we do not need to be in the right state.
+         * If the given overrideState value is above negative, then we do not need to be in the right state.
          */
-        Debug.Log("runs");
+         
         /* Only let the slider change the sensitivity value if we are in the Sensitivity state */
-        if(state == MenuStates.Sensitivity || overrideState) {
-            Debug.Log("IN-FUNCTION " + playerController.mouseSens);
-            sensitivity = sensitivitySlider.value;
-            sensitivitySliderValueText.text = "" +Mathf.Round(sensitivity*100)/100f;
+        if(state == MenuStates.Sensitivity || overrideValue >= 0) {
+            if(overrideValue >= 0) { sensitivity = overrideValue; }
+            else { sensitivity = sensitivitySlider.value; }
+            sensitivitySlider.value = sensitivity;
+
+            sensitivitySliderValueText.text = "" + Mathf.Round(sensitivity*100)/100f;
             playerController.mouseSens = sensitivity;
             /* Change the color of the text depending on how close it is to the edges */
             float red = 0.8f*Mathf.Clamp((sensitivity - sensitivitySlider.maxValue/2f) / (sensitivitySlider.maxValue/2f), 0, 1);
@@ -3107,9 +3094,7 @@ public class Menu : MonoBehaviour {
         terrainController = TC;
 
         /* Update the player and the menu's sensitivity */
-        Debug.Log(playerController.mouseSens);
-        sensitivitySlider.value = playerController.mouseSens;
-        UpdateSensitivitySlider(true);
+        UpdateSensitivitySlider(5);
     }
 
 

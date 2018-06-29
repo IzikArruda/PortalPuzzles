@@ -358,10 +358,13 @@ public class TerrainController : MonoBehaviour {
     public float GetTerrainHeightAt(float x, float z) {
         /*
          * Given an X and Z coordinate, return the height of the terrain in the cache.
+         * If the nosie provider is not yet set, just return 0.
          */
         float terrainHeight = 0;
         
-        terrainHeight = noiseProvider.GetHeightFromWorldPos(x, z);
+        if(noiseProvider != null) {
+            terrainHeight = noiseProvider.GetHeightFromWorldPos(x, z);
+        }
         
         return terrainHeight;
     }

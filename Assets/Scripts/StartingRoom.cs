@@ -85,10 +85,7 @@ public class StartingRoom : ConnectedRoom {
 
         /* Run the terrainController's start function to create the noise provider, used with placing the outside window. */
         outsideTerrain.StartAlt();
-        UpdateMaterials();
-        UpdateWalls();
-        UpdateWindow();
-        UpdateCollider();
+        UpdateRoom();
 
         /* Once the room is setup, link the window's first camera to the TerrainController */
         window.portalSet.EntrancePortal.backwardsPortalMesh.GetComponent<PortalView>().Start();
@@ -116,6 +113,17 @@ public class StartingRoom : ConnectedRoom {
     
     
     /* -------- Update Functions ---------------------------------------------------- */
+
+    public void UpdateRoom() {
+        /*
+         * Update the room's walls, colliders and portal
+         */
+
+        UpdateMaterials();
+        UpdateWalls();
+        UpdateWindow();
+        UpdateCollider();
+    }
 
     void UpdateWalls() {
         /*
