@@ -5,7 +5,9 @@
 		_SecondTex("Secondary Texture", 2D) = "white" {}
 		_RepeatingNoiseTex("Repeating Noise Texture", 2D) = "white" {}
 		_RoomColorTint("Room Color Tint", Vector) = (.0, .0, .0)
+		_RoomColorTintAlt("Room Color Tint Alt", Vector) = (.0, .0, .0)
 		_TeleportHeight("Room Teleport Height", float) = 0
+		_CenterOffset("Room Center Offset", float ) = 0
 	}
 
 	SubShader{
@@ -30,7 +32,9 @@
 		sampler2D _SecondTex;
 		sampler2D _RepeatingNoiseTex;
 		float3 _RoomColorTint;
+		float3 _RoomColorTintAlt;
 		float _TeleportHeight;
+		float _CenterOffset;
 
 		/* Get the UV2, UV3 and UV4 from the mesh */
 		void vert(inout appdata_full v, out Input o) {
@@ -48,7 +52,7 @@
 			return c;
 		}
 
-		fixed3 AdjustColorTint(fixed3 tex, float vertHeight, float teleHeight, fixed3 colorTint) {
+		fixed3 AdjustColorTint(fixed3 tex, float vertHeight, float teleHeight, float centerOffset, fixed3 colorTint, fixed3 colorTintAlt) {
 			/* 
 			 * Adjust the color tint of the given fixed3 texture relative to the given values.
 			 */
@@ -58,10 +62,24 @@
 			fixed heightAmount = saturate(tintlessRatio*(abs(vertHeight) / teleHeight));
 			heightAmount = saturate(heightAmount) - saturate(heightAmount - 1);
 
+
+
+
+
+
+			/* If the vert is bellow the origin, use a different colorTint */
+			fixed colorChange = saturate(sign(vertHeight + centerOffset));
+			colorTint = colorTint*colorChange + colorTintAlt*(1 - colorChange);
+
+
+
+
+
+
 			/* Update the color tint to use part of the walls texture */
-			colorTint.x = tex.r + colorTint.r;
-			colorTint.y = tex.g + colorTint.y;
-			colorTint.z = tex.b + colorTint.z;
+			colorTint.r = tex.r + colorTint.r;
+			colorTint.g = tex.g + colorTint.g;
+			colorTint.b = tex.b + colorTint.b;
 
 			/* Depending on the height, use a portion of the wall's default texture and the tinted texture */
 			tex.r = tex.r*heightAmount + colorTint.r*(1 - heightAmount);
@@ -81,12 +99,12 @@
 
 			/* Adjust the main texture to use the gradient to make it seem not as obviously tilled */
 			/* Gradient controls how hard and often the re-scaled version of the texture is used */
-			fixed3 tex1 = AdjustColorTint(tex2D(_MainTex, IN.uv_MainTex), IN.vertYPos, _TeleportHeight, _RoomColorTint);
+			fixed3 tex1 = AdjustColorTint(tex2D(_MainTex, IN.uv_MainTex), IN.vertYPos, _TeleportHeight, _CenterOffset, _RoomColorTint, _RoomColorTintAlt);
 			fixed largerTexUVScale = -0.2;
 			gradPriority = 0.15;
 			gradScale = 2;
 			gradient = saturate(tex2D(_RepeatingNoiseTex, gradScale*IN.uv3_RepeatingNoiseTex) + gradPriority);
-			tex1 = tex1*saturate(1 - (gradient)) + AdjustColorTint(tex2D(_MainTex, largerTexUVScale*IN.uv_MainTex), IN.vertYPos, _TeleportHeight, _RoomColorTint)*saturate(gradient);
+			tex1 = tex1*saturate(1 - (gradient)) + AdjustColorTint(tex2D(_MainTex, largerTexUVScale*IN.uv_MainTex), IN.vertYPos, _TeleportHeight, _CenterOffset, _RoomColorTint, _RoomColorTintAlt)*saturate(gradient);
 
 			/* The second texture is multiplied by the gradient texture and the gradientUV to smoothly fade between the textures */
 			/* Gradient controls how hard and often the second texture is used above the main texture/wall */

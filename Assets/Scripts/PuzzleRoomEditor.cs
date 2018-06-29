@@ -105,6 +105,9 @@ public class PuzzleRoomEditor : MonoBehaviour {
 
     /* The color tint that gets appleid to the walls of the room. Ranges are from [0, 1] */
     public Vector3 wallColorTint;
+    public Vector3 wallColorTintAlt;
+    public float centerTintOffset;
+
 
 
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
@@ -333,7 +336,10 @@ public class PuzzleRoomEditor : MonoBehaviour {
 
         /* Set the parameters of the wall's shader that requires variables set to this room */
         wallMaterial.SetFloat("_TeleportHeight", minYTeleport);
+        wallMaterial.SetFloat("_CenterOffset", centerTintOffset);
         wallMaterial.SetVector("_RoomColorTint", wallColorTint);
+        wallMaterial.SetVector("_RoomColorTintAlt", wallColorTintAlt);
+        
 
 
         /* Make sure the blocker material is properly created */
