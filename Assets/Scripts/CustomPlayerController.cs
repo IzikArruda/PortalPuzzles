@@ -64,7 +64,7 @@ public class CustomPlayerController : MonoBehaviour {
     /* Sliding determines how much of getAxis should be used over getAxisRaw. */
     [Range(1, 0)]
     public float sliding;
-    /* Sensitivity for the mouse. Controlled by the menu. */
+    /* Sensitivity for the mouse. mouseSens Controlled by the menu, mod controlled by programmer */
     [HideInInspector]
     public float mouseSens = 5;
     [HideInInspector]
@@ -178,7 +178,8 @@ public class CustomPlayerController : MonoBehaviour {
     private int currentStepType = 0;
 
     /* --- Menu Variables --------------------------- */
-    private Menu playerMenu;
+    [HideInInspector]
+    public Menu playerMenu;
     /* Camera position values */
     private Vector3 camDestinationPos;
     private Quaternion camDestinationRot;
@@ -212,10 +213,6 @@ public class CustomPlayerController : MonoBehaviour {
         /*
          * Initilize required objects and set starting values for certain variables 
          */
-         
-        /* Set-up the menu used by the player */
-        playerMenu = GetComponent<Menu>();
-        if(playerMenu != null) { playerMenu.InitializeMenu(this); }
 
         /* Link the player's step tracker to their sound script */
         playerStepTracker.SetSoundsScript(playerSoundsScript);

@@ -2,6 +2,7 @@
 using UnityEngine.UI;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 using System.Collections;
 
@@ -130,15 +131,17 @@ public class Menu : MonoBehaviour {
     StateFunction[] sensPanelTransitions;
 
     /* Button height to width ratios. Set manually and is unique for each font + text content. */
-    private float startBonusSize = 1.75f;
     private float quitBonusSize = 0.75f;
-    private float startWidthRatio = 4.45f;
-    private float continueWidthRatio = 7.125f;
     private float videoWidthRatio = 4.25f;
     private float sensWidthRatio = 8.25f;
     private float quitWidthRatio = 3.125f;
     private float resolutionWidthRatio = 7f;
     private float framerateWidthRatio = 3f;
+    //The many width ratios the start button will use. Make sure to set it when changing text
+    private float startWidthRatio;
+    private float startBonusSize = 1.25f;
+    private float startTextWidthRatio = 4.45f;
+    private float continueTextWidthRatio = 7.125f;
     //Set this to the largest ratio we currently have. This is to make sure each element goes offscreen at the same speed
     private float largestRatio;
     //How much NOT hovering over the button will reduce the button's size
@@ -153,6 +156,8 @@ public class Menu : MonoBehaviour {
     private float maxHeight = 150f;
     private float buttonSizeMod = 0.5f;
     private float buttonHeight;
+    private float buttonEdgeOffset = 35f;
+    private float buttonSepperatorDistance = 20f;
 
     /* A link to the player's controller */
     private CustomPlayerController playerController;
@@ -160,7 +165,7 @@ public class Menu : MonoBehaviour {
     /* The fonts used for the text of the game */
     public Font buttonFont;
     public Font otherTextFont;
-    
+
     /* The canvas that holds all the UI elements */
     public Canvas canvas;
     private RectTransform canvasRect;
@@ -173,14 +178,13 @@ public class Menu : MonoBehaviour {
     public Slider sensSliderReference;
     public Dropdown videoOptionsDropwdownReference;
     public Toggle videoOptionsToggleReference;
-    public RectTransform loadingBox;
 
     /* The sensitivity slider and it's current value */
     private Slider sensitivitySlider;
     private Text sensitivitySliderValueText;
     private float sensMax = 25f;
     private float sensitivity;
-    
+
     /* An array that holds the main buttons of the UI. Each index has it's own button */
     private Button[] buttons;
     private RectTransform[] buttonRects;
@@ -214,7 +218,7 @@ public class Menu : MonoBehaviour {
     private Vector3 savedRotation;
     private float recoveryTime;
 
-    /* The main terrainController of the game. Used to access it's sunflare functions */
+    /* The main terrainController of the game. Used to access it's sunflare and loading progress */
     public TerrainController terrainController;
 
     /* Global values with minor/single uses */
@@ -225,14 +229,48 @@ public class Menu : MonoBehaviour {
     public float creditScrollValue = -0.5f;
     private bool isOutside = false;
 
+    /* Values that handle the loading animation */
+    //Animation timing values
+    private float loadingAnimationVisible = 0;
+    private float animationIncrementMod = 0.5f;
+    private float loadingAnimationTime = 0;
+    private float animationTimeMod = 1f;
+    private float loadingAnimationLoopTime = 2.25f;
+    private float loadingAnimationOffset = 0.25f;
+    //Positionnal and size values
+    private int boxCount = 4;
+    private float boxSize = 50f;
+    private float boxSepperationSize = 30f;
+    private float heightFromBottom = 35f;
+    //References
+    private RectTransform[] loadingBoxes;
+    private RectTransform[] interiorLoadingBoxes;
+
+    /* Values that handle the puzzle scene loading */
+    private bool puzzleSceneLoaded = false;
+    private bool terrainGenerated = false;
+    private AsyncOperation puzzleSceneCoroutine;
+
 
     /* ----------- Built-in Functions ------------------------------------------------------------- */
+
+    void Start() {
+        /*
+         * Initialize the menu and start loading the scene of the game
+         */
+
+        /* Initialize the menu */
+        InitializeMenu();
+
+        /* Start loading the puzzleScene */
+        LoadPuzzleScene();
+    }
 
     void Update() {
         /*
          * Check if the screen has been resized and run any per-frame update calls for any UI elements
          */
-        
+
         /* Check if the screen has been resized */
         if(Screen.width != screenWidth || Screen.height != screenHeight) {
             Resize(true);
@@ -266,7 +304,43 @@ public class Menu : MonoBehaviour {
         ExecuteElementFunctions(videoPanelTransitions);
         /* Sens panel */
         ExecuteElementFunctions(sensPanelTransitions);
-           
+        
+        /*
+         * Handle the scene and terrain loader trackers 
+         */
+        if(!puzzleSceneLoaded && puzzleSceneCoroutine != null && puzzleSceneCoroutine.isDone) {
+            /* The puzzle scene has loaded */
+            LoadedPuzzleScene();
+        }
+        if(!terrainGenerated && terrainController != null && terrainController.GetLoadingPercent() < 1) {
+            /* The terrain has been generated */
+            terrainGenerated = true;
+        }
+        
+        /*
+         * Handle the animation that is used to represent the loading progress
+         */
+        if(!FinishedLoading()) {
+            /* Increment the loadingAnimationVisible value as we are loading */
+            loadingAnimationVisible += animationIncrementMod*Time.deltaTime;
+        }
+        else {
+            /* Once we have loaded, decrement the loadingAnimationVisible value to hide the animation */
+            loadingAnimationVisible -= animationIncrementMod*Time.deltaTime;
+        }
+
+        /* Prevent the loading animation from leaving the range [0, 1] */
+        loadingAnimationVisible = Mathf.Clamp(loadingAnimationVisible, 0, 1);
+
+        /* Only animate the loading animation if it's visible */
+        if(loadingAnimationVisible > 0) {
+            /* Increment the time spent in the loading */
+            loadingAnimationTime += animationTimeMod*Time.deltaTime;
+
+            /* Update the animation effect */
+            UpdateLoadingAnimation();
+        }
+
         /* Change the current state if needed after all the per-frame update functions are done */
         UpdateCurrentState();
     }
@@ -274,10 +348,9 @@ public class Menu : MonoBehaviour {
 
     /* ----------- Initialization Functions ------------------------------------------------------------- */
 
-    public void InitializeMenu(CustomPlayerController controller) {
+    public void InitializeMenu() {
         /*
-         * Sets up the main menu. Requires a link to the playerController to add functionallity to the buttons.
-         * Start the game in the IntroToMain transition state.
+         * Sets up the main menu. Start the game in the IntroToMain transition state.
          */
 
         /* Make sure the window's sizes are properly set */
@@ -291,15 +364,10 @@ public class Menu : MonoBehaviour {
         ChangeState(MenuStates.Startup);
 
         /* Set the largestRatio to reflect the largest button */
-        largestRatio = startWidthRatio*startBonusSize;
-        largestRatio = Mathf.Max(largestRatio, continueWidthRatio*startBonusSize);
-        largestRatio = Mathf.Max(largestRatio, sensWidthRatio);
-
-        /* Link the global variables of the script */
-        playerController = controller;
-        canvasRect = canvas.GetComponent<RectTransform>();
+        largestRatio = continueTextWidthRatio*startBonusSize;
 
         /* Create and populate the array of panels and their sizes used by the UI */
+        canvasRect = canvas.GetComponent<RectTransform>();
         panelRects = new RectTransform[System.Enum.GetValues(typeof(Panels)).Length];
         panelsWidth = new float[System.Enum.GetValues(typeof(Panels)).Length];
         panelsHeight = new float[System.Enum.GetValues(typeof(Panels)).Length];
@@ -330,6 +398,9 @@ public class Menu : MonoBehaviour {
         SetupVideoButton();
         SetupSensButton();
         SetupQuitButton();
+
+        /* Run the setup for the loading boxes */
+        SetupLoadingBoxes();
 
         /* After setting up each component, make sure they are properly sized */
         Resize(true);
@@ -403,7 +474,7 @@ public class Menu : MonoBehaviour {
             new StateFunction(MenuStates.SensToMain, UCreditPanelSensToMain),
             new StateFunction(MenuStates.MainToSens, UCreditPanelMainToSens),
             new StateFunction(MenuStates.MainToQuit, UCreditPanelQuit)
-            
+
         };
         coverPanelTransitions = new StateFunction[] {
             new StateFunction(MenuStates.Startup, UCoverPanelStartup),
@@ -442,7 +513,7 @@ public class Menu : MonoBehaviour {
         GameObject buttonObject = Instantiate(buttonReference);
         buttonObject.transform.SetParent(canvas.transform);
         buttonObject.SetActive(true);
-        
+
         return buttonObject;
     }
 
@@ -469,7 +540,7 @@ public class Menu : MonoBehaviour {
             QuitButtonReset();
         }
     }
-    
+
     void ReorderHeirarchy() {
         /*
          * Reorder the hierarchy of the canvas.
@@ -478,8 +549,10 @@ public class Menu : MonoBehaviour {
         /* Have the cover panel above all else */
         panelRects[(int) Panels.Cover].transform.SetAsLastSibling();
 
-        /* Have the loading bar above the cover panel */
-        loadingBox.SetAsLastSibling();
+        /* Have the loading boxes above the cover panel */
+        for(int i = 0; i < loadingBoxes.Length; i++) {
+            loadingBoxes[i].SetAsLastSibling();
+        }
     }
 
 
@@ -530,13 +603,45 @@ public class Menu : MonoBehaviour {
         buttonTrigger.triggers.Add(buttonExit);
     }
 
+    void SetupLoadingBoxes() {
+        /*
+         * Create the loading boxes used to display the progress of the game loading
+         */
+
+        /* Create the boxes to be used during the loading process */
+        loadingBoxes = new RectTransform[boxCount];
+        interiorLoadingBoxes = new RectTransform[boxCount];
+        for(int i = 0; i < boxCount; i++) {
+
+            /* Create the base and interior loading boxes */
+            loadingBoxes[i] = CreatePanel().GetComponent<RectTransform>();
+            loadingBoxes[i].name = "Loading Box " + (i+1);
+            interiorLoadingBoxes[i] = CreatePanel().GetComponent<RectTransform>();
+            interiorLoadingBoxes[i].name = "Interior Loading Box " + (i+1);
+
+            /* Set the position and size of the loading box */
+            loadingBoxes[i].anchorMin = new Vector2(1, 0);
+            loadingBoxes[i].anchorMax = new Vector2(1, 0);
+            loadingBoxes[i].sizeDelta = new Vector2(boxSize, boxSize);
+
+            /* Set the interior box to be a child of it's parent loading box */
+            interiorLoadingBoxes[i].SetParent(loadingBoxes[i]);
+            interiorLoadingBoxes[i].anchoredPosition = new Vector2(0, 0);
+            interiorLoadingBoxes[i].sizeDelta = new Vector2(0, 0);
+
+            /* Set the color of the boxes */
+            loadingBoxes[i].GetComponent<Image>().color = new Color(0, 0, 0, 1);
+            interiorLoadingBoxes[i].GetComponent<Image>().color = new Color(1, 1, 1, 1);
+        }
+    }
+
     void SetupCreditPanel() {
         /*
          * Setup the credits panel that scrolls up into the main menu
          */
         int panelEnum = (int) Panels.Credit;
         RectTransform mainPanel = panelRects[panelEnum];
-        mainPanel.name = "Credit panel"; 
+        mainPanel.name = "Credit panel";
 
 
         /* The main panel covers half the X width and all the Y height */
@@ -549,7 +654,7 @@ public class Menu : MonoBehaviour {
 
         /* Set the color so that the panel is invisible */
         mainPanel.GetComponent<Image>().color = new Color(0, 0, 0, 0);
-        
+
         /* 
          * Create the "Thank you for playing" text that is placed on the bottom
          */
@@ -575,7 +680,7 @@ public class Menu : MonoBehaviour {
         thanksText.text = "thanks for playing";
         //Set the line spacing to a high value to ensure it will stay on one line
         thanksText.lineSpacing = 100;
-        
+
         /* 
          * Create the text that indicates the following names are the songs used in the game  
          */
@@ -599,7 +704,7 @@ public class Menu : MonoBehaviour {
         songListText.color = new Color(1, 1, 1, 1);
         songListText.GetComponent<Outline>().effectColor = new Color(0, 0, 0, 1);
         songListText.text = " song list";
-        
+
         /*
          * Create a text for each song used in the game
          */
@@ -653,7 +758,7 @@ public class Menu : MonoBehaviour {
         /* Set the anchors so it becomes a full stretch layout */
         mainPanel.anchorMin = new Vector2(0, 0);
         mainPanel.anchorMax = new Vector2(1, 1);
-        
+
         /* Set the color and remove the image so that the panel is invisible */
         mainPanel.GetComponent<Image>().color = new Color(0, 0, 0, 0);
 
@@ -680,7 +785,7 @@ public class Menu : MonoBehaviour {
         /* Set the color so that the panel is invisible */
         videoPanel.GetComponent<Image>().color = new Color(0, 0, 0, 0);
 
-        
+
         float optionPanelHeight = buttonHeight/2f;
         /*
          * Setup the panel for each option along with it's text component
@@ -745,7 +850,8 @@ public class Menu : MonoBehaviour {
             if(i == 0) {
                 toggle.onValueChanged.AddListener(delegate { UpdatedWindowedToggle(toggle); });
                 toggle.isOn = !Screen.fullScreen;
-            }else if(i == 1) {
+            }
+            else if(i == 1) {
                 toggle.onValueChanged.AddListener(delegate { LockMouseToggle(toggle); });
                 mouseLock = Cursor.lockState == CursorLockMode.Confined;
                 toggle.isOn = mouseLock;
@@ -822,7 +928,7 @@ public class Menu : MonoBehaviour {
             drop.value = selectedOption;
             drop.RefreshShownValue();
         }
-        
+
         /* End by setting the position/rotation of the panel after all components have been properly set */
         VideoPanelPositionUpdate(0);
     }
@@ -868,11 +974,8 @@ public class Menu : MonoBehaviour {
         /* Assign a function to when the slider updates */
         sensitivitySlider.maxValue = sensMax;
         sensitivitySlider.minValue = 0f;
-        sensitivitySlider.value = playerController.mouseSensMod;
-        sensitivity = sensitivitySlider.value;
-        playerController.mouseSens = sensitivity;
-        sensitivitySlider.onValueChanged.AddListener(delegate { UpdateSensitivitySlider(); });
-        
+        sensitivitySlider.onValueChanged.AddListener(delegate { UpdateSensitivitySlider(false); });
+
         /* Add text bellow the slider giving instructions */
         GameObject sliderText = new GameObject("Slider text", typeof(RectTransform));
         Text text = sliderText.AddComponent<Text>();
@@ -915,12 +1018,13 @@ public class Menu : MonoBehaviour {
 
         /* Setup the text of the button */
         SetupButtonText(button.GetComponentInChildren<Text>(), "START");
+        startWidthRatio = startTextWidthRatio;
 
         /* Setup the event triggers for mouse clicks and hovers */
         button.onClick.AddListener(StartButtonClick);
         SetupButtonEvents(ref button, StartButtonMouseEnter, StartButtonMouseExit);
     }
-    
+
     void SetupVideoButton() {
         /*
          * Set the variables of the video button
@@ -967,6 +1071,7 @@ public class Menu : MonoBehaviour {
     }
 
 
+
     /* ----------- Update Functions ------------------------------------------------------------- */
 
     void ExecuteElementFunctions(StateFunction[] stateFunction) {
@@ -987,7 +1092,7 @@ public class Menu : MonoBehaviour {
          * Do not update the state as we want the per-frame update functions to atleast run 
          * once the transition states have reached 0.
          */
-         
+
         for(int i = 0; i < transitionStates.Length; i++) {
             /* Find the transition that links to the current state we are in */
             if(state == transitionStates[i].from) {
@@ -996,7 +1101,7 @@ public class Menu : MonoBehaviour {
                 i = transitionStates.Length;
             }
         }
-        
+
         /* Update the more unique per-frame update values */
         switch(state) {
             /* Update the value used to determine when to quit the game */
@@ -1004,18 +1109,19 @@ public class Menu : MonoBehaviour {
                 quitValueCurrent -= Time.deltaTime*quitValueDecreaseMod;
                 if(quitValueCurrent < 0) { quitValueCurrent = 0; }
                 break;
-            /* In the startup, prevent the timine from being reduced if the terrain is not 100% loaded */
+            /* In startup, only reduce the transition timer while fully loaded. Increment the animation timing. */
             case MenuStates.Startup:
-                if(terrainController.GetLoadingPercent() < 1) {
-                    //Reset the remainingTime of the current state
+                /* Reset the startup timing if the puzzle scene or the terrain have not yet loaded */
+                if(!FinishedLoading()) {
                     ResetRemainingTime(state);
                 }
+
                 break;
         }
 
         /* In any of the states that will show the credit panel, increment the creditScrollValue value */
         if(isOutside && (
-            state == MenuStates.Empty || 
+            state == MenuStates.Empty ||
             state == MenuStates.Main ||
             state == MenuStates.EmptyToMain ||
             state == MenuStates.MainToEmpty)) {
@@ -1039,7 +1145,7 @@ public class Menu : MonoBehaviour {
          * Check the current state and the transition values. Transition values will either be
          * at or above 0. Once they are at 0, we can transition to the next state.
          */
-         
+
         for(int i = 0; i < transitionStates.Length; i++) {
             /* Find the transition that links to the current state we are in */
             if(state == transitionStates[i].from) {
@@ -1050,7 +1156,7 @@ public class Menu : MonoBehaviour {
                 i = transitionStates.Length;
             }
         }
-        
+
         /* Check for the more unique transitions using non-Transition object values */
         switch(state) {
             case MenuStates.Main:
@@ -1095,30 +1201,34 @@ public class Menu : MonoBehaviour {
     void UpdateSensitivityCamera() {
         /*
          * If it's in the right state, update the camera's current rotation 
-         * to test the new sensitivty of the mouse
+         * to test the new sensitivty of the mouse.
+         * 
+         * Also, if the player is not yet linked to the menu, do not run anything
          */
-         
-        /* Holding right-click in the Sensitivity state will update the testingRotation value */
-        if(state == MenuStates.Sensitivity && Input.GetMouseButton(1)) {
 
-            /* Get the player's sensitivity modifier */
-            float sens = playerController.mouseSens / playerController.mouseSensMod;
+        if(playerController != null) {
+            /* Holding right-click in the Sensitivity state will update the testingRotation value */
+            if(state == MenuStates.Sensitivity && Input.GetMouseButton(1)) {
 
-            /* Apply the mouse movement to the extraCamRotation */
-            extraCamRotation += sens*new Vector3(-Input.GetAxis("Mouse Y"), Input.GetAxis("Mouse X"), 0);
-            recoveryTime = 0;
-            savedRotation = extraCamRotation;
+                /* Get the player's sensitivity modifier */
+                float sens = playerController.mouseSens / playerController.mouseSensMod;
+
+                /* Apply the mouse movement to the extraCamRotation */
+                extraCamRotation += sens*new Vector3(-Input.GetAxis("Mouse Y"), Input.GetAxis("Mouse X"), 0);
+                recoveryTime = 0;
+                savedRotation = extraCamRotation;
+            }
+
+            /* Animate the camera moving back to it's savedRotation */
+            else {
+                recoveryTime += Time.deltaTime;
+                if(recoveryTime > 1) { recoveryTime = 1; }
+                extraCamRotation = Mathf.Cos(recoveryTime*Mathf.PI/2f)*savedRotation;
+            }
+
+            /* Set the camera's rotation */
+            playerController.extraCamRot = extraCamRotation;
         }
-        
-        /* Animate the camera moving back to it's savedRotation */
-        else{
-            recoveryTime += Time.deltaTime;
-            if(recoveryTime > 1) { recoveryTime = 1; }
-            extraCamRotation = Mathf.Cos(recoveryTime*Mathf.PI/2f)*savedRotation;
-        }
-
-        /* Set the camera's rotation */
-        playerController.extraCamRot = extraCamRotation;
     }
 
     void UpdateSunFlare() {
@@ -1127,51 +1237,108 @@ public class Menu : MonoBehaviour {
          * This is used in the intro of the menu opening to transition from the white startup to the menu.
          */
         float bonus = 1;
-        if(state == MenuStates.Startup) {
-            Transition transition = GetTransitionFromState(state);
-            /* Start fading the sun flare amount 5% in, ending 75% into the startup */
-            float transitionBonus = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.05f, 0.75f);
-            /* Use a cosine function to smooth out the flare changes */
-            transitionBonus = (Mathf.Cos(transitionBonus*Mathf.PI)+1)/2f;
+        
+        Transition transition = GetTransitionFromState(state);
+        /* Start fading the sun flare amount 5% in, ending 75% into the startup */
+        float transitionBonus = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.05f, 0.75f);
+        /* Use a cosine function to smooth out the flare changes */
+        transitionBonus = (Mathf.Cos(transitionBonus*Mathf.PI)+1)/2f;
 
-            /* Make the fade out use a sin function */
-            bonus += transitionBonus*40;
-        }
+        /* Make the fade out use a sin function */
+        bonus += transitionBonus*40;
+
         terrainController.UpdateSunFlareMod(bonus);
     }
 
-    void UpdateLoadingBar() {
+    void UpdateLoadingAnimation() {
         /*
-         * Update the sizes and colors of the loading bar to reflect the current
+         * Update the loading boxes as we wait for the scene to load.
          */
-        float transitionFade;
-        Transition transition = GetTransitionFromState(state);
-        loadingBox.gameObject.SetActive(true);
-        RectTransform loadingBar = loadingBox.GetChild(0).gameObject.GetComponent<RectTransform>();
-        
-        /* Alter the transitionFade amount relative to the amount of time spent loading */
-        float loadingTime = Mathf.Sin(Mathf.PI*0.5f*Mathf.Clamp(Time.timeSinceLevelLoad/1.5f, 0, 1));
-
-        /* Update the colors of the bar/box relative to the timing of the current state */
-        transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.05f, 0.1f);
-        loadingBar.GetComponent<Image>().color = new Color(0, 0, 0, (1 - transitionFade*2)*loadingTime);
-        if(transitionFade > 0) {
-            loadingBox.GetComponent<Image>().color = new Color(0, 0, 0, 0);
-        }else {
-            loadingBox.GetComponent<Image>().color = new Color(0, 0, 0, (1 - transitionFade*2)*loadingTime);
+         
+        /* Position the boxes in their default position to begin with */
+        for(int i = 0; i < loadingBoxes.Length; i++) {
+            loadingBoxes[i].anchoredPosition = new Vector2(-(i+0.5f)*boxSize -boxSepperationSize*(i + 1), +boxSize/2f + heightFromBottom);
         }
 
-        /* Update the size of the loading box */
-        loadingBox.anchorMin = new Vector2(0.2f, 0.1f);
-        loadingBox.anchorMax = new Vector2(0.8f, 0.2f);
-        loadingBox.sizeDelta = new Vector2(0, 0);
-        loadingBox.anchoredPosition = new Vector2(0, -(1 - loadingTime)*screenHeight/10f);
+        /* Position the boxes either in or out of view relative to the loadingAnimationVisible value */
+        for(int i = 0; i < loadingBoxes.Length; i++) {
+            loadingBoxes[i].anchoredPosition += (1 - Mathf.Sin((Mathf.PI/2f)*(loadingAnimationVisible)))*new Vector2(0, -boxSize -heightFromBottom*3);
+        }
 
-        /* Update the size of the loading bar relative to the loading completion rate */
-        float loadingRatio = terrainController.GetLoadingPercent();
-        loadingBar.anchorMax = new Vector2(loadingRatio, 1);
-        loadingBar.sizeDelta = new Vector2(0, 0);
-        loadingBar.anchoredPosition = new Vector2(0, 0);
+        /* Animate each loadingBox relative to the currnet time spent loading */
+        for(int i = 0; i < loadingBoxes.Length; i++) {
+            AnimateLoadingBox(i, loadingAnimationTime - loadingAnimationOffset*i);
+        }
+
+        /* Get the progress of the loading process and update the loading boxes */
+        UpdateLoadingProgress();
+    }
+
+    void UpdateLoadingProgress() {
+        /*
+         * Resize the inner boxes of each loading box relative to the progress of the loading time.
+         * The progress will track both the scene loading and the terrain generation.
+         * 
+         * Through multiple test while loading the game, it was discovered that the game spends 
+         * most of it's scene loading time between the ranges of [0.013, 0.0145]. Therefore, adjust the
+         * puzzleScene progress to use scale around that range.
+         * 
+         * LoadRatio determines how much of the progress uses the scene loading (use a range of [0, 1]).
+         */
+        float loadRatio = 0.5f;
+        float progress, boxSize;
+
+        /* Get the progress of the scene loading */
+        if(!puzzleSceneLoaded) {
+            progress = loadRatio*RangeBetween(puzzleSceneCoroutine.progress, 0.013f, 0.0145f);
+        }
+        /* Get the progress of the terrain generation */
+        else {
+            progress = loadRatio + (1 - loadRatio)*terrainController.GetLoadingPercent();
+        }
+
+        /* Go through each box and adjust their inner box size to meassure the loading progress */
+        for(int i = 0; i < interiorLoadingBoxes.Length; i++) {
+            boxSize = 0.1f + 0.4f*RangeBetween(progress, ((i+0f)/loadingBoxes.Length), ((i+1f)/loadingBoxes.Length));
+            interiorLoadingBoxes[(interiorLoadingBoxes.Length-1) - i].anchorMax = new Vector2((1 - boxSize), (1 - boxSize));
+            interiorLoadingBoxes[(interiorLoadingBoxes.Length-1) - i].anchorMin = new Vector2(boxSize, boxSize);
+        }
+    }
+
+    void AnimateLoadingBox(int boxIndex, float loadingTime) {
+        /*
+         * Animate the loading box given by the index with the given timing.
+         */
+        RectTransform loadingBox = loadingBoxes[boxIndex];
+        Vector2 animation = Vector2.zero;
+        //Adjust the time so it cycles through a range of [0, 1]
+        loadingTime = Mathf.Sin(Mathf.PI*((loadingTime) % loadingAnimationLoopTime)/loadingAnimationLoopTime);
+
+        /* Animate the position of the box */
+        animation = new Vector2(0, heightFromBottom*Mathf.Sin(Mathf.PI*loadingTime));
+        //Add a set amount of height depending on how far into the time it is
+        animation += new Vector2(0, heightFromBottom*loadingTime);
+        loadingBox.anchoredPosition += animation;
+
+        /* Animate the rotation of the box */
+        float rotationTime = Mathf.Sin(-Mathf.PI*0.025f + Mathf.PI*1.05f*loadingTime);
+        if(rotationTime < 0) { rotationTime = 0; }
+        loadingBox.localEulerAngles = new Vector3(0, 0, 180*rotationTime);
+    }
+
+    void UpdatePlayerSens(float sens) {
+        /*
+         * Update the playerController's sensitivity to the given value if the menu is linked to a controller
+         */
+
+        /* Set the player's sensivity to the given value */
+        playerController.mouseSens = sens;
+
+
+        ////This is used to set the panel
+        //sensitivitySlider.value = playerController.mouseSens;
+        //sensitivity = sensitivitySlider.value;
+        //playerController.mouseSens = sensitivity;
     }
 
     /* ----------- UI Element Update Functions ------------------------------------------------------------- */
@@ -1183,10 +1350,10 @@ public class Menu : MonoBehaviour {
          */
         int panelEnum = (int) Panels.Credit;
         RectTransform mainPanel = panelRects[panelEnum];
-        
+
         CreditPanelPositionUpdate(creditScrollValue);
     }
-    
+
     void UCreditPanelVideoToMain() {
         /*
          * Animate the credits panel as it rotates from the top of the screen to be viewed by the player
@@ -1214,7 +1381,7 @@ public class Menu : MonoBehaviour {
         /* Get the transition ratio for the current state */
         Transition transition = GetTransitionFromState(state);
         float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 1);
-        
+
         /* Make the panel rotate down off screen from it's current scroll position */
         rect.pivot = new Vector2(0.5f, 0);
         rect.localEulerAngles = new Vector3(90*transitionFade, 0, 0);
@@ -1231,7 +1398,7 @@ public class Menu : MonoBehaviour {
         /* Get the transition ratio for the current state */
         Transition transition = GetTransitionFromState(state);
         float transitionFade = 1 - Mathf.Cos((Mathf.PI/2f)*AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 1));
-        
+
         /* Get the current scrolling position of the panel */
         CreditPanelPositionUpdate(creditScrollValue);
 
@@ -1250,7 +1417,7 @@ public class Menu : MonoBehaviour {
         /* Get the transition ratio for the current state */
         Transition transition = GetTransitionFromState(state);
         float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 1);
-        
+
         /* Get the current scrolling position of the panel */
         CreditPanelPositionUpdate(creditScrollValue);
 
@@ -1316,32 +1483,34 @@ public class Menu : MonoBehaviour {
         transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0.05f, 0.25f);
         rectImage.color = new Color(1, 1, 1, 1 - transitionFade);
 
-        /* Update the camera's rotation and the sun flare's power during the startup */
-        UpdateSunFlare();
-        transitionFade = TimeRatio(transition.timeRemaining, transition.timeMax);
-        /* Start adjusting the camera's position 50% into the startup, ending 90% in */
-        float ratio = AdjustRatio(transitionFade, 0.5f, 0.9f);
-        /* Use a cosine function to smooth out the movement */
-        ratio = (Mathf.Cos(ratio*Mathf.PI)+1)/2f;
 
-        /* Get the angle that will make the camera face the sun */
-        float camX = -terrainController.directionalLight.transform.eulerAngles.x;
-        float camY = terrainController.directionalLight.transform.eulerAngles.y;
-        /* Adjust the roation amount to prevent rotations above 180 degrees */
-        if(camX / 360 > 0) { camX -= ((int) camX/360)*360; }
-        if(camX / 180 > 0) { camX -= ((int) camX/180)*360; }
-        if(camY / 360 > 0) { camY -= ((int)camY/360)*360; }
-        if(camY / 180 > 0) { camY -= ((int) camY/180)*360; }
-        extraCamRotation = new Vector3(camX, camY, 0);
 
-        /* Reduce the angle as we are leaving the startup */
-        extraCamRotation *= ratio;
+        /* Only run the following lines if the playerController and terrainController are linked to the menu */
+        if(playerController != null && terrainController != null) {
+            /* Update the camera's rotation and the sun flare's power during the startup */
+            UpdateSunFlare();
+            transitionFade = TimeRatio(transition.timeRemaining, transition.timeMax);
+            /* Start adjusting the camera's position 50% into the startup, ending 90% in */
+            float ratio = AdjustRatio(transitionFade, 0.5f, 0.9f);
+            /* Use a cosine function to smooth out the movement */
+            ratio = (Mathf.Cos(ratio*Mathf.PI)+1)/2f;
 
-        /* Apply the angle to the camera */
-        playerController.extraCamRot = extraCamRotation;
+            /* Get the angle that will make the camera face the sun */
+            float camX = -terrainController.directionalLight.transform.eulerAngles.x;
+            float camY = terrainController.directionalLight.transform.eulerAngles.y;
+            /* Adjust the roation amount to prevent rotations above 180 degrees */
+            if(camX / 360 > 0) { camX -= ((int) camX/360)*360; }
+            if(camX / 180 > 0) { camX -= ((int) camX/180)*360; }
+            if(camY / 360 > 0) { camY -= ((int) camY/360)*360; }
+            if(camY / 180 > 0) { camY -= ((int) camY/180)*360; }
+            extraCamRotation = new Vector3(camX, camY, 0);
 
-        /* Update the loading bar used in the intro */
-        UpdateLoadingBar();
+            /* Reduce the angle as we are leaving the startup */
+            extraCamRotation *= ratio;
+
+            /* Apply the angle to the camera */
+            playerController.extraCamRot = extraCamRotation;
+        }
     }
 
     void UCoverPanelMainToQuit() {
@@ -1357,7 +1526,7 @@ public class Menu : MonoBehaviour {
         /* Fade the color out relative to the remaining time before the game closes */
         rectImage.color = new Color(0, 0, 0, transitionFade);
     }
-    
+
     void CoverPanelReset() {
         /*
          * Reset the sizes of the cover panel 
@@ -1466,7 +1635,7 @@ public class Menu : MonoBehaviour {
         SensPanelPositionUpdate(0);
     }
     #endregion
-    
+
     #region Video Panel Updates
     void UVideoPanelVideo() {
         /*
@@ -1541,10 +1710,10 @@ public class Menu : MonoBehaviour {
         Text text;
         float optionPanelHeight = buttonHeight/2f;
         float fromCenterToTopOfVideoPanel = (screenHeight*panelsHeight[panelEnum])/2f - buttonHeight/2f;
-        
+
         /* Set the new size of the video panel */
         videoPanel.sizeDelta = new Vector2(screenWidth*panelsWidth[panelEnum], screenHeight*panelsHeight[panelEnum]);
-        
+
         /*
          * Windowed, Mouse lock & Mouse focus options
          */
@@ -1563,11 +1732,11 @@ public class Menu : MonoBehaviour {
             checkBoxRect.anchoredPosition = new Vector2(optionPanelHeight, 0);
             checkBoxRect.sizeDelta = new Vector2(optionPanelHeight, 0);
         }
-        
+
         /*
          * Resolution & Framerate dropdowns
          */
-         for(int i = 0; i < 2; i++) {
+        for(int i = 0; i < 2; i++) {
             /* Get the components of the dropdown */
             panelRect = videoPanel.GetChild(videoPanel.childCount-1 - i).GetComponent<RectTransform>();
             RectTransform dropdownRect = panelRect.GetChild(1).GetComponent<RectTransform>();
@@ -1577,12 +1746,13 @@ public class Menu : MonoBehaviour {
             /* Set the sizes of the panel */
             panelRect.anchoredPosition = new Vector2(0, fromCenterToTopOfVideoPanel -(videoPanel.childCount-1.5f)*optionPanelHeight*3/2f);
             panelRect.sizeDelta = new Vector2(0, optionPanelHeight);
-            
+
             /* Update the dropdown rect's size */
             float wdithRatio;
             if(i == 0) {
                 wdithRatio = framerateWidthRatio;
-            }else {
+            }
+            else {
                 wdithRatio = resolutionWidthRatio;
             }
             dropdownRect.anchoredPosition = new Vector2((optionPanelHeight/2f)*wdithRatio/2f, 0);
@@ -1598,7 +1768,7 @@ public class Menu : MonoBehaviour {
             dropdownRect.GetChild(0).GetComponent<Outline>().effectDistance = 0.01f*new Vector2(optionHeight, optionHeight);
             dropdownItem.GetChild(1).GetComponent<Outline>().effectDistance = 0.01f*new Vector2(optionHeight, optionHeight);
         }
-         
+
         /*
          * Adjust the outline of the text of each option to reflect the size change
          */
@@ -1612,7 +1782,7 @@ public class Menu : MonoBehaviour {
         VideoPanelPositionUpdate(0);
     }
     #endregion
-    
+
     #region Start Button Updates
     void UStartButtonStartup() {
         /*
@@ -1653,7 +1823,7 @@ public class Menu : MonoBehaviour {
         //Adjust the transition to reflect the button's size
         Transition transition = GetTransitionFromState(state);
         float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, (startWidthRatio*startBonusSize)/largestRatio);
-        
+
         /* Slide the button off-screen from it's main position */
         StartButtonHoverUpdate();
         StartButtonPositionUpdate(1 - transitionFade);
@@ -1795,7 +1965,7 @@ public class Menu : MonoBehaviour {
         int buttonEnum = (int) Buttons.Start;
         RectTransform rect = buttonRects[buttonEnum];
 
-        rect.position = new Vector3(-rect.sizeDelta.x/2f + rect.sizeDelta.x*sideRatio, canvasRect.position.y/1.8f + buttonHeight/2f, 0);
+        rect.position = new Vector3(-(rect.sizeDelta.x + buttonEdgeOffset)/2f + (rect.sizeDelta.x + buttonEdgeOffset)*sideRatio, canvasRect.position.y/1.5f + buttonHeight/2f, 0);
     }
 
     void StartButtonHoverUpdate() {
@@ -1826,7 +1996,7 @@ public class Menu : MonoBehaviour {
         outlines[0].effectColor = new Color(0, 0, 0, 0.5f + 0.25f*hoverRatio);
         outlines[1].effectColor = new Color(0, 0, 0, 0.5f + 0.25f*hoverRatio);
     }
-    
+
     void StartButtonReset() {
         /*
          * Reset the sizes of the start button and position it off-screem
@@ -1869,7 +2039,7 @@ public class Menu : MonoBehaviour {
         VideoButtonHoverUpdate();
         VideoButtonPositionUpdate(transitionFade);
     }
-    
+
     void UVideoButtonMainToEmpty() {
         /*
          * During this transition state, Quickly move the button off-screen
@@ -1984,8 +2154,8 @@ public class Menu : MonoBehaviour {
         /* The sens button will be placed bellow the start button */
         RectTransform aboveButton = buttonRects[(int) Buttons.Start];
 
-        float relativeHeight = aboveButton.position.y - aboveButton.sizeDelta.y/2f - buttonHeight/2f;
-        rect.position = new Vector3(-rect.sizeDelta.x/2f + rect.sizeDelta.x*sideRatio, relativeHeight, 0);
+        float relativeHeight = aboveButton.position.y - (aboveButton.sizeDelta.y + buttonSepperatorDistance)/2f - buttonHeight/2f;
+        rect.position = new Vector3(-(rect.sizeDelta.x + buttonEdgeOffset)/2f + (rect.sizeDelta.x + buttonEdgeOffset)*sideRatio, relativeHeight, 0);
     }
 
     void VideoButtonHoverUpdate() {
@@ -2016,7 +2186,7 @@ public class Menu : MonoBehaviour {
         outlines[0].effectColor = new Color(0, 0, 0, 0.5f + 0.25f*hoverRatio);
         outlines[1].effectColor = new Color(0, 0, 0, 0.5f + 0.25f*hoverRatio);
     }
-    
+
     void VideoButtonReset() {
         /*
          * Reset the video button's size and position
@@ -2200,10 +2370,10 @@ public class Menu : MonoBehaviour {
         /* The sens button will be placed bellow the video button */
         RectTransform aboveButton = buttonRects[(int) Buttons.Video];
 
-        float relativeHeight = aboveButton.position.y - aboveButton.sizeDelta.y/2f - buttonHeight/2f;
-        rect.position = new Vector3(-rect.sizeDelta.x/2f + rect.sizeDelta.x*sideRatio, relativeHeight, 0);
+        float relativeHeight = aboveButton.position.y - (aboveButton.sizeDelta.y + buttonSepperatorDistance)/2f - buttonHeight/2f;
+        rect.position = new Vector3(-(rect.sizeDelta.x + buttonEdgeOffset)/2f + (rect.sizeDelta.x + buttonEdgeOffset)*sideRatio, relativeHeight, 0);
     }
-    
+
     void SensButtonHoverUpdate() {
         /*
          * Set the sizes and colors of the sensitivity button to reflect it's current hover value
@@ -2232,7 +2402,7 @@ public class Menu : MonoBehaviour {
         outlines[0].effectColor = new Color(0, 0, 0, 0.5f + 0.25f*hoverRatio);
         outlines[1].effectColor = new Color(0, 0, 0, 0.5f + 0.25f*hoverRatio);
     }
-    
+
     void SensButtonReset() {
         /*
          * Reset the sensitivity button's position and size
@@ -2257,7 +2427,7 @@ public class Menu : MonoBehaviour {
         /* Position the button at it's main position */
         QuitButtonHoverUpdate();
         QuitButtonPositionUpdate(1);
-        
+
         /* Change the opacity to reflect the transition state */
         Color col = button.GetComponentInChildren<Text>().color;
         button.GetComponentInChildren<Text>().color = new Color(col.r, col.g, col.b, transitionFade);
@@ -2359,7 +2529,7 @@ public class Menu : MonoBehaviour {
         QuitButtonHoverUpdate();
         QuitButtonPositionUpdate(1 - transitionFade);
     }
-    
+
     void UQuitButtonMainToQuit() {
         /*
          * Animate the button as it approaches the center of the screen
@@ -2408,9 +2578,9 @@ public class Menu : MonoBehaviour {
         RectTransform rect = buttonRects[buttonEnum];
         /* The button that this quit button will be placed bellow */
         RectTransform aboveButton = buttonRects[(int) Buttons.Sens];
-        
-        float relativeHeight = aboveButton.position.y - aboveButton.sizeDelta.y/2f - rect.sizeDelta.y/2f;
-        rect.position = new Vector3(-rect.sizeDelta.x/2f + rect.sizeDelta.x*sideRatio, relativeHeight, 0);
+
+        float relativeHeight = aboveButton.position.y - (aboveButton.sizeDelta.y + buttonSepperatorDistance)/2f - rect.sizeDelta.y/2f;
+        rect.position = new Vector3(-(rect.sizeDelta.x + buttonEdgeOffset)/2f + (rect.sizeDelta.x + buttonEdgeOffset)*sideRatio, relativeHeight, 0);
 
         /* Depending on the current quitValueCurrent value, adjust certain aspects of the quit button */
         Text quitText = rect.GetChild(0).GetComponent<Text>();
@@ -2478,7 +2648,7 @@ public class Menu : MonoBehaviour {
 
         /* Set the button's size to reflect the current hover value */
         rect.sizeDelta = new Vector2(quitBonusSize*buttonHeight*quitWidthRatio + extraHoverWidth, buttonHeight);
-        
+
         /* Add a portion of the height into the label object to prevent the text from overflowing using the current font */
         rect.GetChild(0).GetComponent<RectTransform>().anchoredPosition = new Vector2(0, 0);
         rect.GetChild(0).GetComponent<RectTransform>().sizeDelta = new Vector2(0, -20f * (buttonHeight/100f));
@@ -2489,7 +2659,7 @@ public class Menu : MonoBehaviour {
         outlines[0].effectColor = new Color(0, 0, 0, 0.5f + 0.25f*hoverRatio);
         outlines[1].effectColor = new Color(0, 0, 0, 0.5f + 0.25f*hoverRatio);
     }
-    
+
     void QuitButtonReset() {
         /*
          * Reset the position and size of the quit button
@@ -2503,13 +2673,15 @@ public class Menu : MonoBehaviour {
 
     /* ----------- Event/Listener Functions ------------------------------------------------------------- */
 
-    void UpdateSensitivitySlider() {
+    void UpdateSensitivitySlider(bool overrideState) {
         /*
          * Runs everytime the value in the slider is updated. update the current mouse sensitivity.
+         * If the given overrideState value is true, then we do not need to be in the right state.
          */
-
+        Debug.Log("runs");
         /* Only let the slider change the sensitivity value if we are in the Sensitivity state */
-        if(state == MenuStates.Sensitivity) {
+        if(state == MenuStates.Sensitivity || overrideState) {
+            Debug.Log("IN-FUNCTION " + playerController.mouseSens);
             sensitivity = sensitivitySlider.value;
             sensitivitySliderValueText.text = "" +Mathf.Round(sensitivity*100)/100f;
             playerController.mouseSens = sensitivity;
@@ -2597,7 +2769,7 @@ public class Menu : MonoBehaviour {
                 inMenu = false;
             }
         }
-        
+
         /* Update the mouse's visibility depending on the menu state */
         if(!inMenu) {
             Cursor.lockState = CursorLockMode.Locked;
@@ -2605,7 +2777,7 @@ public class Menu : MonoBehaviour {
         else {
             UpdateCursorState();
         }
-        
+
         return inMenu;
     }
 
@@ -2639,7 +2811,7 @@ public class Menu : MonoBehaviour {
                 /* Entering the MainToVideo or MainToSens will enable the appropriate panel */
                 if(newState == MenuStates.MainToVideo) { SetVideoPanelStatus(true); }
                 if(newState == MenuStates.MainToSens) { SetSensivityPanelStatus(true); }
-                
+
                 /* Handle the credits panel's state depending on the outside state and menu state */
                 if(isOutside) {
                     /* Entering the Video or Sensitivity state will disable the credits panel */
@@ -2658,7 +2830,7 @@ public class Menu : MonoBehaviour {
                     bonusQuitSize = new Vector2(0, 0);
                 }
             }
-            
+
             /* Entering Main will reset the quitValueCurrent */
             else if(newState == MenuStates.Main) {
                 quitValueCurrent = 0;
@@ -2680,10 +2852,10 @@ public class Menu : MonoBehaviour {
             /* Leaving the MainToIntro state will change the start button */
             if(state == MenuStates.MainToIntro) {
                 buttons[(int) Buttons.Start].GetComponentInChildren<Text>().text = "CONTINUE";
-                startWidthRatio = continueWidthRatio;
+                startWidthRatio = continueTextWidthRatio;
                 isGameStarted = true;
             }
-            
+
             /* Leaving the VideoToMain state will set the video panel to be inactive */
             else if(state == MenuStates.VideoToMain) {
 
@@ -2693,7 +2865,7 @@ public class Menu : MonoBehaviour {
             else if(state == MenuStates.SensToMain) {
 
             }
-            
+
             /* Change the current state */
             state = newState;
         }
@@ -2756,7 +2928,7 @@ public class Menu : MonoBehaviour {
         else {
             framerate = int.Parse(dropdown.options[dropdown.value].text);
         }
-        
+
         Application.targetFrameRate = framerate;
     }
 
@@ -2870,6 +3042,75 @@ public class Menu : MonoBehaviour {
         /* Set the status of the sens slider */
         sensPanel.GetChild(0).GetComponent<Slider>().interactable = active;
     }
+    
+    public void LoadPuzzleScene() {
+        /*
+         * Call this when the game should start loading the puzzleScene
+         */
+         
+        StartCoroutine(PuzzleSceneSceneCoroutine());
+    }
+
+    IEnumerator PuzzleSceneSceneCoroutine() {
+        /*
+         * Use a coroutine to load the puzzleScene
+         */
+        puzzleSceneCoroutine = SceneManager.LoadSceneAsync("PuzzleScene", LoadSceneMode.Additive);
+
+        yield return null;
+    }
+
+    void LoadedPuzzleScene() {
+        /*
+         * Runs when the puzzle scene has loaded into the game
+         */
+        Scene menuScene = SceneManager.GetSceneAt(0);
+        Scene puzzleScene = SceneManager.GetSceneAt(1);
+        GameObject[] objects;
+        puzzleSceneLoaded = true;
+
+        /* Disable the camera of the menu scene */
+        Camera cam = null;
+        objects = menuScene.GetRootGameObjects();
+        for(int i = 0; i < objects.Length; i++) {
+            if(objects[i].GetComponent<Camera>() != null) {
+                cam = objects[i].GetComponent<Camera>();
+            }
+        }
+        cam.gameObject.SetActive(false);
+        
+        /* Get the terrainController from the puzzleRoom scene */
+        TerrainController TC = null;
+        objects = puzzleScene.GetRootGameObjects();
+        for(int i = 0; i < objects.Length; i++) {
+            if(objects[i].GetComponent<TerrainController>() != null) {
+                TC = objects[i].GetComponent<TerrainController>();
+            }
+        }
+
+        /* Get the PlayerController from the puzzleRoom scene */
+        CustomPlayerController CPC = null;
+        objects = puzzleScene.GetRootGameObjects();
+        for(int i = 0; i < objects.Length; i++) {
+            if(objects[i].name == "PlayerCharacter") {
+                CPC = objects[i].transform.GetChild(0).GetComponent<CustomPlayerController>();
+            }
+        }
+
+        /* Merge the menu scene into the puzzle scene */
+        SceneManager.SetActiveScene(puzzleScene);
+        SceneManager.MergeScenes(menuScene, puzzleScene);
+
+        /* Link the player and terrain to the menu */
+        playerController = CPC;
+        CPC.playerMenu = this;
+        terrainController = TC;
+
+        /* Update the player and the menu's sensitivity */
+        Debug.Log(playerController.mouseSens);
+        sensitivitySlider.value = playerController.mouseSens;
+        UpdateSensitivitySlider(true);
+    }
 
 
     /* ----------- Mouse Enter/Hover Functions ------------------------------------------------------------- */
@@ -2914,12 +3155,12 @@ public class Menu : MonoBehaviour {
 
         currentHoverState[(int) Buttons.Start] = false;
     }
-    
+
     void VideoButtonClick() {
         /*
          * Clicking on the Video button will change from the main state to the Video state
          */
-         
+
         if(IsButtonClickable(Buttons.Video)) {
             /* Play a mouse click sound when selecting the button in the right state */
             if(state == MenuStates.Main || state == MenuStates.Video) {
@@ -2953,7 +3194,7 @@ public class Menu : MonoBehaviour {
 
         currentHoverState[(int) Buttons.Video] = false;
     }
-    
+
     void SensButtonClick() {
         /*
          * Clicking on the Sensitivity button changes the main menu to enter the sensitivity menu
@@ -2992,7 +3233,7 @@ public class Menu : MonoBehaviour {
 
         currentHoverState[(int) Buttons.Sens] = false;
     }
-    
+
     void QuitButtonClick() {
         /*
          * When clicking on the quit button in the Main state, Increase currentQuitValue.
@@ -3007,7 +3248,8 @@ public class Menu : MonoBehaviour {
             /* Clicking the quit button will increase the current quit value */
             if(quitValueCurrent == 0) {
                 quitValueCurrent += quitValueIncrease*3;
-            }else {
+            }
+            else {
                 quitValueCurrent += quitValueIncrease;
             }
         }
@@ -3029,7 +3271,7 @@ public class Menu : MonoBehaviour {
         currentHoverState[(int) Buttons.Quit] = false;
     }
 
-    
+
     /* ----------- Helper Functions ------------------------------------------------------------- */
 
     float HoverRatio(int buttonEnum, bool sinFunction) {
@@ -3070,12 +3312,12 @@ public class Menu : MonoBehaviour {
          */
         float adjustedValue = 0;
         float limitRange = max - min;
-        
+
         adjustedValue = Mathf.Clamp((value - min) / limitRange, 0, 1);
 
         return adjustedValue;
     }
-    
+
     bool IsButtonClickable(Buttons button) {
         /*
          * Return true if the current state can click on the given button
@@ -3121,5 +3363,31 @@ public class Menu : MonoBehaviour {
         }
 
         return clickable;
+    }
+
+    float RangeBetween(float value, float min, float max) {
+        /*
+         * Given a value and a min and max, return between [0, 1] whether the value is close to
+         * the minimum (0) or close to the maximum (1). 
+         */
+        float range;
+
+        range = Mathf.Clamp((value - min) / (max - min), 0, 1);
+
+        return range;
+    }
+
+    bool FinishedLoading() {
+        /*
+         * Return true if everything has finished loading. This includes 
+         * the puzzle scene and the terrain generation.
+         */
+        bool loaded = false;
+
+        if(puzzleSceneLoaded && terrainGenerated) {
+            loaded = true;
+        }
+
+        return loaded;
     }
 }

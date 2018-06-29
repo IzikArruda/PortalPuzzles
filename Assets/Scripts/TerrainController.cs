@@ -88,8 +88,6 @@ public class TerrainController : MonoBehaviour {
 
         /* Create the skySphere */
         CreateSkySphere();
-
-        Debug.Log(terrainContainer.transform.childCount);
     }
     
     void Update() {
