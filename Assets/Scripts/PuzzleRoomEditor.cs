@@ -87,10 +87,10 @@ public class PuzzleRoomEditor : MonoBehaviour {
     public Material wallMaterial;
 
     /* The textures used by the walls of the puzzleRoom */
-    public Texture2D mainWallTextureAlt;
-    public Texture2D secondWallTextureAlt;
     public Texture2D mainWallTexture;
     public Texture2D secondWallTexture;
+    public Texture2D mainWallTextureAlt;
+    public Texture2D secondWallTextureAlt;
     public Texture2D noiseWallTexture;
 
     /* The materials used by the room along with their starting and alternative textures */
