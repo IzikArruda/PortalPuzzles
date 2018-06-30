@@ -81,34 +81,32 @@ public class PuzzleRoomEditor : MonoBehaviour {
     public Vector2 secondTexAnim;
     public Vector2 noiseTexAnim;
 
-    /* The materials used in the puzzleRoom */
+    /* The wall and cloud materials used in the puzzleRoom */
     public Material cloudMaterial;
     public Material cloudBlockerMaterial;
     public Material wallMaterial;
-    public Material columnMaterial;
-    public Material marbleMaterial;
-    public Material marbleDarkMaterial;
-    public Material marbleEdgeMaterial;
+
+    /* The textures used by the walls of the puzzleRoom */
+    public Texture2D mainWallTextureAlt;
+    public Texture2D secondWallTextureAlt;
     public Texture2D mainWallTexture;
     public Texture2D secondWallTexture;
     public Texture2D noiseWallTexture;
-    public Texture2D marbleTexture;
-    public Texture2D marbleDarkTexture;
-    public Texture2D pillarTexture;
 
-    /* The textures to apply to the materials after the texture change is run. */
-    public Texture2D mainWallTextureAlt;
-    public Texture2D secondWallTextureAlt;
-    public Texture2D marbleTextureAlt;
-    public Texture2D marbleDarkTextureAlt;
-    public Texture2D pillarTextureAlt;
-
+    /* The materials used by the room along with their starting and alternative textures */
+    public Material[] roomMaterials;
+    public Texture2D[] roomMainTexture;
+    public Texture2D[] roomAltTexture;
+    /* The edge materials. The textures used are given by the index, which points to the position in the previous arrays */
+    public Material[] roomEdgeMaterials;
+    public int[] roomEdgeMainIndex;
+    public int[] roomEdgeSecondIndex;
+    
     /* The color tint that gets appleid to the walls of the room. Ranges are from [0, 1] */
     public Vector3 wallColorTint;
     public Vector3 wallColorTintAlt;
     public float centerTintOffset;
-
-
+    
 
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
 
@@ -319,7 +317,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
         /*
          * Update the materials used by this puzzleRoom and it's contents
          */
-
+         
         /* Re-create the material with the proper shader */
         wallMaterial = new Material(Shader.Find("Unlit/PuzzleWallShader"));
         wallMaterial.name =  "Wall (" + transform.parent.name + ")";
@@ -340,25 +338,20 @@ public class PuzzleRoomEditor : MonoBehaviour {
         wallMaterial.SetVector("_RoomColorTint", wallColorTint);
         wallMaterial.SetVector("_RoomColorTintAlt", wallColorTintAlt);
         
-
-
         /* Make sure the blocker material is properly created */
         cloudBlockerMaterial = new Material(Shader.Find("Unlit/Color"));
         cloudBlockerMaterial.color = Color.black;
-        
-        /* Set the materials used for the room's objects */
-        marbleMaterial.SetTexture("_MainTex", marbleTexture);
-        marbleMaterial.name = "Marble Floor (" + transform.parent.name + ")";
-        
-        marbleDarkMaterial.SetTexture("_MainTex", marbleDarkTexture);
-        marbleDarkMaterial.name = "Marble Dark Floor (" + transform.parent.name + ")";
-        
-        marbleEdgeMaterial.SetTexture("_MainTex", marbleMaterial.GetTexture("_MainTex"));
-        marbleEdgeMaterial.SetTexture("_SecondTex", marbleDarkMaterial.GetTexture("_MainTex"));
-        marbleEdgeMaterial.name = "Marble Edge Floor (" + transform.parent.name + ")";
 
-        columnMaterial.SetTexture("_MainTex", pillarTexture);
-        columnMaterial.name = "Column (" + transform.parent.name + ")";
+        
+        /* Set the main texture of each given room material */
+        for(int i = 0; i < roomMaterials.Length; i++) {
+            roomMaterials[i].SetTexture("_MainTex", roomMainTexture[i]);
+        }
+        /* Set the textures of the edges using the main textures */
+        for(int i = 0; i < roomEdgeMaterials.Length; i++) {
+            roomEdgeMaterials[i].SetTexture("_MainTex", roomMainTexture[roomEdgeMainIndex[i]]);
+            roomEdgeMaterials[i].SetTexture("_SecondTex", roomMainTexture[roomEdgeSecondIndex[i]]);
+        }
     }
 
     public void AnimateUVS() {
@@ -599,16 +592,24 @@ public class PuzzleRoomEditor : MonoBehaviour {
          * Update the textures used in this room. This to called when the player starts falling into previous rooms
          */
          
+        /* Set the alternative textures and color tints of the wall */
         wallMaterial.SetTexture("_MainTex", mainWallTextureAlt);
         wallMaterial.SetTexture("_SecondTex", secondWallTextureAlt);
-        marbleMaterial.SetTexture("_MainTex", marbleTextureAlt);
-        marbleDarkMaterial.SetTexture("_MainTex", marbleDarkTextureAlt);
-        columnMaterial.SetTexture("_MainTex", pillarTextureAlt);
-        marbleEdgeMaterial.SetTexture("_MainTex", marbleTextureAlt);
-        marbleEdgeMaterial.SetTexture("_SecondTex", marbleDarkTextureAlt);
-
-        /* Set the colorTint of the walls to be empty once we change textures */
-        wallMaterial.SetVector("_RoomColorTint", Vector3.zero);
+        /* If both the top and bottom color tints are the same, use a zero color tint for both sides */
+        if(wallColorTint == wallColorTintAlt) {
+            wallMaterial.SetVector("_RoomColorTint", Vector3.zero);
+            wallMaterial.SetVector("_RoomColorTintAlt", Vector3.zero);
+        }
+        
+        /* Set the alt texture of each room material */
+        for(int i = 0; i < roomMaterials.Length; i++) {
+            roomMaterials[i].SetTexture("_MainTex", roomAltTexture[i]);
+        }
+        /* Set the textures of the edges using the alt textures */
+        for(int i = 0; i < roomEdgeMaterials.Length; i++) {
+            roomEdgeMaterials[i].SetTexture("_MainTex", roomAltTexture[roomEdgeMainIndex[i]]);
+            roomEdgeMaterials[i].SetTexture("_SecondTex", roomAltTexture[roomEdgeSecondIndex[i]]);
+        }
     }
 
 
