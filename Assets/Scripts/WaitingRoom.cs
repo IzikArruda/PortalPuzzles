@@ -358,9 +358,13 @@ public class WaitingRoom : ConnectedRoom {
         entranceRoom.floorMaterial = floorMaterial;
         entranceRoom.wallMaterial = wallMaterial;
         entranceRoom.ceilingMaterial = ceilingMaterial;
+        entranceRoom.wallConnectorMaterial = windowFrameMaterial;
+        entranceRoom.roomSide = false;
         exitRoom.floorMaterial = floorMaterial;
         exitRoom.wallMaterial = wallMaterial;
         exitRoom.ceilingMaterial = ceilingMaterial;
+        exitRoom.wallConnectorMaterial = windowFrameMaterial;
+        exitRoom.roomSide = true;
     }
 
 
