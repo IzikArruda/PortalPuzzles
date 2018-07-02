@@ -97,7 +97,7 @@ public class WaitingRoom : ConnectedRoom {
         /* Every waitingRoom will start disabled */
         DisableRoom();
     }
-
+    
     void OnTriggerEnter(Collider player) {
         /*
          * When the player enters the room's trigger, enable both connected puzzle rooms
@@ -355,7 +355,7 @@ public class WaitingRoom : ConnectedRoom {
         ceilingMaterial.name = "Ceiling (WaitingRoom " + this.GetInstanceID() + ")";
 
         /* Window Frame */
-        windowFrameMaterial = Instantiate(unlitMaterial);
+        windowFrameMaterial = Instantiate(waitingRoomUnlitMaterial);
         windowFrameMaterial.SetTexture("_MainTex", windowFrameTexture);
         windowFrameMaterial.name = "Window Border (WaitingRoom " + this.GetInstanceID() + ")";
 
@@ -376,15 +376,20 @@ public class WaitingRoom : ConnectedRoom {
         wallMaterial.SetFloat("_RoomDepthBuffer", zDist/2f);
         wallMaterial.SetFloat("_TextureZLengthEntr", entranceRoom.roomLength*2);
         wallMaterial.SetFloat("_TextureZLengthExit", exitRoom.roomLength*2);
-        wallMaterial.SetVector("_EntrTint", entranceTint);
-        wallMaterial.SetVector("_ExitTint", exitTint);
+        wallMaterial.SetVector("_EntrTint", entranceTint/3f);
+        wallMaterial.SetVector("_ExitTint", exitTint/3f);
         ceilingMaterial.SetFloat("_RoomCenter", roomCenter.z);
         ceilingMaterial.SetFloat("_RoomDepthBuffer", zDist/2f);
         ceilingMaterial.SetFloat("_TextureZLengthEntr", entranceRoom.roomLength*2);
         ceilingMaterial.SetFloat("_TextureZLengthExit", exitRoom.roomLength*2);
-        ceilingMaterial.SetVector("_EntrTint", entranceTint);
-        ceilingMaterial.SetVector("_ExitTint", exitTint);
-
+        ceilingMaterial.SetVector("_EntrTint", entranceTint*2);
+        ceilingMaterial.SetVector("_ExitTint", exitTint*2);
+        windowFrameMaterial.SetFloat("_RoomCenter", roomCenter.z);
+        windowFrameMaterial.SetFloat("_RoomDepthBuffer", zDist/2f);
+        windowFrameMaterial.SetFloat("_TextureZLengthEntr", entranceRoom.roomLength*2);
+        windowFrameMaterial.SetFloat("_TextureZLengthExit", exitRoom.roomLength*2);
+        windowFrameMaterial.SetVector("_EntrTint", entranceTint/5f);
+        windowFrameMaterial.SetVector("_ExitTint", exitTint/5f);
 
 
 
