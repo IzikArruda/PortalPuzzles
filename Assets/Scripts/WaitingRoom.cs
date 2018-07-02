@@ -45,6 +45,7 @@ public class WaitingRoom : ConnectedRoom {
     public GameObject skySphere;
 
     /* The textures used for the materials of the objects that form the room */
+    public Material waitingRoomUnlitMaterial;
     public Material unlitMaterial;
     private Material windowFrameMaterial;
     public Texture floorTexture;
@@ -57,6 +58,10 @@ public class WaitingRoom : ConnectedRoom {
     public Texture2D wallTextureAlt;
     public Texture2D ceilingTextureAlt;
     public Texture2D windowFrameTextureAlt;
+
+    /* The color tints of it's connected rooms */
+    public Vector3 entranceTint;
+    public Vector3 exitTint;
 
 
     /* -------- Built-In Functions ---------------------------------------------------- */
@@ -79,10 +84,7 @@ public class WaitingRoom : ConnectedRoom {
         /*
          * On start-up, recreate the room's skeleton any puzzle rooms from the AttachedRooms.
          */
-
-        /* Update the materials used by this room and the attachedRooms */
-        UpdateMaterials();
-
+         
         /* Update the walls of the room */
         UpdateRoom();
 
@@ -164,6 +166,9 @@ public class WaitingRoom : ConnectedRoom {
         xDist = Mathf.Abs(entranceRoom.exitPointFront.position.x - exitRoom.exitPointBack.position.x) + xEntranceDist/2f + xExitDist/2f;
         yDist = Mathf.Max(yEntranceDist, yExitDist);
         zDist = Mathf.Abs(entranceRoom.exitPointFront.position.z - exitRoom.exitPointBack.position.z);
+        
+        /* Update the materials used by this room and the attachedRooms once we have the positions calculated */
+        UpdateMaterials();
 
         /* Re-create the trigger that is used to determine if the player has entered either AttachedRooms */
         CreateTrigger();
@@ -334,18 +339,18 @@ public class WaitingRoom : ConnectedRoom {
          */
 
         /* Floor */
-        floorMaterial = Instantiate(unlitMaterial);
+        floorMaterial = Instantiate(waitingRoomUnlitMaterial);
         floorMaterial.SetTexture("_MainTex", floorTexture);
         floorMaterial.SetTextureScale("_MainTex", new Vector2(5, 5));
         floorMaterial.name = "Floor (WaitingRoom " + this.GetInstanceID() + ")";
 
         /* Wall */
-        wallMaterial = Instantiate(unlitMaterial);
+        wallMaterial = Instantiate(waitingRoomUnlitMaterial);
         wallMaterial.SetTexture("_MainTex", wallTexture);
         wallMaterial.name = "Wall (WaitingRoom " + this.GetInstanceID() + ")";
 
         /* Ceiling */
-        ceilingMaterial = Instantiate(unlitMaterial);
+        ceilingMaterial = Instantiate(waitingRoomUnlitMaterial);
         ceilingMaterial.SetTexture("_MainTex", ceilingTexture);
         ceilingMaterial.name = "Ceiling (WaitingRoom " + this.GetInstanceID() + ")";
 
@@ -353,6 +358,35 @@ public class WaitingRoom : ConnectedRoom {
         windowFrameMaterial = Instantiate(unlitMaterial);
         windowFrameMaterial.SetTexture("_MainTex", windowFrameTexture);
         windowFrameMaterial.name = "Window Border (WaitingRoom " + this.GetInstanceID() + ")";
+
+
+
+
+
+
+
+        /* Set the properties of the shader used by these materials */
+        floorMaterial.SetFloat("_RoomCenter", roomCenter.z);
+        floorMaterial.SetFloat("_RoomDepthBuffer", zDist/2f);
+        floorMaterial.SetFloat("_TextureZLengthEntr", entranceRoom.roomLength*2);
+        floorMaterial.SetFloat("_TextureZLengthExit", exitRoom.roomLength*2);
+        floorMaterial.SetVector("_EntrTint", entranceTint);
+        floorMaterial.SetVector("_ExitTint", exitTint);
+        wallMaterial.SetFloat("_RoomCenter", roomCenter.z);
+        wallMaterial.SetFloat("_RoomDepthBuffer", zDist/2f);
+        wallMaterial.SetFloat("_TextureZLengthEntr", entranceRoom.roomLength*2);
+        wallMaterial.SetFloat("_TextureZLengthExit", exitRoom.roomLength*2);
+        wallMaterial.SetVector("_EntrTint", entranceTint);
+        wallMaterial.SetVector("_ExitTint", exitTint);
+        ceilingMaterial.SetFloat("_RoomCenter", roomCenter.z);
+        ceilingMaterial.SetFloat("_RoomDepthBuffer", zDist/2f);
+        ceilingMaterial.SetFloat("_TextureZLengthEntr", entranceRoom.roomLength*2);
+        ceilingMaterial.SetFloat("_TextureZLengthExit", exitRoom.roomLength*2);
+        ceilingMaterial.SetVector("_EntrTint", entranceTint);
+        ceilingMaterial.SetVector("_ExitTint", exitTint);
+
+
+
 
         /* Link the materials to it's AttachedRooms */
         entranceRoom.floorMaterial = floorMaterial;

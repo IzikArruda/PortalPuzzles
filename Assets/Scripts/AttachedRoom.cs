@@ -183,7 +183,7 @@ public class AttachedRoom : ConnectedRoom {
 
         /* Create the cube on the top side of the wall */
         wallConnectors[2].name = "Top wall connector";
-        centerOffset = new Vector3(0, (exitHeight + wallConnectorSize/2f)*(topConnectorSide ? 0 : 1), (depth/2f + wallConnectorSize/2f)*(roomSide ? 1 : -1));
+        centerOffset = new Vector3(0, -wallConnectorSize/2f + (exitHeight + wallConnectorSize)*(topConnectorSide ? 0 : 1), (depth/2f + wallConnectorSize/2f)*(roomSide ? 1 : -1));
         wallConnectors[2].transform.position = roomCenter + centerOffset;
         wallConnectors[2].GetComponent<CubeCreator>().x = exitWidth + wallConnectorSize*2;
         wallConnectors[2].GetComponent<CubeCreator>().y = wallConnectorSize;
