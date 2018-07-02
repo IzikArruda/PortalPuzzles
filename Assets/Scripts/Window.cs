@@ -38,6 +38,7 @@ public class Window : MonoBehaviour {
     /* The materials and textures used by the window frame */
     public Material frameMaterial;
     public Material glassMaterial;
+    public Material crackedGlassMaterial;
 
     /* The UV scale if applicable */
     public Vector2 UVScale;

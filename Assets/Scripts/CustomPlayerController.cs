@@ -1405,6 +1405,14 @@ public class CustomPlayerController : MonoBehaviour {
                     if(legRayScripts[i].GetComponent<DetectPlayerLegRay>().objectType == 0) {
                         stepIndex = Mathf.Max(stepIndex, legRayScripts[i].GetComponent<DetectPlayerLegRay>().returnValue);
                     }
+
+                    else if(legRayScripts[i].GetComponent<DetectPlayerLegRay>().objectType == 2) {
+                        /* If the player is falling fast enough, crack the glass */
+                        if(currentYVelocity < -0.5 && legRayScripts[i].GetComponent<DetectPlayerLegRay>().returnValue != -1) {
+                            legRayScripts[i].GetComponent<DetectPlayerLegRay>().CrackGlass();
+                            //Maybe play a glass crack sound?
+                        }
+                    }
                 }
             }
         }

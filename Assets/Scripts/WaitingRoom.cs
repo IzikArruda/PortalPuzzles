@@ -38,6 +38,7 @@ public class WaitingRoom : ConnectedRoom {
 
     /* The materials and textures used by this room */
     public Material windowGlassMaterial;
+    public Material windowCrackedGlassMaterial;
     public Texture skySphereTexture;
     private Material skySphereMaterial;
 
@@ -252,6 +253,11 @@ public class WaitingRoom : ConnectedRoom {
         ontoWallEuler = new Vector3(0, 180, 0);
         UpdateWindowTransform(windows[3], ontoWallOffset, ontoWallEuler, windowWidthRatio*wallWidth);
 
+
+        //Add a legDetect function to each window in the waitingRoom
+
+
+
         /* Make each portal's camera only render the skySphere layer */
         for(int i = 0; i < windows.Length; i++) {
             windows[i].portalSet.EntrancePortal.portalMesh.GetComponent<PortalView>().SetSkySphereLayer(true);
@@ -263,6 +269,10 @@ public class WaitingRoom : ConnectedRoom {
         /* Send a command to update the windows with the new given parameters */
         for(int i = 0; i < windows.Length; i++) {
             windows[i].UpdateWindow();
+
+            /* Add a legDetect function to each window */
+            windows[i].windowPieces[4].gameObject.AddComponent<DetectPlayerLegRay>();
+            windows[i].windowPieces[4].gameObject.GetComponent<DetectPlayerLegRay>().objectType = 2;
         }
     }
 
@@ -319,6 +329,7 @@ public class WaitingRoom : ConnectedRoom {
         window.windowHeight = height;
         window.frameMaterial = frameMaterial;
         window.glassMaterial = glassMaterial;
+        window.crackedGlassMaterial = windowCrackedGlassMaterial;
     }
 
     void UpdateWindowTransform(Window window, Vector3 pos, Vector3 eul, float width) {
@@ -358,13 +369,7 @@ public class WaitingRoom : ConnectedRoom {
         windowFrameMaterial = Instantiate(waitingRoomUnlitMaterial);
         windowFrameMaterial.SetTexture("_MainTex", windowFrameTexture);
         windowFrameMaterial.name = "Window Border (WaitingRoom " + this.GetInstanceID() + ")";
-
-
-
-
-
-
-
+        
         /* Set the properties of the shader used by these materials */
         floorMaterial.SetFloat("_RoomCenter", roomCenter.z);
         floorMaterial.SetFloat("_RoomDepthBuffer", zDist/2f);
@@ -390,9 +395,7 @@ public class WaitingRoom : ConnectedRoom {
         windowFrameMaterial.SetFloat("_TextureZLengthExit", exitRoom.roomLength*2);
         windowFrameMaterial.SetVector("_EntrTint", entranceTint/5f);
         windowFrameMaterial.SetVector("_ExitTint", exitTint/5f);
-
-
-
+        
         /* Link the materials to it's AttachedRooms */
         entranceRoom.floorMaterial = floorMaterial;
         entranceRoom.wallMaterial = wallMaterial;
