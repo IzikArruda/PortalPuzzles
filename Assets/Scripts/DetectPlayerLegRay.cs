@@ -89,7 +89,7 @@ public class DetectPlayerLegRay : MonoBehaviour {
         glassCubeScript.GetComponent<MeshRenderer>().material = glassCubeScript.mainMaterial;
 
         /* Make the window emit glass from it's particle emitter */
-        glassEmitter.Emit(300);
+        glassEmitter.Emit(500);
 
         /* Set the returnValue to -1 to prevent this from being called again */
         returnValue = -1;

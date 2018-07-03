@@ -65,7 +65,7 @@ public class WaitingRoom : ConnectedRoom {
     public Vector3 exitTint;
 
     /* The glass shard emitted from the window as it cracks */
-    public Sprite glassShard;
+    public Material glassShardMaterial;
 
 
     /* -------- Built-In Functions ---------------------------------------------------- */
@@ -278,14 +278,37 @@ public class WaitingRoom : ConnectedRoom {
              * Setup a particle emitter that will produce small glass shards from the window
              */
             ParticleSystem glassEmitter = windows[i].windowPieces[4].AddComponent<ParticleSystem>();
+            windows[i].windowPieces[4].gameObject.GetComponent<ParticleSystemRenderer>().material = glassShardMaterial;
 
             /* Prevent the emitter from passivly emitting particles */
             var emi = glassEmitter.emission;
             emi.rate = 0;
 
-            /* Make the particles last 10 seconds */
-            var dur = glassEmitter.duration;
-            dur = 10;
+            /* Set the values to the components in the main */
+            glassEmitter.startSize = 0.075f;
+            glassEmitter.gravityModifier = 0.6f;
+            glassEmitter.startSpeed = 0;
+            glassEmitter.startLifetime = 10000f;
+            glassEmitter.startRotation = 0;
+
+            /* Set the start speed of the particles */
+            var startVel = glassEmitter.velocityOverLifetime;
+            startVel.enabled = true;
+            startVel.x = new ParticleSystem.MinMaxCurve(-1, 1);
+            startVel.y = new ParticleSystem.MinMaxCurve(-1, 1);
+            startVel.z = new ParticleSystem.MinMaxCurve(-0.5f, -2);
+
+            /* Set the collision to the waitingRoom's floor */
+            var collision = glassEmitter.collision;
+            collision.enabled = true;
+            collision.SetPlane(0, roomWalls[0].transform);
+            collision.dampen = new ParticleSystem.MinMaxCurve(0, 0.2f);
+            collision.bounce = new ParticleSystem.MinMaxCurve(0, 0.5f);
+
+            /* Set the sizes of the emission box to that of the window */
+            var shape = glassEmitter.shape;
+            shape.shapeType = ParticleSystemShapeType.Box;
+            shape.box = new Vector3(windows[i].windowWidth, windows[i].windowHeight, windows[i].frameDepth);
         }
     }
 
