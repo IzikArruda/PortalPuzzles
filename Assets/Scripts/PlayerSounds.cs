@@ -64,6 +64,7 @@ public class PlayerSounds : MonoBehaviour {
     public AudioClip startingMusic;
 	public AudioClip hardLandingClip;
 	public AudioClip fallingClip;
+    public AudioClip windowCrackClip;
 
 
     /* --- User Input Values ------------------- */
@@ -436,6 +437,25 @@ public class PlayerSounds : MonoBehaviour {
 
         menuSource.clip = menuClickClip;
         menuSource.Play();
+    }
+
+    public void PlayWindowCrack() {
+        /*
+         * Play the sound effect of a window cracking
+         */
+        int sourceIndex = UnusedSoundSource(landingSources);
+        AudioSource landingSource;
+
+        /* Use a landing audioSource to play the window crack sound */
+        if(sourceIndex != -1) {
+            landingSource = landingSources[sourceIndex];
+            landingSource.volume = maxVolume;
+            landingSource.clip = windowCrackClip;
+            landingSource.Play();
+        }
+        else {
+            Debug.Log("Window crack effect cannot play - no available audio sources");
+        }
     }
 
     public void PlayStartupMusic() {

@@ -82,10 +82,14 @@ public class DetectPlayerLegRay : MonoBehaviour {
          */
         Window windowScript = transform.parent.parent.GetComponent<Window>();
         CubeCreator glassCubeScript = windowScript.windowPieces[4].GetComponent<CubeCreator>();
+        ParticleSystem glassEmitter = GetComponent<ParticleSystem>();
 
         /* Change the material of the window from normal glass to cracked glass */
         glassCubeScript.mainMaterial = windowScript.crackedGlassMaterial;
         glassCubeScript.GetComponent<MeshRenderer>().material = glassCubeScript.mainMaterial;
+
+        /* Make the window emit glass from it's particle emitter */
+        glassEmitter.Emit(300);
 
         /* Set the returnValue to -1 to prevent this from being called again */
         returnValue = -1;

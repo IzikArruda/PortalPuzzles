@@ -64,6 +64,9 @@ public class WaitingRoom : ConnectedRoom {
     public Vector3 entranceTint;
     public Vector3 exitTint;
 
+    /* The glass shard emitted from the window as it cracks */
+    public Sprite glassShard;
+
 
     /* -------- Built-In Functions ---------------------------------------------------- */
 
@@ -252,11 +255,7 @@ public class WaitingRoom : ConnectedRoom {
         ontoWallOffset = new Vector3(xDist/2f - (xDist - entranceRoom.exitWidth)/2f, yDist/2f - windowHeight/2f, -zDist/2f);
         ontoWallEuler = new Vector3(0, 180, 0);
         UpdateWindowTransform(windows[3], ontoWallOffset, ontoWallEuler, windowWidthRatio*wallWidth);
-
-
-        //Add a legDetect function to each window in the waitingRoom
-
-
+        
 
         /* Make each portal's camera only render the skySphere layer */
         for(int i = 0; i < windows.Length; i++) {
@@ -273,6 +272,20 @@ public class WaitingRoom : ConnectedRoom {
             /* Add a legDetect function to each window */
             windows[i].windowPieces[4].gameObject.AddComponent<DetectPlayerLegRay>();
             windows[i].windowPieces[4].gameObject.GetComponent<DetectPlayerLegRay>().objectType = 2;
+
+
+            /*
+             * Setup a particle emitter that will produce small glass shards from the window
+             */
+            ParticleSystem glassEmitter = windows[i].windowPieces[4].AddComponent<ParticleSystem>();
+
+            /* Prevent the emitter from passivly emitting particles */
+            var emi = glassEmitter.emission;
+            emi.rate = 0;
+
+            /* Make the particles last 10 seconds */
+            var dur = glassEmitter.duration;
+            dur = 10;
         }
     }
 
