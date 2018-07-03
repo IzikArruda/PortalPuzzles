@@ -432,16 +432,17 @@ public class TerrainController : MonoBehaviour {
          */
         float loadingPercent = 0;
         
-        /* Print the state of the chunks */
+        /* Get all the chunks in the cache */
         List<Vector2> visibleChunks = GetVisibleChunksFromPosition(currentChunk, chunkViewRange);
-        /* Print the state of each chunk */
+
+        /* Track how many chunks have loaded */
         for(int i = 0; i < visibleChunks.Count; i++) {
             if(GetChunkState(visibleChunks[i]) > 2) {
                 loadingPercent++;
             }
         }
         loadingPercent /= visibleChunks.Count;
-
+        
         return loadingPercent;
     }
 }

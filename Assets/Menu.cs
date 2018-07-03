@@ -250,7 +250,7 @@ public class Menu : MonoBehaviour {
     private bool puzzleSceneLoaded = false;
     private bool terrainGenerated = false;
     private AsyncOperation puzzleSceneCoroutine;
-
+    
 
     /* ----------- Built-in Functions ------------------------------------------------------------- */
 
@@ -312,7 +312,7 @@ public class Menu : MonoBehaviour {
             /* The puzzle scene has loaded */
             LoadedPuzzleScene();
         }
-        if(!terrainGenerated && terrainController != null && terrainController.GetLoadingPercent() < 1) {
+        if(!terrainGenerated && terrainController != null && terrainController.GetLoadingPercent() >= 1) {
             /* The terrain has been generated */
             terrainGenerated = true;
         }
@@ -326,7 +326,7 @@ public class Menu : MonoBehaviour {
         }
         else {
             /* Once we have loaded, decrement the loadingAnimationVisible value to hide the animation */
-            loadingAnimationVisible -= animationIncrementMod*Time.deltaTime;
+            loadingAnimationVisible -= animationIncrementMod*Time.deltaTime*2;
         }
 
         /* Prevent the loading animation from leaving the range [0, 1] */
@@ -1261,10 +1261,10 @@ public class Menu : MonoBehaviour {
 
         /* Position the boxes either in or out of view relative to the loadingAnimationVisible value */
         for(int i = 0; i < loadingBoxes.Length; i++) {
-            loadingBoxes[i].anchoredPosition += (1 - Mathf.Sin((Mathf.PI/2f)*(loadingAnimationVisible)))*new Vector2(0, -boxSize -heightFromBottom*3);
+            loadingBoxes[i].anchoredPosition += (1 - Mathf.Sin((Mathf.PI/2f)*(loadingAnimationVisible)))*new Vector2(0, -boxSize -heightFromBottom*5);
         }
 
-        /* Animate each loadingBox relative to the currnet time spent loading */
+        /* Animate each loadingBox relative to the current time spent loading */
         for(int i = 0; i < loadingBoxes.Length; i++) {
             AnimateLoadingBox(i, loadingAnimationTime - loadingAnimationOffset*i);
         }
@@ -1279,17 +1279,17 @@ public class Menu : MonoBehaviour {
          * The progress will track both the scene loading and the terrain generation.
          * 
          * Through multiple test while loading the game, it was discovered that the game spends 
-         * most of it's scene loading time between the ranges of [0.013, 0.0145]. Therefore, adjust the
+         * most of it's scene loading time between the ranges of [0.0107, 0.012]. Therefore, adjust the
          * puzzleScene progress to use scale around that range.
          * 
          * LoadRatio determines how much of the progress uses the scene loading (use a range of [0, 1]).
          */
         float loadRatio = 0.5f;
         float progress, boxSize;
-
+        
         /* Get the progress of the scene loading */
         if(!puzzleSceneLoaded) {
-            progress = loadRatio*RangeBetween(puzzleSceneCoroutine.progress, 0.013f, 0.0145f);
+            progress = loadRatio*RangeBetween(puzzleSceneCoroutine.progress, 0.0107f, 0.012f);
         }
         /* Get the progress of the terrain generation */
         else {

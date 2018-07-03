@@ -75,6 +75,7 @@ public class CustomPlayerController : MonoBehaviour {
     public float soundsTimeRate = 1;
     private float soundsTimeChangeMod = 0.4f;
     public float roomTimeRate = 1;
+    private bool noticedOutside = false;
 
     /* How fast a player accelerates towards their feet when falling. */
     public float gravity;
@@ -171,7 +172,7 @@ public class CustomPlayerController : MonoBehaviour {
     private bool outsideState = false;
 
     /* The clipping plane of the player's camera. The portals will use this for their cameras. */
-    public static float cameraFarClippingPlane = 1000f;
+    public static float cameraFarClippingPlane = 10000f;
     public static float cameraNearClippingPlane = 0.02f;
 
     /* The type of step sound is played for the player footstep tracker */
@@ -1084,10 +1085,15 @@ public class CustomPlayerController : MonoBehaviour {
 
 		/* Increment the time rates relative to the player's position */
 		else{
-			if(windowExit > playerPos + 3.8f){
-                playerTimeRate += Time.deltaTime*playerTimeChangeMod;
-                roomTimeRate += Time.deltaTime*playerTimeChangeMod;
-                soundsTimeRate += Time.deltaTime*soundsTimeChangeMod;
+            /* Start returning the time rate if the conditions are met */
+            if((windowExit > playerPos + 15f) || (windowExit > playerPos + 3f && cameraYRotation > 65)) {
+                noticedOutside = true;
+            }
+
+			if(noticedOutside) {
+                playerTimeRate += Time.deltaTime*playerTimeChangeMod*0.25f;
+                roomTimeRate += Time.deltaTime*playerTimeChangeMod*0.25f;
+                soundsTimeRate += Time.deltaTime*soundsTimeChangeMod*0.25f;
                 /* Prevent the rates from going above the default */
                 if(playerTimeRate > 1) { playerTimeRate = 1; }
                 if(roomTimeRate > 1) { roomTimeRate = 1; }

@@ -391,7 +391,7 @@ public class StartingRoom : ConnectedRoom {
             ParticleSystem.EmitParams emitParams = new ParticleSystem.EmitParams();
             emitParams.position = windowExit.position + new Vector3(0, window.windowHeight/2f, 0);
             emitParams.applyShapeToPosition = true;
-            particleSystem.Emit(emitParams, 5000);
+            particleSystem.Emit(emitParams, 2000);
         }
 
         /* Put the room into the terrainLayer to ensure the glass particles will render outside */

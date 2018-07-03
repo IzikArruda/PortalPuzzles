@@ -66,6 +66,7 @@ public class WaitingRoom : ConnectedRoom {
 
     /* The glass shard emitted from the window as it cracks */
     public Material glassShardMaterial;
+    public GameObject particleSystemObjectReference;
 
 
     /* -------- Built-In Functions ---------------------------------------------------- */
@@ -267,7 +268,7 @@ public class WaitingRoom : ConnectedRoom {
 
         /* Send a command to update the windows with the new given parameters */
         for(int i = 0; i < windows.Length; i++) {
-            windows[i].UpdateWindow();
+            windows[i].UpdateWindow(particleSystemObjectReference);
 
             /* Add a legDetect function to each window */
             windows[i].windowPieces[4].gameObject.AddComponent<DetectPlayerLegRay>();
@@ -275,28 +276,9 @@ public class WaitingRoom : ConnectedRoom {
 
 
             /*
-             * Setup a particle emitter that will produce small glass shards from the window
+             * Update the window's particleSystem to reflect it's size and waitingRoom.
              */
-            ParticleSystem glassEmitter = windows[i].windowPieces[4].AddComponent<ParticleSystem>();
-            windows[i].windowPieces[4].gameObject.GetComponent<ParticleSystemRenderer>().material = glassShardMaterial;
-
-            /* Prevent the emitter from passivly emitting particles */
-            var emi = glassEmitter.emission;
-            emi.rate = 0;
-
-            /* Set the values to the components in the main */
-            glassEmitter.startSize = 0.075f;
-            glassEmitter.gravityModifier = 0.6f;
-            glassEmitter.startSpeed = 0;
-            glassEmitter.startLifetime = 10000f;
-            glassEmitter.startRotation = 0;
-
-            /* Set the start speed of the particles */
-            var startVel = glassEmitter.velocityOverLifetime;
-            startVel.enabled = true;
-            startVel.x = new ParticleSystem.MinMaxCurve(-1, 1);
-            startVel.y = new ParticleSystem.MinMaxCurve(-1, 1);
-            startVel.z = new ParticleSystem.MinMaxCurve(-0.5f, -2);
+            ParticleSystem glassEmitter = windows[i].windowPieces[4].GetComponent<ParticleSystem>();
 
             /* Set the collision to the waitingRoom's floor */
             var collision = glassEmitter.collision;

@@ -43,20 +43,27 @@ public class Window : MonoBehaviour {
     /* The UV scale if applicable */
     public Vector2 UVScale;
 
+    /* The base object used for the glass. It contains a particleSystem that will be copied. */
+    public GameObject glassObjectReference;
+
 
     /* -------- Update Functions ---------------------------------------------------- */
 
-    public void UpdateWindow() {
+    public void UpdateWindow(GameObject glassObjectRef) {
         /*
          * Create the window mesh and place the portal relative to the window. This is called by an 
          * outside function after it sets the desired values for this window.
          */
+        glassObjectReference = glassObjectRef;
 
         /* Place the portal */
         UpdatePortalStats();
 
         /* Create the window */
         UpdateWindowMesh();
+    }
+    public void UpdateWindow() {
+        UpdateWindow(null);
     }
     
     public void UpdatePortalStats() {
@@ -192,7 +199,7 @@ public class Window : MonoBehaviour {
         cubeScript.updateCube = true;
         index++;
 
-        CreateEmptyObject(ref windowPieces[index], "Glass", windowParent);
+        CreateEmptyObject(ref windowPieces[index], "Glass", windowParent, glassObjectReference);
         windowPieces[index].transform.localPosition = new Vector3(0, windowHeight/2f, 0);
         cubeScript = windowPieces[index].AddComponent<CubeCreator>();
         cubeScript.x = windowWidth;
@@ -222,16 +229,27 @@ public class Window : MonoBehaviour {
         if(objects.Length != size) { objects = new GameObject[size]; }
     }
 
-    public void CreateEmptyObject(ref GameObject gameObject, string name, Transform parent) {
+    public void CreateEmptyObject(ref GameObject gameObject, string name, Transform parent, GameObject baseObject) {
         /*
          * Create an empty object, resetting their local position.
+         * If the baseObject reference is not null, use it as a base object.
          */
 
-        gameObject = new GameObject();
+        if(baseObject != null) {
+            gameObject = Instantiate(baseObject);
+        }
+        else {
+            gameObject = new GameObject();
+        }
+
         gameObject.name = name;
         gameObject.transform.parent = parent;
         gameObject.transform.localPosition = new Vector3(0, 0, 0);
         gameObject.transform.localEulerAngles = new Vector3(0, 0, 0);
         gameObject.transform.localScale = new Vector3(1, 1, 1);
+    }
+
+    public void CreateEmptyObject(ref GameObject gameObject, string name, Transform parent) {
+        CreateEmptyObject(ref gameObject, name, parent, null);
     }
 }
