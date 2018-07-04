@@ -384,6 +384,7 @@ public class PlayerSounds : MonoBehaviour {
         /* play the clips and track the clip's index */
         musicSourceMuted.Play();
         musicSourceUpgraded.Play();
+        musicSourceUpgraded.loop = false;
         lastMusicClipIndex = songIndex;
 	}
 	
@@ -460,12 +461,13 @@ public class PlayerSounds : MonoBehaviour {
 
     public void PlayStartupMusic() {
         /*
-         * Start fading in the outsideSounds audio clip
+         * Start fading in the outsideSounds audio clip. Have the clip loop.
          */
          
         musicSourceUpgraded.volume = 0;
         musicSourceMuted.volume = 0;
         musicSourceUpgraded.clip = outsideSounds;
+        musicSourceUpgraded.loop = true;
         musicSourceUpgraded.PlayDelayed(0.5f);
         SetMusicFade(0.25f);
         delayedPlayUpgraded = true;
