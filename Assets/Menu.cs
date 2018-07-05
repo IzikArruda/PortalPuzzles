@@ -106,7 +106,7 @@ public class Menu : MonoBehaviour {
      * make the state transition into itself as it will be handlede manually in UpdateCurrentState().
      */
     Transition[] transitionStates = {
-        new Transition(MenuStates.Startup, MenuStates.Main, 6.0f, 0f),
+        new Transition(MenuStates.Startup, MenuStates.Main, 10.0f, 0f),
         new Transition(MenuStates.EmptyToMain, MenuStates.Main, 0.325f, 0f),
         new Transition(MenuStates.MainToEmpty, MenuStates.Empty, 0.325f, 0f),
         new Transition(MenuStates.MainToIntro, MenuStates.Empty, 0.5f, 0f),
@@ -231,12 +231,16 @@ public class Menu : MonoBehaviour {
 
     /* Values that handle the loading animation */
     //Animation timing values
-    private float loadingAnimationVisible = 0;
     private float animationIncrementMod = 0.5f;
     private float loadingAnimationTime = 0;
     private float animationTimeMod = 1f;
     private float loadingAnimationLoopTime = 2.25f;
-    private float loadingAnimationOffset = 0.25f;
+    private float loadingAnimationOffset = 0.175f;
+    private float loadingStartingVisibilityDifference = 0.15f;
+    /* Visibility ranges from [0, 1], with 0 being bellow the screen and 1 being fully visible.
+     * The state marks which loadingBox will have it's visibility increased or decreased every frame. */
+    private float[] loadingAnimationVisibility;
+    private bool[] loadingAnimationState;
     //Positionnal and size values
     private int boxCount = 4;
     private float boxSize = 50f;
@@ -258,7 +262,50 @@ public class Menu : MonoBehaviour {
         /*
          * Initialize the menu and start loading the scene of the game
          */
+         
+        //If a key is held down, change the box count. This is for testing for the ideal amount of boxes
+        int newBoxCount = 2;
+        if(Input.GetKey("1")) { boxCount = newBoxCount; }
+        newBoxCount++;
+        if(Input.GetKey("2")) { boxCount = newBoxCount; }
+        newBoxCount++;
+        if(Input.GetKey("3")) { boxCount = newBoxCount; }
+        newBoxCount++;
+        if(Input.GetKey("4")) { boxCount = newBoxCount; }
+        newBoxCount++;
+        if(Input.GetKey("5")) { boxCount = newBoxCount; }
+        newBoxCount++;
+        if(Input.GetKey("6")) { boxCount = newBoxCount; }
+        newBoxCount++;
+        if(Input.GetKey("7")) { boxCount = newBoxCount; }
+        newBoxCount++;
+        if(Input.GetKey("8")) { boxCount = newBoxCount; }
+        newBoxCount++;
+        if(Input.GetKey("9")) { boxCount = newBoxCount; }
+        newBoxCount++;
+        if(Input.GetKey("0")) { boxCount = newBoxCount; }
+        newBoxCount++;
+        if(Input.GetKey("q")) { boxCount = newBoxCount; }
+        newBoxCount++;
+        if(Input.GetKey("w")) { boxCount = newBoxCount; }
+        newBoxCount++;
+        if(Input.GetKey("e")) { boxCount = newBoxCount; }
+        newBoxCount++;
+        if(Input.GetKey("r")) { boxCount = newBoxCount; }
+        newBoxCount++;
+        if(Input.GetKey("t")) { boxCount = newBoxCount; }
+        newBoxCount++;
+        if(Input.GetKey("y")) { boxCount = newBoxCount; }
+        newBoxCount++;
+        if(Input.GetKey("u")) { boxCount = newBoxCount; }
+        newBoxCount++;
+        if(Input.GetKey("i")) { boxCount = newBoxCount; }
+        newBoxCount++;
+        if(Input.GetKey("o")) { boxCount = newBoxCount; }
+        newBoxCount++;
+        if(Input.GetKey("p")) { boxCount = newBoxCount; }
 
+        
         /* Initialize the menu */
         InitializeMenu();
 
@@ -320,20 +367,25 @@ public class Menu : MonoBehaviour {
         /*
          * Handle the animation that is used to represent the loading progress
          */
-        if(!FinishedLoading()) {
-            /* Increment the loadingAnimationVisible value as we are loading */
-            loadingAnimationVisible += animationIncrementMod*Time.deltaTime;
-        }
-        else {
-            /* Once we have loaded, decrement the loadingAnimationVisible value to hide the animation */
-            loadingAnimationVisible -= animationIncrementMod*Time.deltaTime*2;
-        }
+       
+        /* Update each individual loading box's visibility relative to their saved state */
+        for(int i = 0; i < boxCount; i++) {
 
-        /* Prevent the loading animation from leaving the range [0, 1] */
-        loadingAnimationVisible = Mathf.Clamp(loadingAnimationVisible, 0, 1);
+            /* Increment the visibility and prevent it from going above 1 */
+            if(loadingAnimationState[i]) {
+                loadingAnimationVisibility[i] += animationIncrementMod*Time.deltaTime;
+                if(loadingAnimationVisibility[i] > 1) { loadingAnimationVisibility[i] = 1; }
+            }
 
-        /* Only animate the loading animation if it's visible */
-        if(loadingAnimationVisible > 0) {
+            /* Decrement and only prevent it from being decreased bellow 0. Let it start and increment from bellow 0. */
+            else {
+                loadingAnimationVisibility[i] -= animationIncrementMod*Time.deltaTime*2;
+                if(loadingAnimationVisibility[i] < 0) { loadingAnimationVisibility[i] = 0; }
+            }
+        }
+        
+        /* Only animate the loading boxes if the final loading box is still visible */
+        if(loadingAnimationVisibility[0] > 0) {
             /* Increment the time spent in the loading */
             loadingAnimationTime += animationTimeMod*Time.deltaTime;
 
@@ -611,7 +663,13 @@ public class Menu : MonoBehaviour {
         /* Create the boxes to be used during the loading process */
         loadingBoxes = new RectTransform[boxCount];
         interiorLoadingBoxes = new RectTransform[boxCount];
+        loadingAnimationVisibility = new float[boxCount];
+        loadingAnimationState = new bool[boxCount];
         for(int i = 0; i < boxCount; i++) {
+
+            /* Set the starting visibility value of the box */
+            loadingAnimationVisibility[i] = 0 - i*loadingStartingVisibilityDifference;
+            loadingAnimationState[i] = true;
 
             /* Create the base and interior loading boxes */
             loadingBoxes[i] = CreatePanel().GetComponent<RectTransform>();
@@ -1261,7 +1319,7 @@ public class Menu : MonoBehaviour {
 
         /* Position the boxes either in or out of view relative to the loadingAnimationVisible value */
         for(int i = 0; i < loadingBoxes.Length; i++) {
-            loadingBoxes[i].anchoredPosition += (1 - Mathf.Sin((Mathf.PI/2f)*(loadingAnimationVisible)))*new Vector2(0, -boxSize -heightFromBottom*5);
+            loadingBoxes[i].anchoredPosition += (1 - Mathf.Sin((Mathf.PI/2f)*(loadingAnimationVisibility[i])))*new Vector2(0, -boxSize -heightFromBottom*5);
         }
 
         /* Animate each loadingBox relative to the current time spent loading */
@@ -1301,6 +1359,11 @@ public class Menu : MonoBehaviour {
             boxSize = 0.1f + 0.4f*RangeBetween(progress, ((i+0f)/loadingBoxes.Length), ((i+1f)/loadingBoxes.Length));
             interiorLoadingBoxes[(interiorLoadingBoxes.Length-1) - i].anchorMax = new Vector2((1 - boxSize), (1 - boxSize));
             interiorLoadingBoxes[(interiorLoadingBoxes.Length-1) - i].anchorMin = new Vector2(boxSize, boxSize);
+
+            /* If the box has been filled, set it's loadingAnimationState to false so it starts leaving the screen */
+            if(boxSize >= 0.5f) {
+                loadingAnimationState[(interiorLoadingBoxes.Length-1) - i] = false;
+            }
         }
     }
 
@@ -1878,10 +1941,7 @@ public class Menu : MonoBehaviour {
 
         /* Place teh button on-screen */
         StartButtonHoverUpdate();
-        StartButtonPositionUpdate(0.5f);
-
-        /* Set it's pivot point onto the edge of the screen/button */
-        rect.pivot = new Vector3(0, 0.5f);
+        StartButtonPositionUpdate(1);
 
         /* Set it's rotation to reflect the current transition value */
         rect.localEulerAngles = new Vector3(0, 90f*transitionFade, 0);
@@ -1899,19 +1959,10 @@ public class Menu : MonoBehaviour {
 
         /* Place teh button on-screen */
         StartButtonHoverUpdate();
-        StartButtonPositionUpdate(0.5f);
-
-        /* Set it's pivot point onto the edge of the screen/button */
-        rect.pivot = new Vector3(0, 0.5f);
+        StartButtonPositionUpdate(1);
 
         /* Set it's rotation to reflect the current transition value */
         rect.localEulerAngles = new Vector3(0, 90f-90f*transitionFade, 0);
-
-        /* Reset the pivot point once we are done leaving the video state */
-        if(transition.timeRemaining == 0) {
-            rect.pivot = new Vector3(0.5f, 0.5f);
-            StartButtonPositionUpdate(1);
-        }
     }
 
     void UStartButtonMainToSens() {
@@ -2250,10 +2301,7 @@ public class Menu : MonoBehaviour {
 
         /* Move the button from the main to off-screen position */
         SensButtonHoverUpdate();
-        SensButtonPositionUpdate(0.5f);
-
-        /* Set it's pivot point onto the edge of the screen/button */
-        rect.pivot = new Vector3(0, 0.5f);
+        SensButtonPositionUpdate(1f);
 
         /* Set it's rotation to reflect the current transition value */
         rect.localEulerAngles = new Vector3(0, 90f*transitionFade, 0);
@@ -2271,19 +2319,10 @@ public class Menu : MonoBehaviour {
 
         /* Move the button from the main to off-screen position */
         SensButtonHoverUpdate();
-        SensButtonPositionUpdate(0.5f);
-
-        /* Set it's pivot point onto the edge of the screen/button */
-        rect.pivot = new Vector3(0, 0.5f);
+        SensButtonPositionUpdate(1);
 
         /* Set it's rotation to reflect the current transition value */
         rect.localEulerAngles = new Vector3(0, 90f-90f*transitionFade, 0);
-
-        /* Reset the pivot point once we are done leaving the video state */
-        if(transition.timeRemaining == 0) {
-            rect.pivot = new Vector3(0.5f, 0.5f);
-            SensButtonPositionUpdate(1);
-        }
     }
 
     void USensButtonMainToIntro() {
@@ -2466,10 +2505,7 @@ public class Menu : MonoBehaviour {
 
         /* Move the button from it's main position to off-screen */
         QuitButtonHoverUpdate();
-        QuitButtonPositionUpdate(0.5f);
-
-        /* Set it's pivot point onto the edge of the screen/button */
-        rect.pivot = new Vector3(0, 0.5f);
+        QuitButtonPositionUpdate(1);
 
         /* Set it's rotation to reflect the current transition value */
         rect.localEulerAngles = new Vector3(0, 90f*transitionFade, 0);
@@ -2487,19 +2523,10 @@ public class Menu : MonoBehaviour {
 
         /* Move the button from it's main position to off-screen */
         QuitButtonHoverUpdate();
-        QuitButtonPositionUpdate(0.5f);
-
-        /* Set it's pivot point onto the edge of the screen/button */
-        rect.pivot = new Vector3(0, 0.5f);
+        QuitButtonPositionUpdate(1);
 
         /* Set it's rotation to reflect the current transition value */
         rect.localEulerAngles = new Vector3(0, 90f-90f*transitionFade, 0);
-
-        /* Reset the pivot point once we are done leaving the video state */
-        if(transition.timeRemaining == 0) {
-            rect.pivot = new Vector3(0.5f, 0.5f);
-            QuitButtonPositionUpdate(1);
-        }
     }
 
     void UQuitButtonMainToIntro() {
