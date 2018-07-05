@@ -204,7 +204,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
             /* When far from the room, make the player camera's near clipping large. This is to
              * prevent the depth buffer issue when having a small near clip plane value.
              * It is safe to change the value because the player is far from any portals at this point. */
-            if(Mathf.Abs(playerFromCenter) > (maxYPlayArea + 50)) {
+            if(Mathf.Abs(playerFromCenter) > (maxYPlayArea + 20)) {
                 collider.GetComponent<CustomPlayerController>().playerCamera.nearClipPlane = 0.2f;
             }
             /* Set the player camera's near clip plane to it's saved value */

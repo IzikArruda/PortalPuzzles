@@ -481,9 +481,9 @@ public class PlayerSounds : MonoBehaviour {
 
         /* Have the intro music play after a delay */
         musicSourceMuted.clip = startingMusic;
-        musicSourceMuted.PlayDelayed(4.5f);
+        musicSourceMuted.PlayDelayed(9f);
         delayedPlayMuted = true;
-        SetMusicFade(-0.15f);
+        SetMusicFade(-0.125f);
     }
 
     public void ForceIntroMusic() {

@@ -215,6 +215,13 @@ public class WaitingRoom : ConnectedRoom {
         roomWalls[7].name = "Above Exit wall";
         roomWalls[7].transform.position += new Vector3(xDist/2f - xExitDist/2f, yDist - (yDist - yExitDist)/2f, zDist/2f);
         CreatePlane(roomWalls[7], xExitDist, yDist - yExitDist, 8, wallMaterial, 2, false);
+
+        /* Extend the box colliders of the ceiling, floor, left and rigght walls to cover the room's corners.
+         * Note that due to this extension, all attachedRooms should be atleast 1 unit in depth */
+        roomWalls[0].GetComponent<BoxCollider>().size += new Vector3(2, 0, 2);
+        roomWalls[3].GetComponent<BoxCollider>().size += new Vector3(2, 0, 2);
+        roomWalls[1].GetComponent<BoxCollider>().size += new Vector3(0, 0, 2);
+        roomWalls[2].GetComponent<BoxCollider>().size += new Vector3(0, 0, 2);
     }
 
     void UpdateWindows() {

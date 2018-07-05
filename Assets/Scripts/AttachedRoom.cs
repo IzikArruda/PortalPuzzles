@@ -28,7 +28,6 @@ public class AttachedRoom : ConnectedRoom {
     public GameObject puzzleRoomParent;
 
     /* The edges of the room that connect it to a puzzleRoom */
-    [HideInInspector]
     public GameObject[] wallConnectors;
     public float wallConnectorSize;
     /* Controls what side the room connectors are on */
@@ -164,31 +163,50 @@ public class AttachedRoom : ConnectedRoom {
         Vector3 centerOffset = Vector3.zero;
 
         /* Create the cube on the left side of the wall */
+        float ratio = 0.75f;
         wallConnectors[0].name = "Left wall connector";
-        centerOffset = new Vector3(-exitWidth/2f - wallConnectorSize/2f, exitHeight/2f, (depth/2f + wallConnectorSize/2f)*(roomSide ? 1 : -1));
+        centerOffset = new Vector3(-exitWidth/2f - ratio*wallConnectorSize/2f, 
+                exitHeight/2f + (topConnectorSide ? 1 : -1)*(1 - ratio)*wallConnectorSize/4f,
+                (depth/2f + ratio*wallConnectorSize/2f)*(roomSide ? 1 : -1));
         wallConnectors[0].transform.position = roomCenter + centerOffset;
         wallConnectors[0].GetComponent<CubeCreator>().x = wallConnectorSize;
-        wallConnectors[0].GetComponent<CubeCreator>().y = exitHeight;
+        wallConnectors[0].GetComponent<CubeCreator>().y = exitHeight - (1 - ratio)*wallConnectorSize/2f;
         wallConnectors[0].GetComponent<CubeCreator>().z = wallConnectorSize;
         wallConnectors[0].GetComponent<CubeCreator>().updateCube = true;
 
         /* Create the cube on the right side of the wall */
         wallConnectors[1].name = "Right wall connector";
-        centerOffset = new Vector3(exitWidth/2f + wallConnectorSize/2f, exitHeight/2f, (depth/2f + wallConnectorSize/2f)*(roomSide ? 1 : -1));
+        centerOffset = new Vector3(exitWidth/2f + ratio*wallConnectorSize/2f, 
+                exitHeight/2f + (topConnectorSide ? 1 : -1)*(1 - ratio)*wallConnectorSize/4f, 
+                (depth/2f + ratio*wallConnectorSize/2f)*(roomSide ? 1 : -1));
         wallConnectors[1].transform.position = roomCenter + centerOffset;
         wallConnectors[1].GetComponent<CubeCreator>().x = wallConnectorSize;
-        wallConnectors[1].GetComponent<CubeCreator>().y = exitHeight;
+        wallConnectors[1].GetComponent<CubeCreator>().y = exitHeight - (1 - ratio)*wallConnectorSize/2f;
         wallConnectors[1].GetComponent<CubeCreator>().z = wallConnectorSize;
         wallConnectors[1].GetComponent<CubeCreator>().updateCube = true;
 
         /* Create the cube on the top side of the wall */
         wallConnectors[2].name = "Top wall connector";
-        centerOffset = new Vector3(0, -wallConnectorSize/2f + (exitHeight + wallConnectorSize)*(topConnectorSide ? 0 : 1), (depth/2f + wallConnectorSize/2f)*(roomSide ? 1 : -1));
+        centerOffset = new Vector3(0,
+                (ratio*wallConnectorSize/2f)*(topConnectorSide ? -1 : 1) + (exitHeight)*(topConnectorSide ? 0 : 1), 
+                (depth/2f + ratio*wallConnectorSize/2f)*(roomSide ? 1 : -1));
         wallConnectors[2].transform.position = roomCenter + centerOffset;
-        wallConnectors[2].GetComponent<CubeCreator>().x = exitWidth + wallConnectorSize*2;
+        wallConnectors[2].GetComponent<CubeCreator>().x = exitWidth + ((1 - ratio)/2f + ratio)*wallConnectorSize*2;
         wallConnectors[2].GetComponent<CubeCreator>().y = wallConnectorSize;
         wallConnectors[2].GetComponent<CubeCreator>().z = wallConnectorSize;
         wallConnectors[2].GetComponent<CubeCreator>().updateCube = true;
+
+        /* Place a smaller connector on the floor that connects the floor and the puzzleRoom */
+        wallConnectors[3].name = "Floor connector";
+        centerOffset = new Vector3(0,
+                (ratio*0.75f*wallConnectorSize/2f)*(topConnectorSide ? 1 : -1) + (exitHeight)*(topConnectorSide ? 1 : 0),
+                (depth/2f + ratio*wallConnectorSize/4f)*(roomSide ? 1 : -1));
+        wallConnectors[3].transform.position = roomCenter + centerOffset;
+        wallConnectors[3].GetComponent<CubeCreator>().x = exitWidth + ((1 - ratio)/2f + ratio)*wallConnectorSize*2;
+        wallConnectors[3].GetComponent<CubeCreator>().y = 0.75f*wallConnectorSize;
+        wallConnectors[3].GetComponent<CubeCreator>().z = wallConnectorSize/2f;
+        wallConnectors[3].GetComponent<CubeCreator>().updateCube = true;
+
     }
     
     public Transform ResetPlayer() {
@@ -254,9 +272,18 @@ public class AttachedRoom : ConnectedRoom {
          * Make sure the wall connectors are created and have the right components
          */
 
-        /* Make sure the array is created */
+        /* Make sure the array is properly created */
+        if(wallConnectors != null) {
+            for(int i = 0; i < wallConnectors.Length; i++) {
+                if(wallConnectors[i] != null) {
+                    DestroyImmediate(wallConnectors[i]);
+                }
+            }
+            wallConnectors = null;
+        }
+
         if(wallConnectors == null) {
-            wallConnectors = new GameObject[3];
+            wallConnectors = new GameObject[4];
         }
 
         /* Loop through each wall connector */

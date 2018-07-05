@@ -180,6 +180,12 @@ public class StartingRoom : ConnectedRoom {
         roomWalls[8].transform.position += new Vector3(0, -roomBellowHeight/2f, roomDepth/2f);
         CreatePlane(roomWalls[8], roomWidth, roomBellowHeight, 8, wallMaterial, 2, false);
 
+        /* Extend the box colliders on the ceiling, floor, left and right walls. */
+        roomWalls[0].GetComponent<BoxCollider>().size += new Vector3(2, 0, 2);
+        roomWalls[3].GetComponent<BoxCollider>().size += new Vector3(2, 0, 2);
+        roomWalls[1].GetComponent<BoxCollider>().size += new Vector3(0, 0, 2);
+        roomWalls[2].GetComponent<BoxCollider>().size += new Vector3(0, 0, 2);
+
 
         /* Position the key points of the stairs for this room */
         stairs.endPoint.position = upperCenter + new Vector3(0, 0, roomDepth/2f);

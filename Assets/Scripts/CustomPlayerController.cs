@@ -192,7 +192,7 @@ public class CustomPlayerController : MonoBehaviour {
     //Used to smoothly transition between InIntro and LeavingIntro
     private float remainingInIntroTime;
     private bool aboutToLeaveIntro = false;
-    private float timeToLeaveIntro = 3;
+    private float timeToLeaveIntro = 6;
 
 
     /* --- One-time use Variables --------------------------- */

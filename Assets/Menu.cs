@@ -242,7 +242,7 @@ public class Menu : MonoBehaviour {
     private float[] loadingAnimationVisibility;
     private bool[] loadingAnimationState;
     //Positionnal and size values
-    private int boxCount = 4;
+    private int boxCount = 6;
     private float boxSize = 50f;
     private float boxSepperationSize = 30f;
     private float heightFromBottom = 35f;
@@ -1342,7 +1342,7 @@ public class Menu : MonoBehaviour {
          * 
          * LoadRatio determines how much of the progress uses the scene loading (use a range of [0, 1]).
          */
-        float loadRatio = 0.5f;
+        float loadRatio = 0.66f;
         float progress, boxSize;
         
         /* Get the progress of the scene loading */
