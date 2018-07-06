@@ -261,6 +261,7 @@ public class StartingRoom : ConnectedRoom {
 
         /* To ensure the window's cameras will render a sun flare, remove the colliders on the outside window */
         window.windowPieces[9].AddComponent<BoxCollider>().enabled = false;
+        window.portalSet.ExitPortal.backwardsPortalMesh.GetComponent<BoxCollider>().enabled = false;
         
         /* Create the particle system used by the otuside window's glass */
         UpdateParticleSystem();

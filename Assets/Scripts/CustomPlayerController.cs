@@ -1638,6 +1638,11 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* The player's steps will now be stepping on soft ground */
         currentStepType = 1;
+
+        /* Enable the startingRoom's outside portal's boxCollider to properly render the 
+         * portal's view when looking back into the startingRoom. This box was originally
+         * disabled because it was blocking the window's camera from rendering the solar flare. */
+        startingRoom.window.portalSet.ExitPortal.backwardsPortalMesh.GetComponent<BoxCollider>().enabled = true;
     }
 
     public void ApplyFastfall(bool outsidePuzzlePlayArea) {
@@ -1766,7 +1771,7 @@ public class CustomPlayerController : MonoBehaviour {
             /* Check for any collisions from the current position towards the current direction */
             if(Physics.Raycast(position, rotation*Vector3.forward, out hitInfo, distance, rayLayerMask)) {
                 /* When hitting a collider, move the position up to the collision point */
-                Debug.DrawLine(position, position + rotation*Vector3.forward*hitInfo.distance, Color.green);
+                //////Debug.DrawLine(position, position + rotation*Vector3.forward*hitInfo.distance, Color.green);
                 position += rotation * Vector3.forward * hitInfo.distance;
                 distance -= hitInfo.distance;
                 
@@ -1798,7 +1803,7 @@ public class CustomPlayerController : MonoBehaviour {
 
             /* The raytrace hit nothing, so travel along the direction for the remaining distance */
             else {
-                Debug.DrawLine(position, position + rotation*Vector3.forward*distance, Color.white);
+                //////Debug.DrawLine(position, position + rotation*Vector3.forward*distance, Color.white);
                 position += rotation*Vector3.forward*distance;
                 distance = 0;
             }

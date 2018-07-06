@@ -206,6 +206,7 @@ public class AttachedRoom : ConnectedRoom {
         wallConnectors[3].GetComponent<CubeCreator>().y = 0.75f*wallConnectorSize;
         wallConnectors[3].GetComponent<CubeCreator>().z = wallConnectorSize/2f;
         wallConnectors[3].GetComponent<CubeCreator>().updateCube = true;
+        wallConnectors[3].AddComponent<BoxCollider>().enabled = false;
 
     }
     

@@ -89,8 +89,6 @@ public class PortalObjects : MonoBehaviour {
         backwardsPortalMesh.GetComponent<BoxCollider>().center = new Vector3(-width/2f, height/2f, depth);
         portalMesh.GetComponent<BoxCollider>().isTrigger = true;
         backwardsPortalMesh.GetComponent<BoxCollider>().isTrigger = true;
-        portalMesh.GetComponent<BoxCollider>().enabled = true;
-        backwardsPortalMesh.GetComponent<BoxCollider>().enabled = true;
 
     }
 

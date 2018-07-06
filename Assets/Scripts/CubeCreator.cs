@@ -75,7 +75,7 @@ public class CubeCreator : MonoBehaviour {
         InitializeComponents();
     }
 
-    void Update() {
+    public void Update() {
         /*
          * On every frame, check if there is a change with the box's size
          */
@@ -110,20 +110,12 @@ public class CubeCreator : MonoBehaviour {
 
     void InitializeComponents() {
         /*
-         * Reset the required components
+         * Add the required components to the object if they have not yet been created
          */
 
         if(GetComponent<MeshFilter>() == null) { gameObject.AddComponent<MeshFilter>(); }
         if(GetComponent<MeshRenderer>() == null) { gameObject.AddComponent<MeshRenderer>(); }
         if(GetComponent<BoxCollider>() == null) { gameObject.AddComponent<BoxCollider>(); }
-
-        //THIS SETS THE TEXTURE FOR THE MATERIAL AS A WHOLE, SO DO NOT ACTUALLY DO THIS (unless we want to reset the materail's textures)
-        /* If certain materials are not set, simply use the main material as their replacement */
-        if(mainMaterial != null && secondMaterial != null && thirdMaterial != null) {
-            /* The third material's textures are based off the first two materials */
-            //thirdMaterial.SetTexture("_MainTex", mainMaterial.GetTexture("_MainTex"));
-            //thirdMaterial.SetTexture("_SecondTex", secondMaterial.GetTexture("_MainTex"));
-        }
     }
     
     public void UpdateBox() {
