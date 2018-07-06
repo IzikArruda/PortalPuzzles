@@ -1586,6 +1586,12 @@ public class CustomPlayerController : MonoBehaviour {
                 inMenu = playerMenu.PlayerRequestMenuChange();
             }
         }
+
+        else if(Input.GetKeyDown("r") && inMenu && !PlayerIsInIntro()) {
+
+            /* Pressing the R key while in a menu and out of the intro will update the menu's hint text */
+            playerMenu.SetHintText(2);
+        }
     }
     
     public void StartButtonPressed() {

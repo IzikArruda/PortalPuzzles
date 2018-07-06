@@ -55,7 +55,8 @@ public enum Panels {
     Credit,
     Cover,
     Video,
-    Sens
+    Sens,
+    Hint
 }
 
 /*
@@ -129,6 +130,7 @@ public class Menu : MonoBehaviour {
     StateFunction[] coverPanelTransitions;
     StateFunction[] videoPanelTransitions;
     StateFunction[] sensPanelTransitions;
+    StateFunction[] hintPanelTransitions;
 
     /* Button height to width ratios. Set manually and is unique for each font + text content. */
     private float quitBonusSize = 0.75f;
@@ -221,10 +223,6 @@ public class Menu : MonoBehaviour {
     /* The main terrainController of the game. Used to access it's sunflare and loading progress */
     public TerrainController terrainController;
 
-    /* Global values with minor/single uses */
-    private Vector2 bonusQuitSize = new Vector2(0, 0);
-    private bool mouseLock = false;
-
     /* Value that controls the main panel's position. Start at a negative value to delay the credits start */
     public float creditScrollValue = -0.5f;
     private bool isOutside = false;
@@ -254,7 +252,12 @@ public class Menu : MonoBehaviour {
     private bool puzzleSceneLoaded = false;
     private bool terrainGenerated = false;
     private AsyncOperation puzzleSceneCoroutine;
-    
+
+    /* Global values with minor/single uses */
+    private Vector2 bonusQuitSize = new Vector2(0, 0);
+    private bool mouseLock = false;
+    private int currentHintIndex = -1;
+
 
     /* ----------- Built-in Functions ------------------------------------------------------------- */
 
@@ -263,49 +266,6 @@ public class Menu : MonoBehaviour {
          * Initialize the menu and start loading the scene of the game
          */
          
-        //If a key is held down, change the box count. This is for testing for the ideal amount of boxes
-        int newBoxCount = 2;
-        if(Input.GetKey("1")) { boxCount = newBoxCount; }
-        newBoxCount++;
-        if(Input.GetKey("2")) { boxCount = newBoxCount; }
-        newBoxCount++;
-        if(Input.GetKey("3")) { boxCount = newBoxCount; }
-        newBoxCount++;
-        if(Input.GetKey("4")) { boxCount = newBoxCount; }
-        newBoxCount++;
-        if(Input.GetKey("5")) { boxCount = newBoxCount; }
-        newBoxCount++;
-        if(Input.GetKey("6")) { boxCount = newBoxCount; }
-        newBoxCount++;
-        if(Input.GetKey("7")) { boxCount = newBoxCount; }
-        newBoxCount++;
-        if(Input.GetKey("8")) { boxCount = newBoxCount; }
-        newBoxCount++;
-        if(Input.GetKey("9")) { boxCount = newBoxCount; }
-        newBoxCount++;
-        if(Input.GetKey("0")) { boxCount = newBoxCount; }
-        newBoxCount++;
-        if(Input.GetKey("q")) { boxCount = newBoxCount; }
-        newBoxCount++;
-        if(Input.GetKey("w")) { boxCount = newBoxCount; }
-        newBoxCount++;
-        if(Input.GetKey("e")) { boxCount = newBoxCount; }
-        newBoxCount++;
-        if(Input.GetKey("r")) { boxCount = newBoxCount; }
-        newBoxCount++;
-        if(Input.GetKey("t")) { boxCount = newBoxCount; }
-        newBoxCount++;
-        if(Input.GetKey("y")) { boxCount = newBoxCount; }
-        newBoxCount++;
-        if(Input.GetKey("u")) { boxCount = newBoxCount; }
-        newBoxCount++;
-        if(Input.GetKey("i")) { boxCount = newBoxCount; }
-        newBoxCount++;
-        if(Input.GetKey("o")) { boxCount = newBoxCount; }
-        newBoxCount++;
-        if(Input.GetKey("p")) { boxCount = newBoxCount; }
-
-        
         /* Initialize the menu */
         InitializeMenu();
 
@@ -351,6 +311,8 @@ public class Menu : MonoBehaviour {
         ExecuteElementFunctions(videoPanelTransitions);
         /* Sens panel */
         ExecuteElementFunctions(sensPanelTransitions);
+        /* Hint panel */
+        ExecuteElementFunctions(hintPanelTransitions);
         
         /*
          * Handle the scene and terrain loader trackers 
@@ -367,7 +329,6 @@ public class Menu : MonoBehaviour {
         /*
          * Handle the animation that is used to represent the loading progress
          */
-       
         /* Update each individual loading box's visibility relative to their saved state */
         for(int i = 0; i < boxCount; i++) {
 
@@ -392,7 +353,7 @@ public class Menu : MonoBehaviour {
             /* Update the animation effect */
             UpdateLoadingAnimation();
         }
-
+        
         /* Change the current state if needed after all the per-frame update functions are done */
         UpdateCurrentState();
     }
@@ -432,6 +393,7 @@ public class Menu : MonoBehaviour {
         SetupCoverPanel();
         SetupSensPanel();
         SetupVideoPanel();
+        SetupHintPanel();
 
         /* Create and populate the buttons and hover arrays */
         buttons = new Button[System.Enum.GetValues(typeof(Buttons)).Length];
@@ -542,6 +504,15 @@ public class Menu : MonoBehaviour {
             new StateFunction(MenuStates.MainToSens, USensPanelMainToSens),
             new StateFunction(MenuStates.SensToMain, USensPanelSensToMain)
         };
+        hintPanelTransitions = new StateFunction[] {
+            new StateFunction(MenuStates.Empty, UHintPanelEmpty),
+            new StateFunction(MenuStates.MainToIntro, UHintPanelEmpty),
+            new StateFunction(MenuStates.Startup, UHintPanelEmpty),
+            new StateFunction(MenuStates.Main, UHintPanelMain),
+            new StateFunction(MenuStates.Video, UHintPanelMain),
+            new StateFunction(MenuStates.MainToEmpty, UHintPanelMainToEmpty),
+            new StateFunction(MenuStates.EmptyToMain, UHintPanelEmptyToMain)
+        };
     }
 
     public GameObject CreatePanel() {
@@ -586,6 +557,7 @@ public class Menu : MonoBehaviour {
             CoverPanelReset();
             VideoPanelReset();
             SensPanelReset();
+            HintPanelButtonReset();
             StartButtonReset();
             VideoButtonReset();
             SensButtonReset();
@@ -1067,6 +1039,47 @@ public class Menu : MonoBehaviour {
         sensitivitySliderValueText.raycastTarget = false;
     }
 
+    void SetupHintPanel() {
+        /*
+         * Setup the hint panel, which is a short, wide panel that hugs the bottom of the menu
+         */
+        int panelEnum = (int) Panels.Hint;
+        RectTransform hintPanel = panelRects[panelEnum];
+        hintPanel.name = "Hint panel";
+
+        /* Set the anchors so the panel covers the width of 40% of the screen */
+        hintPanel.anchorMin = new Vector2(0, 0);
+        hintPanel.anchorMax = new Vector2(0.4f, 0);
+
+        /* Set the color and remove the image so that the panel is invisible */
+        hintPanel.GetComponent<Image>().color = new Color(0, 0, 0, 0);
+        
+        /* Create a text object that will span across the  */
+        GameObject textObject;
+        RectTransform textRect;
+        Text text;
+        textObject = new GameObject("Hint Text");
+        text = textObject.AddComponent<Text>();
+        textRect = textObject.GetComponent<RectTransform>();
+        textRect.SetParent(hintPanel);
+        textRect.anchorMin = new Vector2(0, 0);
+        textRect.anchorMax = new Vector2(1, 1);
+        textRect.anchoredPosition = new Vector2(0, 0);
+        textRect.sizeDelta = new Vector2(0, 0);
+
+        /* Set the text properties */
+        text.font = otherTextFont;
+        text.fontStyle = FontStyle.Normal;
+        text.gameObject.AddComponent<Outline>();
+        text.alignment = TextAnchor.MiddleLeft;
+        text.resizeTextForBestFit = true;
+        text.resizeTextMinSize = 1;
+        text.resizeTextMaxSize = 10000;
+        text.color = new Color(1, 1, 1, 1);
+        text.GetComponent<Outline>().effectColor = new Color(0, 0, 0, 1);
+        SetHintText(0);
+    }
+
     void SetupStartButton() {
         /*
          * Set the variables of the button that makes it the "Start" button
@@ -1388,6 +1401,7 @@ public class Menu : MonoBehaviour {
         loadingBox.localEulerAngles = new Vector3(0, 0, 180*rotationTime);
     }
     
+
 
     /* ----------- UI Element Update Functions ------------------------------------------------------------- */
 
@@ -2600,6 +2614,72 @@ public class Menu : MonoBehaviour {
     }
     #endregion
 
+    #region Hint Panel Updates
+    void UHintPanelMain() {
+        /*
+         * Make sure the panel is in it's proper visible position
+         */
+
+        HintPanelPositionUpdate(1);
+    }
+
+    void UHintPanelEmpty() {
+        /*
+         * Make sure the panel is in it's proper off-screen position.
+         */
+
+        HintPanelPositionUpdate(0);
+    }
+
+    void UHintPanelEmptyToMain() {
+        /*
+         * Move the hint panel into view from the bottom of the menu
+         */
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 1);
+
+        /* Move the hint panel into view */
+        HintPanelPositionUpdate(transitionFade);
+    }
+
+    void UHintPanelMainToEmpty() {
+        /*
+         * Hide the hint panel by sliding it off the bottom of the screen
+         */
+        Transition transition = GetTransitionFromState(state);
+        float transitionFade = AdjustRatio(TimeRatio(transition.timeRemaining, transition.timeMax), 0, 1);
+
+        /* Move the hint panel out of view */
+        HintPanelPositionUpdate(1 - transitionFade);
+    }
+
+    void HintPanelPositionUpdate(float sideRatio) {
+        /*
+         * Position the hint panel either directly above or bellow the bottom edge of the menu.
+         * 0 indicates bellow, 1 above.
+         */
+        int panelEnum = (int) Panels.Hint;
+        RectTransform hintPanel = panelRects[panelEnum];
+
+        /* Get the proper position of the panel */
+        float panelHeight = buttonHeight/2f;
+
+        /* [0, 1] controls it's Y position */
+        hintPanel.anchoredPosition = new Vector2(panelHeight*0.2f, -panelHeight + panelHeight*(Mathf.Sin(0.5f*Mathf.PI*sideRatio)*2));
+    }
+    
+    void HintPanelButtonReset() {
+        /*
+         * Reset the position and size of the hint panel
+         */
+        RectTransform hintPanel = panelRects[(int) Panels.Hint];
+
+        /* Set the size of the panel relative to the button height */
+        hintPanel.sizeDelta = new Vector2(0, buttonHeight/2f);
+        HintPanelPositionUpdate(0);
+    }
+    #endregion
+
 
     /* ----------- Event/Listener Functions ------------------------------------------------------------- */
 
@@ -2781,11 +2861,12 @@ public class Menu : MonoBehaviour {
             /*
              * Check the current state
              */
-            /* Leaving the MainToIntro state will change the start button */
+            /* Leaving the MainToIntro state will change the start button and the hint text */
             if(state == MenuStates.MainToIntro) {
                 buttons[(int) Buttons.Start].GetComponentInChildren<Text>().text = "CONTINUE";
                 startWidthRatio = continueTextWidthRatio;
                 isGameStarted = true;
+                SetHintText(1);
             }
 
             /* Leaving the VideoToMain state will set the video panel to be inactive */
@@ -3040,6 +3121,32 @@ public class Menu : MonoBehaviour {
 
         /* Update the player and the menu's sensitivity */
         UpdateSensitivitySlider(5);
+    }
+
+    public void SetHintText(int index) {
+        /*
+         * Change the text in the hint panel's text element relative to the given integer.
+         * 
+         * Some changes cannot occur if the text is already using a specific text.
+         */
+        string[] hintBoxText = {
+            "",
+            "Press R to reset",
+            "Press R to reset (while out of the menu)"};
+
+        if(currentHintIndex == 0 && index != 1) {
+            /* Cannot go from an empty text to anything other than the default reset text */
+        }
+
+        else if(index == 2 && currentHintIndex != 1) {
+            /* Can only enter out of menu text from the default reset text */
+        }
+
+        else {
+            /* Set the string of the text */
+            panelRects[(int) Panels.Hint].GetChild(0).GetComponent<Text>().text = hintBoxText[index];
+            currentHintIndex = index;
+        }
     }
 
 
