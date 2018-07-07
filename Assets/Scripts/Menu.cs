@@ -256,7 +256,19 @@ public class Menu : MonoBehaviour {
     /* Global values with minor/single uses */
     private Vector2 bonusQuitSize = new Vector2(0, 0);
     private bool mouseLock = false;
+
+    /* Values used to track the hint box and it's hint texts */
+    private string[] hintBoxText = {
+            "",
+            "Press R to reset",
+            "Press R to reset (while out of the menu)",
+            "Hold Left-Shift to run",
+            "Hold spacebar to automatically jump while falling off an edge"};
     private int currentHintIndex = -1;
+    private int delayedHintIndex = -1;
+    private float hintPanelVisibility = 0;
+    private bool forceHintPanel = false;
+
 
 
     /* ----------- Built-in Functions ------------------------------------------------------------- */
@@ -353,7 +365,16 @@ public class Menu : MonoBehaviour {
             /* Update the animation effect */
             UpdateLoadingAnimation();
         }
-        
+
+        /* Update the hint panel's visibility value if needed */
+        if(forceHintPanel) {
+            hintPanelVisibility += Time.deltaTime*2;
+            if(hintPanelVisibility > 1) { hintPanelVisibility = 1; }
+        }else {
+            hintPanelVisibility -= Time.deltaTime*2;
+            if(hintPanelVisibility < 0) { hintPanelVisibility = 0; }
+        }
+
         /* Change the current state if needed after all the per-frame update functions are done */
         UpdateCurrentState();
     }
@@ -1979,7 +2000,7 @@ public class Menu : MonoBehaviour {
         int buttonEnum = (int) Buttons.Start;
         RectTransform rect = buttonRects[buttonEnum];
 
-        rect.position = new Vector3(-(rect.sizeDelta.x + buttonEdgeOffset)/2f + (rect.sizeDelta.x + buttonEdgeOffset)*sideRatio, canvasRect.position.y/1.5f + buttonHeight/2f, 0);
+        rect.position = new Vector3(-(rect.sizeDelta.x + buttonEdgeOffset)/2f + (rect.sizeDelta.x + buttonEdgeOffset)*sideRatio, canvasRect.position.y/1.5f + buttonHeight, 0);
     }
 
     void StartButtonHoverUpdate() {
@@ -2663,9 +2684,18 @@ public class Menu : MonoBehaviour {
 
         /* Get the proper position of the panel */
         float panelHeight = buttonHeight/2f;
+        
+        /* Depending on the "hintPanelVisibility" value, alter the off-screen position of the panel */
+        float panelYPos = -panelHeight + panelHeight*(Mathf.Sin(0.5f*Mathf.PI*sideRatio)*2);
+        panelYPos = (1 - Mathf.Sin(Mathf.PI*0.5f*hintPanelVisibility))*panelYPos + Mathf.Sin(Mathf.PI*0.5f*hintPanelVisibility)*(panelHeight);
 
         /* [0, 1] controls it's Y position */
-        hintPanel.anchoredPosition = new Vector2(panelHeight*0.2f, -panelHeight + panelHeight*(Mathf.Sin(0.5f*Mathf.PI*sideRatio)*2));
+        hintPanel.anchoredPosition = new Vector2(panelHeight*0.2f, panelYPos);
+
+        /* Once the button is fully hidden, check if the hint text has a delayed change queued */
+        if(delayedHintIndex != currentHintIndex && hintPanelVisibility == 0 && sideRatio == 0) {
+            SetHintText(delayedHintIndex);
+        }
     }
     
     void HintPanelButtonReset() {
@@ -3129,10 +3159,8 @@ public class Menu : MonoBehaviour {
          * 
          * Some changes cannot occur if the text is already using a specific text.
          */
-        string[] hintBoxText = {
-            "",
-            "Press R to reset",
-            "Press R to reset (while out of the menu)"};
+        //Hold Spacebar to automatically jump while walking off an edge (show once entering room 3)
+        //Hold Left-Shift to run (show if the layer hasnt run for long and entered room 2)
 
         if(currentHintIndex == 0 && index != 1) {
             /* Cannot go from an empty text to anything other than the default reset text */
@@ -3146,8 +3174,36 @@ public class Menu : MonoBehaviour {
             /* Set the string of the text */
             panelRects[(int) Panels.Hint].GetChild(0).GetComponent<Text>().text = hintBoxText[index];
             currentHintIndex = index;
+            delayedHintIndex = currentHintIndex;
+
+            /* Switching to the run/prime jump hints will force the hint panel to be visible */
+            if(currentHintIndex == 3 || currentHintIndex == 4) {
+                forceHintPanel = true;
+            }
         }
     }
+
+    public void DelayChangeHint(int index) {
+        /*
+         * Change the hint's current delayed hint index so that the text 
+         * changes next time the panel leaves the player's view.
+         */
+
+        delayedHintIndex = index;
+    }
+
+    public void ForceHintReset(int index) {
+        /*
+         * If the given index matches the hint box's current text, remove the hint panel's
+         * forced viewing boolean and delay change the text back to it's default.
+         */
+
+        if(index == currentHintIndex) {
+            forceHintPanel = false;
+            delayedHintIndex = 1;
+        }
+    }
+
 
 
     /* ----------- Mouse Enter/Hover Functions ------------------------------------------------------------- */

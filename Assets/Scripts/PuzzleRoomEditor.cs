@@ -211,6 +211,22 @@ public class PuzzleRoomEditor : MonoBehaviour {
             else {
                 collider.GetComponent<CustomPlayerController>().playerCamera.nearClipPlane = CustomPlayerController.cameraNearClippingPlane;
             }
+
+            /* Depending on what index the current puzzleRoom is, run a specific function from the playerController */
+            string puzzleName = transform.parent.name;
+            /* Send a request to the player to update the hint box if they havent used the run key yet */
+            if(puzzleName.Equals("Puzzle 2")) {
+                collider.GetComponent<CustomPlayerController>().CheckRunCondition();
+            }else {
+                collider.GetComponent<CustomPlayerController>().playerMenu.ForceHintReset(3);
+            }
+            /* Send a request to the player to update the hint box with the jump priming mechanic */
+            if(puzzleName.Equals("Puzzle 3")) {
+                collider.GetComponent<CustomPlayerController>().CheckPrimedJumpCondition();
+            }
+            else {
+                collider.GetComponent<CustomPlayerController>().playerMenu.ForceHintReset(4);
+            }
         }
     }
 

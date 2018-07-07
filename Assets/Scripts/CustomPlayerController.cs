@@ -199,7 +199,11 @@ public class CustomPlayerController : MonoBehaviour {
     public bool fallingOutWindow = false;
     private Quaternion savedRotation = Quaternion.Euler(0, 0, 0);
 
-    /* Controls how mnay legs need to be grounded for the player to be considered standing */
+    /* Track certain stats through out the game */
+    private float runningTime = 0;
+    private bool usedPrimedJump = false;
+
+    /* Controls how many legs need to be grounded for the player to be considered standing */
     private int requiredGroundedCount = 1;
 
     /* Debugging trackers */
@@ -490,6 +494,7 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Change to the "falling" state and attempt to jump if the player lost their footing */
         if(currentGroundedCount < requiredGroundedCount) {
+            if(jumpPrimed) { usedPrimedJump = true; }
             JumpAttempt();
             ChangeState(PlayerStates.Falling);
         }
@@ -848,6 +853,11 @@ public class CustomPlayerController : MonoBehaviour {
         inputVector *= usedMovementSpeed;
         if(Input.GetKey(KeyCode.LeftShift)) {
             inputVector *= runSpeedMultiplier;
+
+            /* If the player is moving and running, increment the time spent running */
+            if(inputVector != Vector3.zero) {
+                runningTime += Time.deltaTime;
+            }
         }
 
         /* Rotate the input direction to match the player's view. Only use the view's rotation along the Y axis */
@@ -1294,7 +1304,6 @@ public class CustomPlayerController : MonoBehaviour {
     void JumpAttempt() {
         /*
     	 * Try to make the player jump. A jump must be primed (jumpPrimed == true) for the player to jump.
-         * 
     	 */
 
         if(jumpPrimed == true && PlayerIsGrounded()) {
@@ -1734,10 +1743,41 @@ public class CustomPlayerController : MonoBehaviour {
         playerSoundsScript.PlayMenuClick();
     }
 
+    public void CheckRunCondition() {
+        /*
+         * Check if the player knows about the running ability. If not, update the hint text.
+         */
 
-    /* ----------- Helper Functions ------------------------------------------------------------- */
+        /* Tell the hint box to inform the player they can run if they havent run for 2 seconds */
+        if(runningTime < 2) {
+            playerMenu.DelayChangeHint(3);
+        }
 
-    Quaternion RayTrace(ref Vector3 position, ref Quaternion rotation, ref float distance, 
+        /* Revert the hint back to the default text if we do not need to inform the user */
+        else {
+            playerMenu.ForceHintReset(3);
+        }
+    }
+
+    public void CheckPrimedJumpCondition() {
+        /*
+         * Check if the player has used a prime jump. If not, update the hint text.
+         */
+
+        /* Tell the hint box to inform the player about priming a jump if it hasnt been done yet */
+        if(!usedPrimedJump) {
+            playerMenu.DelayChangeHint(4);
+        }
+
+        /* Revert the hint back to the default text if we do not need to inform the user */
+        else {
+            playerMenu.ForceHintReset(4);
+        }
+    }
+
+        /* ----------- Helper Functions ------------------------------------------------------------- */
+
+        Quaternion RayTrace(ref Vector3 position, ref Quaternion rotation, ref float distance, 
         ref bool teleported, bool detectTeleportTriggers, bool detectOtherColliders, bool saveCollider) {
         /*
          * Fire a ray from the given position with the given rotation forwards for the given distance.
