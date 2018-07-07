@@ -90,7 +90,7 @@ public class CustomPlayerController : MonoBehaviour {
     [HideInInspector]
     public int fastFallModOutside = 5;
 
-    /* Howm uch the gravity vector is modified. This is changed by the PuzzleRoomEditor to control falling speed */
+    /* How much the gravity vector is modified. This is changed by the PuzzleRoomEditor to control falling speed */
     [HideInInspector]
     public float gravityVectorMod = 1;
 
@@ -329,9 +329,6 @@ public class CustomPlayerController : MonoBehaviour {
                 StartPlayerReset();
             }
 
-            /* Check if the user presses any other important keys */
-            ArbitraryInput();
-
             /* Update and animated the resetTimer if the player wants to reset */
             if(currentResetTime > -1) {
                 UpdateResetAnimation();
@@ -344,6 +341,9 @@ public class CustomPlayerController : MonoBehaviour {
             //////Debug.DrawLine(playerCamera.transform.position,
             //////        playerCamera.transform.position + playerCamera.transform.rotation*Vector3.forward*0.5f, Color.green);
         }
+
+        /* Check if the user presses any other important keys */
+        ArbitraryInput();
     }
 
     void LateUpdate() {
@@ -1453,12 +1453,13 @@ public class CustomPlayerController : MonoBehaviour {
                 currentYVelocity -= gravity*Time.deltaTime*60*fastFallMod/5f;
                 if(currentYVelocity < -maxYVelocity*fastFallMod) { currentYVelocity = -maxYVelocity*fastFallMod; }
             }
-
             else {
                 currentYVelocity -= gravity*Time.deltaTime*60;
                 if(currentYVelocity < -maxYVelocity) { currentYVelocity = -maxYVelocity; }
             }
+
             gravityVector = currentYVelocity*transform.up*gravityVectorMod;
+            Debug.Log(gravityVector);
         }
 
         /* Reset the player's yVelocity if they are grounded */
@@ -1529,38 +1530,33 @@ public class CustomPlayerController : MonoBehaviour {
          * Catch any inputs from the keyboard that are used for debugging or other uses.
          */
          
-        /* If the player presses v, force them into the 90 degrees rotation. Used to land on the StartingRoom's window */
-        if(Input.GetKeyDown("v")) {
-            transform.eulerAngles = new Vector3(90, 0, 0);
-        }
+        /* Make sure the Keys "v" and "m" are pressed before pressing these keys */
+        if(Input.GetKey("v") && Input.GetKey("m")) {
 
-        /* Pressing certain keys will raise or lower a value of the player stats. The values being changed are: */
-        /* maxYVelocity: change it to see if the player should fall any faster while outside. */
-        if(Input.GetKeyDown("-")) {
-            maxYVelocity -= 0.2f;
-        }
-        if(Input.GetKeyDown("+")) {
-            maxYVelocity += 0.2f;
-        }
-        /* fastFallMod: change how fast the player speeds up when fast falling. Maybe use a new value for outside? */
-        if(Input.GetKeyDown("9")) {
-            fastFallMod -= 1;
-        }
-        if(Input.GetKeyDown("0")) {
-            fastFallMod += 1;
-        }
+            /* Pressing o/p will increase/decrease the player's gravity */
+            if(Input.GetKeyDown("o")) {
+                gravityVectorMod = gravityVectorMod*1.1f + 0.1f;
+            }
+            if(Input.GetKeyDown("p")) {
+                gravityVectorMod = gravityVectorMod * 0.9f - 0.1f;
+            }
 
-        /* If the player presses y, force the player into fastFall if they are falling */
-        if(Input.GetKeyDown("y")) {
-            if(state == PlayerStates.Falling) {
-                ChangeState(PlayerStates.FastFalling);
+            /* Pressing "l" will change the current song playing */
+            if(Input.GetKeyDown("l")) {
+                playerSoundsScript.PlayMusic();
+            }
+
+            /* Pressing "9" will hide/unhide the credits panel in the menu */
+            if(Input.GetKeyDown("9")) {
+                playerMenu.CreditsPanelToggle();
+            }
+
+            /* Pressing "t" will force the player into the 90 degrees rotation. Used to land on the StartingRoom's window. */
+            if(Input.GetKeyDown("t")) {
+                transform.eulerAngles = new Vector3(90, 0, 0);
             }
         }
-
-        /* Pressing the K key will "Upgrade" the current music */
-        if(Input.GetKeyDown("y")) {
-            playerSoundsScript.UpgradeMusic();
-        }
+        
     }
 
     void MenuKey() {
@@ -1732,6 +1728,9 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Set the fallingOutWindow to true  */
         fallingOutWindow = true;
+
+        /* Change the menu's hint text to be empty */
+        playerMenu.DelayChangeHint(5);
     }
     
     public void PlayClickSound() {
@@ -1775,10 +1774,10 @@ public class CustomPlayerController : MonoBehaviour {
         }
     }
 
-        /* ----------- Helper Functions ------------------------------------------------------------- */
+    /* ----------- Helper Functions ------------------------------------------------------------- */
 
-        Quaternion RayTrace(ref Vector3 position, ref Quaternion rotation, ref float distance, 
-        ref bool teleported, bool detectTeleportTriggers, bool detectOtherColliders, bool saveCollider) {
+    Quaternion RayTrace(ref Vector3 position, ref Quaternion rotation, ref float distance, 
+    ref bool teleported, bool detectTeleportTriggers, bool detectOtherColliders, bool saveCollider) {
         /*
          * Fire a ray from the given position with the given rotation forwards for the given distance.
          * The quaternion returned represents the amount of rotation that the given rotation underwent.
@@ -1842,7 +1841,7 @@ public class CustomPlayerController : MonoBehaviour {
                 /* non-teleport triggers that are hit will signal an error. All triggers should be on the IgnoreRaycastLayer. */
                 else if(hitInfo.collider.isTrigger) {
                     /* Warn the player that they hit an unknown trigger */
-                    Debug.Log("WARNING: Player's RayCast hit an unknown trigger");
+                    //////Debug.Log("WARNING: Player's RayCast hit an unknown trigger");
                     stopRayTrace = true;
                 }
             }

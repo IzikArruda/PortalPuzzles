@@ -164,11 +164,6 @@ public class PlayerSounds : MonoBehaviour {
 		/* Apply any fade effects for the frame */
 		ApplyFade();
         
-        //Check if the player has pressed the P key, which will play a new song.
-        if(Input.GetKeyDown("p")){
-            PlayMusic();
-        }
-
         /* If the music ever stops playing, have it start over again */
         if((!musicSourceMuted.isPlaying && musicSourceMuted.time == 0) || (!musicSourceUpgraded.isPlaying && musicSourceUpgraded.time == 0)) {
             

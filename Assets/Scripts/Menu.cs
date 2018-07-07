@@ -263,11 +263,23 @@ public class Menu : MonoBehaviour {
             "Press R to reset",
             "Press R to reset (while out of the menu)",
             "Hold Left-Shift to run",
-            "Hold spacebar to automatically jump while falling off an edge"};
+            "Hold spacebar to automatically jump while falling off an edge",
+            "",
+            "The game is over by the way", //First index that gets set by hintTextChangeTiming
+            "There's nothing else to do other than fall forever",
+            "I guess since you're still here, I can tell you a secret",
+            "You can hold down the V and M keys, then press L to change the current song",
+            "Holding V and M and then pressing 9 will hide and un-hide the credits on the right",
+            "Also, holding V and M then pressing I or O will increase or decrease your falling speed",///V and M
+            "Careful thought, going too fast may break the terrain generation",
+            "But the game is already over, so I guess that doesn't matter at this point",
+            ""};
+    private float[] hintTextChangeTiming = { 80, 100, 160, 170, 180, 190, 200, 215, 225 };
     private int currentHintIndex = -1;
     private int delayedHintIndex = -1;
     private float hintPanelVisibility = 0;
     private bool forceHintPanel = false;
+    private float hintTime = -1;
 
 
 
@@ -373,6 +385,14 @@ public class Menu : MonoBehaviour {
         }else {
             hintPanelVisibility -= Time.deltaTime*2;
             if(hintPanelVisibility < 0) { hintPanelVisibility = 0; }
+        }
+
+        /* Increment the hint time and update the hint text if needed */
+        if(hintTime > -1) {
+            hintTime += Time.deltaTime;
+            if(currentHintIndex - 5 < hintTextChangeTiming.Length && hintTime > hintTextChangeTiming[currentHintIndex - 5]) {
+                SetHintText(currentHintIndex + 1);
+            }
         }
 
         /* Change the current state if needed after all the per-frame update functions are done */
@@ -3159,8 +3179,6 @@ public class Menu : MonoBehaviour {
          * 
          * Some changes cannot occur if the text is already using a specific text.
          */
-        //Hold Spacebar to automatically jump while walking off an edge (show once entering room 3)
-        //Hold Left-Shift to run (show if the layer hasnt run for long and entered room 2)
 
         if(currentHintIndex == 0 && index != 1) {
             /* Cannot go from an empty text to anything other than the default reset text */
@@ -3175,6 +3193,12 @@ public class Menu : MonoBehaviour {
             panelRects[(int) Panels.Hint].GetChild(0).GetComponent<Text>().text = hintBoxText[index];
             currentHintIndex = index;
             delayedHintIndex = currentHintIndex;
+
+            /* Setting the text to the index 5 will make the hintTime start tracking it's time */
+            if(currentHintIndex == 5) {
+                hintTime = 0;
+                forceHintPanel = true;
+            }
 
             /* Switching to the run/prime jump hints will force the hint panel to be visible */
             if(currentHintIndex == 3 || currentHintIndex == 4) {
@@ -3204,6 +3228,20 @@ public class Menu : MonoBehaviour {
         }
     }
 
+    public void CreditsPanelToggle() {
+        /*
+         * Toggle the credits panel between enabled/disabled
+         */
+        int panelEnum = (int) Panels.Credit;
+        RectTransform mainPanel = panelRects[panelEnum];
+
+        /* Active/disable the panel */
+        if(mainPanel.gameObject.activeSelf) {
+            mainPanel.gameObject.SetActive(false);
+        }else {
+            mainPanel.gameObject.SetActive(true);
+        }
+    }
 
 
     /* ----------- Mouse Enter/Hover Functions ------------------------------------------------------------- */
