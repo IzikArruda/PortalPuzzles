@@ -196,6 +196,11 @@ public class PortalView : MonoBehaviour {
         if(!checkPortalVisibility(viewingCamera.transform)) {
             return;
         }
+
+        /* Ensure the viewing camera can actually render a scene */
+        if(viewingCamera.pixelWidth < 1 || viewingCamera.pixelHeight < 1) {
+            return;
+        }
         
         /* Extract the cameraScript from the scouting camera */
         CameraScript cameraScript = scoutCamera.GetComponent<CameraScript>();
@@ -206,18 +211,6 @@ public class PortalView : MonoBehaviour {
         /* Check if the scouting camera exists along with it's renderTexture */
         if(!scoutCamera || !cameraScript || !cameraScript.renderTexture) {
             return;
-        }
-        
-        /* Check if both camera's are a part of two incompatible portal sets */
-        if(scoutCamera.transform.parent != null && scoutCamera.transform.parent.GetComponent<PortalView>() != null &&
-                viewingCamera.transform.parent != null && viewingCamera.transform.parent.GetComponent<PortalView>() != null) {
-            PortalSet scoutSet = scoutCamera.transform.parent.parent.parent.parent.GetComponent<PortalSet>();
-            PortalSet viewingSet = viewingCamera.transform.parent.parent.parent.parent.GetComponent<PortalSet>();
-
-            /* Check if both portals are incompatible */
-            if(scoutSet.incompatible && viewingSet.incompatible) {
-                return;
-            }
         }
         
         /* Set up values to properly position the camera */
@@ -239,14 +232,6 @@ public class PortalView : MonoBehaviour {
         scoutCamera.projectionMatrix = projection;
 
         /* Cut out the scoutCamera's edges so it does not render anything outside the portal's view. */
-        /*
-         *
-         * A hack has been added to avoid the "Screen position out of view fustrum" error.
-         * Portal sets can be marked to be "incompatible". when a camera of an incompatible set
-         * tries to render a portal that is also set to "incompatible", it will not render the portal. 
-         * 
-         * 
-         */
         Rect boundingEdges = CalculateViewingRect(viewingCamera);
         /* If the rect of the portal from the camera's view is very small, do not bother rendering it */
         if(boundingEdges.width > 0.001f && boundingEdges.height > 0.001f) {
