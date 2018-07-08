@@ -84,7 +84,6 @@ public class PlayerSounds : MonoBehaviour {
     /* --- Misc ------------------- */
     /* Track the index of the previously used clip to prevent repeated plays */
     private int lastStepClipIndex = -1;
-    private int lastMusicClipIndex = -1;
     /* 0: Nothing. -x: Fade out the clip. +x: Fade in the clip. Relative to fadeRate. */
     private float fallingFade;
     private float musicFadeMuted;
@@ -380,7 +379,6 @@ public class PlayerSounds : MonoBehaviour {
         musicSourceMuted.Play();
         musicSourceUpgraded.Play();
         musicSourceUpgraded.loop = false;
-        lastMusicClipIndex = songIndex;
 	}
 	
 	public void PlayFastFall(){

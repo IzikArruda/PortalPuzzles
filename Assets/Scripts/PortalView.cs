@@ -207,7 +207,19 @@ public class PortalView : MonoBehaviour {
         if(!scoutCamera || !cameraScript || !cameraScript.renderTexture) {
             return;
         }
+        
+        /* Check if both camera's are a part of two incompatible portal sets */
+        if(scoutCamera.transform.parent != null && scoutCamera.transform.parent.GetComponent<PortalView>() != null &&
+                viewingCamera.transform.parent != null && viewingCamera.transform.parent.GetComponent<PortalView>() != null) {
+            PortalSet scoutSet = scoutCamera.transform.parent.parent.parent.parent.GetComponent<PortalSet>();
+            PortalSet viewingSet = viewingCamera.transform.parent.parent.parent.parent.GetComponent<PortalSet>();
 
+            /* Check if both portals are incompatible */
+            if(scoutSet.incompatible && viewingSet.incompatible) {
+                return;
+            }
+        }
+        
         /* Set up values to properly position the camera */
         Vector3 pos = transform.position;
         Vector3 normal = transform.TransformDirection(faceNormal);
@@ -226,18 +238,17 @@ public class PortalView : MonoBehaviour {
         Matrix4x4 projection = viewingCamera.CalculateObliqueMatrix(clipPlane);
         scoutCamera.projectionMatrix = projection;
 
-        /* Cut out the scoutCamera's edges so it does not render anything outside the portal's view.
-         * If the rect of the portal from the camera's view is very small, do not bother rendering it. */
+        /* Cut out the scoutCamera's edges so it does not render anything outside the portal's view. */
         /*
-         * 
-         * 
-         * Sometimes when calling this, we get an error of "Screen position out of view fustrum"
-         * 
-         * 
+         *
+         * A hack has been added to avoid the "Screen position out of view fustrum" error.
+         * Portal sets can be marked to be "incompatible". when a camera of an incompatible set
+         * tries to render a portal that is also set to "incompatible", it will not render the portal. 
          * 
          * 
          */
         Rect boundingEdges = CalculateViewingRect(viewingCamera);
+        /* If the rect of the portal from the camera's view is very small, do not bother rendering it */
         if(boundingEdges.width > 0.001f && boundingEdges.height > 0.001f) {
             SetScissorRect(scoutCamera, boundingEdges);
 
@@ -245,7 +256,6 @@ public class PortalView : MonoBehaviour {
             scoutCamera.Render();
 
             /* Extract the scoutingCamera's view after rendering as a static texture */
-            //Material[] materials = rend.sharedMaterials;
             foreach(Material mat in rend.sharedMaterials) {
                 if(mat.HasProperty("_PortalTex")) {
                     mat.SetTexture("_PortalTex", cameraScript.renderTexture);
@@ -301,7 +311,7 @@ public class PortalView : MonoBehaviour {
         //		print( cam.fieldOfView );
         //		print( Mathf.Tan( cam.projectionMatrix[ 1, 1 ] ) * 2 );
         //		cam.pixelRect = new Rect( 0, 0, Screen.width / 2, Screen.height );
-        Matrix4x4 m1 = Matrix4x4.TRS(new Vector3(r.x, r.y, 0), Quaternion.identity, new Vector3(r.width, r.height, 1));
+        //      Matrix4x4 m1 = Matrix4x4.TRS(new Vector3(r.x, r.y, 0), Quaternion.identity, new Vector3(r.width, r.height, 1));
         //		Matrix4x4 m1 = Matrix4x4.TRS( Vector3.zero, Quaternion.identity, new Vector3( r.width, r.height, 1 ) );
         //		Matrix4x4 m2 = m1.inverse;
         //		print( m2 );
@@ -507,7 +517,7 @@ public class PortalView : MonoBehaviour {
         float topBound = 0;
         float leftBound = 1;
         float rightBound = 0;
-        
+
         /*
          * Fire a ray from each corner of the camera's view and check if it collides with the portal mesh
          */

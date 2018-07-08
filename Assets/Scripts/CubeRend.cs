@@ -50,27 +50,18 @@ public class CubeRend : MonoBehaviour {
         else if(cam.name == "Camera2") {
             GetComponent<MeshRenderer>().material = cam2ViewMat;
         }
-
-
-
-
-
     }
 
     void Update() {
         /*
          * Every frame, re-render the camera's views
          */
-
-        
+         
         cam1.Render();
         //Once the cam1 is rendered, apply it's targetTexture to it's mesh
         mat1.mainTexture = cam1.targetTexture;
         mesh1.material = mat1;
-
-
-
-
+        
         //Before rendering the camera, change the cube's texture/material to the proper cam1Mat
         cam2.Render();
         //Once the cam2 is rendered, apply it's targetTexture to it's mesh

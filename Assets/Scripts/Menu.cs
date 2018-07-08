@@ -1050,7 +1050,6 @@ public class Menu : MonoBehaviour {
         /* Add text bellow the slider giving instructions */
         GameObject sliderText = new GameObject("Slider text", typeof(RectTransform));
         Text text = sliderText.AddComponent<Text>();
-        RectTransform rectTex = sliderText.GetComponent<RectTransform>();
         sliderText.transform.SetParent(sensPanel);
         sliderText.SetActive(true);
         /* Set the text properties */
@@ -1066,7 +1065,6 @@ public class Menu : MonoBehaviour {
         /* Add text above the slider giving the sensitivity */
         GameObject sliderValue = new GameObject("Slider value", typeof(RectTransform));
         sensitivitySliderValueText = sliderValue.AddComponent<Text>();
-        RectTransform valueRect = sliderValue.GetComponent<RectTransform>();
         sliderValue.transform.SetParent(sensPanel);
         sliderValue.SetActive(true);
         /* Set the text properties */
@@ -1451,8 +1449,6 @@ public class Menu : MonoBehaviour {
         /*
          * Place the panel in the center. The panel will only be visible if the player is outside.
          */
-        int panelEnum = (int) Panels.Credit;
-        RectTransform mainPanel = panelRects[panelEnum];
 
         CreditPanelPositionUpdate(creditScrollValue);
     }
@@ -1565,10 +1561,10 @@ public class Menu : MonoBehaviour {
 
     void CreditPanelReset() {
         /*
-         * Reset the sizes of the cover panel. The content does not need to be resized.
+         * The panel does not need to change it's sizes, so place it off-screen when it needs to be reset
          */
-        int panelEnum = (int) Panels.Credit;
-        RectTransform mainPanel = panelRects[panelEnum];
+
+        CreditPanelPositionUpdate(0);
     }
     #endregion
 

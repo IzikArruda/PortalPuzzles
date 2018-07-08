@@ -1459,7 +1459,6 @@ public class CustomPlayerController : MonoBehaviour {
             }
 
             gravityVector = currentYVelocity*transform.up*gravityVectorMod;
-            Debug.Log(gravityVector);
         }
 
         /* Reset the player's yVelocity if they are grounded */

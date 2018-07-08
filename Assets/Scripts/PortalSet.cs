@@ -63,6 +63,9 @@ public class PortalSet : MonoBehaviour {
     /* When true, will update the given object portal's meshes, triggers and borders */
     public bool updatePortal;
 
+    /* A portal set that is incompatible will not render the portal of another incompatible portal set */
+    public bool incompatible;
+
 
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
 

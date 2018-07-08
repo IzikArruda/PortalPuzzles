@@ -165,7 +165,7 @@ public class WaitingRoom : ConnectedRoom {
 
         /* Set the sky spheres in a place to that will not be near other spheres or puzzle rooms */
         windowExit.eulerAngles = new Vector3(0, 0, 0);
-        windowExit.position = roomCenter + new Vector3(0, 3000, roomCenter.z*1000);
+        windowExit.position = roomCenter + new Vector3(0, 50000, roomCenter.z*1000);
 
         /* Calculate the sizes of this waitingRoom */
         xDist = Mathf.Abs(entranceRoom.exitPointFront.position.x - exitRoom.exitPointBack.position.x) + xEntranceDist/2f + xExitDist/2f;
@@ -265,12 +265,22 @@ public class WaitingRoom : ConnectedRoom {
         UpdateWindowTransform(windows[3], ontoWallOffset, ontoWallEuler, windowWidthRatio*wallWidth);
         
 
-        /* Make each portal's camera only render the skySphere layer */
+        /* Make each portal's camera only render the skySphere layer and up to a camera depth of 2 */
         for(int i = 0; i < windows.Length; i++) {
+            /* Set the render layer */
             windows[i].portalSet.EntrancePortal.portalMesh.GetComponent<PortalView>().SetSkySphereLayer(true);
             windows[i].portalSet.EntrancePortal.backwardsPortalMesh.GetComponent<PortalView>().SetSkySphereLayer(true);
             windows[i].portalSet.ExitPortal.portalMesh.GetComponent<PortalView>().SetSkySphereLayer(true);
             windows[i].portalSet.ExitPortal.backwardsPortalMesh.GetComponent<PortalView>().SetSkySphereLayer(true);
+
+            /* Set the camera depth limit */
+            windows[i].portalSet.EntrancePortal.portalMesh.GetComponent<PortalView>().maxCameraDepth = 2;
+            windows[i].portalSet.EntrancePortal.backwardsPortalMesh.GetComponent<PortalView>().maxCameraDepth = 2;
+            windows[i].portalSet.ExitPortal.portalMesh.GetComponent<PortalView>().maxCameraDepth = 2;
+            windows[i].portalSet.ExitPortal.backwardsPortalMesh.GetComponent<PortalView>().maxCameraDepth = 2;
+
+            /* Set the portal's incompatible to true */
+            windows[i].portalSet.incompatible = true;
         }
 
         /* Send a command to update the windows with the new given parameters */
