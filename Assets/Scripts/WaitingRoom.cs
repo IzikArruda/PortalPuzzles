@@ -218,10 +218,10 @@ public class WaitingRoom : ConnectedRoom {
 
         /* Extend the box colliders of the ceiling, floor, left and rigght walls to cover the room's corners.
          * Note that due to this extension, all attachedRooms should be atleast 1 unit in depth */
-        roomWalls[0].GetComponent<BoxCollider>().size += new Vector3(2, 0, 2);
-        roomWalls[3].GetComponent<BoxCollider>().size += new Vector3(2, 0, 2);
-        roomWalls[1].GetComponent<BoxCollider>().size += new Vector3(0, 0, 2);
-        roomWalls[2].GetComponent<BoxCollider>().size += new Vector3(0, 0, 2);
+        roomWalls[0].GetComponent<BoxCollider>().size += new Vector3(1, 0, 1);
+        roomWalls[3].GetComponent<BoxCollider>().size += new Vector3(1, 0, 1);
+        roomWalls[1].GetComponent<BoxCollider>().size += new Vector3(0, 0, 1);
+        roomWalls[2].GetComponent<BoxCollider>().size += new Vector3(0, 0, 1);
     }
 
     void UpdateWindows() {
