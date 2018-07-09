@@ -169,7 +169,8 @@ public class CustomPlayerController : MonoBehaviour {
     private Collider lastHitCollider;
     
     /* The player is in the outside state if they enter outside through the startingRoom's window portal */
-    private bool outsideState = false;
+    [HideInInspector]
+    public bool outsideState = false;
 
     /* The clipping plane of the player's camera. The portals will use this for their cameras. */
     public static float cameraFarClippingPlane = 10000f;
@@ -841,7 +842,7 @@ public class CustomPlayerController : MonoBehaviour {
 
             /* While airborn and outside, increase the player's airborn movement  */
             if(outsideState) {
-                usedMovementSpeed *= 4;
+                usedMovementSpeed *= 6;
             }
         }
         /* If the player is in the Intro state, do not accept any movements from keyboard or mouse */
@@ -958,6 +959,9 @@ public class CustomPlayerController : MonoBehaviour {
         
         /* Have the player facing towards the window */
         transform.localEulerAngles = new Vector3(0, 180, 0);
+        
+        /* Set the player into the inside state */
+        outsideState = false;
 
         /* Have the camera render the outside terrain as the camera will be outside on startup */
         PlayerRenderTerrain(true);

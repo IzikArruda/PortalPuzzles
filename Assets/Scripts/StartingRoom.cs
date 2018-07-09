@@ -111,6 +111,20 @@ public class StartingRoom : ConnectedRoom {
         }
     }
     
+    void OnTriggerEnter(Collider player) {
+        /*
+         * When the player enters the startingRoom and they are set to the outside state,
+         * Update how their camera will render the terrain as they have fell back
+         * into the startingRoom from the outside.
+         */
+
+        /* Ensure the collider entering the trigger is a player and they are in the outside state*/
+        if(player.GetComponent<CustomPlayerController>() != null && player.GetComponent<CustomPlayerController>().outsideState) {
+
+            /* Make the player camera render the puzzleRooms and not the terrain anymore */
+            player.GetComponent<CustomPlayerController>().PlayerRenderTerrain(false);
+        }
+    }
     
     /* -------- Update Functions ---------------------------------------------------- */
 
