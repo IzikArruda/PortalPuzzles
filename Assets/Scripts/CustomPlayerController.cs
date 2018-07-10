@@ -61,6 +61,7 @@ public class CustomPlayerController : MonoBehaviour {
     /* How fast a player moves using player inputs */
     public float movementSpeed;
     public float runSpeedMultiplier;
+    public bool runToggle;
     /* Sliding determines how much of getAxis should be used over getAxisRaw. */
     [Range(1, 0)]
     public float sliding;
@@ -202,7 +203,10 @@ public class CustomPlayerController : MonoBehaviour {
 
     /* Track certain stats through out the game */
     private float runningTime = 0;
-    private bool usedPrimedJump = false;
+    private bool enteredRoom3 = false;
+    private bool jumpedInRoom3 = false;
+    private bool usedToggleRun = false;
+    private int largestRoomNumber = 0;
 
     /* Controls how many legs need to be grounded for the player to be considered standing */
     private int requiredGroundedCount = 1;
@@ -495,7 +499,6 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Change to the "falling" state and attempt to jump if the player lost their footing */
         if(currentGroundedCount < requiredGroundedCount) {
-            if(jumpPrimed) { usedPrimedJump = true; }
             JumpAttempt();
             ChangeState(PlayerStates.Falling);
         }
@@ -852,7 +855,9 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Add the player speed to the movement vector */
         inputVector *= usedMovementSpeed;
-        if(Input.GetKey(KeyCode.LeftShift)) {
+
+        /* Apply an extra movement multiplier if they are running. Take into account the runToggle state. */
+        if(runToggle ^ Input.GetKey(KeyCode.LeftShift)) {
             inputVector *= runSpeedMultiplier;
 
             /* If the player is moving and running, increment the time spent running */
@@ -968,6 +973,9 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* The player starts immobile */
         lastStepMovement = Vector3.zero;
+
+        /* The player's default movement state is set to walking */
+        runToggle = false;
 
         /* Set the fastFall mod to it's normal value */
         fastFallMod = fastFallModNormal;
@@ -1224,6 +1232,46 @@ public class CustomPlayerController : MonoBehaviour {
         }
     }
 
+    public void UpdatePlayerRoom(string roomName) {
+        /*
+         * This runs every frame the player is inside a puzzleRoom, with the roomName being the room's name.
+         * Extract the room number from the roomName and run the appropriate hint update functions.
+         * Do not run the Check functions if the player has surpassed the room already.
+         * 
+         * Note: this function allows us to track how long the player spent in each room
+         */
+        int roomNumber = roomName[7] - 48;
+         
+        /* Room 1: Request a hint to teach the player how to run */
+        if(roomNumber == 1 && roomNumber >= largestRoomNumber) {
+            CheckRunCondition();
+        }
+        else {
+            playerMenu.ForceHintReset(3);
+        }
+
+        /* Room 2: Request a hint to teach the player how to toggle running/walking */
+        if(roomNumber == 2 && roomNumber >= largestRoomNumber) {
+            CheckRunToggleCondition();
+        }
+        else {
+            playerMenu.ForceHintReset(4);
+        }
+
+        /* Room 3: Request a hint to teach the player how to jump */
+        if(roomNumber == 3 && roomNumber >= largestRoomNumber) {
+            enteredRoom3 = true;
+            CheckRoom3JumpedCondition();
+        }
+        else {
+            playerMenu.ForceHintReset(5);
+        }
+        
+
+        /* Track the largest room number the player has encountered so far */
+        largestRoomNumber = Mathf.Max(largestRoomNumber, roomNumber);
+    }
+
 
     /* ----------- Event Functions ------------------------------------------------------------- */
 
@@ -1314,6 +1362,12 @@ public class CustomPlayerController : MonoBehaviour {
             jumpPrimed = false;
             ChangeState(PlayerStates.Falling);
             currentYVelocity = jumpSpeed;
+            
+            /* Track if the player jumped in room 3 to keep the hint text updated */
+            if(enteredRoom3) {
+                jumpedInRoom3 = true;
+                Debug.Log("test");
+            }
         }
     }
 
@@ -1559,7 +1613,12 @@ public class CustomPlayerController : MonoBehaviour {
                 transform.eulerAngles = new Vector3(90, 0, 0);
             }
         }
-        
+
+        /* Catch the player pressing the left-control to toggle their run state */
+        if(Input.GetKeyDown("left ctrl")) {
+            runToggle = !runToggle;
+            usedToggleRun = true;
+        }
     }
 
     void MenuKey() {
@@ -1761,13 +1820,13 @@ public class CustomPlayerController : MonoBehaviour {
         }
     }
 
-    public void CheckPrimedJumpCondition() {
+    public void CheckRunToggleCondition() {
         /*
-         * Check if the player has used a prime jump. If not, update the hint text.
+         * Check if the player has toggled the run/walk key.
          */
 
-        /* Tell the hint box to inform the player about priming a jump if it hasnt been done yet */
-        if(!usedPrimedJump) {
+        /* Tell the hint box to inform the player they can toggle running */
+        if(!usedToggleRun) {
             playerMenu.DelayChangeHint(4);
         }
 
@@ -1776,6 +1835,23 @@ public class CustomPlayerController : MonoBehaviour {
             playerMenu.ForceHintReset(4);
         }
     }
+
+    public void CheckRoom3JumpedCondition() {
+        /*
+         * Check if the player has jumped in room 3.
+         */
+         
+        /* Tell the player they can jump if they have not done so yet in room 3 */
+        if(!jumpedInRoom3) {
+            playerMenu.DelayChangeHint(5);
+        }
+
+        /* Revert the hint back to the default text if we do not need to inform the user */
+        else {
+            playerMenu.ForceHintReset(5);
+        }
+    }
+
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
 

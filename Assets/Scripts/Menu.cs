@@ -263,7 +263,8 @@ public class Menu : MonoBehaviour {
             "Press R to reset",
             "Press R to reset (while out of the menu)",
             "Hold Left-Shift to run",
-            "Hold spacebar to automatically jump while falling off an edge",
+            "Press Left-Ctrl to toggle running/walking",
+            "Press Spacebar to jump",
             "",
             "The game is over by the way", //First index that gets set by hintTextChangeTiming
             "There's nothing else to do other than fall forever",
@@ -274,6 +275,7 @@ public class Menu : MonoBehaviour {
             "Careful thought, going too fast may break the terrain generation",
             "But the game is already over, so I guess that doesn't matter at this point",
             ""};
+    private int autoHintIndex = 6;
     private float[] hintTextChangeTiming = { 80, 100, 160, 170, 180, 190, 200, 215, 225 };
     private int currentHintIndex = -1;
     private int delayedHintIndex = -1;
@@ -390,7 +392,7 @@ public class Menu : MonoBehaviour {
         /* Increment the hint time and update the hint text if needed */
         if(hintTime > -1) {
             hintTime += Time.deltaTime;
-            if(currentHintIndex - 5 < hintTextChangeTiming.Length && hintTime > hintTextChangeTiming[currentHintIndex - 5]) {
+            if(currentHintIndex - autoHintIndex < hintTextChangeTiming.Length && hintTime > hintTextChangeTiming[currentHintIndex - autoHintIndex]) {
                 SetHintText(currentHintIndex + 1);
             }
         }
@@ -2712,6 +2714,10 @@ public class Menu : MonoBehaviour {
         if(delayedHintIndex != currentHintIndex && hintPanelVisibility == 0 && sideRatio == 0) {
             SetHintText(delayedHintIndex);
         }
+
+
+
+        /* Set the color of the text */
     }
     
     void HintPanelButtonReset() {
@@ -3190,14 +3196,14 @@ public class Menu : MonoBehaviour {
             currentHintIndex = index;
             delayedHintIndex = currentHintIndex;
 
-            /* Setting the text to the index 5 will make the hintTime start tracking it's time */
-            if(currentHintIndex == 5) {
+            /* Setting the text to the autoHintIndex will make the hintTime start tracking it's time */
+            if(currentHintIndex == autoHintIndex) {
                 hintTime = 0;
                 forceHintPanel = true;
             }
 
             /* Switching to the run/prime jump hints will force the hint panel to be visible */
-            if(currentHintIndex == 3 || currentHintIndex == 4) {
+            if(currentHintIndex == 3 || currentHintIndex == 4 || currentHintIndex == 5) {
                 forceHintPanel = true;
             }
         }

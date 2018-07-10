@@ -191,7 +191,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
             else {
                 cloudOffset = 0;
             }
-
+            
             /* As the player gets further away from the room's center, increase their falling velocity */
             float fromCenterToEdgeRatio = (Mathf.Abs(playerFromCenter) - minYTeleport/3f) / (minYTeleport - minYTeleport/3f);
             if(Mathf.Abs(playerFromCenter) > minYTeleport/3f) {
@@ -200,7 +200,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
             else {
                 collider.GetComponent<CustomPlayerController>().gravityVectorMod = 1;
             }
-
+            
             /* When far from the room, make the player camera's near clipping large. This is to
              * prevent the depth buffer issue when having a small near clip plane value.
              * It is safe to change the value because the player is far from any portals at this point. */
@@ -212,21 +212,9 @@ public class PuzzleRoomEditor : MonoBehaviour {
                 collider.GetComponent<CustomPlayerController>().playerCamera.nearClipPlane = CustomPlayerController.cameraNearClippingPlane;
             }
 
+            
             /* Depending on what index the current puzzleRoom is, run a specific function from the playerController */
-            string puzzleName = transform.parent.name;
-            /* Send a request to the player to update the hint box if they havent used the run key yet */
-            if(puzzleName.Equals("Puzzle 2")) {
-                collider.GetComponent<CustomPlayerController>().CheckRunCondition();
-            }else {
-                collider.GetComponent<CustomPlayerController>().playerMenu.ForceHintReset(3);
-            }
-            /* Send a request to the player to update the hint box with the jump priming mechanic */
-            if(puzzleName.Equals("Puzzle 3")) {
-                collider.GetComponent<CustomPlayerController>().CheckPrimedJumpCondition();
-            }
-            else {
-                collider.GetComponent<CustomPlayerController>().playerMenu.ForceHintReset(4);
-            }
+            collider.GetComponent<CustomPlayerController>().UpdatePlayerRoom(transform.parent.name);
         }
     }
 
