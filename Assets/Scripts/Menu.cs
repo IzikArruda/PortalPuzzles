@@ -259,23 +259,27 @@ public class Menu : MonoBehaviour {
 
     /* Values used to track the hint box and it's hint texts */
     private string[] hintBoxText = {
-            "",
+            "Also, V + M then pressing I or O will increase or decrease your falling speed",
             "Press R to reset",
             "Press R to reset (while out of the menu)",
             "Hold Left-Shift to run",
             "Press Left-Ctrl to toggle running/walking",
             "Press Spacebar to jump",
+            "Press R to reset.",
+            "Press R to reset. There's nothing over there.",
+            "Press R to reset. There's nothing over there. Trust me.",
             "",
             "The game is over by the way", //First index that gets set by hintTextChangeTiming
             "There's nothing else to do other than fall forever",
             "I guess since you're still here, I can tell you a secret",
             "You can hold down the V and M keys, then press L to change the current song",
-            "Holding V and M and then pressing 9 will hide and un-hide the credits on the right",
-            "Also, holding V and M then pressing I or O will increase or decrease your falling speed",///V and M
+            "Holding V and M then pressing 9 will hide/reveal the credits on the right",
+            "Also, V + M then pressing I or O will increase or decrease your falling speed",
             "Careful thought, going too fast may break the terrain generation",
             "But the game is already over, so I guess that doesn't matter at this point",
             ""};
-    private int autoHintIndex = 6;
+    [HideInInspector]
+    public int autoHintIndex = 9;
     private float[] hintTextChangeTiming = { 80, 100, 160, 170, 180, 190, 200, 215, 225 };
     private int currentHintIndex = -1;
     private int delayedHintIndex = -1;
@@ -2727,8 +2731,11 @@ public class Menu : MonoBehaviour {
         RectTransform hintPanel = panelRects[(int) Panels.Hint];
 
         /* Set the size of the panel relative to the button height */
-        hintPanel.sizeDelta = new Vector2(0, buttonHeight/2f);
+        hintPanel.sizeDelta = new Vector2(0, buttonHeight/1.5f);
         HintPanelPositionUpdate(0);
+
+        /* Set the outline size of the text relative to the button size */
+        hintPanel.GetChild(0).GetComponent<Outline>().effectDistance = new Vector2(buttonHeight/200f, buttonHeight/200f);
     }
     #endregion
 
@@ -3190,6 +3197,10 @@ public class Menu : MonoBehaviour {
             /* Can only enter out of menu text from the default reset text */
         }
 
+        else if(index == 7 && currentHintIndex == 8) {
+            /* Cannot go from (...nothing. Trust...) to (...nothing.) */
+        }
+
         else {
             /* Set the string of the text */
             panelRects[(int) Panels.Hint].GetChild(0).GetComponent<Text>().text = hintBoxText[index];
@@ -3203,8 +3214,24 @@ public class Menu : MonoBehaviour {
             }
 
             /* Switching to the run/prime jump hints will force the hint panel to be visible */
-            if(currentHintIndex == 3 || currentHintIndex == 4 || currentHintIndex == 5) {
+            if(currentHintIndex == 3 || currentHintIndex == 4 || currentHintIndex == 5 || currentHintIndex == 6) {
                 forceHintPanel = true;
+            }
+
+            /*
+             * Set the color of the hint text relative to the hint used. When the 
+             * hint is for controls, have the text be black to more easily be noticed
+             */
+            int panelEnum = (int) Panels.Hint;
+            RectTransform hintPanel = panelRects[panelEnum];
+            Text text = hintPanel.GetChild(0).GetComponent<Text>();
+            if(currentHintIndex == 3 || currentHintIndex == 4 || currentHintIndex == 5) {
+                text.color = new Color(0, 0, 0, 1);
+                text.GetComponent<Outline>().effectColor = new Color(1, 1, 1, 1);
+            }
+            else {
+                text.color = new Color(1, 1, 1, 1);
+                text.GetComponent<Outline>().effectColor = new Color(0, 0, 0, 1);
             }
         }
     }

@@ -1242,6 +1242,7 @@ public class CustomPlayerController : MonoBehaviour {
          */
         int roomNumber = roomName[7] - 48;
          
+        
         /* Room 1: Request a hint to teach the player how to run */
         if(roomNumber == 1 && roomNumber >= largestRoomNumber) {
             CheckRunCondition();
@@ -1366,7 +1367,6 @@ public class CustomPlayerController : MonoBehaviour {
             /* Track if the player jumped in room 3 to keep the hint text updated */
             if(enteredRoom3) {
                 jumpedInRoom3 = true;
-                Debug.Log("test");
             }
         }
     }
@@ -1792,7 +1792,7 @@ public class CustomPlayerController : MonoBehaviour {
         fallingOutWindow = true;
 
         /* Change the menu's hint text to be empty */
-        playerMenu.DelayChangeHint(5);
+        playerMenu.DelayChangeHint(playerMenu.autoHintIndex);
     }
     
     public void PlayClickSound() {
@@ -1809,8 +1809,8 @@ public class CustomPlayerController : MonoBehaviour {
          * Check if the player knows about the running ability. If not, update the hint text.
          */
 
-        /* Tell the hint box to inform the player they can run if they havent run for 2 seconds */
-        if(runningTime < 2) {
+        /* Tell the hint box to inform the player they can run if they havent run for 1.25 seconds */
+        if(runningTime < 1.25f) {
             playerMenu.DelayChangeHint(3);
         }
 

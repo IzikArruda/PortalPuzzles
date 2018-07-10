@@ -215,6 +215,28 @@ public class PuzzleRoomEditor : MonoBehaviour {
             
             /* Depending on what index the current puzzleRoom is, run a specific function from the playerController */
             collider.GetComponent<CustomPlayerController>().UpdatePlayerRoom(transform.parent.name);
+
+            /* Check if the player does not have the proper rotation to fall into the clouds */
+            if(collider.transform.up != Vector3.up && collider.transform.up != Vector3.down) {
+
+                /* Reset the hint text if the player is within the play area */
+                if(Mathf.Abs(playerFromCenter) <= maxYPlayArea) {
+                    collider.GetComponent<CustomPlayerController>().playerMenu.ForceHintReset(6);
+                    collider.GetComponent<CustomPlayerController>().playerMenu.ForceHintReset(7);
+                    collider.GetComponent<CustomPlayerController>().playerMenu.ForceHintReset(8);
+                }
+
+                /* Update the hint text relative to the player's distance from the play area */
+                else if(Mathf.Abs(playerFromCenter) < maxYPlayArea + 30) {
+                    collider.GetComponent<CustomPlayerController>().playerMenu.DelayChangeHint(6);
+                }
+                else if(Mathf.Abs(playerFromCenter) < maxYPlayArea + 40) {
+                    collider.GetComponent<CustomPlayerController>().playerMenu.SetHintText(7);
+                }
+                else {
+                    collider.GetComponent<CustomPlayerController>().playerMenu.SetHintText(8);
+                }
+            }
         }
     }
 
