@@ -1092,9 +1092,9 @@ public class Menu : MonoBehaviour {
         RectTransform hintPanel = panelRects[panelEnum];
         hintPanel.name = "Hint panel";
 
-        /* Set the anchors so the panel covers the width of 40% of the screen */
+        /* Set the anchors so the panel covers the width of 80% of the screen */
         hintPanel.anchorMin = new Vector2(0, 0);
-        hintPanel.anchorMax = new Vector2(0.4f, 0);
+        hintPanel.anchorMax = new Vector2(0.8f, 0);
 
         /* Set the color and remove the image so that the panel is invisible */
         hintPanel.GetComponent<Image>().color = new Color(0, 0, 0, 0);
