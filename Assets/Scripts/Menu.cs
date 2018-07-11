@@ -259,7 +259,7 @@ public class Menu : MonoBehaviour {
 
     /* Values used to track the hint box and it's hint texts */
     private string[] hintBoxText = {
-            "",
+            "Upda",
             "Press R to reset",
             "Press R to reset (while out of the menu)",
             "Hold Left-Shift to run",
