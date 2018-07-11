@@ -187,6 +187,10 @@ public class CustomPlayerController : MonoBehaviour {
     private Vector3 camDestinationPos;
     private Quaternion camDestinationRot;
     private float introCamDistance = -1;
+    private float introCamStartingDist = 50;
+    private float FOVStart = 40;
+    private float FOVMidPoint = 45;
+    private float FOVEnd = 60;
     public Vector3 extraCamRot = Vector3.zero;
 
     /* Intro Animation values */
@@ -983,6 +987,9 @@ public class CustomPlayerController : MonoBehaviour {
         /* Set the camera's offset to it's natural default value */
         cameraYOffset = 0;
 
+        /* Set the camera's starting field of view */
+        playerCamera.fieldOfView = FOVStart;
+
         /* Start the player in the LoadingIntro state */
         state = PlayerStates.NULL;
         inMenu = true;
@@ -991,7 +998,7 @@ public class CustomPlayerController : MonoBehaviour {
         AdjustCameraPosition(GetCameraHeight());
         camDestinationPos = currentCameraTransform.position;
         camDestinationRot = currentCameraTransform.rotation;
-        introCamDistance = 15f;
+        introCamDistance = introCamStartingDist;
     }
 
     void StartPlayerReset() {
@@ -1195,6 +1202,11 @@ public class CustomPlayerController : MonoBehaviour {
                     ChangeState(PlayerStates.LeavingIntro);
                     aboutToLeaveIntro = false;
                 }
+
+                /* Update the FoV when the camera is slowing down */
+                float FoVChangeAmount = FOVMidPoint - FOVStart;
+                float clampedFOVAmount = Mathf.Clamp(FoVChangeAmount - remainingInIntroTime, 0, FoVChangeAmount);
+                playerCamera.fieldOfView = FOVStart + clampedFOVAmount;
             }
         }
 
@@ -1203,16 +1215,28 @@ public class CustomPlayerController : MonoBehaviour {
             
             /* Reduce the introCamDistance distance every frame during this intro animation.
              * The amount that gets reduced is relative to the amount of distance remaining. */
-            float consistentReduction = Time.deltaTime;
-            float var1 = 2f;
-            float var2 = 0.9f;
-            if(introCamDistance > var1) {
-                introCamDistance -= consistentReduction;
+            float consistentReduction = 0.35f*Time.deltaTime;
+            float distOffset1 = 5f;
+            float distOffset2 = 20f;
+            float extraReduction = 0;
+            float extraReductionMax = 20*consistentReduction;
+            if(introCamDistance > introCamStartingDist - distOffset1) {
+                /* Early into the movement */
+                extraReduction = extraReductionMax*((introCamStartingDist - introCamDistance)/distOffset1);
+            }
+            else if(introCamDistance > distOffset2) {
+                /* Mid way through the movement */
+                extraReduction = extraReductionMax;
             }
             else {
-                introCamDistance -= (introCamDistance/var1)*(consistentReduction*var2) + (consistentReduction*(1 - var2));
+                /* Nearing the end of the movement */
+                extraReduction = extraReductionMax*(introCamDistance/distOffset2);
             }
+            
+            /* Reduce the camera's distance in the intro */
+            introCamDistance -= (extraReduction + consistentReduction);
 
+            
             /* Get the distance from the camDestinationPos to the startingRoom's portal. 
              * This is to prevent the near-clipping plane from cutting off the portal. */
             float portalDistance = startingRoom.window.portalSet.EntrancePortal.backwardsPortalMesh.transform.position.z;
@@ -1223,8 +1247,17 @@ public class CustomPlayerController : MonoBehaviour {
                 introCamDistance = portalDistance - closeDistance;
             }
 
+            
+            /* Update the FoV when the camera is moving back to the player. Use the state time. */
+            stateTime += Time.deltaTime;
+            float FOVChangeAmount = FOVEnd - FOVMidPoint;
+            float clampedFOVAmount = Mathf.Clamp(stateTime, 0, FOVChangeAmount);
+            playerCamera.fieldOfView = FOVMidPoint + clampedFOVAmount;
+            
+
             /* If the cam distance reaches 0, have the player enter the standing state as they are done the intro animation */
             if(introCamDistance <= 0) {
+                playerCamera.fieldOfView = FOVEnd;
                 currentCameraTransform.position = camDestinationPos;
                 currentCameraTransform.rotation = camDestinationRot;
                 ChangeState(PlayerStates.Standing);
