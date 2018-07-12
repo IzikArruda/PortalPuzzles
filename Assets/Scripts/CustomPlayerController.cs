@@ -188,8 +188,8 @@ public class CustomPlayerController : MonoBehaviour {
     private Quaternion camDestinationRot;
     private float introCamDistance = -1;
     private float introCamStartingDist = 50;
-    private float FOVStart = 40;
-    private float FOVMidPoint = 45;
+    private float FOVStart = 45;
+    private float FOVMidPoint = 50;
     private float FOVEnd = 60;
     public Vector3 extraCamRot = Vector3.zero;
 

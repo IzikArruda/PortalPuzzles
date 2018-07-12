@@ -727,7 +727,7 @@ MonoBehaviour:
   videoOptionsToggleReference: {fileID: 1966440104}
   terrainController: {fileID: 0}
   creditScrollValue: -0.5
-  tempText: {fileID: 0}
+  autoHintIndex: 9
 --- !u!114 &572099442
 MonoBehaviour:
   m_ObjectHideFlags: 0

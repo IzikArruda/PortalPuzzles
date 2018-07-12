@@ -274,7 +274,7 @@ public class Menu : MonoBehaviour {
             "I guess since you're still here, I can tell you a secret",
             "You can hold down the V and M keys, then press L to change the current song",
             "Holding V and M then pressing 9 will hide/reveal the credits on the right",
-            "Also, V + M then pressing I or O will increase or decrease your falling speed",
+            "Also, holding V + M then pressing O or P will increase or decrease your falling speed",
             "Careful thought, going too fast may break the terrain generation",
             "But the game is already over, so I guess that doesn't matter at this point",
             ""};
