@@ -43,6 +43,9 @@ public class AttachedRoom : ConnectedRoom {
     /* If set to true, the room will recreate it's walls on the next frame */
     public bool update;
 
+    /* If set to true, the room will disable the player's controls when they are falling through */
+    public bool disableControls;
+
 
     /* -------- Built-In Functions ---------------------------------------------------- */
 
@@ -79,6 +82,28 @@ public class AttachedRoom : ConnectedRoom {
             /* If the player is "falling" backwards through the rooms, send a message to the global room controller */
             if(player.transform.up == new Vector3(0, 0, 1)) {
                 globalRoomController.UpdateAllRoomTextures(this);
+            }
+        }
+    }
+
+    void OnTriggerStay(Collider player) {
+        /* 
+         * Disable or enable the player's controls to ensure they do not gain controls in the white puzzleRoom
+         */
+
+        /* Ensure the collider entering the trigger is a player */
+        if(player.GetComponent<CustomPlayerController>() != null) {
+
+            /* Ensure the player is at the proper rotation when falling into the rooms */
+            if(player.transform.up == new Vector3(0, 0, 1)) {
+
+                /* Check if the player is close to the exit of the room and wants to disable their controls */
+                if((Mathf.Abs(player.transform.position.z - exitPointBack.position.z) < 1.5f) && disableControls) {
+                    player.GetComponent<CustomPlayerController>().DisableControls();
+                }
+                else {
+                    player.GetComponent<CustomPlayerController>().EnableControls();
+                }
             }
         }
     }

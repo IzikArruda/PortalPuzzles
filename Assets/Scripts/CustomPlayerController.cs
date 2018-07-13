@@ -77,6 +77,7 @@ public class CustomPlayerController : MonoBehaviour {
     private float soundsTimeChangeMod = 0.4f;
     public float roomTimeRate = 1;
     private bool noticedOutside = false;
+    private bool disableControls = false;
 
     /* How fast a player accelerates towards their feet when falling. */
     public float gravity;
@@ -872,6 +873,11 @@ public class CustomPlayerController : MonoBehaviour {
 
         /* Rotate the input direction to match the player's view. Only use the view's rotation along the Y axis */
         inputVector = Quaternion.AngleAxis(-cameraXRotation, transform.up)*transform.rotation*inputVector;
+
+        /* If the controls are disabled, empty the input vector */
+        if(disableControls) {
+            inputVector = Vector3.zero;
+        }
     }
 
     void ResetPlayer(bool resetSounds) {
@@ -903,6 +909,7 @@ public class CustomPlayerController : MonoBehaviour {
         /* Empty the arraylist of vectors that track the player's upcomming movement */
         if(expectedMovements != null) { expectedMovements.Clear(); }
         expectedMovements = new ArrayList();
+        disableControls = false;
 
         /* Set the fastFall mod to it's normal value */
         fastFallMod = fastFallModNormal;
@@ -1805,7 +1812,6 @@ public class CustomPlayerController : MonoBehaviour {
          * Called by an attachedRoom when the player enters, it changes the player's last room to the given one.
          * Also update their saved rotation value when they enter the room.
          */
-
         lastRoom = newRoom;
 
         /* If the player is right-side up, do not use it's Y axis (This ensures they reset facing forward) */
@@ -1885,6 +1891,21 @@ public class CustomPlayerController : MonoBehaviour {
         }
     }
 
+    public void DisableControls() {
+        /*
+         * Disable the player from moving using inputs
+         */
+
+        disableControls = true;
+    }
+
+    public void EnableControls() {
+        /*
+         * let the player move using inputs again
+         */
+
+        disableControls = false;
+    }
 
     /* ----------- Helper Functions ------------------------------------------------------------- */
 
