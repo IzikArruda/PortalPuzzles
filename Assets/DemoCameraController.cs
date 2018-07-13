@@ -32,6 +32,8 @@ public class DemoCameraController : MonoBehaviour {
             demoCameraContainer.transform.localEulerAngles = new Vector3(0, currentRot, 0);
 
             /* Place the camera itself */
+            demoCamera.transform.position = demoCameraContainer.transform.position;
+            demoCamera.transform.rotation = demoCameraContainer.transform.rotation;
             demoCamera.transform.localPosition = new Vector3(0, yDistance, zDistance);
 
             /* Increment the rotation */
