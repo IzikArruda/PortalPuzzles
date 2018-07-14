@@ -268,7 +268,46 @@ public class Menu : MonoBehaviour {
             "Press R to reset.",//The period is important, as it marks the first line of the wall walking hints. Do not change
             "Press R to reset. There's nothing over there.",
             "Press R to reset. There's nothing over there. Trust me.",
-            "New test entry for walls",
+            "Like, I made the game, I can 100% tell you there is nothing over there",
+            "You've even seen for yourself, you just loop around",
+            "",
+
+            "Still going huh.",
+            "You're like, not even a tenth of the way there",
+            "",
+            
+            "There's an ending to the game your missing out on right now",
+            "I mean, it's not like, an actual ending",
+            "You just end up falling through procedurally generated terrain forever",
+            "It's kind of like what your doing right now, but you have something to look at",
+            "Also you wouldn't be walking, but falling. I think it's kind of neat",
+            "",
+            "Better than this, atleast",
+            "",
+            
+            "This isn't what I expected",
+            "Like, someone actually doing this",
+            "I appreciate it",
+            "I mean, I'm super thankful for you even playing the game",
+            "But if someone thinks there is actual content down this way, your giving me too much credit",
+            "",
+            
+            "I don't know what to say at this point",
+            "I hope your having fun?",
+            "Kind of hard to figure out what to say to someone who can't talk back",
+            "Also, someone who doesn't exist",
+            "leave a comment on the game's page about why you felt like doing this",
+            "I'd like to know why someone would feel inclined to walk down here",
+            "",
+            "Thinking about it, if someone actually does this because they want to",
+            "whether it's out of curiosity, or intrigue, or even boredom",
+            "It makes me happy knowing that something I made had someone feel kind of emotion",
+            "Thanks.",
+            "",
+            
+            "Well, your nearing the halfway point. I'm gonna leave you to that",
+            "Just remember you can press R at any time to return back to the start of the room",
+            "",
             "",
             "The game is over by the way", /* First index that gets set by hintTextChangeTiming. 
                 If changed, must also change the autoHintIndex setting lines in the start function */

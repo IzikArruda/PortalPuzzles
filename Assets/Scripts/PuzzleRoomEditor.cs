@@ -191,11 +191,12 @@ public class PuzzleRoomEditor : MonoBehaviour {
             else {
                 cloudOffset = 0;
             }
-            
+
             /* As the player gets further away from the room's center, increase their falling velocity */
+            float bonusFallingSpeed = 6;
             float fromCenterToEdgeRatio = (Mathf.Abs(playerFromCenter) - minYTeleport/3f) / (minYTeleport - minYTeleport/3f);
             if(Mathf.Abs(playerFromCenter) > minYTeleport/3f) {
-                collider.GetComponent<CustomPlayerController>().gravityVectorMod = 1 + 6*fromCenterToEdgeRatio;
+                collider.GetComponent<CustomPlayerController>().gravityVectorMod = 1 + bonusFallingSpeed*fromCenterToEdgeRatio;
             }
             else {
                 collider.GetComponent<CustomPlayerController>().gravityVectorMod = 1;
@@ -233,13 +234,18 @@ public class PuzzleRoomEditor : MonoBehaviour {
                     /* Update the hint text relative to the player's distance from the play area */
                     else {
                         /* Determine what hint to use depending on the player's position in the room */
-                        int[] extraDistanceAmount = { 10, 20, 30, 50 };
+                        int[] extraDistanceAmount = { 10, 30, 60, 90, 125, 150,
+                            200, 220, 230,
+                            260, 280, 310, 330, 350, 375, 390, 410,
+                            450, 470, 495, 515, 540, 580,
+                            610, 630, 650, 680, 710, 735, 750, 780, 810, 840, 870, 900,
+                            925, 950, 975};
                         int hintIndex = -1;
                         for(int i = extraDistanceAmount.Length-1; i >= 0; i--) {
                             if(Mathf.Abs(playerFromCenter) > maxYPlayArea + extraDistanceAmount[i]) {
                                 hintIndex = collider.GetComponent<CustomPlayerController>().playerMenu.wallHintSequenceStartIndex + i;
-                                collider.GetComponent<CustomPlayerController>().playerMenu.SetHintText(hintIndex);
                                 /* Make the hint appear */
+                                collider.GetComponent<CustomPlayerController>().playerMenu.SetHintText(hintIndex);
                                 
                                 /* Stop the loop once we got the hint */
                                 i = -1;
@@ -251,7 +257,11 @@ public class PuzzleRoomEditor : MonoBehaviour {
                                 collider.GetComponent<CustomPlayerController>().playerMenu.outsideHintSequenceStartIndex -
                                 collider.GetComponent<CustomPlayerController>().playerMenu.wallHintSequenceStartIndex) {
                             Debug.Log("WARNING: GIVEN ROOM DISTANCES AMOUNT DO NOT MATCH WALL HINT COUNTS");
+                            Debug.Log(collider.GetComponent<CustomPlayerController>().playerMenu.outsideHintSequenceStartIndex -
+                                collider.GetComponent<CustomPlayerController>().playerMenu.wallHintSequenceStartIndex);
                         }
+
+                        Debug.Log(Mathf.Abs(playerFromCenter));
                     }
                 }
             }
