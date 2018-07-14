@@ -1831,7 +1831,7 @@ public class CustomPlayerController : MonoBehaviour {
         fallingOutWindow = true;
 
         /* Change the menu's hint text to be empty */
-        playerMenu.DelayChangeHint(playerMenu.autoHintIndex);
+        playerMenu.DelayChangeHint(playerMenu.outsideHintSequenceStartIndex);
     }
     
     public void PlayClickSound() {

@@ -198,7 +198,7 @@ public class PortalView : MonoBehaviour {
         }
 
         /* Ensure the viewing camera can actually render a scene */
-        if(viewingCamera.pixelWidth <= 1 || viewingCamera.pixelHeight <= 1) {
+        if(viewingCamera.pixelWidth <= 10 || viewingCamera.pixelHeight <= 10) {
             //////Debug.Log("OUT OF VIEW FUSTRUM ERROR CAUGHT");
             return;
         }

@@ -225,20 +225,33 @@ public class PuzzleRoomEditor : MonoBehaviour {
 
                     /* Reset the hint text if the player is within the play area */
                     if(Mathf.Abs(playerFromCenter) <= maxYPlayArea) {
-                        collider.GetComponent<CustomPlayerController>().playerMenu.ForceHintReset(6);
-                        collider.GetComponent<CustomPlayerController>().playerMenu.ForceHintReset(7);
-                        collider.GetComponent<CustomPlayerController>().playerMenu.ForceHintReset(8);
+                        collider.GetComponent<CustomPlayerController>().playerMenu.ForceHintReset(
+                                collider.GetComponent<CustomPlayerController>().playerMenu.wallHintSequenceStartIndex);
                     }
 
+
                     /* Update the hint text relative to the player's distance from the play area */
-                    else if(Mathf.Abs(playerFromCenter) < maxYPlayArea + 30) {
-                        collider.GetComponent<CustomPlayerController>().playerMenu.DelayChangeHint(6);
-                    }
-                    else if(Mathf.Abs(playerFromCenter) < maxYPlayArea + 40) {
-                        collider.GetComponent<CustomPlayerController>().playerMenu.SetHintText(7);
-                    }
                     else {
-                        collider.GetComponent<CustomPlayerController>().playerMenu.SetHintText(8);
+                        /* Determine what hint to use depending on the player's position in the room */
+                        int[] extraDistanceAmount = { 10, 20, 30, 50 };
+                        int hintIndex = -1;
+                        for(int i = extraDistanceAmount.Length-1; i >= 0; i--) {
+                            if(Mathf.Abs(playerFromCenter) > maxYPlayArea + extraDistanceAmount[i]) {
+                                hintIndex = collider.GetComponent<CustomPlayerController>().playerMenu.wallHintSequenceStartIndex + i;
+                                collider.GetComponent<CustomPlayerController>().playerMenu.SetHintText(hintIndex);
+                                /* Make the hint appear */
+                                
+                                /* Stop the loop once we got the hint */
+                                i = -1;
+                            }
+                        }
+
+                        //Check if the amount of given distances matches the amount of wall hints in the sequence
+                        if(extraDistanceAmount.Length !=
+                                collider.GetComponent<CustomPlayerController>().playerMenu.outsideHintSequenceStartIndex -
+                                collider.GetComponent<CustomPlayerController>().playerMenu.wallHintSequenceStartIndex) {
+                            Debug.Log("WARNING: GIVEN ROOM DISTANCES AMOUNT DO NOT MATCH WALL HINT COUNTS");
+                        }
                     }
                 }
             }

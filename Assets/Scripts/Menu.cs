@@ -265,11 +265,13 @@ public class Menu : MonoBehaviour {
             "Hold Left-Shift to run",
             "Press Left-Ctrl to toggle running/walking",
             "Press Spacebar to jump",
-            "Press R to reset.",
+            "Press R to reset.",//The period is important, as it marks the first line of the wall walking hints. Do not change
             "Press R to reset. There's nothing over there.",
             "Press R to reset. There's nothing over there. Trust me.",
+            "New test entry for walls",
             "",
-            "The game is over by the way", //First index that gets set by hintTextChangeTiming
+            "The game is over by the way", /* First index that gets set by hintTextChangeTiming. 
+                If changed, must also change the autoHintIndex setting lines in the start function */
             "There's nothing else to do other than fall forever",
             "I guess since you're still here, I can tell you a secret",
             "You can hold down the V and M keys, then press L to change the current song",
@@ -277,10 +279,13 @@ public class Menu : MonoBehaviour {
             "Also, holding V + M then pressing O or P will increase or decrease your falling speed",
             "Careful thought, going too fast may break the terrain generation",
             "But the game is already over, so I guess that doesn't matter at this point",
+            "New test entry for outside",
             ""};
     [HideInInspector]
-    public int autoHintIndex = 9;
-    private float[] hintTextChangeTiming = { 80, 100, 160, 170, 180, 190, 200, 215, 225 };
+    public int outsideHintSequenceStartIndex = -1;
+    [HideInInspector]
+    public int wallHintSequenceStartIndex = -1;
+    private float[] outsideHintSequenceTiming = { 8, 10, 16, 17, 18, 19, 20, 21, 22, 24 };
     private int currentHintIndex = -1;
     private int delayedHintIndex = -1;
     private float hintPanelVisibility = 0;
@@ -301,6 +306,25 @@ public class Menu : MonoBehaviour {
 
         /* Start loading the puzzleScene */
         LoadPuzzleScene();
+
+        /* Set the autoHintIndex value relative to the strings in the menu's potential hint text. */
+        for(int i = 0; i < hintBoxText.Length; i++) {
+
+            /* Set the first index for the outside hint sequence */
+            if(hintBoxText[i].Equals("The game is over by the way")) {
+                outsideHintSequenceStartIndex = i-1;
+            }
+
+            /* Set the first index for the wall walking hint sequence */
+            if(hintBoxText[i].Equals("Press R to reset.")) {
+                wallHintSequenceStartIndex = i;
+            }
+        }
+
+        /* Make sure the right amount of outsideHintSequenceTiming values match the amount of outside hints */
+        if(outsideHintSequenceTiming.Length != hintBoxText.Length-1 - outsideHintSequenceStartIndex) {
+            Debug.Log("WARNING: GIVEN OUTSIDE HINT TIMINGS DO NOT MATCH THE AMOUNT OF HINTS");
+        }
     }
 
     void Update() {
@@ -396,7 +420,8 @@ public class Menu : MonoBehaviour {
         /* Increment the hint time and update the hint text if needed */
         if(hintTime > -1) {
             hintTime += Time.deltaTime;
-            if(currentHintIndex - autoHintIndex < hintTextChangeTiming.Length && hintTime > hintTextChangeTiming[currentHintIndex - autoHintIndex]) {
+            if(currentHintIndex - outsideHintSequenceStartIndex < outsideHintSequenceTiming.Length && 
+                    hintTime > outsideHintSequenceTiming[currentHintIndex - outsideHintSequenceStartIndex]) {
                 SetHintText(currentHintIndex + 1);
             }
         }
@@ -3190,15 +3215,11 @@ public class Menu : MonoBehaviour {
          */
 
         if(currentHintIndex == 0 && index != 1) {
-            /* Cannot go from an empty text to anything other than the default reset text */
+            /* Cannot go from the startup empty text to anything other than the default reset text */
         }
-
-        else if(index == 2 && currentHintIndex != 1) {
-            /* Can only enter out of menu text from the default reset text */
-        }
-
-        else if(index == 7 && currentHintIndex == 8) {
-            /* Cannot go from (...nothing. Trust...) to (...nothing.) */
+        
+        else if(index >= wallHintSequenceStartIndex && index < outsideHintSequenceStartIndex && index <= currentHintIndex) {
+            /* Cannot go backwards through the wall hint sequence */
         }
 
         else {
@@ -3206,9 +3227,9 @@ public class Menu : MonoBehaviour {
             panelRects[(int) Panels.Hint].GetChild(0).GetComponent<Text>().text = hintBoxText[index];
             currentHintIndex = index;
             delayedHintIndex = currentHintIndex;
-
-            /* Setting the text to the autoHintIndex will make the hintTime start tracking it's time */
-            if(currentHintIndex == autoHintIndex) {
+            
+            /* Once starting the outside hint sequence, start tracking the game time */
+            if(currentHintIndex == outsideHintSequenceStartIndex) {
                 hintTime = 0;
                 forceHintPanel = true;
             }
@@ -3252,6 +3273,14 @@ public class Menu : MonoBehaviour {
          */
 
         if(index == currentHintIndex) {
+            forceHintPanel = false;
+            delayedHintIndex = 1;
+        }
+
+        /* If we are trying to hide the hints from the wall sequence, giving an index of the wallHintSequenceStartIndex
+         * will let the hint text force itself to hide, no matter the index in the sequence. */
+        if((index == wallHintSequenceStartIndex) && 
+                (currentHintIndex >= wallHintSequenceStartIndex) && (currentHintIndex < outsideHintSequenceStartIndex)){
             forceHintPanel = false;
             delayedHintIndex = 1;
         }
