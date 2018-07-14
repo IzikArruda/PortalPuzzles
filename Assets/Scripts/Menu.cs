@@ -268,7 +268,7 @@ public class Menu : MonoBehaviour {
             "Press R to reset.",//The period is important, as it marks the first line of the wall walking hints. Do not change
             "Press R to reset. There's nothing over there.",
             "Press R to reset. There's nothing over there. Trust me.",
-            "Like, I made the game, I can 100% tell you there is nothing over there",
+            "Like, I made the game, I can confidently tell you there is nothing over there",
             "You've even seen for yourself, you just loop around",
             "",
 
@@ -278,7 +278,7 @@ public class Menu : MonoBehaviour {
             
             "There's an ending to the game your missing out on right now",
             "I mean, it's not like, an actual ending",
-            "You just end up falling through procedurally generated terrain forever",
+            "You jsut return to the starting room and end up falling forever",
             "It's kind of like what your doing right now, but you have something to look at",
             "Also you wouldn't be walking, but falling. I think it's kind of neat",
             "",
