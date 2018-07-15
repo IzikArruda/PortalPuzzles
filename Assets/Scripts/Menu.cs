@@ -278,7 +278,7 @@ public class Menu : MonoBehaviour {
             
             "There's an ending to the game your missing out on right now",
             "I mean, it's not like, an actual ending",
-            "You jsut return to the starting room and end up falling forever",
+            "You just return to the starting room and end up falling forever",
             "It's kind of like what your doing right now, but you have something to look at",
             "Also you wouldn't be walking, but falling. I think it's kind of neat",
             "",
@@ -318,13 +318,12 @@ public class Menu : MonoBehaviour {
             "Also, holding V + M then pressing O or P will increase or decrease your falling speed",
             "Careful thought, going too fast may break the terrain generation",
             "But the game is already over, so I guess that doesn't matter at this point",
-            "New test entry for outside",
             ""};
     [HideInInspector]
     public int outsideHintSequenceStartIndex = -1;
     [HideInInspector]
     public int wallHintSequenceStartIndex = -1;
-    private float[] outsideHintSequenceTiming = { 8, 10, 16, 17, 18, 19, 20, 21, 22, 24 };
+    private float[] outsideHintSequenceTiming = { 80, 100, 160, 175, 190, 205, 220, 235, 250 };
     private int currentHintIndex = -1;
     private int delayedHintIndex = -1;
     private float hintPanelVisibility = 0;
