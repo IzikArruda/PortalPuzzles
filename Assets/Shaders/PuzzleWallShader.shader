@@ -8,6 +8,7 @@
 		_RoomColorTintAlt("Room Color Tint Alt", Vector) = (.0, .0, .0)
 		_TeleportHeight("Room Teleport Height", float) = 0
 		_CenterOffset("Room Center Offset", float ) = 0
+		_RoundRange("Round Range", Float) = 0.001
 	}
 
 	SubShader{
@@ -35,6 +36,7 @@
 		float3 _RoomColorTintAlt;
 		float _TeleportHeight;
 		float _CenterOffset;
+		float _RoundRange;
 
 		/* Get the UV2, UV3 and UV4 from the mesh */
 		void vert(inout appdata_full v, out Input o) {
@@ -50,6 +52,18 @@
 			c.rgb = s.Albedo;
 			c.a = s.Alpha;
 			return c;
+		}
+		
+		half3 ClampRanges(half3 rgb, float range){
+			/*
+			 * Given a texture, round each rbg value to a range of values
+			 */
+			 
+			rgb.r = round(rgb.r / range) * (range);
+			rgb.g = round(rgb.g / range) * (range);
+			rgb.b = round(rgb.b / range) * (range);
+
+			return rgb;
 		}
 
 		fixed3 AdjustColorTint(fixed3 tex, float vertHeight, float teleHeight, float centerOffset, fixed3 colorTint, fixed3 colorTintAlt) {
@@ -85,6 +99,9 @@
 			tex.r = tex.r*heightAmount + colorTint.r*(1 - heightAmount);
 			tex.g = tex.g*heightAmount + colorTint.y*(1 - heightAmount);
 			tex.b = tex.b*heightAmount + colorTint.z*(1 - heightAmount);
+
+			/* Apply the rang limiter to the texture */
+			tex.rgb = ClampRanges(tex, _RoundRange);
 
 			return tex;
 		}

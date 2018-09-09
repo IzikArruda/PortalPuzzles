@@ -4,6 +4,7 @@
 	{
 		_MainTex ("Texture", 2D) = "white" {}
 		_SecondTex("Texture", 2D) = "white" {}
+		_RoundRange("Round Range", Float) = 0.001
 	}
 	SubShader
 	{
@@ -23,6 +24,7 @@
 		};
 		sampler2D _MainTex;
 		sampler2D _SecondTex;
+		float _RoundRange;
 
 		/* Get the UV2 from the mesh */
 		void vert(inout appdata_full v, out Input o){
@@ -38,13 +40,27 @@
 			c.a = s.Alpha;
 			return c;
 		}
+		
+		half4 ClampRanges(half4 rgb, float range){
+			/*
+			 * Given a texture, round each rbg value to a range of values
+			 */
+			 
+			rgb.r = round(rgb.r / range) * (range);
+			rgb.g = round(rgb.g / range) * (range);
+			rgb.b = round(rgb.b / range) * (range);
+
+			return rgb;
+		}
 
 		/* Use the UV's X value to control the texture of the surface */
 		void surf(Input IN, inout SurfaceOutput o) {
 			/* Flip the blend/texture if the UV's Y value is negative */
 			float blend = (IN.flipUV < 0) ? (1 - IN.blendUV) : IN.blendUV;
-
-			o.Albedo = blend*tex2D(_SecondTex, IN.uv_MainTex) + (1 - blend)*tex2D(_MainTex, IN.uv_MainTex);
+			
+			half4 t1 = blend*ClampRanges(tex2D(_SecondTex, IN.uv_MainTex), _RoundRange);
+			half4 t2 = (1 - blend)*ClampRanges(tex2D(_MainTex, IN.uv_MainTex), _RoundRange);
+			o.Albedo = t1 + t2;
 		}
 		ENDCG
 	}

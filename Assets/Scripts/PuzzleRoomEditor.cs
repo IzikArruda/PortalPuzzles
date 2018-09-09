@@ -106,6 +106,9 @@ public class PuzzleRoomEditor : MonoBehaviour {
     public Vector3 wallColorTint;
     public Vector3 wallColorTintAlt;
     public float centerTintOffset;
+
+    /* The range of the texture rgb value clamping for this room */
+    public float textureClampRange;
     
 
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
@@ -150,6 +153,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
 
         /* Update the position of the clouds using cloudOffset */
         UpdateClouds();
+        UpdateMaterialTextureRounding();
     }
 
     void OnTriggerStay(Collider collider) {
@@ -391,11 +395,10 @@ public class PuzzleRoomEditor : MonoBehaviour {
         wallMaterial.SetFloat("_CenterOffset", centerTintOffset);
         wallMaterial.SetVector("_RoomColorTint", wallColorTint);
         wallMaterial.SetVector("_RoomColorTintAlt", wallColorTintAlt);
-        
+
         /* Make sure the blocker material is properly created */
         cloudBlockerMaterial = new Material(Shader.Find("Unlit/Color"));
         cloudBlockerMaterial.color = Color.black;
-
         
         /* Set the main texture of each given room material */
         for(int i = 0; i < roomMaterials.Length; i++) {
@@ -405,6 +408,23 @@ public class PuzzleRoomEditor : MonoBehaviour {
         for(int i = 0; i < roomEdgeMaterials.Length; i++) {
             roomEdgeMaterials[i].SetTexture("_MainTex", roomMainTexture[roomEdgeMainIndex[i]]);
             roomEdgeMaterials[i].SetTexture("_SecondTex", roomMainTexture[roomEdgeSecondIndex[i]]);
+        }
+    }
+
+    public void UpdateMaterialTextureRounding() {
+        /*
+         * Update the _RoundingRange of the room's materials
+         */
+
+        /* Have an offset go back and forth depending on the time to add a "breathin room" animation */
+        float offset = 0.1f*Mathf.Sin(Mathf.PI * 2 * (Time.time / 15f));
+
+        wallMaterial.SetFloat("_RoundRange", textureClampRange + offset);
+        for(int i = 0; i < roomMaterials.Length; i++) {
+            roomMaterials[i].SetFloat("_RoundRange", textureClampRange + offset);
+        }
+        for(int i = 0; i < roomEdgeMaterials.Length; i++) {
+            roomEdgeMaterials[i].SetFloat("_RoundRange", textureClampRange + offset);
         }
     }
 

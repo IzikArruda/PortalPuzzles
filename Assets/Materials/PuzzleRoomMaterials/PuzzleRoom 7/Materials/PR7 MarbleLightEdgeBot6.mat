@@ -110,6 +110,9 @@ Material:
         name: _Parallax
       second: 0.02
     - first:
+        name: _RoundRange
+      second: 0.3276373
+    - first:
         name: _SmoothnessTextureChannel
       second: 0
     - first:
