@@ -9,6 +9,7 @@
 		_RoomDepthBuffer("Room Z Depth", float) = 0
 		_TextureZLengthEntr("Texture Z Length Entrance", float) = 0
 		_TextureZLengthExit("Texture Z Length Exit", float) = 0
+		_RoundRange("Round Range", Float) = 0.001
 	}
 	SubShader
 	{
@@ -32,6 +33,7 @@
 		float _RoomDepthBuffer;
 		float _TextureZLengthEntr;
 		float _TextureZLengthExit;
+		float _RoundRange;
 
 		/* Get the UV2 from the mesh */
 		void vert(inout appdata_full v, out Input o) {
@@ -45,6 +47,19 @@
 			c.rgb = s.Albedo;
 			c.a = s.Alpha;
 			return c;
+		}
+
+		
+		half3 ClampRanges(half3 rgb, float range){
+			/*
+			 * Given a texture, round each rbg value to a range of values
+			 */
+			 
+			rgb.r = round(rgb.r / range) * (range);
+			rgb.g = round(rgb.g / range) * (range);
+			rgb.b = round(rgb.b / range) * (range);
+
+			return rgb;
 		}
 
 		/* Use the UV's X value to control the texture of the surface */
@@ -63,6 +78,7 @@
 			tex.r = tex.r + blendRatio*tint.r;
 			tex.g = tex.g + blendRatio*tint.g;
 			tex.b = tex.b + blendRatio*tint.b;
+			tex.rgb = ClampRanges(tex, _RoundRange) + blendRatio*tint;
 
 			o.Albedo = tex;
 		}

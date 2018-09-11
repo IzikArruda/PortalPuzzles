@@ -68,6 +68,16 @@ public class WaitingRoom : ConnectedRoom {
     public Material glassShardMaterial;
     public GameObject particleSystemObjectReference;
 
+    /* The range of the texture rgb value clamping for this room */
+    public float textureClampRangeFloor;
+    public float textureClampRangeWall;
+    public float textureClampRangeCeiling;
+    public float textureClampRangeFrame;
+    public float textureClampOffsetFloor;
+    public float textureClampOffsetWall;
+    public float textureClampOffsetCeiling;
+    public float textureClampOffsetFrame;
+
 
     /* -------- Built-In Functions ---------------------------------------------------- */
 
@@ -103,6 +113,10 @@ public class WaitingRoom : ConnectedRoom {
         DisableRoom();
     }
     
+    void Update() {
+        UpdateMaterialTextureRounding();
+    }
+
     void OnTriggerEnter(Collider player) {
         /*
          * When the player enters the room's trigger, enable both connected puzzle rooms
@@ -443,6 +457,24 @@ public class WaitingRoom : ConnectedRoom {
         exitRoom.wallConnectorMaterial = windowFrameMaterial;
         exitRoom.roomSide = true;
     }
+
+    public void UpdateMaterialTextureRounding() {
+        /*
+         * Update the _RoundingRange of the room's materials
+         */
+
+        /* Have an offset go back and forth depending on the time to add a "breathin room" animation */
+        float offset = Mathf.Sin(Mathf.PI * 2 * (Time.time / 2f));
+
+        //floor: 0.3 - 0.15
+        //wall: 0.025 - 0.015
+        //ceiling: 0.2 - 0.05
+        //frame: 0.035 - 0.015
+        floorMaterial.SetFloat("_RoundRange", textureClampRangeFloor + textureClampOffsetFloor*offset);
+        wallMaterial.SetFloat("_RoundRange", textureClampRangeWall + textureClampOffsetWall*offset);
+        ceilingMaterial.SetFloat("_RoundRange", textureClampRangeCeiling + textureClampOffsetCeiling*offset);
+        windowFrameMaterial.SetFloat("_RoundRange", textureClampRangeFrame + textureClampOffsetFrame*offset);
+}
 
 
     /* -------- Event Functions ---------------------------------------------------- */
