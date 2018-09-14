@@ -108,8 +108,12 @@ public class PuzzleRoomEditor : MonoBehaviour {
     public float centerTintOffset;
 
     /* The range of the texture rgb value clamping for this room */
-    public float textureClampRange;
-    
+    public float textureClampRangeFloor;
+    public float textureClampRangeWall;
+    public float textureClampOffsetFloor;
+    public float textureClampOffsetWall;
+    public float textureClampTiming;
+
 
     /* -------- Built-In Unity Functions ---------------------------------------------------- */
 
@@ -417,14 +421,14 @@ public class PuzzleRoomEditor : MonoBehaviour {
          */
 
         /* Have an offset go back and forth depending on the time to add a "breathin room" animation */
-        float offset = 0.1f*Mathf.Sin(Mathf.PI * 2 * (Time.time / 15f));
+        float offset = Mathf.Sin(Mathf.PI * 2 * (Time.time / textureClampTiming));
 
-        wallMaterial.SetFloat("_RoundRange", textureClampRange + offset);
+        wallMaterial.SetFloat("_RoundRange", textureClampRangeWall + textureClampOffsetWall*offset);
         for(int i = 0; i < roomMaterials.Length; i++) {
-            roomMaterials[i].SetFloat("_RoundRange", textureClampRange + offset);
+            roomMaterials[i].SetFloat("_RoundRange", textureClampRangeFloor + textureClampOffsetFloor*offset);
         }
         for(int i = 0; i < roomEdgeMaterials.Length; i++) {
-            roomEdgeMaterials[i].SetFloat("_RoundRange", textureClampRange + offset);
+            roomEdgeMaterials[i].SetFloat("_RoundRange", textureClampRangeFloor + textureClampOffsetFloor * offset);
         }
     }
 

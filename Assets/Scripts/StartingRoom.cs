@@ -76,9 +76,25 @@ public class StartingRoom : ConnectedRoom {
     private float gravityMod = 0;
 
 
+    /* The range of the texture rgb value clamping for this room */
+    public float textureClampRangeFloor;
+    public float textureClampRangeWall;
+    public float textureClampRangeCeiling;
+    public float textureClampRangeFrame;
+    public float textureClampRangeMarble;
+    public float textureClampRangeMarbleDark;
+    public float textureClampOffsetFloor;
+    public float textureClampOffsetWall;
+    public float textureClampOffsetCeiling;
+    public float textureClampOffsetFrame;
+    public float textureClampOffsetMarble;
+    public float textureClampOffsetMarbleDark;
+    public float textureClampTiming;
+
+
     /* -------- Built-In Functions ---------------------------------------------------- */
 
-    public void Start () {
+    void Start () {
         /*
          * On startup, build the walls of the room
          */
@@ -91,6 +107,10 @@ public class StartingRoom : ConnectedRoom {
         window.portalSet.EntrancePortal.backwardsPortalMesh.GetComponent<PortalView>().Start();
         outsideTerrain.windowCam = window.portalSet.EntrancePortal.backwardsPortalMesh.transform.GetChild(0);
         outsideTerrain.windowExitPoint = windowExit;
+    }
+
+    void Update() {
+        UpdateMaterialTextureRounding();
     }
 
     void OnTriggerExit(Collider player) {
@@ -362,6 +382,22 @@ public class StartingRoom : ConnectedRoom {
         stairsOtherMaterial.name = "Stairs Other (StartingRoom)";
     }
 
+    void UpdateMaterialTextureRounding() {
+        /*
+         * Update the _RoundingRange of the room's materials
+         */
+
+        /* Have an offset go back and forth depending on the time to add a "breathin room" animation */
+        float offset = Mathf.Sin(Mathf.PI * 2 * (Time.time / textureClampTiming));
+
+        floorMaterial.SetFloat("_RoundRange", textureClampRangeFloor + textureClampOffsetFloor * offset);
+        wallMaterial.SetFloat("_RoundRange", textureClampRangeWall + textureClampOffsetWall * offset);
+        ceilingMaterial.SetFloat("_RoundRange", textureClampRangeCeiling + textureClampOffsetCeiling * offset);
+        windowFrameMaterial.SetFloat("_RoundRange", textureClampRangeFrame + textureClampOffsetFrame * offset);
+
+        stairs.stairsMaterial.SetFloat("_RoundRange", textureClampRangeMarble + textureClampOffsetMarble * offset);
+        stairs.otherMaterial.SetFloat("_RoundRange", textureClampRangeMarbleDark + textureClampOffsetMarbleDark * offset);
+    }
 
     /* -------- Event Functions ---------------------------------------------------- */
 

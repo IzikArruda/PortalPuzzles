@@ -77,6 +77,7 @@ public class WaitingRoom : ConnectedRoom {
     public float textureClampOffsetWall;
     public float textureClampOffsetCeiling;
     public float textureClampOffsetFrame;
+    public float textureClampTiming;
 
 
     /* -------- Built-In Functions ---------------------------------------------------- */
@@ -464,17 +465,13 @@ public class WaitingRoom : ConnectedRoom {
          */
 
         /* Have an offset go back and forth depending on the time to add a "breathin room" animation */
-        float offset = Mathf.Sin(Mathf.PI * 2 * (Time.time / 2f));
-
-        //floor: 0.3 - 0.15
-        //wall: 0.025 - 0.015
-        //ceiling: 0.2 - 0.05
-        //frame: 0.035 - 0.015
+        float offset = Mathf.Sin(Mathf.PI * 2 * (Time.time / textureClampTiming));
+        
         floorMaterial.SetFloat("_RoundRange", textureClampRangeFloor + textureClampOffsetFloor*offset);
         wallMaterial.SetFloat("_RoundRange", textureClampRangeWall + textureClampOffsetWall*offset);
         ceilingMaterial.SetFloat("_RoundRange", textureClampRangeCeiling + textureClampOffsetCeiling*offset);
         windowFrameMaterial.SetFloat("_RoundRange", textureClampRangeFrame + textureClampOffsetFrame*offset);
-}
+    }
 
 
     /* -------- Event Functions ---------------------------------------------------- */

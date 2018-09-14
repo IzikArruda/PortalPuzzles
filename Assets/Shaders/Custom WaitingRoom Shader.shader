@@ -74,7 +74,7 @@
 			fixed blendRatio = saturate(((abs(IN.zPos - _RoomCenter) - _RoomDepthBuffer)/ length));
 
 			/* Adjust the texture relative to the blend amount and the color tint */
-			fixed3 tex = tex2D(_MainTex, IN.uv_MainTex);
+			fixed3 tex = tex2D(_MainTex, IN.uv_MainTex*0.25f);
 			tex.r = tex.r + blendRatio*tint.r;
 			tex.g = tex.g + blendRatio*tint.g;
 			tex.b = tex.b + blendRatio*tint.b;
