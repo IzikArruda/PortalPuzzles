@@ -111,7 +111,7 @@ Material:
       second: 0
     - first:
         name: _RoundRange
-      second: 0.3276373
+      second: 0.2
     - first:
         name: _SmoothnessTextureChannel
       second: 0

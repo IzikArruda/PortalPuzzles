@@ -3,6 +3,8 @@
 	Properties
 	{
 		_MainTex("Main Texture", 2D) = "white" {}
+		_SecondTex("Second Texture", 2D) = "white" {}
+		_TextureFavor("Texture Favor", Float) = 0
 		_EntrTint("Entrance Tint", Vector) = (.0, .0, .0)
 		_ExitTint("Exit Tint", Vector) = (.0, .0, .0)
 		_RoomCenter("Room Z Center", float) = 0
@@ -27,6 +29,8 @@
 			float zPos;
 		};
 		sampler2D _MainTex;
+		sampler2D _SecondTex;
+		float _TextureFavor;
 		float3 _EntrTint;
 		float3 _ExitTint;
 		float _RoomCenter;
@@ -74,7 +78,9 @@
 			fixed blendRatio = saturate(((abs(IN.zPos - _RoomCenter) - _RoomDepthBuffer)/ length));
 
 			/* Adjust the texture relative to the blend amount and the color tint */
-			fixed3 tex = tex2D(_MainTex, IN.uv_MainTex*0.25f);
+			fixed3 tex = (1 - _TextureFavor)*tex2D(_MainTex, IN.uv_MainTex*0.25f) + 
+					_TextureFavor*tex2D(_SecondTex, IN.uv_MainTex*0.25f);
+
 			tex.r = tex.r + blendRatio*tint.r;
 			tex.g = tex.g + blendRatio*tint.g;
 			tex.b = tex.b + blendRatio*tint.b;

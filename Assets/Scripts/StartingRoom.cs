@@ -355,30 +355,40 @@ public class StartingRoom : ConnectedRoom {
         /* Floor */
         floorMaterial = Instantiate(unlitMaterial);
         floorMaterial.SetTexture("_MainTex", floorTexture);
+        floorMaterial.SetTexture("_SecondTex", floorTextureAlt);
         floorMaterial.SetTextureScale("_MainTex", new Vector2(5, 5));
         floorMaterial.name = "Floor (StartingRoom)";
+        floorMaterial.SetFloat("_TextureFavor", 0);
 
         /* Wall */
         wallMaterial = Instantiate(unlitMaterial);
         wallMaterial.SetTexture("_MainTex", wallTexture);
+        wallMaterial.SetTexture("_SecondTex", wallTextureAlt);
         wallMaterial.name = "Wall (StartingRoom)";
+        wallMaterial.SetFloat("_TextureFavor", 0);
 
         /* Ceiling */
         ceilingMaterial = Instantiate(unlitMaterial);
         ceilingMaterial.SetTexture("_MainTex", ceilingTexture);
+        ceilingMaterial.SetTexture("_SecondTex", ceilingTextureAlt);
         ceilingMaterial.name = "Ceiling (StartingRoom)";
+        ceilingMaterial.SetFloat("_TextureFavor", 0);
 
         /* Window Frame */
         windowFrameMaterial = Instantiate(unlitMaterial);
         windowFrameMaterial.SetTexture("_MainTex", windowFrameTexture);
+        windowFrameMaterial.SetTexture("_SecondTex", windowFrameTextureAlt);
         windowFrameMaterial.name = "Window Border (StartingRoom)";
+        windowFrameMaterial.SetFloat("_TextureFavor", 0);
 
         /* Stairs */
         stairsStepMaterial = Instantiate(unlitMaterial);
         stairsStepMaterial.SetTexture("_MainTex", stairsStepTexture);
+        stairsStepMaterial.SetTexture("_SecondTex", stairsStepTextureAlt);
         stairsStepMaterial.name = "Stairs Step (StartingRoom)";
         stairsOtherMaterial = Instantiate(unlitMaterial);
         stairsOtherMaterial.SetTexture("_MainTex", stairsOtherTexture);
+        stairsOtherMaterial.SetTexture("_SecondTex", stairsOtherTextureAlt);
         stairsOtherMaterial.name = "Stairs Other (StartingRoom)";
     }
 
@@ -465,14 +475,13 @@ public class StartingRoom : ConnectedRoom {
         /*
          * Update the textures used in this room. This to called when the player starts falling into previous rooms
          */
-
-        //For now, just remove the textures used on all the room's materials
-        floorMaterial.SetTexture("_MainTex", floorTextureAlt);
-        wallMaterial.SetTexture("_MainTex", wallTextureAlt);
-        ceilingMaterial.SetTexture("_MainTex", ceilingTextureAlt);
-        windowFrameMaterial.SetTexture("_MainTex", windowFrameTextureAlt);
-        stairsStepMaterial.SetTexture("_MainTex", stairsStepTextureAlt);
-        stairsOtherMaterial.SetTexture("_MainTex", stairsOtherTextureAlt);
+         
+        floorMaterial.SetFloat("_TextureFavor", 1);
+        wallMaterial.SetFloat("_TextureFavor", 1);
+        ceilingMaterial.SetFloat("_TextureFavor", 1);
+        windowFrameMaterial.SetFloat("_TextureFavor", 1);
+        stairsStepMaterial.SetFloat("_TextureFavor", 1);
+        stairsOtherMaterial.SetFloat("_TextureFavor", 1);
     }
     
 	public void UpdateTimeRate(float roomTimeRate, float soundtimeRate){

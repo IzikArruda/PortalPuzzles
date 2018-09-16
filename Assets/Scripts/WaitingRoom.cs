@@ -59,6 +59,7 @@ public class WaitingRoom : ConnectedRoom {
     public Texture2D wallTextureAlt;
     public Texture2D ceilingTextureAlt;
     public Texture2D windowFrameTextureAlt;
+    public float textureAltFavor;
 
     /* The color tints of it's connected rooms */
     public Vector3 entranceTint;
@@ -402,22 +403,26 @@ public class WaitingRoom : ConnectedRoom {
         /* Floor */
         floorMaterial = Instantiate(waitingRoomUnlitMaterial);
         floorMaterial.SetTexture("_MainTex", floorTexture);
+        floorMaterial.SetTexture("_SecondTex", floorTextureAlt);
         floorMaterial.SetTextureScale("_MainTex", new Vector2(5, 5));
         floorMaterial.name = "Floor (WaitingRoom " + this.GetInstanceID() + ")";
 
         /* Wall */
         wallMaterial = Instantiate(waitingRoomUnlitMaterial);
         wallMaterial.SetTexture("_MainTex", wallTexture);
+        wallMaterial.SetTexture("_SecondTex", wallTextureAlt);
         wallMaterial.name = "Wall (WaitingRoom " + this.GetInstanceID() + ")";
 
         /* Ceiling */
         ceilingMaterial = Instantiate(waitingRoomUnlitMaterial);
         ceilingMaterial.SetTexture("_MainTex", ceilingTexture);
+        ceilingMaterial.SetTexture("_SecondTex", ceilingTextureAlt);
         ceilingMaterial.name = "Ceiling (WaitingRoom " + this.GetInstanceID() + ")";
 
         /* Window Frame */
         windowFrameMaterial = Instantiate(waitingRoomUnlitMaterial);
         windowFrameMaterial.SetTexture("_MainTex", windowFrameTexture);
+        windowFrameMaterial.SetTexture("_SecondTex", windowFrameTextureAlt);
         windowFrameMaterial.name = "Window Border (WaitingRoom " + this.GetInstanceID() + ")";
         
         /* Set the properties of the shader used by these materials */
@@ -427,25 +432,32 @@ public class WaitingRoom : ConnectedRoom {
         floorMaterial.SetFloat("_TextureZLengthExit", exitRoom.roomLength*2);
         floorMaterial.SetVector("_EntrTint", entranceTint);
         floorMaterial.SetVector("_ExitTint", exitTint);
+        floorMaterial.SetFloat("_TextureFavor", 0);
+
         wallMaterial.SetFloat("_RoomCenter", roomCenter.z);
         wallMaterial.SetFloat("_RoomDepthBuffer", zDist/2f);
         wallMaterial.SetFloat("_TextureZLengthEntr", entranceRoom.roomLength*2);
         wallMaterial.SetFloat("_TextureZLengthExit", exitRoom.roomLength*2);
         wallMaterial.SetVector("_EntrTint", entranceTint/3f);
         wallMaterial.SetVector("_ExitTint", exitTint/3f);
+        wallMaterial.SetFloat("_TextureFavor", 0);
+
         ceilingMaterial.SetFloat("_RoomCenter", roomCenter.z);
         ceilingMaterial.SetFloat("_RoomDepthBuffer", zDist/2f);
         ceilingMaterial.SetFloat("_TextureZLengthEntr", entranceRoom.roomLength*2);
         ceilingMaterial.SetFloat("_TextureZLengthExit", exitRoom.roomLength*2);
         ceilingMaterial.SetVector("_EntrTint", entranceTint*2);
         ceilingMaterial.SetVector("_ExitTint", exitTint*2);
+        ceilingMaterial.SetFloat("_TextureFavor", 0);
+
         windowFrameMaterial.SetFloat("_RoomCenter", roomCenter.z);
         windowFrameMaterial.SetFloat("_RoomDepthBuffer", zDist/2f);
         windowFrameMaterial.SetFloat("_TextureZLengthEntr", entranceRoom.roomLength*2);
         windowFrameMaterial.SetFloat("_TextureZLengthExit", exitRoom.roomLength*2);
         windowFrameMaterial.SetVector("_EntrTint", entranceTint/5f);
         windowFrameMaterial.SetVector("_ExitTint", exitTint/5f);
-        
+        windowFrameMaterial.SetFloat("_TextureFavor", 0);
+
         /* Link the materials to it's AttachedRooms */
         entranceRoom.floorMaterial = floorMaterial;
         entranceRoom.wallMaterial = wallMaterial;
@@ -575,11 +587,10 @@ public class WaitingRoom : ConnectedRoom {
         /*
          * Update the textures used in this room. This to called when the player starts falling into previous rooms
          */
-         
-        //For now, just remove the textures used on all the room's materials
-        floorMaterial.SetTexture("_MainTex", floorTextureAlt);
-        wallMaterial.SetTexture("_MainTex", wallTextureAlt);
-        ceilingMaterial.SetTexture("_MainTex", ceilingTextureAlt);
-        windowFrameMaterial.SetTexture("_MainTex", windowFrameTextureAlt);
+
+        floorMaterial.SetFloat("_TextureFavor", textureAltFavor);
+        wallMaterial.SetFloat("_TextureFavor", textureAltFavor);
+        ceilingMaterial.SetFloat("_TextureFavor", textureAltFavor);
+        windowFrameMaterial.SetFloat("_TextureFavor", textureAltFavor);
     }
 }
