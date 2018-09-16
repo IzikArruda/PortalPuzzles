@@ -26,6 +26,7 @@
 
 		struct Input {
 			float2 uv_MainTex;
+			float2 uv_SecondTex;
 			float zPos;
 		};
 		sampler2D _MainTex;
@@ -78,8 +79,9 @@
 			fixed blendRatio = saturate(((abs(IN.zPos - _RoomCenter) - _RoomDepthBuffer)/ length));
 
 			/* Adjust the texture relative to the blend amount and the color tint */
-			fixed3 tex = (1 - _TextureFavor)*tex2D(_MainTex, IN.uv_MainTex*0.25f) + 
-					_TextureFavor*tex2D(_SecondTex, IN.uv_MainTex*0.25f);
+			fixed3 tex = (1 - _TextureFavor)*tex2D(_MainTex, IN.uv_MainTex) + 
+					_TextureFavor*tex2D(_SecondTex, IN.uv_SecondTex);
+		    
 
 			tex.r = tex.r + blendRatio*tint.r;
 			tex.g = tex.g + blendRatio*tint.g;

@@ -48,7 +48,7 @@ Material:
     - first:
         name: _MainTex
       second:
-        m_Texture: {fileID: 2800000, guid: aac03034bd72fa145835b0a1d555d68a, type: 3}
+        m_Texture: {fileID: 2800000, guid: c8c4d0f721fa36c4c9d969a45916555c, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - first:
@@ -105,7 +105,7 @@ Material:
       second: 0.02
     - first:
         name: _RoundRange
-      second: 0.3799364
+      second: 0.2
     - first:
         name: _SmoothnessTextureChannel
       second: 0

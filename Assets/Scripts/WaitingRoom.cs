@@ -438,24 +438,24 @@ public class WaitingRoom : ConnectedRoom {
         wallMaterial.SetFloat("_RoomDepthBuffer", zDist/2f);
         wallMaterial.SetFloat("_TextureZLengthEntr", entranceRoom.roomLength*2);
         wallMaterial.SetFloat("_TextureZLengthExit", exitRoom.roomLength*2);
-        wallMaterial.SetVector("_EntrTint", entranceTint/3f);
-        wallMaterial.SetVector("_ExitTint", exitTint/3f);
+        wallMaterial.SetVector("_EntrTint", entranceTint);
+        wallMaterial.SetVector("_ExitTint", exitTint);
         wallMaterial.SetFloat("_TextureFavor", 0);
 
         ceilingMaterial.SetFloat("_RoomCenter", roomCenter.z);
         ceilingMaterial.SetFloat("_RoomDepthBuffer", zDist/2f);
         ceilingMaterial.SetFloat("_TextureZLengthEntr", entranceRoom.roomLength*2);
         ceilingMaterial.SetFloat("_TextureZLengthExit", exitRoom.roomLength*2);
-        ceilingMaterial.SetVector("_EntrTint", entranceTint*2);
-        ceilingMaterial.SetVector("_ExitTint", exitTint*2);
+        ceilingMaterial.SetVector("_EntrTint", entranceTint);
+        ceilingMaterial.SetVector("_ExitTint", exitTint);
         ceilingMaterial.SetFloat("_TextureFavor", 0);
 
         windowFrameMaterial.SetFloat("_RoomCenter", roomCenter.z);
         windowFrameMaterial.SetFloat("_RoomDepthBuffer", zDist/2f);
         windowFrameMaterial.SetFloat("_TextureZLengthEntr", entranceRoom.roomLength*2);
         windowFrameMaterial.SetFloat("_TextureZLengthExit", exitRoom.roomLength*2);
-        windowFrameMaterial.SetVector("_EntrTint", entranceTint/5f);
-        windowFrameMaterial.SetVector("_ExitTint", exitTint/5f);
+        windowFrameMaterial.SetVector("_EntrTint", entranceTint);
+        windowFrameMaterial.SetVector("_ExitTint", exitTint);
         windowFrameMaterial.SetFloat("_TextureFavor", 0);
 
         /* Link the materials to it's AttachedRooms */
