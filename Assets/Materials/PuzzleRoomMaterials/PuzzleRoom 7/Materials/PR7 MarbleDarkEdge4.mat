@@ -48,7 +48,7 @@ Material:
     - first:
         name: _MainTex
       second:
-        m_Texture: {fileID: 2800000, guid: 44b8673b93dc069469133712977c61e0, type: 3}
+        m_Texture: {fileID: 2800000, guid: 65d14d6e7394d24488b4d8f613cc5166, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - first:
@@ -72,7 +72,7 @@ Material:
     - first:
         name: _SecondTex
       second:
-        m_Texture: {fileID: 2800000, guid: 56e673b58afa151438d20a9704d9be6f, type: 3}
+        m_Texture: {fileID: 2800000, guid: 3300455cacdfa5f44a07264184d2013a, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
@@ -111,7 +111,7 @@ Material:
       second: 0.02
     - first:
         name: _RoundRange
-      second: 0.2
+      second: 0.3799364
     - first:
         name: _SmoothnessTextureChannel
       second: 0
