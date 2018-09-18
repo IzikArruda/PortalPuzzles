@@ -49,7 +49,7 @@
 
 		/* Use the UV's X value to control the texture of the surface */
 		void surf(Input IN, inout SurfaceOutput o) {
-			o.Albedo = ClampRanges(tex2D(_MainTex, IN.uv_MainTex), _RoundRange);
+			o.Albedo = ClampRanges(tex2D(_MainTex, IN.uv_MainTex*0.25f), _RoundRange);
 		}
 
 		ENDCG

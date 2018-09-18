@@ -58,8 +58,8 @@
 			/* Flip the blend/texture if the UV's Y value is negative */
 			float blend = (IN.flipUV < 0) ? (1 - IN.blendUV) : IN.blendUV;
 			
-			half4 t1 = blend*ClampRanges(tex2D(_SecondTex, IN.uv_MainTex), _RoundRange);
-			half4 t2 = (1 - blend)*ClampRanges(tex2D(_MainTex, IN.uv_MainTex), _RoundRange);
+			half4 t1 = blend*ClampRanges(tex2D(_SecondTex, IN.uv_MainTex*0.25f), _RoundRange);
+			half4 t2 = (1 - blend)*ClampRanges(tex2D(_MainTex, IN.uv_MainTex*0.25f), _RoundRange);
 			o.Albedo = t1 + t2;
 		}
 		ENDCG

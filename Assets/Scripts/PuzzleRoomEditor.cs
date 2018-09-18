@@ -428,7 +428,7 @@ public class PuzzleRoomEditor : MonoBehaviour {
             roomMaterials[i].SetFloat("_RoundRange", textureClampRangeFloor + textureClampOffsetFloor*offset);
         }
         for(int i = 0; i < roomEdgeMaterials.Length; i++) {
-            roomEdgeMaterials[i].SetFloat("_RoundRange", textureClampRangeFloor + textureClampOffsetFloor * offset);
+            roomEdgeMaterials[i].SetFloat("_RoundRange", textureClampRangeFloor + textureClampOffsetFloor*offset);
         }
     }
 
